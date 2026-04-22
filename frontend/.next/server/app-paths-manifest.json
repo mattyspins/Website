@@ -1,0 +1,7 @@
+{
+  "/leaderboard/page": "app/leaderboard/page.js",
+  "/bonus-hunt/page": "app/bonus-hunt/page.js",
+  "/raffle/page": "app/raffle/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/profile/page": "app/profile/page.js"
+}

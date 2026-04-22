@@ -1,0 +1,140 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap");
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background: #010409;
+  color: white;
+  font-family: "Orbitron", monospace;
+}
+
+body {
+  background: linear-gradient(135deg, #020617 0%, #0c1426 50%, #0f172a 100%);
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0c1426;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, #1e40af, #f59e0b);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, #f59e0b, #1d4ed8);
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Neon glow effects */
+.neon-glow {
+  box-shadow:
+    0 0 10px currentColor,
+    0 0 20px currentColor,
+    0 0 30px currentColor;
+}
+
+.neon-text {
+  text-shadow:
+    0 0 10px currentColor,
+    0 0 20px currentColor,
+    0 0 30px currentColor;
+}
+
+/* Particle background */
+.particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Loading animation */
+.loading-dots {
+  display: inline-block;
+}
+
+.loading-dots::after {
+  content: "";
+  animation: dots 1.5s steps(5, end) infinite;
+}
+
+@keyframes dots {
+  0%,
+  20% {
+    content: "";
+  }
+  40% {
+    content: ".";
+  }
+  60% {
+    content: "..";
+  }
+  80%,
+  100% {
+    content: "...";
+  }
+}
+
+/* Button hover effects */
+.btn-glow {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.btn-glow::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.btn-glow:hover::before {
+  left: 100%;
+}
+
+/* Responsive text */
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.2rem;
+  }
+}

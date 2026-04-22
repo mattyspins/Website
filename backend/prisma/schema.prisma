@@ -1,0 +1,352 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String    @id @default(uuid())
+  discordId            String    @unique @map("discord_id")
+  kickUsername         String?   @unique @map("kick_username")
+  displayName          String    @map("display_name")
+  avatarUrl            String?   @map("avatar_url")
+  points               Int       @default(0)
+  totalEarned          Int       @default(0) @map("total_earned")
+  totalSpent           Int       @default(0) @map("total_spent")
+  isAdmin              Boolean   @default(false) @map("is_admin")
+  isModerator          Boolean   @default(false) @map("is_moderator")
+  isSuspended          Boolean   @default(false) @map("is_suspended")
+  suspensionReason     String?   @map("suspension_reason")
+  suspensionExpiresAt  DateTime? @map("suspension_expires_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  lastActiveAt         DateTime  @default(now()) @map("last_active_at")
+
+  // Relations
+  sessions                UserSession[]
+  pointTransactions       PointTransaction[]       @relation("UserPointTransactions")
+  adminPointTransactions  PointTransaction[]       @relation("AdminPointTransactions")
+  statistics              UserStatistics?
+  leaderboardEntries      LeaderboardEntry[]
+  raffleTickets           RaffleTicket[]
+  raffleWins              RaffleWinner[]
+  storePurchases          StorePurchase[]
+  bonusHuntSessions       BonusHuntSession[]
+  bonusHuntPredictions    BonusHuntPrediction[]
+  viewingSessions         ViewingSession[]
+  notifications           Notification[]
+  auditLogsAsAdmin        AuditLog[]               @relation("AdminAuditLogs")
+  auditLogsAsTarget       AuditLog[]               @relation("TargetAuditLogs")
+  createdRaffles          Raffle[]
+  updatedSystemConfig     SystemConfig[]
+
+  @@map("users")
+}
+
+model UserSession {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  tokenHash        String   @map("token_hash")
+  refreshTokenHash String?  @map("refresh_token_hash")
+  expiresAt        DateTime @map("expires_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  lastUsedAt       DateTime @default(now()) @map("last_used_at")
+  userAgent        String?  @map("user_agent")
+  ipAddress        String?  @map("ip_address")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
+}
+
+model PointTransaction {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  amount          Int
+  transactionType String    @map("transaction_type") // 'earned', 'spent', 'admin_add', 'admin_subtract', 'refund'
+  reason          String
+  referenceId     String?   @map("reference_id")
+  referenceType   String?   @map("reference_type") // 'purchase', 'raffle_ticket', 'viewing_time', etc.
+  adminId         String?   @map("admin_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  metadata        Json?
+
+  // Relations
+  user  User  @relation("UserPointTransactions", fields: [userId], references: [id], onDelete: Cascade)
+  admin User? @relation("AdminPointTransactions", fields: [adminId], references: [id])
+
+  @@map("point_transactions")
+}
+
+model UserStatistics {
+  userId              String    @id @map("user_id")
+  totalViewingTime    Int       @default(0) @map("total_viewing_time") // minutes
+  totalPurchases      Int       @default(0) @map("total_purchases")
+  totalRaffleTickets  Int       @default(0) @map("total_raffle_tickets")
+  totalWins           Int       @default(0) @map("total_wins")
+  longestStreak       Int       @default(0) @map("longest_streak")
+  currentStreak       Int       @default(0) @map("current_streak")
+  lastStreamWatched   DateTime? @map("last_stream_watched")
+  achievements        Json      @default("[]")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_statistics")
+}
+
+model LeaderboardEntry {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  periodType  String   @map("period_type") // 'daily', 'weekly', 'monthly', 'all-time'
+  periodStart DateTime @map("period_start")
+  scoreType   String   @map("score_type") // 'points', 'wins', 'viewing_time'
+  score       Int
+  rank        Int?
+  manualRank  Int?     @map("manual_rank") // Admin override
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, periodType, periodStart, scoreType])
+  @@map("leaderboard_entries")
+}
+
+model Raffle {
+  id                String    @id @default(uuid())
+  title             String
+  description       String?
+  prize             String
+  ticketPrice       Int       @map("ticket_price")
+  maxTickets        Int       @map("max_tickets")
+  maxEntriesPerUser Int       @default(-1) @map("max_entries_per_user") // -1 for unlimited
+  numberOfWinners   Int       @default(1) @map("number_of_winners")
+  ticketsSold       Int       @default(0) @map("tickets_sold")
+  status            String    @default("active") // 'active', 'ended', 'cancelled'
+  category          String?
+  isFeatured        Boolean   @default(false) @map("is_featured")
+  createdBy         String?   @map("created_by")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  endsAt            DateTime  @map("ends_at")
+  winnerSelectedAt  DateTime? @map("winner_selected_at")
+  metadata          Json?
+
+  // Relations
+  creator User?          @relation(fields: [createdBy], references: [id])
+  tickets RaffleTicket[]
+  winners RaffleWinner[]
+
+  @@map("raffles")
+}
+
+model RaffleTicket {
+  id           String   @id @default(uuid())
+  raffleId     String   @map("raffle_id")
+  userId       String   @map("user_id")
+  ticketNumber Int      @map("ticket_number")
+  purchasedAt  DateTime @default(now()) @map("purchased_at")
+
+  // Relations
+  raffle Raffle         @relation(fields: [raffleId], references: [id], onDelete: Cascade)
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  winner RaffleWinner?
+
+  @@unique([raffleId, ticketNumber])
+  @@map("raffle_tickets")
+}
+
+model RaffleWinner {
+  id                String    @id @default(uuid())
+  raffleId          String    @map("raffle_id")
+  userId            String    @map("user_id")
+  ticketId          String?   @unique @map("ticket_id")
+  position          Int // 1st, 2nd, 3rd place
+  prizeDescription  String?   @map("prize_description")
+  selectedAt        DateTime  @default(now()) @map("selected_at")
+  notifiedAt        DateTime? @map("notified_at")
+  prizeDeliveredAt  DateTime? @map("prize_delivered_at")
+  deliveryMethod    String?   @map("delivery_method")
+
+  // Relations
+  raffle Raffle      @relation(fields: [raffleId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticket RaffleTicket? @relation(fields: [ticketId], references: [id])
+
+  @@map("raffle_winners")
+}
+
+model StoreItem {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  price        Int
+  category     String
+  stock        Int      @default(-1) // -1 for unlimited
+  deliveryType String   @default("instant") @map("delivery_type") // 'instant', 'manual', 'scheduled'
+  isActive     Boolean  @default(true) @map("is_active")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  metadata     Json?
+
+  // Relations
+  purchases StorePurchase[]
+
+  @@map("store_items")
+}
+
+model StorePurchase {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  itemId       String    @map("item_id")
+  quantity     Int
+  unitPrice    Int       @map("unit_price")
+  totalPrice   Int       @map("total_price")
+  status       String    @default("completed") // 'pending', 'completed', 'refunded', 'failed'
+  purchasedAt  DateTime  @default(now()) @map("purchased_at")
+  deliveredAt  DateTime? @map("delivered_at")
+  refundedAt   DateTime? @map("refunded_at")
+  refundReason String?   @map("refund_reason")
+  metadata     Json?
+
+  // Relations
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item StoreItem @relation(fields: [itemId], references: [id])
+
+  @@map("store_purchases")
+}
+
+model BonusHuntSession {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  sessionName     String?   @map("session_name")
+  startingBalance Decimal   @map("starting_balance") @db.Decimal(10, 2)
+  currentBalance  Decimal   @map("current_balance") @db.Decimal(10, 2)
+  targetBalance   Decimal?  @map("target_balance") @db.Decimal(10, 2)
+  status          String    @default("active") // 'active', 'completed', 'abandoned'
+  startedAt       DateTime  @default(now()) @map("started_at")
+  endedAt         DateTime? @map("ended_at")
+  totalBonuses    Int       @default(0) @map("total_bonuses")
+  totalSpent      Decimal   @default(0) @map("total_spent") @db.Decimal(10, 2)
+  totalWon        Decimal   @default(0) @map("total_won") @db.Decimal(10, 2)
+
+  // Relations
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bonusBuys   BonusBuy[]
+  predictions BonusHuntPrediction[]
+
+  @@map("bonus_hunt_sessions")
+}
+
+model BonusBuy {
+  id          String   @id @default(uuid())
+  sessionId   String   @map("session_id")
+  gameName    String   @map("game_name")
+  buyAmount   Decimal  @map("buy_amount") @db.Decimal(10, 2)
+  payout      Decimal  @db.Decimal(10, 2)
+  multiplier  Decimal  @db.Decimal(6, 2)
+  purchasedAt DateTime @default(now()) @map("purchased_at")
+  metadata    Json?
+
+  // Relations
+  session BonusHuntSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("bonus_buys")
+}
+
+model BonusHuntPrediction {
+  id               String    @id @default(uuid())
+  sessionId        String    @map("session_id")
+  userId           String    @map("user_id")
+  predictedBalance Decimal   @map("predicted_balance") @db.Decimal(10, 2)
+  pointsWagered    Int       @map("points_wagered")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  resolvedAt       DateTime? @map("resolved_at")
+  won              Boolean?
+  pointsWon        Int       @default(0) @map("points_won")
+
+  // Relations
+  session BonusHuntSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@map("bonus_hunt_predictions")
+}
+
+model ViewingSession {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  streamId        String?   @map("stream_id")
+  startedAt       DateTime  @default(now()) @map("started_at")
+  endedAt         DateTime? @map("ended_at")
+  durationMinutes Int?      @map("duration_minutes")
+  pointsEarned    Int       @default(0) @map("points_earned")
+  validated       Boolean   @default(false)
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("viewing_sessions")
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  type      String
+  title     String
+  message   String
+  channels  String[] // ['in_app', 'discord']
+  priority  String    @default("normal") // 'low', 'normal', 'high', 'urgent'
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  expiresAt DateTime? @map("expires_at")
+  metadata  Json?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model SystemConfig {
+  key         String   @id
+  value       Json
+  description String?
+  updatedBy   String?  @map("updated_by")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  updater User? @relation(fields: [updatedBy], references: [id])
+
+  @@map("system_config")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  adminId    String?  @map("admin_id")
+  action     String
+  targetType String?  @map("target_type") // 'user', 'raffle', 'store_item', etc.
+  targetId   String?  @map("target_id")
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  reason     String?
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  admin  User? @relation("AdminAuditLogs", fields: [adminId], references: [id])
+  target User? @relation("TargetAuditLogs", fields: [targetId], references: [id])
+
+  @@map("audit_logs")
+}
