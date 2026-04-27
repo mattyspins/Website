@@ -30,7 +30,7 @@ const socialLinks: SocialLink[] = [
   },
   {
     name: "Kick",
-    url: "#",
+    url: "https://kick.com/mattyspinsslots",
     icon: Users,
     color: "text-[#53FC18]",
     bgColor: "bg-[#53FC18]/20 hover:bg-[#53FC18]/30",
@@ -79,6 +79,8 @@ export default function SocialLinks() {
           <motion.a
             key={link.name}
             href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.0 + index * 0.1, duration: 0.4 }}

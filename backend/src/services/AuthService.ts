@@ -142,7 +142,10 @@ export class AuthService {
         kickUsername: user.kickUsername || undefined,
       };
     } catch (error) {
-      logger.error('Error creating/updating user from Discord:', error);
+      logger.error('Error creating/updating user from Discord:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       throw createError.internal('Failed to process Discord authentication');
     }
   }
@@ -185,7 +188,10 @@ export class AuthService {
         kickUsername: updatedUser.kickUsername || undefined,
       };
     } catch (error) {
-      logger.error('Error verifying Kick user:', error);
+      logger.error('Error verifying Kick user:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       throw createError.internal('Failed to verify Kick user');
     }
   }
@@ -221,7 +227,10 @@ export class AuthService {
 
       logger.info(`Session stored for user: ${user.displayName}`);
     } catch (error) {
-      logger.error('Error storing session:', error);
+      logger.error('Error storing session:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       throw createError.internal('Failed to store session');
     }
   }
@@ -295,7 +304,10 @@ export class AuthService {
 
       return newTokens;
     } catch (error) {
-      logger.error('Error refreshing token:', error);
+      logger.error('Error refreshing token:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       throw createError.unauthorized('Failed to refresh token');
     }
   }
@@ -322,7 +334,10 @@ export class AuthService {
 
       logger.info(`User logged out: ${userId}`);
     } catch (error) {
-      logger.error('Error during logout:', error);
+      logger.error('Error during logout:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       throw createError.internal('Failed to logout');
     }
   }
@@ -362,7 +377,10 @@ export class AuthService {
 
       return userSession;
     } catch (error) {
-      logger.error('Error getting user session:', error);
+      logger.error('Error getting user session:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       return null;
     }
   }
@@ -375,7 +393,10 @@ export class AuthService {
         data: { lastActiveAt: new Date() },
       });
     } catch (error) {
-      logger.error('Error updating user session:', error);
+      logger.error('Error updating user session:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       // Don't throw error as this is not critical
     }
   }

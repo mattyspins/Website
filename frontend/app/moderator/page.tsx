@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface User {
   id: string;
@@ -39,7 +40,7 @@ export default function ModeratorDashboard() {
     }
 
     try {
-      const response = await fetch("http://localhost:3001/api/auth/me", {
+      const response = await fetch(API_ENDPOINTS.AUTH_ME, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
 
@@ -66,8 +67,8 @@ export default function ModeratorDashboard() {
 
     try {
       const url = query
-        ? `http://localhost:3001/api/admin/users/search?q=${encodeURIComponent(query)}`
-        : "http://localhost:3001/api/admin/users/search";
+        ? `${API_ENDPOINTS.ADMIN_USERS_SEARCH}?q=${encodeURIComponent(query)}`
+        : API_ENDPOINTS.ADMIN_USERS_SEARCH;
 
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -93,7 +94,7 @@ export default function ModeratorDashboard() {
 
     try {
       const response = await fetch(
-        `http://localhost:3001/api/admin/users/${selectedUser.id}/suspend`,
+        API_ENDPOINTS.ADMIN_USER_SUSPEND(selectedUser.id),
         {
           method: "POST",
           headers: {
@@ -132,15 +133,12 @@ export default function ModeratorDashboard() {
     if (!accessToken) return;
 
     try {
-      const response = await fetch(
-        `http://localhost:3001/api/admin/users/${userId}/unsuspend`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+      const response = await fetch(API_ENDPOINTS.ADMIN_USER_UNSUSPEND(userId), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
         },
-      );
+      });
 
       if (response.ok) {
         alert("✅ User unsuspended successfully!");

@@ -113,7 +113,10 @@ export class AuthController {
 
         res.redirect(callbackUrl);
       } catch (error) {
-        logger.error('Discord OAuth callback error:', error);
+        logger.error('Discord OAuth callback error:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        });
 
         // Redirect to frontend with error
         const frontendUrl =
@@ -175,7 +178,10 @@ export class AuthController {
           message: 'Kick verification completed successfully',
         });
       } catch (error) {
-        logger.error('Kick verification error:', error);
+        logger.error('Kick verification error:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        });
         throw createError.internal('Kick verification failed');
       }
     }
@@ -201,7 +207,10 @@ export class AuthController {
         },
       });
     } catch (error) {
-      logger.error('Token refresh error:', error);
+      logger.error('Token refresh error:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       throw error; // Re-throw to let error handler deal with it
     }
   });
@@ -240,7 +249,10 @@ export class AuthController {
           },
         });
       } catch (error) {
-        logger.error('Get current user error:', error);
+        logger.error('Get current user error:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        });
         throw createError.internal('Failed to get user information');
       }
     }
@@ -263,7 +275,10 @@ export class AuthController {
           message: 'Logged out successfully',
         });
       } catch (error) {
-        logger.error('Logout error:', error);
+        logger.error('Logout error:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        });
         throw createError.internal('Logout failed');
       }
     }

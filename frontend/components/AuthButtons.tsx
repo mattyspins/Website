@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import UserProfile from "./UserProfile";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface User {
   id: string;
@@ -26,7 +27,7 @@ export default function AuthButtons() {
       if (!accessToken) return;
 
       try {
-        const response = await fetch("http://localhost:3001/api/auth/me", {
+        const response = await fetch(API_ENDPOINTS.AUTH_ME, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
@@ -54,13 +55,10 @@ export default function AuthButtons() {
     try {
       setIsLoading(true);
       // Call backend to get Discord OAuth URL
-      const response = await fetch(
-        "http://localhost:3001/api/auth/discord/initiate",
-        {
-          method: "GET",
-          credentials: "include",
-        },
-      );
+      const response = await fetch(API_ENDPOINTS.AUTH_DISCORD_INITIATE, {
+        method: "GET",
+        credentials: "include",
+      });
 
       if (!response.ok) {
         throw new Error("Failed to initiate Discord login");
@@ -93,7 +91,7 @@ export default function AuthButtons() {
 
     if (accessToken) {
       try {
-        await fetch("http://localhost:3001/api/auth/logout", {
+        await fetch(API_ENDPOINTS.AUTH_LOGOUT, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -152,7 +150,7 @@ export default function AuthButtons() {
                   try {
                     const accessToken = localStorage.getItem("access_token");
                     const response = await fetch(
-                      "http://localhost:3001/api/auth/kick/verify",
+                      API_ENDPOINTS.AUTH_KICK_VERIFY,
                       {
                         method: "POST",
                         headers: {

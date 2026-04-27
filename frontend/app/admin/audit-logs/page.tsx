@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface AuditLog {
   id: string;
@@ -41,7 +42,7 @@ export default function AuditLogsPage() {
     }
 
     try {
-      const response = await fetch("http://localhost:3001/api/auth/me", {
+      const response = await fetch(API_ENDPOINTS.AUTH_ME, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
 
@@ -76,7 +77,7 @@ export default function AuditLogsPage() {
       }
 
       const response = await fetch(
-        `http://localhost:3001/api/admin/audit-logs?${params}`,
+        `${API_ENDPOINTS.ADMIN_AUDIT_LOGS}?${params}`,
         {
           headers: { Authorization: `Bearer ${accessToken}` },
         },

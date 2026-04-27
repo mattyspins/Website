@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface DashboardStats {
   totalUsers: number;
@@ -25,12 +26,9 @@ export default function AdminStats() {
     if (!accessToken) return;
 
     try {
-      const response = await fetch(
-        "http://localhost:3001/api/admin/dashboard/stats",
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        },
-      );
+      const response = await fetch(API_ENDPOINTS.ADMIN_STATS, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
 
       if (response.ok) {
         const data = await response.json();

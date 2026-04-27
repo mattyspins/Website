@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface Raffle {
   id: string;
@@ -37,7 +38,7 @@ export default function RafflePage() {
 
   const loadRaffles = async () => {
     try {
-      const response = await fetch("http://localhost:3001/api/raffles/active");
+      const response = await fetch(API_ENDPOINTS.RAFFLES_ACTIVE);
 
       if (response.ok) {
         const data = await response.json();
@@ -50,7 +51,7 @@ export default function RafflePage() {
           const ticketCounts: UserTickets = {};
           for (const raffle of raffleList) {
             const ticketsResponse = await fetch(
-              `http://localhost:3001/api/raffles/${raffle.id}/tickets`,
+              API_ENDPOINTS.RAFFLES_TICKETS(raffle.id),
               {
                 headers: { Authorization: `Bearer ${accessToken}` },
               },
@@ -74,7 +75,7 @@ export default function RafflePage() {
     if (!accessToken) return;
 
     try {
-      const response = await fetch("http://localhost:3001/api/auth/me", {
+      const response = await fetch(API_ENDPOINTS.AUTH_ME, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
 
@@ -127,7 +128,7 @@ export default function RafflePage() {
 
     try {
       const response = await fetch(
-        `http://localhost:3001/api/raffles/${selectedRaffle.id}/purchase`,
+        API_ENDPOINTS.RAFFLES_PURCHASE(selectedRaffle.id),
         {
           method: "POST",
           headers: {

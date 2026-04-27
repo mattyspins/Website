@@ -7,6 +7,7 @@ import AdminSchedule from "@/components/admin/AdminSchedule";
 import AdminRaffles from "@/components/admin/AdminRaffles";
 import AdminStore from "@/components/admin/AdminStore";
 import AdminStats from "@/components/admin/AdminStats";
+import { API_ENDPOINTS } from "@/lib/api";
 
 type TabType = "overview" | "users" | "schedule" | "raffles" | "store";
 
@@ -27,7 +28,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const response = await fetch("http://localhost:3001/api/auth/me", {
+      const response = await fetch(API_ENDPOINTS.AUTH_ME, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
 

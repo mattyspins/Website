@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface UserProfile {
   id: string;
@@ -50,7 +51,7 @@ export default function ProfilePage() {
     }
 
     try {
-      const response = await fetch("http://localhost:3001/api/auth/me", {
+      const response = await fetch(API_ENDPOINTS.AUTH_ME, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
 
@@ -89,7 +90,7 @@ export default function ProfilePage() {
     const accessToken = localStorage.getItem("access_token");
 
     try {
-      const response = await fetch("http://localhost:3001/api/users/rainbet", {
+      const response = await fetch(API_ENDPOINTS.USERS_RAINBET, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

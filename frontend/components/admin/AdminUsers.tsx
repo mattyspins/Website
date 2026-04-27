@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface User {
   id: string;
@@ -34,8 +35,8 @@ export default function AdminUsers() {
 
     try {
       const url = query
-        ? `http://localhost:3001/api/admin/users/search?q=${encodeURIComponent(query)}`
-        : "http://localhost:3001/api/admin/users/search";
+        ? `${API_ENDPOINTS.ADMIN_USERS_SEARCH}?q=${encodeURIComponent(query)}`
+        : API_ENDPOINTS.ADMIN_USERS_SEARCH;
 
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -61,7 +62,7 @@ export default function AdminUsers() {
 
     try {
       const response = await fetch(
-        `http://localhost:3001/api/admin/users/${selectedUser.id}/points`,
+        API_ENDPOINTS.ADMIN_USER_POINTS(selectedUser.id),
         {
           method: "POST",
           headers: {
@@ -238,7 +239,7 @@ export default function AdminUsers() {
 
                           try {
                             const response = await fetch(
-                              `http://localhost:3001/api/admin/users/${user.id}/moderator`,
+                              API_ENDPOINTS.ADMIN_USER_MODERATOR(user.id),
                               {
                                 method: "POST",
                                 headers: {

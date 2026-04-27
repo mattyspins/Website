@@ -13,7 +13,11 @@ datasource db {
 model User {
   id                   String    @id @default(uuid())
   discordId            String    @unique @map("discord_id")
+  kickId               String?   @unique @map("kick_id") // Kick OAuth ID
   kickUsername         String?   @unique @map("kick_username")
+  kickAccessToken      String?   @map("kick_access_token") // Encrypted
+  kickRefreshToken     String?   @map("kick_refresh_token") // Encrypted
+  kickTokenExpiresAt   DateTime? @map("kick_token_expires_at")
   displayName          String    @map("display_name")
   avatarUrl            String?   @map("avatar_url")
   points               Int       @default(0)
@@ -34,6 +38,7 @@ model User {
   adminPointTransactions  PointTransaction[]       @relation("AdminPointTransactions")
   statistics              UserStatistics?
   leaderboardEntries      LeaderboardEntry[]
+  leaderboardWagers       LeaderboardWager[]
   raffleTickets           RaffleTicket[]
   raffleWins              RaffleWinner[]
   storePurchases          StorePurchase[]
@@ -44,6 +49,7 @@ model User {
   auditLogsAsAdmin        AuditLog[]               @relation("AdminAuditLogs")
   auditLogsAsTarget       AuditLog[]               @relation("TargetAuditLogs")
   createdRaffles          Raffle[]
+  createdLeaderboards     Leaderboard[]
   updatedSystemConfig     SystemConfig[]
 
   @@map("users")
@@ -103,6 +109,61 @@ model UserStatistics {
   @@map("user_statistics")
 }
 
+// Manual Leaderboard System
+model Leaderboard {
+  id              String    @id @default(uuid())
+  title           String
+  description     String?
+  prizePool       String    @map("prize_pool") // e.g., "$200", "$500"
+  status          String    @default("active") // 'active', 'ended', 'cancelled'
+  startDate       DateTime  @map("start_date")
+  endDate         DateTime  @map("end_date")
+  createdBy       String?   @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  metadata        Json?
+
+  // Relations
+  creator User?                @relation(fields: [createdBy], references: [id])
+  prizes  LeaderboardPrize[]
+  wagers  LeaderboardWager[]
+
+  @@map("leaderboards")
+}
+
+model LeaderboardPrize {
+  id              String   @id @default(uuid())
+  leaderboardId   String   @map("leaderboard_id")
+  position        Int // 1st, 2nd, 3rd, etc.
+  prizeAmount     String   @map("prize_amount") // e.g., "$100", "$50"
+  prizeDescription String? @map("prize_description")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  leaderboard Leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
+
+  @@unique([leaderboardId, position])
+  @@map("leaderboard_prizes")
+}
+
+model LeaderboardWager {
+  id              String   @id @default(uuid())
+  leaderboardId   String   @map("leaderboard_id")
+  userId          String   @map("user_id")
+  wagerAmount     Decimal  @map("wager_amount") @db.Decimal(12, 2)
+  submittedAt     DateTime @default(now()) @map("submitted_at")
+  verifiedBy      String?  @map("verified_by") // Admin who verified
+  verifiedAt      DateTime? @map("verified_at")
+  notes           String?
+
+  // Relations
+  leaderboard Leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("leaderboard_wagers")
+}
+
+// Legacy leaderboard (keep for now, can remove later)
 model LeaderboardEntry {
   id          String   @id @default(uuid())
   userId      String   @map("user_id")

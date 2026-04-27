@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface Raffle {
   id: string;
@@ -35,7 +36,7 @@ export default function AdminRaffles() {
     }
 
     try {
-      const response = await fetch("http://localhost:3001/api/raffles/active", {
+      const response = await fetch(API_ENDPOINTS.RAFFLES_ACTIVE, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
 
@@ -63,7 +64,7 @@ export default function AdminRaffles() {
 
     try {
       const response = await fetch(
-        `http://localhost:3001/api/raffles/${raffleId}/select-winners`,
+        API_ENDPOINTS.RAFFLES_SELECT_WINNERS(raffleId),
         {
           method: "POST",
           headers: {
@@ -227,34 +228,31 @@ export default function AdminRaffles() {
                 }
 
                 try {
-                  const response = await fetch(
-                    "http://localhost:3001/api/raffles/create",
-                    {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${accessToken}`,
-                      },
-                      body: JSON.stringify({
-                        title: formData.get("title"),
-                        description: formData.get("description"),
-                        prize: formData.get("prize"),
-                        ticketPrice: parseInt(
-                          formData.get("ticketPrice") as string,
-                        ),
-                        maxTickets: parseInt(
-                          formData.get("maxTickets") as string,
-                        ),
-                        maxEntriesPerUser: parseInt(
-                          formData.get("maxEntriesPerUser") as string,
-                        ),
-                        numberOfWinners: parseInt(
-                          formData.get("numberOfWinners") as string,
-                        ),
-                        endDate: formData.get("endDate"),
-                      }),
+                  const response = await fetch(API_ENDPOINTS.RAFFLES_CREATE, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${accessToken}`,
                     },
-                  );
+                    body: JSON.stringify({
+                      title: formData.get("title"),
+                      description: formData.get("description"),
+                      prize: formData.get("prize"),
+                      ticketPrice: parseInt(
+                        formData.get("ticketPrice") as string,
+                      ),
+                      maxTickets: parseInt(
+                        formData.get("maxTickets") as string,
+                      ),
+                      maxEntriesPerUser: parseInt(
+                        formData.get("maxEntriesPerUser") as string,
+                      ),
+                      numberOfWinners: parseInt(
+                        formData.get("numberOfWinners") as string,
+                      ),
+                      endDate: formData.get("endDate"),
+                    }),
+                  });
 
                   if (response.ok) {
                     alert("Raffle created successfully!");
