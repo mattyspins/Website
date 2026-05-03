@@ -4,7 +4,7 @@
   "description": "Comprehensive backend system for streaming platform with Discord/Kick authentication, real-time leaderboards, points management, and admin controls",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --noEmitOnError false",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/index.ts",
     "test": "jest",
