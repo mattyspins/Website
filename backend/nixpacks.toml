@@ -5,13 +5,13 @@
 nixPkgs = ["nodejs-20_x", "postgresql"]
 
 [phases.install]
-cmds = [
-  "npm ci --only=production",
-  "npx prisma generate"
-]
+cmds = ["npm ci --only=production"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = [
+  "npx prisma generate",
+  "npm run build"
+]
 
 [start]
-cmd = "npx prisma migrate deploy && npm start"
+cmd = "npx prisma migrate deploy && node dist/index.js"
