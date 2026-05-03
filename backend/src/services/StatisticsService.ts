@@ -567,6 +567,37 @@ export class StatisticsService {
     }
   }
 
+  // Get user statistics
+  static async getUserStatistics(
+    userId: string
+  ): Promise<UserStatistics | null> {
+    try {
+      const stats = await prisma.userStatistics.findUnique({
+        where: { userId },
+      });
+
+      if (!stats) {
+        return null;
+      }
+
+      return {
+        totalViewingTime: stats.totalViewingTime,
+        totalPurchases: stats.totalPurchases,
+        totalRaffleTickets: stats.totalRaffleTickets,
+        totalWins: stats.totalWins,
+        longestStreak: stats.longestStreak,
+        currentStreak: stats.currentStreak,
+        lastStreamWatched: stats.lastStreamWatched || undefined,
+        achievements: Array.isArray(stats.achievements)
+          ? stats.achievements
+          : [],
+      };
+    } catch (error) {
+      logger.error('Error getting user statistics:', error);
+      throw createError.internal('Failed to get user statistics');
+    }
+  }
+
   // Reset user statistics (admin function)
   static async resetUserStatistics(userId: string): Promise<void> {
     try {

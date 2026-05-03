@@ -1,5 +1,5 @@
 import { Response } from 'express';
-// import { KickService } from '@/services/KickService'; // TODO: Implement new KickService
+import { KickService } from '@/services/KickService'; // Stub service - Kick integration disabled
 import { PointsService } from '@/services/PointsService';
 import { StatisticsService } from '@/services/StatisticsService';
 import { asyncHandler, createError } from '@/middleware/errorHandler';

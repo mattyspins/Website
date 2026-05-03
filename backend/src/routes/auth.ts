@@ -41,6 +41,7 @@ router.post('/refresh', refreshLimiter, AuthController.refreshToken);
 router.get('/status', optionalAuthMiddleware, AuthController.getAuthStatus);
 
 // Protected routes
+/* KICK OAUTH ROUTES DISABLED - Not currently used
 router.get(
   '/kick/initiate',
   authMiddleware,
@@ -55,6 +56,7 @@ router.get(
 );
 router.delete('/kick/unlink', authMiddleware, AuthController.unlinkKickAccount);
 router.get('/kick/status', authMiddleware, AuthController.getKickStatus);
+*/
 router.get('/me', authMiddleware, AuthController.getCurrentUser);
 router.post('/logout', authMiddleware, AuthController.logout);
 router.get('/validate', authMiddleware, AuthController.validateToken);

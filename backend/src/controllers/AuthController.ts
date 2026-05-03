@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService, UserSession } from '@/services/AuthService';
 import { DiscordService } from '@/services/DiscordService';
-// import { KickService } from '@/services/KickService'; // TODO: Implement new KickService
-// import { KickOAuthService } from '@/services/KickOAuthService'; // TODO: Implement new KickOAuthService
+// import { KickOAuthService } from '@/services/KickOAuthService'; // Not used - Kick auth disabled
 import { asyncHandler, createError } from '@/middleware/errorHandler';
 import { logger } from '@/utils/logger';
 import { AuthenticatedRequest } from '@/middleware/auth';
@@ -133,6 +132,7 @@ export class AuthController {
     }
   );
 
+  /* KICK OAUTH DISABLED - Not currently used
   // Initiate Kick OAuth flow
   static initiateKickAuth = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -343,6 +343,7 @@ export class AuthController {
       }
     }
   );
+  END KICK OAUTH DISABLED */
 
   // Refresh access token
   static refreshToken = asyncHandler(async (req: Request, res: Response) => {
