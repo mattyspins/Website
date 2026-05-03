@@ -89,13 +89,18 @@ export default function Hero() {
           transition={{ delay: 0.9, duration: 0.8 }}
           className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16"
         >
-          <button className="btn-glow group bg-gradient-to-r from-neon-blue to-blue-600 hover:from-blue-600 hover:to-neon-gold text-white px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 neon-glow">
+          <a
+            href="https://kick.com/mattyspinsslots"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-glow group bg-gradient-to-r from-neon-blue to-blue-600 hover:from-blue-600 hover:to-neon-gold text-white px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 neon-glow"
+          >
             <div className="flex items-center space-x-3">
               <Play className="w-6 h-6 group-hover:animate-pulse" />
               <span>Watch Live Stream</span>
               <ExternalLink className="w-5 h-5" />
             </div>
-          </button>
+          </a>
 
           <a
             href="https://rainbet.com?r=mattyspins"
@@ -115,38 +120,21 @@ export default function Hero() {
             </div>
           </a>
 
-          <Link href="/leaderboard">
-            <button className="btn-glow group glass border-2 border-neon-gold hover:bg-neon-gold/20 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105">
-              <div className="flex items-center space-x-3">
-                <Users className="w-6 h-6 group-hover:animate-bounce" />
-                <span>Join Community</span>
-              </div>
-            </button>
-          </Link>
+          <a
+            href="https://discord.gg/n2gCDVwebw"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-glow group glass border-2 border-neon-gold hover:bg-neon-gold/20 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105"
+          >
+            <div className="flex items-center space-x-3">
+              <Users className="w-6 h-6 group-hover:animate-bounce" />
+              <span>Join Community</span>
+              <ExternalLink className="w-5 h-5" />
+            </div>
+          </a>
         </motion.div>
 
-        {/* Quick stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.2, duration: 0.8 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto"
-        >
-          <div className="glass rounded-xl p-6 text-center hover:scale-105 transition-transform duration-300">
-            <div className="text-3xl font-bold text-neon-blue mb-2">24/7</div>
-            <div className="text-gray-300">Live Streaming</div>
-          </div>
-
-          <div className="glass rounded-xl p-6 text-center hover:scale-105 transition-transform duration-300">
-            <div className="text-3xl font-bold text-neon-gold mb-2">10K+</div>
-            <div className="text-gray-300">Active Members</div>
-          </div>
-
-          <div className="glass rounded-xl p-6 text-center hover:scale-105 transition-transform duration-300">
-            <div className="text-3xl font-bold text-blue-400 mb-2">$1M+</div>
-            <div className="text-gray-300">Total Winnings</div>
-          </div>
-        </motion.div>
+        {/* Quick stats - Removed hardcoded numbers, admin will populate via leaderboards and community growth */}
       </div>
 
       {/* Scroll indicator */}

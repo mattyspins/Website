@@ -20,11 +20,18 @@ export interface EnvConfig {
   DISCORD_REDIRECT_URI: string;
   DISCORD_BOT_TOKEN: string;
 
-  // Kick
+  // Kick OAuth
   KICK_API_BASE_URL: string;
+  KICK_OAUTH_BASE_URL: string;
   KICK_CLIENT_ID: string;
   KICK_CLIENT_SECRET: string;
+  KICK_REDIRECT_URI: string;
   KICK_CHANNEL_NAME: string;
+
+  // Encryption
+  ENCRYPTION_SALT: string;
+  ENCRYPTION_KEY: string;
+  ENCRYPTION_IV: string;
 
   // Server
   CORS_ORIGIN: string;
@@ -71,11 +78,18 @@ const envSchema = Joi.object({
   DISCORD_REDIRECT_URI: Joi.string().uri().required(),
   DISCORD_BOT_TOKEN: Joi.string().required(),
 
-  // Kick
+  // Kick OAuth
   KICK_API_BASE_URL: Joi.string().uri().default('https://kick.com/api/v2'),
+  KICK_OAUTH_BASE_URL: Joi.string().uri().default('https://kick.com/oauth2'),
   KICK_CLIENT_ID: Joi.string().required(),
   KICK_CLIENT_SECRET: Joi.string().required(),
+  KICK_REDIRECT_URI: Joi.string().uri().required(),
   KICK_CHANNEL_NAME: Joi.string().default('mattyspins'),
+
+  // Encryption
+  ENCRYPTION_SALT: Joi.string().min(16).required(),
+  ENCRYPTION_KEY: Joi.string().min(32).required(),
+  ENCRYPTION_IV: Joi.string().min(16).required(),
 
   // Server
   CORS_ORIGIN: Joi.string().default('http://localhost:3000'),

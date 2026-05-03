@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface ScheduleDay {
   day: string;
@@ -82,17 +83,26 @@ export default function AdminSchedule() {
 
   const [editingDay, setEditingDay] = useState<string | null>(null);
 
-  // Load schedule from localStorage on mount
+  // Load schedule from API on mount
   useEffect(() => {
-    const saved = localStorage.getItem(SCHEDULE_STORAGE_KEY);
-    if (saved) {
-      try {
-        setSchedule(JSON.parse(saved));
-      } catch (error) {
-        console.error("Failed to load schedule:", error);
-      }
-    }
+    loadScheduleFromAPI();
   }, []);
+
+  const loadScheduleFromAPI = async () => {
+    try {
+      const response = await fetch(API_ENDPOINTS.SCHEDULE_CURRENT);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data.schedule) {
+          setSchedule(data.data.schedule);
+        }
+      } else {
+        console.error("Failed to load schedule from API");
+      }
+    } catch (error) {
+      console.error("Error loading schedule:", error);
+    }
+  };
 
   const toggleStreaming = (day: string) => {
     setSchedule(
@@ -122,28 +132,39 @@ export default function AdminSchedule() {
 
   const saveSchedule = async () => {
     try {
-      // Save to localStorage (immediately visible on homepage)
-      localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(schedule));
+      const accessToken = localStorage.getItem("access_token");
+      if (!accessToken) {
+        alert("❌ Please log in to save schedule");
+        return;
+      }
 
-      // Dispatch custom event to notify other components
-      window.dispatchEvent(
-        new CustomEvent("scheduleUpdated", { detail: schedule }),
-      );
+      const response = await fetch(API_ENDPOINTS.SCHEDULE_UPDATE, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ schedule }),
+      });
 
-      // TODO: Also save to backend API
-      // const accessToken = localStorage.getItem("access_token");
-      // await fetch("http://localhost:3001/api/admin/schedule", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //     Authorization: `Bearer ${accessToken}`,
-      //   },
-      //   body: JSON.stringify(schedule),
-      // });
+      if (response.ok) {
+        // Also save to localStorage for immediate local updates
+        localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(schedule));
 
-      alert(
-        "✅ Schedule saved successfully! Changes are now visible on the homepage.",
-      );
+        // Dispatch custom event to notify other components
+        window.dispatchEvent(
+          new CustomEvent("scheduleUpdated", { detail: schedule }),
+        );
+
+        alert(
+          "✅ Schedule saved successfully! Changes are now visible to all users.",
+        );
+      } else {
+        const errorData = await response.json();
+        alert(
+          `❌ Failed to save schedule: ${errorData.error?.message || "Unknown error"}`,
+        );
+      }
     } catch (error) {
       console.error("Failed to save schedule:", error);
       alert("❌ Failed to save schedule. Please try again.");

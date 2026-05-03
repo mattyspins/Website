@@ -1,0 +1,16 @@
+### Test Rainbet Username Submission
+POST http://localhost:3001/api/auth/rainbet-username
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN_HERE
+
+{
+  "rainbetUsername": "testuser123"
+}
+
+### Test Auth Status
+GET http://localhost:3001/api/auth/status
+Content-Type: application/json
+
+### Test Health Check
+GET http://localhost:3001/health
+Content-Type: application/json

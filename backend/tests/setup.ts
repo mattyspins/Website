@@ -73,7 +73,7 @@ global.testUtils = {
 
   generateJWT: (payload: any) => {
     const jwt = require('jsonwebtoken');
-    return jwt.sign(payload, process.env.JWT_SECRET || 'test-secret', {
+    return jwt.sign(payload, process.env['JWT_SECRET'] || 'test-secret', {
       expiresIn: '1h',
     });
   },

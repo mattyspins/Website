@@ -18,11 +18,19 @@ export interface UserManagement {
   id: string;
   discordId: string;
   kickUsername?: string;
+  kickVerified: boolean;
+  rainbetUsername?: string;
+  rainbetVerified: boolean;
   displayName: string;
   avatar?: string;
   points: number;
+  totalEarned: number;
+  totalSpent: number;
   isAdmin: boolean;
+  isModerator: boolean;
   isSuspended: boolean;
+  suspensionReason?: string;
+  suspensionExpiresAt?: Date;
   createdAt: Date;
   lastActive?: Date;
 }
@@ -109,11 +117,12 @@ export class AdminService {
     try {
       const where: any = {};
 
-      if (query) {
+      if (query && query.trim()) {
         where.OR = [
           { displayName: { contains: query, mode: 'insensitive' } },
           { discordId: { contains: query } },
           { kickUsername: { contains: query, mode: 'insensitive' } },
+          { rainbetUsername: { contains: query, mode: 'insensitive' } },
         ];
       }
 
@@ -139,13 +148,21 @@ export class AdminService {
             id: true,
             discordId: true,
             kickUsername: true,
+            kickVerified: true,
+            rainbetUsername: true,
+            rainbetVerified: true,
             displayName: true,
-            avatar: true,
+            avatarUrl: true,
             points: true,
+            totalEarned: true,
+            totalSpent: true,
             isAdmin: true,
+            isModerator: true,
             isSuspended: true,
+            suspensionReason: true,
+            suspensionExpiresAt: true,
             createdAt: true,
-            lastActive: true,
+            lastActiveAt: true,
           },
           orderBy: { createdAt: 'desc' },
           take: limit,
@@ -156,10 +173,24 @@ export class AdminService {
 
       return {
         users: users.map(u => ({
-          ...u,
+          id: u.id,
+          discordId: u.discordId,
           kickUsername: u.kickUsername || undefined,
-          avatar: u.avatar || undefined,
-          lastActive: u.lastActive || undefined,
+          kickVerified: u.kickVerified,
+          rainbetUsername: u.rainbetUsername || undefined,
+          rainbetVerified: u.rainbetVerified,
+          displayName: u.displayName,
+          avatar: u.avatarUrl || undefined,
+          points: u.points,
+          totalEarned: u.totalEarned,
+          totalSpent: u.totalSpent,
+          isAdmin: u.isAdmin,
+          isModerator: u.isModerator,
+          isSuspended: u.isSuspended,
+          suspensionReason: u.suspensionReason || undefined,
+          suspensionExpiresAt: u.suspensionExpiresAt || undefined,
+          createdAt: u.createdAt,
+          lastActive: u.lastActiveAt || undefined,
         })),
         total,
       };
@@ -281,11 +312,13 @@ export class AdminService {
             action: amount > 0 ? 'ADD_POINTS' : 'SUBTRACT_POINTS',
             targetType: 'user',
             targetId: userId,
-            changes: {
+            oldValues: {
+              points: user.points,
+            },
+            newValues: {
+              points: user.points + amount,
               amount,
               reason,
-              previousBalance: user.points,
-              newBalance: user.points + amount,
             },
           },
         });
@@ -378,7 +411,11 @@ export class AdminService {
             action: 'SUSPEND_USER',
             targetType: 'user',
             targetId: userId,
-            changes: {
+            oldValues: {
+              isSuspended: user.isSuspended,
+            },
+            newValues: {
+              isSuspended: true,
               reason,
               suspendedAt: new Date(),
             },
@@ -419,7 +456,11 @@ export class AdminService {
             action: 'UNSUSPEND_USER',
             targetType: 'user',
             targetId: userId,
-            changes: {
+            oldValues: {
+              isSuspended: user.isSuspended,
+            },
+            newValues: {
+              isSuspended: false,
               unsuspendedAt: new Date(),
             },
           },
@@ -429,6 +470,259 @@ export class AdminService {
       logger.info(`Admin ${adminId} unsuspended user ${userId}`);
     } catch (error) {
       logger.error('Error unsuspending user:', error);
+      throw error;
+    }
+  }
+
+  // Verify Kick username
+  static async verifyKickUsername(
+    userId: string,
+    verified: boolean,
+    adminId: string
+  ): Promise<void> {
+    try {
+      await prisma.$transaction(async tx => {
+        const user = await tx.user.findUnique({
+          where: { id: userId },
+          select: { kickUsername: true, kickVerified: true },
+        });
+
+        if (!user) {
+          throw createError.notFound('User not found');
+        }
+
+        if (!user.kickUsername) {
+          throw createError.badRequest('User has no Kick username to verify');
+        }
+
+        // Update the kickVerified field
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            kickVerified: verified,
+            updatedAt: new Date(),
+          },
+        });
+
+        // Create audit log
+        await tx.auditLog.create({
+          data: {
+            adminId,
+            action: verified
+              ? 'VERIFY_KICK_USERNAME'
+              : 'UNVERIFY_KICK_USERNAME',
+            targetType: 'user',
+            targetId: userId,
+            oldValues: {
+              kickVerified: user.kickVerified,
+            },
+            newValues: {
+              kickUsername: user.kickUsername,
+              kickVerified: verified,
+              verifiedAt: new Date(),
+            },
+          },
+        });
+      });
+
+      logger.info(
+        `Admin ${adminId} ${verified ? 'verified' : 'unverified'} Kick username for user ${userId}`
+      );
+    } catch (error) {
+      logger.error('Error verifying Kick username:', error);
+      throw error;
+    }
+  }
+
+  // Edit user's Kick username
+  static async editKickUsername(
+    userId: string,
+    newKickUsername: string | null,
+    adminId: string
+  ): Promise<void> {
+    try {
+      await prisma.$transaction(async tx => {
+        const user = await tx.user.findUnique({
+          where: { id: userId },
+          select: { kickUsername: true },
+        });
+
+        if (!user) {
+          throw createError.notFound('User not found');
+        }
+
+        // Check if the new username is already taken (if not null)
+        if (newKickUsername) {
+          const existingUser = await tx.user.findUnique({
+            where: { kickUsername: newKickUsername },
+          });
+
+          if (existingUser && existingUser.id !== userId) {
+            throw createError.conflict('Kick username is already taken');
+          }
+        }
+
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            kickUsername: newKickUsername,
+            // Reset verification status when username is changed
+            kickVerified: newKickUsername ? false : false,
+            updatedAt: new Date(),
+          },
+        });
+
+        // Create audit log
+        await tx.auditLog.create({
+          data: {
+            adminId,
+            action: 'EDIT_KICK_USERNAME',
+            targetType: 'user',
+            targetId: userId,
+            oldValues: {
+              kickUsername: user.kickUsername,
+            },
+            newValues: {
+              kickUsername: newKickUsername,
+              updatedAt: new Date(),
+            },
+          },
+        });
+      });
+
+      logger.info(
+        `Admin ${adminId} edited Kick username for user ${userId}: ${newKickUsername}`
+      );
+    } catch (error) {
+      logger.error('Error editing Kick username:', error);
+      throw error;
+    }
+  }
+
+  // Edit user's Rainbet username
+  static async editRainbetUsername(
+    userId: string,
+    newRainbetUsername: string | null,
+    adminId: string
+  ): Promise<void> {
+    try {
+      await prisma.$transaction(async tx => {
+        const user = await tx.user.findUnique({
+          where: { id: userId },
+          select: { rainbetUsername: true, rainbetVerified: true },
+        });
+
+        if (!user) {
+          throw createError.notFound('User not found');
+        }
+
+        // Check if the new username is already taken (if not null)
+        if (newRainbetUsername) {
+          const existingUser = await tx.user.findUnique({
+            where: { rainbetUsername: newRainbetUsername },
+          });
+
+          if (existingUser && existingUser.id !== userId) {
+            throw createError.conflict('Rainbet username is already taken');
+          }
+        }
+
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            rainbetUsername: newRainbetUsername,
+            // Reset verification status when username is changed
+            rainbetVerified: newRainbetUsername ? false : false,
+            updatedAt: new Date(),
+          },
+        });
+
+        // Create audit log
+        await tx.auditLog.create({
+          data: {
+            adminId,
+            action: 'EDIT_RAINBET_USERNAME',
+            targetType: 'user',
+            targetId: userId,
+            oldValues: {
+              rainbetUsername: user.rainbetUsername,
+              rainbetVerified: user.rainbetVerified,
+            },
+            newValues: {
+              rainbetUsername: newRainbetUsername,
+              rainbetVerified: false,
+              updatedAt: new Date(),
+            },
+          },
+        });
+      });
+
+      logger.info(
+        `Admin ${adminId} edited Rainbet username for user ${userId}: ${newRainbetUsername}`
+      );
+    } catch (error) {
+      logger.error('Error editing Rainbet username:', error);
+      throw error;
+    }
+  }
+
+  // Verify Rainbet username
+  static async verifyRainbetUsername(
+    userId: string,
+    verified: boolean,
+    adminId: string
+  ): Promise<void> {
+    try {
+      await prisma.$transaction(async tx => {
+        const user = await tx.user.findUnique({
+          where: { id: userId },
+          select: { rainbetUsername: true },
+        });
+
+        if (!user) {
+          throw createError.notFound('User not found');
+        }
+
+        if (!user.rainbetUsername) {
+          throw createError.badRequest(
+            'User has no Rainbet username to verify'
+          );
+        }
+
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            rainbetVerified: verified,
+            updatedAt: new Date(),
+          },
+        });
+
+        // Create audit log
+        await tx.auditLog.create({
+          data: {
+            adminId,
+            action: verified
+              ? 'VERIFY_RAINBET_USERNAME'
+              : 'UNVERIFY_RAINBET_USERNAME',
+            targetType: 'user',
+            targetId: userId,
+            oldValues: {
+              rainbetVerified: !verified,
+            },
+            newValues: {
+              rainbetUsername: user.rainbetUsername,
+              rainbetVerified: verified,
+              verifiedAt: new Date(),
+            },
+          },
+        });
+      });
+
+      logger.info(
+        `Admin ${adminId} ${verified ? 'verified' : 'unverified'} Rainbet username for user ${userId}`
+      );
+    } catch (error) {
+      logger.error('Error verifying Rainbet username:', error);
       throw error;
     }
   }
@@ -460,13 +754,14 @@ export class AdminService {
             action: 'DELETE_USER',
             targetType: 'user',
             targetId: userId,
-            changes: {
+            oldValues: {
+              discordId: user.discordId,
+              displayName: user.displayName,
+              points: user.points,
+            },
+            newValues: {
+              deleted: true,
               reason,
-              userData: {
-                discordId: user.discordId,
-                displayName: user.displayName,
-                points: user.points,
-              },
               deletedAt: new Date(),
             },
           },
@@ -516,13 +811,11 @@ export class AdminService {
             action: 'UPDATE_USER_PROFILE',
             targetType: 'user',
             targetId: userId,
-            changes: {
-              updates,
-              previousData: {
-                displayName: user.displayName,
-                isAdmin: user.isAdmin,
-              },
+            oldValues: {
+              displayName: user.displayName,
+              isAdmin: user.isAdmin,
             },
+            newValues: updates,
           },
         });
       });
@@ -575,9 +868,11 @@ export class AdminService {
               : 'DEMOTE_FROM_MODERATOR',
             targetType: 'user',
             targetId: userId,
-            changes: {
-              previousStatus: user.isModerator,
-              newStatus: isModerator,
+            oldValues: {
+              isModerator: user.isModerator,
+            },
+            newValues: {
+              isModerator,
               updatedAt: new Date(),
             },
           },
@@ -728,10 +1023,10 @@ export class AdminService {
             action: 'UPDATE_SYSTEM_CONFIG',
             targetType: 'system_config',
             targetId: key,
-            changes: {
+            oldValues: existing?.value ? { value: existing.value } : null,
+            newValues: {
               key,
-              previousValue: existing?.value,
-              newValue: value,
+              value,
             },
           },
         });

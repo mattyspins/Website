@@ -37,6 +37,8 @@ export default function ProfilePage() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [showRainbetModal, setShowRainbetModal] = useState(false);
   const [rainbetUsername, setRainbetUsername] = useState("");
+  const [showKickModal, setShowKickModal] = useState(false);
+  const [kickUsername, setKickUsername] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -59,15 +61,14 @@ export default function ProfilePage() {
         const data = await response.json();
         setProfile(data.user);
 
-        // TODO: Load user stats from API
-        // Mock stats for now
+        // Initialize stats with zeros - will be populated as features are used
         setStats({
-          totalViewingTime: 1250,
-          totalPurchases: 15,
-          totalRaffleTickets: 42,
-          totalWins: 3,
-          currentStreak: 7,
-          longestStreak: 14,
+          totalViewingTime: 0,
+          totalPurchases: 0,
+          totalRaffleTickets: 0,
+          totalWins: 0,
+          currentStreak: 0,
+          longestStreak: 0,
         });
       } else {
         router.push("/");
@@ -111,6 +112,42 @@ export default function ProfilePage() {
     } catch (error) {
       console.error("Failed to submit Rainbet username:", error);
       alert("Failed to submit Rainbet username. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const submitKickUsername = async () => {
+    if (!kickUsername.trim()) {
+      alert("Please enter your Kick username");
+      return;
+    }
+
+    setSubmitting(true);
+    const accessToken = localStorage.getItem("access_token");
+
+    try {
+      const response = await fetch(API_ENDPOINTS.USERS_KICK, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ kickUsername: kickUsername.trim() }),
+      });
+
+      if (response.ok) {
+        alert("✅ Kick username submitted! Waiting for admin verification.");
+        setShowKickModal(false);
+        setKickUsername("");
+        loadProfile();
+      } else {
+        const data = await response.json();
+        alert(data.error?.message || "Failed to submit Kick username");
+      }
+    } catch (error) {
+      console.error("Failed to submit Kick username:", error);
+      alert("Failed to submit Kick username. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -179,7 +216,9 @@ export default function ProfilePage() {
                 )}
                 <p className="text-gray-400 text-sm">
                   Member since{" "}
-                  {new Date(profile.createdAt).toLocaleDateString()}
+                  {profile.createdAt
+                    ? new Date(profile.createdAt).toLocaleDateString()
+                    : "N/A"}
                 </p>
               </div>
 
@@ -198,18 +237,28 @@ export default function ProfilePage() {
                   <p className="text-white font-semibold">✅ Connected</p>
                 </div>
 
-                <div className="bg-black/30 rounded-lg p-3">
+                <div className="bg-black/30 rounded-lg p-3 mt-[10px]">
                   <p className="text-gray-400 text-sm mb-1">Kick</p>
                   {profile.kickUsername ? (
-                    <p className="text-green-400 font-semibold">
-                      ✅ {profile.kickUsername}
-                    </p>
+                    <div>
+                      <p className="text-green-400 font-semibold">
+                        ✅ {profile.kickUsername}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Verified by admin
+                      </p>
+                    </div>
                   ) : (
-                    <p className="text-gray-500">Not verified</p>
+                    <button
+                      onClick={() => setShowKickModal(true)}
+                      className="text-purple-400 hover:text-purple-300 font-semibold transition-colors"
+                    >
+                      + Add Username
+                    </button>
                   )}
                 </div>
 
-                <div className="bg-black/30 rounded-lg p-3">
+                <div className="bg-black/30 rounded-lg p-3 mt-[10px]">
                   <p className="text-gray-400 text-sm mb-1">Rainbet</p>
                   {profile.rainbetVerified ? (
                     <div>
@@ -337,35 +386,80 @@ export default function ProfilePage() {
                 Recent Activity
               </h3>
 
-              <div className="space-y-3">
-                <ActivityItem
-                  icon="💎"
-                  text="Earned 100 points from viewing"
-                  time="2 hours ago"
-                  color="green"
-                />
-                <ActivityItem
-                  icon="🎟️"
-                  text="Purchased 5 raffle tickets"
-                  time="1 day ago"
-                  color="yellow"
-                />
-                <ActivityItem
-                  icon="🛒"
-                  text="Bought Custom Emote from store"
-                  time="3 days ago"
-                  color="purple"
-                />
-                <ActivityItem
-                  icon="🏆"
-                  text="Won Weekly Giveaway!"
-                  time="5 days ago"
-                  color="gold"
-                />
+              <div className="text-center py-8">
+                <div className="text-6xl mb-4">📊</div>
+                <p className="text-gray-400 text-lg">No recent activity</p>
+                <p className="text-gray-500 text-sm mt-2">
+                  Your activity will appear here once you start participating
+                </p>
               </div>
             </motion.div>
           </div>
         </div>
+
+        {/* Kick Username Modal */}
+        {showKickModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-gradient-to-br from-purple-900/90 to-black border border-purple-500/30 rounded-2xl p-6 max-w-md w-full"
+            >
+              <h3 className="text-2xl font-bold text-white mb-4">
+                Add Kick Username
+              </h3>
+
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-4">
+                <p className="text-yellow-300 text-sm">
+                  ⚠️ <strong>Important:</strong> Your Kick username will be
+                  verified by an admin. Once verified, it cannot be changed by
+                  you and can only be modified by an admin.
+                </p>
+              </div>
+
+              <p className="text-gray-300 mb-4">
+                Enter your Kick username to link your account. This helps us
+                track your activity and reward you with points!
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-gray-400 text-sm mb-2 block">
+                    Kick Username
+                  </label>
+                  <input
+                    type="text"
+                    value={kickUsername}
+                    onChange={(e) => setKickUsername(e.target.value)}
+                    placeholder="Enter your Kick username"
+                    className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={submitKickUsername}
+                    disabled={submitting}
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-2 rounded-lg transition-colors"
+                  >
+                    {submitting ? "Submitting..." : "Submit"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowKickModal(false);
+                      setKickUsername("");
+                    }}
+                    disabled={submitting}
+                    className="flex-1 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 text-white font-semibold py-2 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
 
         {/* Rainbet Username Modal */}
         {showRainbetModal && (

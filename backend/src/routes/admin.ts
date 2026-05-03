@@ -64,6 +64,26 @@ router.post(
   criticalActionLimiter,
   AdminController.unsuspendUser
 );
+router.post(
+  '/users/:userId/verify-rainbet',
+  criticalActionLimiter,
+  AdminController.verifyRainbetUsername
+);
+router.post(
+  '/users/:userId/verify-kick',
+  criticalActionLimiter,
+  AdminController.verifyKickUsername
+);
+router.patch(
+  '/users/:userId/kick-username',
+  criticalActionLimiter,
+  AdminController.editKickUsername
+);
+router.patch(
+  '/users/:userId/rainbet-username',
+  criticalActionLimiter,
+  AdminController.editRainbetUsername
+);
 router.delete(
   '/users/:userId',
   criticalActionLimiter,

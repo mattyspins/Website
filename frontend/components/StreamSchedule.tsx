@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Calendar, Clock, Gamepad2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { API_ENDPOINTS } from "@/lib/api";
 
 interface ScheduleDay {
   day: string;
@@ -57,19 +58,36 @@ export default function StreamSchedule() {
   const [schedule, setSchedule] = useState<ScheduleDay[]>([]);
   const currentDay = getCurrentDay();
 
-  // Load schedule from localStorage
+  // Load schedule from API
   useEffect(() => {
-    const loadSchedule = () => {
-      const saved = localStorage.getItem(SCHEDULE_STORAGE_KEY);
-      if (saved) {
-        try {
-          setSchedule(JSON.parse(saved));
-        } catch (error) {
-          console.error("Failed to load schedule:", error);
+    const loadSchedule = async () => {
+      try {
+        const response = await fetch(API_ENDPOINTS.SCHEDULE_CURRENT);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data.schedule) {
+            setSchedule(data.data.schedule);
+          } else {
+            setSchedule(getDefaultSchedule());
+          }
+        } else {
+          console.error("Failed to load schedule from API");
           setSchedule(getDefaultSchedule());
         }
-      } else {
-        setSchedule(getDefaultSchedule());
+      } catch (error) {
+        console.error("Failed to load schedule:", error);
+        // Fallback to localStorage for backward compatibility
+        const saved = localStorage.getItem(SCHEDULE_STORAGE_KEY);
+        if (saved) {
+          try {
+            setSchedule(JSON.parse(saved));
+          } catch (parseError) {
+            console.error("Failed to parse saved schedule:", parseError);
+            setSchedule(getDefaultSchedule());
+          }
+        } else {
+          setSchedule(getDefaultSchedule());
+        }
       }
     };
 
@@ -90,52 +108,45 @@ export default function StreamSchedule() {
   const getDefaultSchedule = (): ScheduleDay[] => [
     {
       day: "Monday",
-      streaming: true,
-      startTime: "19:00",
-      endTime: "23:00",
-      activity: "Bonus Hunt",
+      streaming: false,
+      startTime: "",
+      endTime: "",
     },
     {
       day: "Tuesday",
-      streaming: true,
-      startTime: "20:00",
-      endTime: "00:00",
-      activity: "Card Games",
+      streaming: false,
+      startTime: "",
+      endTime: "",
     },
     {
       day: "Wednesday",
-      streaming: true,
-      startTime: "19:30",
-      endTime: "23:30",
-      activity: "Table Games",
+      streaming: false,
+      startTime: "",
+      endTime: "",
     },
     {
       day: "Thursday",
-      streaming: true,
-      startTime: "20:00",
-      endTime: "00:00",
-      activity: "Special Event",
+      streaming: false,
+      startTime: "",
+      endTime: "",
     },
     {
       day: "Friday",
-      streaming: true,
-      startTime: "21:00",
-      endTime: "01:00",
-      activity: "Community Games",
+      streaming: false,
+      startTime: "",
+      endTime: "",
     },
     {
       day: "Saturday",
-      streaming: true,
-      startTime: "18:00",
-      endTime: "02:00",
-      activity: "Slots",
+      streaming: false,
+      startTime: "",
+      endTime: "",
     },
     {
       day: "Sunday",
-      streaming: true,
-      startTime: "19:00",
-      endTime: "23:00",
-      activity: "Mixed Games",
+      streaming: false,
+      startTime: "",
+      endTime: "",
     },
   ];
 

@@ -14,6 +14,7 @@ import { errorHandler } from '@/middleware/errorHandler';
 import { notFoundHandler } from '@/middleware/notFoundHandler';
 import { authMiddleware } from '@/middleware/auth';
 import { validateEnv } from '@/config/env';
+import { LeaderboardExpirationJob } from '@/jobs/leaderboardExpiration';
 
 // Load environment variables
 dotenv.config();
@@ -108,25 +109,45 @@ app.get('/health', (req, res) => {
 // API routes
 import authRoutes from '@/routes/auth';
 import leaderboardRoutes from '@/routes/leaderboard';
-import viewingRoutes from '@/routes/viewing';
-import storeRoutes from '@/routes/store';
-import bonusHuntRoutes from '@/routes/bonusHunt';
+import manualLeaderboardRoutes from '@/routes/manualLeaderboard';
 import adminRoutes from '@/routes/admin';
 import moderatorRoutes from '@/routes/moderator';
+import scheduleRoutes from '@/routes/schedule';
+// Commented out until Kick OAuth is implemented
+// import viewingRoutes from '@/routes/viewing';
+// import storeRoutes from '@/routes/store';
+// import bonusHuntRoutes from '@/routes/bonusHunt';
+// import raffleRoutes from '@/routes/raffles';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
-app.use('/api/viewing', viewingRoutes);
-app.use('/api/store', storeRoutes);
-app.use('/api/bonus-hunt', bonusHuntRoutes);
+app.use('/api/manual-leaderboards', manualLeaderboardRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/moderator', moderatorRoutes);
-// app.use('/api/users', authMiddleware, userRoutes);
+app.use('/api/schedule', scheduleRoutes);
+// Commented out until Kick OAuth is implemented
+// app.use('/api/viewing', viewingRoutes);
+// app.use('/api/store', storeRoutes);
+// app.use('/api/bonus-hunt', bonusHuntRoutes);
 // app.use('/api/raffles', raffleRoutes);
 
 // Socket.IO connection handling
 io.on('connection', socket => {
   logger.info(`Client connected: ${socket.id}`);
+
+  // Join leaderboard room
+  socket.on('joinLeaderboard', (leaderboardId: string) => {
+    socket.join(`leaderboard:${leaderboardId}`);
+    logger.info(
+      `Socket ${socket.id} joined leaderboard room: ${leaderboardId}`
+    );
+  });
+
+  // Leave leaderboard room
+  socket.on('leaveLeaderboard', (leaderboardId: string) => {
+    socket.leave(`leaderboard:${leaderboardId}`);
+    logger.info(`Socket ${socket.id} left leaderboard room: ${leaderboardId}`);
+  });
 
   socket.on('disconnect', () => {
     logger.info(`Client disconnected: ${socket.id}`);
@@ -151,6 +172,7 @@ app.use(errorHandler);
 // Graceful shutdown
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
+  LeaderboardExpirationJob.stop();
   server.close(() => {
     logger.info('Process terminated');
     process.exit(0);
@@ -159,6 +181,7 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
   logger.info('SIGINT received, shutting down gracefully');
+  LeaderboardExpirationJob.stop();
   server.close(() => {
     logger.info('Process terminated');
     process.exit(0);
@@ -170,6 +193,10 @@ const PORT = env.PORT || 3001;
 server.listen(PORT, () => {
   logger.info(`🚀 Server running on port ${PORT} in ${env.NODE_ENV} mode`);
   logger.info(`📊 Health check available at http://localhost:${PORT}/health`);
+
+  // Start background jobs
+  LeaderboardExpirationJob.start();
+  logger.info('✅ Background jobs started');
 });
 
 export { app, server, io };

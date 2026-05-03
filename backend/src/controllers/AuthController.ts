@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService, UserSession } from '@/services/AuthService';
 import { DiscordService } from '@/services/DiscordService';
-import { KickService } from '@/services/KickService';
+// import { KickService } from '@/services/KickService'; // TODO: Implement new KickService
+// import { KickOAuthService } from '@/services/KickOAuthService'; // TODO: Implement new KickOAuthService
 import { asyncHandler, createError } from '@/middleware/errorHandler';
 import { logger } from '@/utils/logger';
 import { AuthenticatedRequest } from '@/middleware/auth';
@@ -132,57 +133,213 @@ export class AuthController {
     }
   );
 
-  // Initiate Kick verification
-  static initiateKickVerification = asyncHandler(
+  // Initiate Kick OAuth flow
+  static initiateKickAuth = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
       if (!req.user) {
         throw createError.unauthorized('Authentication required');
       }
 
-      const { kickUsername } = req.body;
+      try {
+        // Generate secure state parameter
+        const state = KickOAuthService.generateSecureState();
 
-      if (!kickUsername || typeof kickUsername !== 'string') {
-        throw createError.badRequest('Kick username is required');
+        // Generate OAuth URL
+        const authUrl = KickOAuthService.generateAuthURL(state);
+
+        // Store state in session/cache for validation
+        // In production, this should be stored in Redis with expiration
+        res.cookie('kick_oauth_state', state, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 10 * 60 * 1000, // 10 minutes
+          sameSite: 'lax',
+        });
+
+        logger.info('Kick OAuth flow initiated', {
+          userId: req.user.id,
+          state: state.substring(0, 8) + '...', // Log partial state for debugging
+        });
+
+        res.json({
+          success: true,
+          authUrl,
+          state,
+        });
+      } catch (error) {
+        logger.error('Kick OAuth initiation error:', {
+          userId: req.user?.id,
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        throw createError.internal('Failed to initiate Kick OAuth');
+      }
+    }
+  );
+
+  // Handle Kick OAuth callback
+  static handleKickCallback = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user) {
+        throw createError.unauthorized('Authentication required');
+      }
+
+      const { code, state } = req.query;
+
+      if (!code || typeof code !== 'string') {
+        throw createError.badRequest('Authorization code is required');
+      }
+
+      if (!state || typeof state !== 'string') {
+        throw createError.badRequest('State parameter is required');
+      }
+
+      // Validate state parameter for CSRF protection
+      const storedState = req.cookies.kick_oauth_state;
+      if (!storedState || storedState !== state) {
+        logger.warn('Invalid state parameter in Kick OAuth callback', {
+          userId: req.user.id,
+          providedState: state.substring(0, 8) + '...',
+          storedState: storedState?.substring(0, 8) + '...',
+        });
+        throw createError.badRequest(
+          'Invalid state parameter - possible CSRF attack'
+        );
+      }
+
+      // Clear state cookie
+      res.clearCookie('kick_oauth_state');
+
+      try {
+        // Exchange authorization code for tokens
+        const tokens = await KickOAuthService.exchangeCodeForTokens(code);
+
+        // Get Kick user info
+        const kickUser = await KickOAuthService.getUserInfo(tokens.accessToken);
+
+        // Store tokens and user info
+        await KickOAuthService.storeUserTokens(req.user.id, tokens, kickUser);
+
+        logger.info('Kick OAuth callback successful', {
+          userId: req.user.id,
+          kickUsername: kickUser.username,
+          kickId: kickUser.id,
+        });
+
+        // Redirect to frontend with success
+        const frontendUrl =
+          process.env['CORS_ORIGIN'] || 'http://localhost:3000';
+        const callbackUrl = `${frontendUrl}/profile?kick_linked=true&kick_username=${encodeURIComponent(kickUser.username)}`;
+
+        res.redirect(callbackUrl);
+      } catch (error) {
+        logger.error('Kick OAuth callback error:', {
+          userId: req.user.id,
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+
+        // Redirect to frontend with error
+        const frontendUrl =
+          process.env['CORS_ORIGIN'] || 'http://localhost:3000';
+        const errorMessage =
+          error instanceof Error ? error.message : 'Kick OAuth failed';
+        const callbackUrl = `${frontendUrl}/profile?kick_error=${encodeURIComponent(errorMessage)}`;
+
+        res.redirect(callbackUrl);
+      }
+    }
+  );
+
+  // Unlink Kick account
+  static unlinkKickAccount = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user) {
+        throw createError.unauthorized('Authentication required');
       }
 
       try {
-        // Verify Kick user exists
-        const kickUser = await KickService.getUserInfo(kickUsername);
+        await KickOAuthService.revokeTokens(req.user.id);
 
-        if (!kickUser) {
-          throw createError.notFound('Kick user not found');
+        logger.info('Kick account unlinked successfully', {
+          userId: req.user.id,
+        });
+
+        res.json({
+          success: true,
+          message: 'Kick account unlinked successfully',
+        });
+      } catch (error) {
+        logger.error('Kick account unlinking error:', {
+          userId: req.user.id,
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        throw createError.internal('Failed to unlink Kick account');
+      }
+    }
+  );
+
+  // Get Kick account status
+  static getKickStatus = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user) {
+        throw createError.unauthorized('Authentication required');
+      }
+
+      try {
+        const tokens = await KickOAuthService.getUserTokens(req.user.id);
+
+        if (!tokens) {
+          return res.json({
+            success: true,
+            linked: false,
+          });
         }
 
-        // Update user with Kick information
-        const updatedUser = await AuthService.verifyAndMergeKickUser(
-          req.user.id,
-          kickUser
+        // Check if token is still valid
+        const isValid = await KickOAuthService.validateToken(
+          tokens.accessToken
         );
 
-        logger.info(
-          `Kick verification successful for user: ${updatedUser.displayName} -> ${kickUser.username}`
+        if (!isValid) {
+          // Try to refresh the token
+          const refreshed = await KickOAuthService.refreshUserTokens(
+            req.user.id
+          );
+
+          if (!refreshed) {
+            return res.json({
+              success: true,
+              linked: false,
+              error: 'Token expired and refresh failed',
+            });
+          }
+        }
+
+        // Get fresh user data from database
+        const userSession = await AuthService.getUserSession(
+          req.headers.authorization?.substring(7) || ''
         );
 
         res.json({
           success: true,
-          user: {
-            id: updatedUser.id,
-            discordId: updatedUser.discordId,
-            displayName: updatedUser.displayName,
-            avatar: updatedUser.avatar,
-            points: updatedUser.points,
-            isAdmin: updatedUser.isAdmin,
-            isModerator: updatedUser.isModerator,
-            kickUsername: updatedUser.kickUsername,
-          },
-          message: 'Kick verification completed successfully',
+          linked: true,
+          username: userSession?.kickUsername,
+          // Note: We don't return channel points here as they should be fetched separately
         });
       } catch (error) {
-        logger.error('Kick verification error:', {
+        logger.error('Get Kick status error:', {
+          userId: req.user.id,
           message: error instanceof Error ? error.message : 'Unknown error',
           stack: error instanceof Error ? error.stack : undefined,
         });
-        throw createError.internal('Kick verification failed');
+
+        res.json({
+          success: true,
+          linked: false,
+          error: 'Failed to check Kick status',
+        });
       }
     }
   );
@@ -243,9 +400,14 @@ export class AuthController {
             displayName: userSession.displayName,
             avatar: userSession.avatar,
             points: userSession.points,
+            totalEarned: userSession.totalEarned || 0,
+            totalSpent: userSession.totalSpent || 0,
             isAdmin: userSession.isAdmin,
             isModerator: userSession.isModerator,
             kickUsername: userSession.kickUsername,
+            rainbetUsername: userSession.rainbetUsername,
+            rainbetVerified: userSession.rainbetVerified || false,
+            createdAt: userSession.createdAt,
           },
         });
       } catch (error) {
@@ -348,4 +510,118 @@ export class AuthController {
       });
     }
   });
+
+  // Submit Rainbet username (can only be done once by user)
+  static submitRainbetUsername = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user) {
+        throw createError.unauthorized('Authentication required');
+      }
+
+      const { rainbetUsername } = req.body;
+
+      if (!rainbetUsername || typeof rainbetUsername !== 'string') {
+        throw createError.badRequest('Rainbet username is required');
+      }
+
+      const trimmedUsername = rainbetUsername.trim();
+
+      if (trimmedUsername.length < 3 || trimmedUsername.length > 50) {
+        throw createError.badRequest(
+          'Rainbet username must be between 3 and 50 characters'
+        );
+      }
+
+      try {
+        // Check if user already has a Rainbet username
+        const userSession = await AuthService.getUserSession(
+          req.headers.authorization?.substring(7) || ''
+        );
+
+        if (userSession?.rainbetUsername) {
+          throw createError.badRequest(
+            'Rainbet username already set. Contact an admin to change it.'
+          );
+        }
+
+        // Update user's Rainbet username
+        await AuthService.updateRainbetUsername(req.user.id, trimmedUsername);
+
+        logger.info(
+          `User ${req.user.discordId} submitted Rainbet username: ${trimmedUsername}`
+        );
+
+        res.json({
+          success: true,
+          message:
+            'Rainbet username submitted successfully. Waiting for admin verification.',
+          rainbetUsername: trimmedUsername,
+        });
+      } catch (error) {
+        logger.error('Submit Rainbet username error:', {
+          userId: req.user.id,
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        throw error;
+      }
+    }
+  );
+
+  // Submit Kick username (can only be done once by user)
+  static submitKickUsername = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user) {
+        throw createError.unauthorized('Authentication required');
+      }
+
+      const { kickUsername } = req.body;
+
+      if (!kickUsername || typeof kickUsername !== 'string') {
+        throw createError.badRequest('Kick username is required');
+      }
+
+      const trimmedUsername = kickUsername.trim();
+
+      if (trimmedUsername.length < 3 || trimmedUsername.length > 50) {
+        throw createError.badRequest(
+          'Kick username must be between 3 and 50 characters'
+        );
+      }
+
+      try {
+        // Check if user already has a Kick username
+        const userSession = await AuthService.getUserSession(
+          req.headers.authorization?.substring(7) || ''
+        );
+
+        if (userSession?.kickUsername) {
+          throw createError.badRequest(
+            'Kick username already set. Contact an admin to change it.'
+          );
+        }
+
+        // Update user's Kick username
+        await AuthService.updateKickUsername(req.user.id, trimmedUsername);
+
+        logger.info(
+          `User ${req.user.discordId} submitted Kick username: ${trimmedUsername}`
+        );
+
+        res.json({
+          success: true,
+          message:
+            'Kick username submitted successfully. Waiting for admin verification.',
+          kickUsername: trimmedUsername,
+        });
+      } catch (error) {
+        logger.error('Submit Kick username error:', {
+          userId: req.user.id,
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        throw error;
+      }
+    }
+  );
 }

@@ -269,6 +269,170 @@ export class AdminController {
     }
   );
 
+  static verifyKickUsername = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) {
+        throw createError.forbidden('Admin access required');
+      }
+
+      const { userId } = req.params;
+      const { verified } = req.body;
+
+      if (!userId) {
+        throw createError.badRequest('User ID is required');
+      }
+
+      try {
+        await AdminService.verifyKickUsername(
+          userId,
+          verified !== false,
+          req.user.id
+        );
+
+        logger.info(
+          `Admin ${req.user.id} verified Kick username for user ${userId}`
+        );
+
+        res.json({
+          success: true,
+          message: 'Kick username verified successfully',
+          data: {
+            userId,
+            verified: verified !== false,
+            verifiedBy: req.user.id,
+            verifiedAt: new Date(),
+          },
+        });
+      } catch (error) {
+        logger.error('Error verifying Kick username:', error);
+        throw error;
+      }
+    }
+  );
+
+  static editKickUsername = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) {
+        throw createError.forbidden('Admin access required');
+      }
+
+      const { userId } = req.params;
+      const { kickUsername } = req.body;
+
+      if (!userId) {
+        throw createError.badRequest('User ID is required');
+      }
+
+      try {
+        await AdminService.editKickUsername(
+          userId,
+          kickUsername || null,
+          req.user.id
+        );
+
+        logger.info(
+          `Admin ${req.user.id} edited Kick username for user ${userId}`
+        );
+
+        res.json({
+          success: true,
+          message: 'Kick username updated successfully',
+          data: {
+            userId,
+            kickUsername: kickUsername || null,
+            updatedBy: req.user.id,
+            updatedAt: new Date(),
+          },
+        });
+      } catch (error) {
+        logger.error('Error editing Kick username:', error);
+        throw error;
+      }
+    }
+  );
+
+  static editRainbetUsername = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) {
+        throw createError.forbidden('Admin access required');
+      }
+
+      const { userId } = req.params;
+      const { rainbetUsername } = req.body;
+
+      if (!userId) {
+        throw createError.badRequest('User ID is required');
+      }
+
+      try {
+        await AdminService.editRainbetUsername(
+          userId,
+          rainbetUsername || null,
+          req.user.id
+        );
+
+        logger.info(
+          `Admin ${req.user.id} edited Rainbet username for user ${userId}`
+        );
+
+        res.json({
+          success: true,
+          message: 'Rainbet username updated successfully',
+          data: {
+            userId,
+            rainbetUsername: rainbetUsername || null,
+            updatedBy: req.user.id,
+            updatedAt: new Date(),
+          },
+        });
+      } catch (error) {
+        logger.error('Error editing Rainbet username:', error);
+        throw error;
+      }
+    }
+  );
+
+  static verifyRainbetUsername = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) {
+        throw createError.forbidden('Admin access required');
+      }
+
+      const { userId } = req.params;
+      const { verified } = req.body;
+
+      if (!userId) {
+        throw createError.badRequest('User ID is required');
+      }
+
+      try {
+        await AdminService.verifyRainbetUsername(
+          userId,
+          verified !== false,
+          req.user.id
+        );
+
+        logger.info(
+          `Admin ${req.user.id} verified Rainbet username for user ${userId}`
+        );
+
+        res.json({
+          success: true,
+          message: 'Rainbet username verified successfully',
+          data: {
+            userId,
+            verified: verified !== false,
+            verifiedBy: req.user.id,
+            verifiedAt: new Date(),
+          },
+        });
+      } catch (error) {
+        logger.error('Error verifying Rainbet username:', error);
+        throw error;
+      }
+    }
+  );
+
   static deleteUser = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
       if (!req.user?.isAdmin) {

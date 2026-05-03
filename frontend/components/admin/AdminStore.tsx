@@ -24,37 +24,8 @@ export default function AdminStore() {
   }, []);
 
   const loadItems = async () => {
-    // TODO: Implement API call
-    // Mock data for now
-    setItems([
-      {
-        id: "1",
-        name: "Custom Emote",
-        description: "Get a custom emote in chat",
-        price: 5000,
-        category: "perks",
-        stock: -1,
-        isActive: true,
-      },
-      {
-        id: "2",
-        name: "VIP Badge",
-        description: "VIP badge next to your name",
-        price: 10000,
-        category: "badges",
-        stock: -1,
-        isActive: true,
-      },
-      {
-        id: "3",
-        name: "Shoutout",
-        description: "Get a shoutout during stream",
-        price: 2000,
-        category: "perks",
-        stock: 5,
-        isActive: true,
-      },
-    ]);
+    // Store feature will be implemented with Kick OAuth
+    setItems([]);
     setLoading(false);
   };
 
@@ -97,71 +68,81 @@ export default function AdminStore() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {items.map((item) => (
-          <motion.div
-            key={item.id}
-            whileHover={{ scale: 1.02 }}
-            className={`rounded-lg p-4 border-2 ${
-              item.isActive
-                ? "bg-purple-500/10 border-purple-500/30"
-                : "bg-gray-500/10 border-gray-500/30 opacity-60"
-            }`}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <h3 className="text-lg font-bold text-white">{item.name}</h3>
-              <button
-                onClick={() => toggleActive(item.id)}
-                className={`px-2 py-1 rounded text-xs font-semibold ${
-                  item.isActive
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-500 text-white"
-                }`}
-              >
-                {item.isActive ? "Active" : "Inactive"}
-              </button>
-            </div>
-
-            {item.description && (
-              <p className="text-gray-400 text-sm mb-3">{item.description}</p>
-            )}
-
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400">Price:</span>
-                <span className="text-purple-400 font-semibold">
-                  💎 {item.price.toLocaleString()}
-                </span>
+      {items.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">🛒</div>
+          <p className="text-gray-400 text-lg mb-2">No store items yet</p>
+          <p className="text-gray-500 text-sm">
+            Store feature will be available after Kick OAuth implementation
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {items.map((item) => (
+            <motion.div
+              key={item.id}
+              whileHover={{ scale: 1.02 }}
+              className={`rounded-lg p-4 border-2 ${
+                item.isActive
+                  ? "bg-purple-500/10 border-purple-500/30"
+                  : "bg-gray-500/10 border-gray-500/30 opacity-60"
+              }`}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <h3 className="text-lg font-bold text-white">{item.name}</h3>
+                <button
+                  onClick={() => toggleActive(item.id)}
+                  className={`px-2 py-1 rounded text-xs font-semibold ${
+                    item.isActive
+                      ? "bg-green-500 text-white"
+                      : "bg-gray-500 text-white"
+                  }`}
+                >
+                  {item.isActive ? "Active" : "Inactive"}
+                </button>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400">Category:</span>
-                <span className="text-white capitalize">{item.category}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400">Stock:</span>
-                <span className="text-white">
-                  {item.stock === -1 ? "Unlimited" : item.stock}
-                </span>
-              </div>
-            </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => setEditingItem(item)}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded transition-colors text-sm font-semibold"
-              >
-                ✏️ Edit
-              </button>
-              <button
-                onClick={() => deleteItem(item.id)}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded transition-colors text-sm font-semibold"
-              >
-                🗑️ Delete
-              </button>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+              {item.description && (
+                <p className="text-gray-400 text-sm mb-3">{item.description}</p>
+              )}
+
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-400">Price:</span>
+                  <span className="text-purple-400 font-semibold">
+                    💎 {item.price.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-400">Category:</span>
+                  <span className="text-white capitalize">{item.category}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-400">Stock:</span>
+                  <span className="text-white">
+                    {item.stock === -1 ? "Unlimited" : item.stock}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEditingItem(item)}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded transition-colors text-sm font-semibold"
+                >
+                  ✏️ Edit
+                </button>
+                <button
+                  onClick={() => deleteItem(item.id)}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded transition-colors text-sm font-semibold"
+                >
+                  🗑️ Delete
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       {/* Create/Edit Item Modal */}
       {(showCreateModal || editingItem) && (

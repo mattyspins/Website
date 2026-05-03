@@ -1,1 +1,7 @@
-{}
+{
+  "/leaderboard/[id]/page": "app/leaderboard/[id]/page.js",
+  "/admin/leaderboards/page": "app/admin/leaderboards/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/admin/leaderboards/[id]/page": "app/admin/leaderboards/[id]/page.js",
+  "/admin/audit-logs/page": "app/admin/audit-logs/page.js"
+}

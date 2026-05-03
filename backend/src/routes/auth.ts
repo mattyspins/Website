@@ -41,13 +41,32 @@ router.post('/refresh', refreshLimiter, AuthController.refreshToken);
 router.get('/status', optionalAuthMiddleware, AuthController.getAuthStatus);
 
 // Protected routes
-router.post(
-  '/kick/verify',
+router.get(
+  '/kick/initiate',
   authMiddleware,
-  AuthController.initiateKickVerification
+  authLimiter,
+  AuthController.initiateKickAuth
 );
+router.get(
+  '/kick/callback',
+  authMiddleware,
+  authLimiter,
+  AuthController.handleKickCallback
+);
+router.delete('/kick/unlink', authMiddleware, AuthController.unlinkKickAccount);
+router.get('/kick/status', authMiddleware, AuthController.getKickStatus);
 router.get('/me', authMiddleware, AuthController.getCurrentUser);
 router.post('/logout', authMiddleware, AuthController.logout);
 router.get('/validate', authMiddleware, AuthController.validateToken);
+router.post(
+  '/kick-username',
+  authMiddleware,
+  AuthController.submitKickUsername
+);
+router.post(
+  '/rainbet-username',
+  authMiddleware,
+  AuthController.submitRainbetUsername
+);
 
 export default router;

@@ -21,7 +21,7 @@ const consoleFormat = winston.format.combine(
 );
 
 export const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
+  level: process.env['LOG_LEVEL'] || 'info',
   format: logFormat,
   defaultMeta: { service: 'streaming-backend' },
   transports: [
@@ -48,7 +48,7 @@ export const logger = winston.createLogger({
 });
 
 // If we're not in production, log to the console with a simple format
-if (process.env.NODE_ENV !== 'production') {
+if (process.env['NODE_ENV'] !== 'production') {
   logger.add(
     new winston.transports.Console({
       format: consoleFormat,

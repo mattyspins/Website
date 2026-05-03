@@ -27,7 +27,7 @@ export const errorHandler = (
   error: AppError,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void => {
   const { statusCode = 500, message, stack } = error;
 
@@ -46,7 +46,7 @@ export const errorHandler = (
   const response = {
     error: {
       message,
-      ...(process.env.NODE_ENV === 'development' && { stack }),
+      ...(process.env['NODE_ENV'] === 'development' && { stack }),
     },
     timestamp: new Date().toISOString(),
     path: req.url,

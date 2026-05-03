@@ -127,10 +127,14 @@ export class RedisService {
         const leaderboard: Array<{ member: string; score: number }> = [];
 
         for (let i = 0; i < result.length; i += 2) {
-          leaderboard.push({
-            member: result[i],
-            score: parseFloat(result[i + 1]),
-          });
+          const member = result[i];
+          const scoreStr = result[i + 1];
+          if (member && scoreStr) {
+            leaderboard.push({
+              member: member,
+              score: parseFloat(scoreStr),
+            });
+          }
         }
 
         return leaderboard;

@@ -9,7 +9,13 @@ import AdminStore from "@/components/admin/AdminStore";
 import AdminStats from "@/components/admin/AdminStats";
 import { API_ENDPOINTS } from "@/lib/api";
 
-type TabType = "overview" | "users" | "schedule" | "raffles" | "store";
+type TabType =
+  | "overview"
+  | "users"
+  | "leaderboards"
+  | "schedule"
+  | "raffles"
+  | "store";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -60,9 +66,11 @@ export default function AdminDashboard() {
   const tabs = [
     { id: "overview", label: "📊 Overview", icon: "📊" },
     { id: "users", label: "👥 Users", icon: "👥" },
+    { id: "leaderboards", label: "🏆 Leaderboards", icon: "🏆" },
     { id: "schedule", label: "📅 Schedule", icon: "📅" },
-    { id: "raffles", label: "🎟️ Raffles", icon: "🎟️" },
-    { id: "store", label: "🛒 Store", icon: "🛒" },
+    // Raffles and Store will be available after Kick OAuth implementation
+    // { id: "raffles", label: "🎟️ Raffles", icon: "🎟️" },
+    // { id: "store", label: "🛒 Store", icon: "🛒" },
   ];
 
   return (
@@ -76,12 +84,20 @@ export default function AdminDashboard() {
             </h1>
             <p className="text-gray-400">Manage your streaming platform</p>
           </div>
-          <button
-            onClick={() => router.push("/")}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            Back to Home
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push("/admin/leaderboards")}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors font-semibold"
+            >
+              🏆 Manage Leaderboards
+            </button>
+            <button
+              onClick={() => router.push("/")}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Back to Home
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -110,9 +126,55 @@ export default function AdminDashboard() {
         <div>
           {activeTab === "overview" && <AdminStats />}
           {activeTab === "users" && <AdminUsers />}
+          {activeTab === "leaderboards" && (
+            <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">
+                  Leaderboard Management
+                </h2>
+                <button
+                  onClick={() => (window.location.href = "/admin/leaderboards")}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors font-semibold"
+                >
+                  ➕ Create New Leaderboard
+                </button>
+              </div>
+              <p className="text-gray-300 mb-4">
+                Click the button above to create a new leaderboard or{" "}
+                <a
+                  href="/admin/leaderboards"
+                  className="text-purple-400 hover:text-purple-300 underline"
+                >
+                  view all leaderboards
+                </a>
+                .
+              </p>
+              <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+                <h3 className="text-lg font-bold text-white mb-2">
+                  Quick Guide:
+                </h3>
+                <ul className="text-gray-300 space-y-2">
+                  <li>
+                    • <strong>Create Leaderboard:</strong> Set title,
+                    description, dates, and prize pool
+                  </li>
+                  <li>
+                    • <strong>Add Wagers:</strong> Manually add user wagers to
+                    track rankings
+                  </li>
+                  <li>
+                    • <strong>Real-time Updates:</strong> Rankings update
+                    automatically as wagers are added
+                  </li>
+                  <li>
+                    • <strong>Export CSV:</strong> Download leaderboard data for
+                    record keeping
+                  </li>
+                </ul>
+              </div>
+            </div>
+          )}
           {activeTab === "schedule" && <AdminSchedule />}
-          {activeTab === "raffles" && <AdminRaffles />}
-          {activeTab === "store" && <AdminStore />}
         </div>
       </div>
     </div>

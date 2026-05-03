@@ -36,9 +36,14 @@ export interface UserSession {
   displayName: string;
   avatar: string | null;
   points: number;
+  totalEarned?: number;
+  totalSpent?: number;
   isAdmin: boolean;
   isModerator: boolean;
   kickUsername?: string;
+  rainbetUsername?: string;
+  rainbetVerified?: boolean;
+  createdAt?: string;
 }
 
 export class AuthService {
@@ -367,9 +372,14 @@ export class AuthService {
         displayName: user.displayName,
         avatar: user.avatarUrl,
         points: user.points,
+        totalEarned: user.totalEarned,
+        totalSpent: user.totalSpent,
         isAdmin: user.isAdmin,
         isModerator: user.isModerator,
         kickUsername: user.kickUsername || undefined,
+        rainbetUsername: user.rainbetUsername || undefined,
+        rainbetVerified: user.rainbetVerified,
+        createdAt: user.createdAt.toISOString(),
       };
 
       // Cache in Redis
@@ -398,6 +408,85 @@ export class AuthService {
         stack: error instanceof Error ? error.stack : undefined,
       });
       // Don't throw error as this is not critical
+    }
+  }
+
+  // Update Rainbet username (can only be done once by user)
+  static async updateRainbetUsername(
+    userId: string,
+    rainbetUsername: string
+  ): Promise<void> {
+    try {
+      // Check if user already has a Rainbet username
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { rainbetUsername: true },
+      });
+
+      if (user?.rainbetUsername) {
+        throw createError.badRequest(
+          'Rainbet username already set. Contact an admin to change it.'
+        );
+      }
+
+      // Update user's Rainbet username (unverified)
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          rainbetUsername,
+          rainbetVerified: false, // Admin needs to verify
+          updatedAt: new Date(),
+        },
+      });
+
+      logger.info(
+        `Rainbet username set for user ${userId}: ${rainbetUsername}`
+      );
+    } catch (error) {
+      logger.error('Error updating Rainbet username:', {
+        userId,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error;
+    }
+  }
+
+  // Update Kick username (can only be done once by user)
+  static async updateKickUsername(
+    userId: string,
+    kickUsername: string
+  ): Promise<void> {
+    try {
+      // Check if user already has a Kick username
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { kickUsername: true },
+      });
+
+      if (user?.kickUsername) {
+        throw createError.badRequest(
+          'Kick username already set. Contact an admin to change it.'
+        );
+      }
+
+      // Update user's Kick username
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          kickUsername,
+          updatedAt: new Date(),
+        },
+      });
+
+      logger.info(`Kick username set for user ${userId}: ${kickUsername}`);
+    } catch (error) {
+      logger.error('Error updating Kick username:', {
+        userId,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error;
     }
   }
 }

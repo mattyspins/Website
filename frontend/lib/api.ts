@@ -11,6 +11,47 @@ export const getAuthHeaders = () => {
   };
 };
 
+// API Client
+export const api = {
+  get: async (endpoint: string, options?: RequestInit) => {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+      ...options,
+    });
+    return response.json();
+  },
+
+  post: async (endpoint: string, data?: any, options?: RequestInit) => {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+      ...options,
+    });
+    return response.json();
+  },
+
+  put: async (endpoint: string, data?: any, options?: RequestInit) => {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+      ...options,
+    });
+    return response.json();
+  },
+
+  delete: async (endpoint: string, options?: RequestInit) => {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+      ...options,
+    });
+    return response.json();
+  },
+};
+
 // API endpoints
 export const API_ENDPOINTS = {
   // Auth
@@ -29,6 +70,14 @@ export const API_ENDPOINTS = {
     `${API_URL}/api/admin/users/${userId}/suspend`,
   ADMIN_USER_UNSUSPEND: (userId: string) =>
     `${API_URL}/api/admin/users/${userId}/unsuspend`,
+  ADMIN_VERIFY_RAINBET: (userId: string) =>
+    `${API_URL}/api/admin/users/${userId}/verify-rainbet`,
+  ADMIN_VERIFY_KICK: (userId: string) =>
+    `${API_URL}/api/admin/users/${userId}/verify-kick`,
+  ADMIN_EDIT_KICK_USERNAME: (userId: string) =>
+    `${API_URL}/api/admin/users/${userId}/kick-username`,
+  ADMIN_EDIT_RAINBET_USERNAME: (userId: string) =>
+    `${API_URL}/api/admin/users/${userId}/rainbet-username`,
   ADMIN_STATS: `${API_URL}/api/admin/dashboard/stats`,
   ADMIN_AUDIT_LOGS: `${API_URL}/api/admin/audit-logs`,
 
@@ -43,5 +92,25 @@ export const API_ENDPOINTS = {
     `${API_URL}/api/raffles/${raffleId}/purchase`,
 
   // Users
-  USERS_RAINBET: `${API_URL}/api/users/rainbet`,
+  USERS_KICK: `${API_URL}/api/auth/kick-username`,
+  USERS_RAINBET: `${API_URL}/api/auth/rainbet-username`,
+
+  // Leaderboards (Manual)
+  LEADERBOARDS_ACTIVE: `${API_URL}/api/manual-leaderboards?status=active`,
+  LEADERBOARDS_CREATE: `${API_URL}/api/manual-leaderboards`,
+  LEADERBOARDS_GET: (id: string) => `${API_URL}/api/manual-leaderboards/${id}`,
+  LEADERBOARDS_UPDATE: (id: string) =>
+    `${API_URL}/api/manual-leaderboards/${id}`,
+  LEADERBOARDS_DELETE: (id: string) =>
+    `${API_URL}/api/manual-leaderboards/admin/${id}`,
+  LEADERBOARDS_ADD_WAGER: (id: string) =>
+    `${API_URL}/api/manual-leaderboards/admin/${id}/wagers`,
+  LEADERBOARDS_EXPORT_CSV: (id: string) =>
+    `${API_URL}/api/manual-leaderboards/admin/${id}/export`,
+
+  // Schedule
+  SCHEDULE_CURRENT: `${API_URL}/api/schedule/current`,
+  SCHEDULE_TODAY: `${API_URL}/api/schedule/today`,
+  SCHEDULE_LIVE: `${API_URL}/api/schedule/live`,
+  SCHEDULE_UPDATE: `${API_URL}/api/schedule/update`,
 };

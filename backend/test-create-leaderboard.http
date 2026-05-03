@@ -1,0 +1,33 @@
+### Test Create Leaderboard
+POST http://localhost:3001/api/manual-leaderboards/admin/create
+Content-Type: application/json
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+
+{
+  "title": "Test Weekly Leaderboard",
+  "description": "A test leaderboard for the week",
+  "prizePool": "$500",
+  "startDate": "2026-05-02T10:00:00.000Z",
+  "endDate": "2026-05-09T10:00:00.000Z",
+  "prizes": [
+    {
+      "position": 1,
+      "prizeAmount": "$300",
+      "prizeDescription": "First place prize"
+    },
+    {
+      "position": 2,
+      "prizeAmount": "$150",
+      "prizeDescription": "Second place prize"
+    },
+    {
+      "position": 3,
+      "prizeAmount": "$50",
+      "prizeDescription": "Third place prize"
+    }
+  ]
+}
+
+### Test Get Leaderboards
+GET http://localhost:3001/api/manual-leaderboards?limit=20
+Content-Type: application/json

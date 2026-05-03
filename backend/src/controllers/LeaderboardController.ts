@@ -1,472 +1,385 @@
 import { Request, Response } from 'express';
-import {
-  LeaderboardService,
-  LeaderboardPeriod,
-  ScoreType,
-} from '@/services/LeaderboardService';
-import { asyncHandler, createError } from '@/middleware/errorHandler';
-import { AuthenticatedRequest } from '@/middleware/auth';
-import { logger } from '@/utils/logger';
+import { LeaderboardService } from '../services/LeaderboardService';
+import { logger } from '../utils/logger';
+import { io } from '../index';
+
+/**
+ * Leaderboard Controller
+ * Handles HTTP requests for manual leaderboard management
+ * Feature: kick-oauth-manual-leaderboard
+ */
 
 export class LeaderboardController {
-  // Get leaderboard rankings
-  static getLeaderboard = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
-      const {
-        period = 'daily',
-        scoreType = 'points',
-        limit = 50,
-        page = 1,
-        pageSize = 20,
-      } = req.query;
+  /**
+   * Create a new leaderboard (Admin only)
+   * POST /api/admin/leaderboards
+   * Validates: Requirements 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7
+   */
+  static async createLeaderboard(req: Request, res: Response): Promise<void> {
+    try {
+      const { title, description, prizePool, startDate, endDate, prizes } =
+        req.body;
+      const userId = (req as any).user?.id;
 
-      // Validate parameters
-      const validPeriods: LeaderboardPeriod[] = [
-        'daily',
-        'weekly',
-        'monthly',
-        'all-time',
-      ];
-      const validScoreTypes: ScoreType[] = [
-        'points',
-        'wins',
-        'viewing_time',
-        'engagement',
-      ];
-
-      if (!validPeriods.includes(period as LeaderboardPeriod)) {
-        throw createError.badRequest(
-          'Invalid period. Must be one of: daily, weekly, monthly, all-time'
-        );
-      }
-
-      if (!validScoreTypes.includes(scoreType as ScoreType)) {
-        throw createError.badRequest(
-          'Invalid scoreType. Must be one of: points, wins, viewing_time, engagement'
-        );
-      }
-
-      const limitNum = Math.min(parseInt(limit as string) || 50, 100); // Max 100
-      const pageNum = Math.max(parseInt(page as string) || 1, 1);
-      const pageSizeNum = Math.min(parseInt(pageSize as string) || 20, 50); // Max 50
-
-      try {
-        if (pageNum > 1) {
-          // Paginated request
-          const result = await LeaderboardService.getLeaderboardPage(
-            period as LeaderboardPeriod,
-            scoreType as ScoreType,
-            pageNum,
-            pageSizeNum,
-            req.user?.id
-          );
-
-          res.json({
-            success: true,
-            data: {
-              entries: result.entries,
-              pagination: {
-                currentPage: result.currentPage,
-                totalPages: result.totalPages,
-                totalEntries: result.totalEntries,
-                pageSize: pageSizeNum,
-              },
-              period,
-              scoreType,
-            },
-          });
-        } else {
-          // Simple list request
-          const entries = await LeaderboardService.getCurrentRankings(
-            period as LeaderboardPeriod,
-            scoreType as ScoreType,
-            limitNum,
-            req.user?.id
-          );
-
-          res.json({
-            success: true,
-            data: {
-              entries,
-              period,
-              scoreType,
-              total: entries.length,
-            },
-          });
-        }
-      } catch (error) {
-        logger.error('Error getting leaderboard:', error);
-        throw createError.internal('Failed to get leaderboard');
-      }
-    }
-  );
-
-  // Get user's rank
-  static getUserRank = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
-      if (!req.user) {
-        throw createError.unauthorized('Authentication required');
-      }
-
-      const { period = 'daily', scoreType = 'points' } = req.query;
-
-      const { userId } = req.params;
-
-      // Validate parameters
-      const validPeriods: LeaderboardPeriod[] = [
-        'daily',
-        'weekly',
-        'monthly',
-        'all-time',
-      ];
-      const validScoreTypes: ScoreType[] = [
-        'points',
-        'wins',
-        'viewing_time',
-        'engagement',
-      ];
-
-      if (!validPeriods.includes(period as LeaderboardPeriod)) {
-        throw createError.badRequest('Invalid period');
-      }
-
-      if (!validScoreTypes.includes(scoreType as ScoreType)) {
-        throw createError.badRequest('Invalid scoreType');
-      }
-
-      // Check if user can access this rank (own rank or admin)
-      const targetUserId = userId || req.user.id;
-      if (targetUserId !== req.user.id && !req.user.isAdmin) {
-        throw createError.forbidden('Cannot access other user ranks');
-      }
-
-      try {
-        const userRank = await LeaderboardService.getUserRank(
-          targetUserId,
-          period as LeaderboardPeriod,
-          scoreType as ScoreType
-        );
-
-        if (!userRank) {
-          return res.json({
-            success: true,
-            data: {
-              userId: targetUserId,
-              rank: null,
-              score: 0,
-              totalParticipants: 0,
-              percentile: 0,
-              period,
-              scoreType,
-              message: 'User not found in leaderboard',
-            },
-          });
-        }
-
-        res.json({
-          success: true,
-          data: {
-            ...userRank,
-            period,
-            scoreType,
-          },
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
         });
-      } catch (error) {
-        logger.error('Error getting user rank:', error);
-        throw createError.internal('Failed to get user rank');
+        return;
       }
+
+      const leaderboard = await LeaderboardService.createLeaderboard({
+        title,
+        description,
+        prizePool,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        prizes: prizes || [],
+        createdBy: userId,
+      });
+
+      res.status(201).json({
+        success: true,
+        leaderboard,
+      });
+    } catch (error: any) {
+      logger.error('Error in createLeaderboard:', error);
+      res.status(400).json({
+        success: false,
+        error: error.message || 'Failed to create leaderboard',
+      });
     }
-  );
+  }
 
-  // Get user's historical rankings
-  static getUserHistory = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
-      if (!req.user) {
-        throw createError.unauthorized('Authentication required');
-      }
+  /**
+   * Get all leaderboards with optional status filter
+   * GET /api/leaderboards?status=active&limit=10
+   * Validates: Requirements 8.1, 8.2
+   */
+  static async getLeaderboards(req: Request, res: Response): Promise<void> {
+    try {
+      const { status, limit } = req.query;
+      const limitNum = limit ? parseInt(limit as string, 10) : 10;
 
-      const { period = 'daily', scoreType = 'points', limit = 30 } = req.query;
+      const leaderboards = await LeaderboardService.getLeaderboards(
+        status as string | undefined,
+        limitNum
+      );
 
-      const { userId } = req.params;
+      res.status(200).json({
+        success: true,
+        leaderboards,
+      });
+    } catch (error: any) {
+      logger.error('Error in getLeaderboards:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to fetch leaderboards',
+      });
+    }
+  }
 
-      // Check if user can access this history (own history or admin)
-      const targetUserId = userId || req.user.id;
-      if (targetUserId !== req.user.id && !req.user.isAdmin) {
-        throw createError.forbidden('Cannot access other user history');
-      }
+  /**
+   * Get leaderboard details with rankings
+   * GET /api/leaderboards/:id
+   * Validates: Requirements 8.1, 8.2, 8.3, 8.4, 8.5, 8.6
+   */
+  static async getLeaderboardDetails(
+    req: Request,
+    res: Response
+  ): Promise<void> {
+    try {
+      const { id } = req.params;
+      const userId = (req as any).user?.id;
 
-      const limitNum = Math.min(parseInt(limit as string) || 30, 100);
+      const leaderboard = await LeaderboardService.getLeaderboardById(id);
 
-      try {
-        const history = await LeaderboardService.getHistoricalRankings(
-          targetUserId,
-          period as LeaderboardPeriod,
-          scoreType as ScoreType,
-          limitNum
-        );
-
-        res.json({
-          success: true,
-          data: {
-            userId: targetUserId,
-            history,
-            period,
-            scoreType,
-            total: history.length,
-          },
+      if (!leaderboard) {
+        res.status(404).json({
+          success: false,
+          error: 'Leaderboard not found',
         });
-      } catch (error) {
-        logger.error('Error getting user history:', error);
-        throw createError.internal('Failed to get user history');
+        return;
       }
+
+      const rankings = await LeaderboardService.getRankings(id);
+
+      // Find user's rank if logged in
+      let userRank: number | undefined;
+      if (userId) {
+        const userRanking = rankings.find(r => r.userId === userId);
+        userRank = userRanking?.rank;
+      }
+
+      // Calculate time remaining
+      const now = new Date();
+      const endDate = new Date(leaderboard.endDate);
+      const timeRemaining = Math.max(0, endDate.getTime() - now.getTime());
+
+      res.status(200).json({
+        success: true,
+        data: {
+          leaderboard,
+          rankings,
+          userRank,
+          timeRemaining,
+        },
+      });
+    } catch (error: any) {
+      logger.error('Error in getLeaderboardDetails:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to fetch leaderboard details',
+      });
     }
-  );
+  }
 
-  // Get multiple leaderboards (dashboard view)
-  static getMultipleLeaderboards = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
-      const {
-        periods = 'daily,weekly,monthly',
-        scoreType = 'points',
-        limit = 10,
-      } = req.query;
+  /**
+   * Add a wager to a leaderboard (Admin only)
+   * POST /api/admin/leaderboards/:id/wagers
+   * Validates: Requirements 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7
+   */
+  static async addWager(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { userId, amount, notes } = req.body;
+      const adminId = (req as any).user?.id;
 
-      const periodList = (periods as string).split(',') as LeaderboardPeriod[];
-      const limitNum = Math.min(parseInt(limit as string) || 10, 20);
-
-      // Validate periods
-      const validPeriods: LeaderboardPeriod[] = [
-        'daily',
-        'weekly',
-        'monthly',
-        'all-time',
-      ];
-      const invalidPeriods = periodList.filter(p => !validPeriods.includes(p));
-
-      if (invalidPeriods.length > 0) {
-        throw createError.badRequest(
-          `Invalid periods: ${invalidPeriods.join(', ')}`
-        );
+      if (!adminId) {
+        res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
+        });
+        return;
       }
 
-      try {
-        const leaderboards: any = {};
+      const wager = await LeaderboardService.addWager(id, {
+        userId,
+        amount: parseFloat(amount),
+        notes,
+        verifiedBy: adminId,
+      });
 
-        for (const period of periodList) {
-          const entries = await LeaderboardService.getCurrentRankings(
-            period,
-            scoreType as ScoreType,
-            limitNum,
-            req.user?.id
+      // Get updated total for the user
+      const userTotal = await LeaderboardService.getUserTotalWagers(id, userId);
+
+      // Emit real-time update via Socket.IO
+      io.to(`leaderboard:${id}`).emit('wagerAdded', {
+        leaderboardId: id,
+        wager,
+        userTotal,
+      });
+
+      // Fetch and emit updated rankings
+      const rankings = await LeaderboardService.getRankings(id);
+      io.to(`leaderboard:${id}`).emit('rankingsUpdated', {
+        leaderboardId: id,
+        rankings,
+      });
+
+      res.status(201).json({
+        success: true,
+        wager,
+        userTotal,
+      });
+    } catch (error: any) {
+      logger.error('Error in addWager:', error);
+      res.status(400).json({
+        success: false,
+        error: error.message || 'Failed to add wager',
+      });
+    }
+  }
+
+  /**
+   * Export leaderboard data (Admin only)
+   * GET /api/admin/leaderboards/:id/export
+   * Validates: Requirements 24.1, 24.2, 24.3, 24.4, 24.5
+   */
+  static async exportLeaderboard(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { format } = req.query;
+
+      const exportData = await LeaderboardService.exportLeaderboardData(id);
+
+      if (format === 'csv') {
+        // Generate CSV
+        const csvRows: string[] = [];
+
+        // Header
+        csvRows.push(
+          'Rank,Username,Kick Username,Total Wagers,Wager Count,Prize,Prize Description'
+        );
+
+        // Data rows
+        for (const ranking of exportData.rankings) {
+          csvRows.push(
+            [
+              ranking.rank,
+              `"${ranking.username}"`,
+              ranking.kickUsername ? `"${ranking.kickUsername}"` : '',
+              ranking.totalWagers.toFixed(2),
+              ranking.wagerCount,
+              ranking.prize ? `"${ranking.prize}"` : '',
+              ranking.prizeDescription ? `"${ranking.prizeDescription}"` : '',
+            ].join(',')
           );
-
-          leaderboards[period] = {
-            entries,
-            period,
-            scoreType,
-            total: entries.length,
-          };
         }
 
-        res.json({
-          success: true,
-          data: leaderboards,
-        });
-      } catch (error) {
-        logger.error('Error getting multiple leaderboards:', error);
-        throw createError.internal('Failed to get leaderboards');
-      }
-    }
-  );
-
-  // Admin: Reset leaderboard
-  static resetLeaderboard = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
-      if (!req.user?.isAdmin) {
-        throw createError.forbidden('Admin access required');
-      }
-
-      const { period, scoreType = 'points' } = req.body;
-
-      if (!period) {
-        throw createError.badRequest('Period is required');
-      }
-
-      const validPeriods: LeaderboardPeriod[] = [
-        'daily',
-        'weekly',
-        'monthly',
-        'all-time',
-      ];
-      if (!validPeriods.includes(period)) {
-        throw createError.badRequest('Invalid period');
-      }
-
-      try {
-        await LeaderboardService.resetLeaderboard(period, scoreType);
-
-        logger.info(
-          `Leaderboard reset by admin ${req.user.id}: ${period} ${scoreType}`
+        // Metadata
+        csvRows.push('');
+        csvRows.push('Metadata');
+        csvRows.push(`Leaderboard Title,"${exportData.leaderboard.title}"`);
+        csvRows.push(`Prize Pool,"${exportData.leaderboard.prizePool}"`);
+        csvRows.push(
+          `Start Date,${exportData.leaderboard.startDate.toISOString()}`
+        );
+        csvRows.push(
+          `End Date,${exportData.leaderboard.endDate.toISOString()}`
+        );
+        csvRows.push(`Status,${exportData.leaderboard.status}`);
+        csvRows.push(
+          `Total Participants,${exportData.metadata.totalParticipants}`
+        );
+        csvRows.push(`Total Wagers,${exportData.metadata.totalWagers}`);
+        csvRows.push(
+          `Average Wager,${exportData.metadata.averageWager.toFixed(2)}`
+        );
+        csvRows.push(
+          `Exported At,${exportData.metadata.exportedAt.toISOString()}`
         );
 
-        res.json({
-          success: true,
-          message: `Leaderboard reset successfully: ${period} ${scoreType}`,
-          data: {
-            period,
-            scoreType,
-            resetAt: new Date(),
-            resetBy: req.user.id,
-          },
-        });
-      } catch (error) {
-        logger.error('Error resetting leaderboard:', error);
-        throw createError.internal('Failed to reset leaderboard');
-      }
-    }
-  );
+        const csv = csvRows.join('\n');
 
-  // Admin: Set manual rank
-  static setManualRank = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
-      if (!req.user?.isAdmin) {
-        throw createError.forbidden('Admin access required');
-      }
-
-      const { userId, rank, period, scoreType = 'points' } = req.body;
-
-      if (!userId || !rank || !period) {
-        throw createError.badRequest('userId, rank, and period are required');
-      }
-
-      if (rank < 1) {
-        throw createError.badRequest('Rank must be positive');
-      }
-
-      const validPeriods: LeaderboardPeriod[] = [
-        'daily',
-        'weekly',
-        'monthly',
-        'all-time',
-      ];
-      if (!validPeriods.includes(period)) {
-        throw createError.badRequest('Invalid period');
-      }
-
-      try {
-        await LeaderboardService.setManualRank(userId, rank, period, scoreType);
-
-        logger.info(
-          `Manual rank set by admin ${req.user.id}: ${userId} -> rank ${rank} in ${period} ${scoreType}`
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="leaderboard-${id}-${Date.now()}.csv"`
         );
-
-        res.json({
+        res.status(200).send(csv);
+      } else {
+        // Return JSON
+        res.status(200).json({
           success: true,
-          message: 'Manual rank set successfully',
-          data: {
-            userId,
-            rank,
-            period,
-            scoreType,
-            setAt: new Date(),
-            setBy: req.user.id,
-          },
+          data: exportData,
         });
-      } catch (error) {
-        logger.error('Error setting manual rank:', error);
-        throw createError.internal('Failed to set manual rank');
       }
+    } catch (error: any) {
+      logger.error('Error in exportLeaderboard:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to export leaderboard',
+      });
     }
-  );
+  }
 
-  // Admin: Update user score
-  static updateUserScore = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
-      if (!req.user?.isAdmin) {
-        throw createError.forbidden('Admin access required');
-      }
+  /**
+   * Update prize distribution (Admin only)
+   * PUT /api/admin/leaderboards/:id/prizes
+   * Validates: Requirements 17.1, 17.2, 17.3, 17.4, 17.5, 17.6, 17.7
+   */
+  static async updatePrizes(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { prizes } = req.body;
+      const adminId = (req as any).user?.id;
 
-      const { userId, scoreType = 'points', value } = req.body;
-
-      if (!userId || value === undefined) {
-        throw createError.badRequest('userId and value are required');
-      }
-
-      if (value < 0) {
-        throw createError.badRequest('Score value must be non-negative');
-      }
-
-      const validScoreTypes: ScoreType[] = [
-        'points',
-        'wins',
-        'viewing_time',
-        'engagement',
-      ];
-      if (!validScoreTypes.includes(scoreType)) {
-        throw createError.badRequest('Invalid scoreType');
-      }
-
-      try {
-        await LeaderboardService.updateUserScore(userId, scoreType, value);
-
-        logger.info(
-          `User score updated by admin ${req.user.id}: ${userId} -> ${scoreType}: ${value}`
-        );
-
-        res.json({
-          success: true,
-          message: 'User score updated successfully',
-          data: {
-            userId,
-            scoreType,
-            value,
-            updatedAt: new Date(),
-            updatedBy: req.user.id,
-          },
+      if (!adminId) {
+        res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
         });
-      } catch (error) {
-        logger.error('Error updating user score:', error);
-        throw createError.internal('Failed to update user score');
+        return;
       }
-    }
-  );
 
-  // Get leaderboard statistics
-  static getLeaderboardStats = asyncHandler(
-    async (req: Request, res: Response) => {
-      const { period = 'daily', scoreType = 'points' } = req.query;
-
-      try {
-        // Get top 10 for statistics
-        const topEntries = await LeaderboardService.getCurrentRankings(
-          period as LeaderboardPeriod,
-          scoreType as ScoreType,
-          10
-        );
-
-        const stats = {
-          period,
-          scoreType,
-          totalParticipants: topEntries.length,
-          topScore: topEntries[0]?.score || 0,
-          averageTopTenScore:
-            topEntries.length > 0
-              ? Math.round(
-                  topEntries.reduce((sum, entry) => sum + entry.score, 0) /
-                    topEntries.length
-                )
-              : 0,
-          lastUpdated: new Date(),
-        };
-
-        res.json({
-          success: true,
-          data: stats,
+      if (!Array.isArray(prizes)) {
+        res.status(400).json({
+          success: false,
+          error: 'Prizes must be an array',
         });
-      } catch (error) {
-        logger.error('Error getting leaderboard stats:', error);
-        throw createError.internal('Failed to get leaderboard statistics');
+        return;
       }
+
+      await LeaderboardService.updatePrizeDistribution(id, prizes);
+
+      res.status(200).json({
+        success: true,
+        message: 'Prize distribution updated successfully',
+      });
+    } catch (error: any) {
+      logger.error('Error in updatePrizes:', error);
+      res.status(400).json({
+        success: false,
+        error: error.message || 'Failed to update prizes',
+      });
     }
-  );
+  }
+
+  /**
+   * Get user's total wagers for a leaderboard
+   * GET /api/leaderboards/:id/user-total
+   * Validates: Requirements 7.5, 20.4
+   */
+  static async getUserTotal(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
+        });
+        return;
+      }
+
+      const total = await LeaderboardService.getUserTotalWagers(id, userId);
+
+      res.status(200).json({
+        success: true,
+        total,
+      });
+    } catch (error: any) {
+      logger.error('Error in getUserTotal:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to get user total',
+      });
+    }
+  }
+
+  /**
+   * Delete a leaderboard (Admin only)
+   * DELETE /api/admin/leaderboards/:id
+   * Validates: Requirements 18.1, 18.2, 18.3, 18.4
+   */
+  static async deleteLeaderboard(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const adminId = (req as any).user?.id;
+
+      if (!adminId) {
+        res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
+        });
+        return;
+      }
+
+      await LeaderboardService.deleteLeaderboard(id);
+
+      res.status(200).json({
+        success: true,
+        message: 'Leaderboard deleted successfully',
+      });
+    } catch (error: any) {
+      logger.error('Error in deleteLeaderboard:', error);
+      res.status(400).json({
+        success: false,
+        error: error.message || 'Failed to delete leaderboard',
+      });
+    }
+  }
 }

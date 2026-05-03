@@ -1,0 +1,90 @@
+### Manual Leaderboard API Tests
+### Base URL
+@baseUrl = http://localhost:3001
+@adminToken = YOUR_ADMIN_TOKEN_HERE
+
+### 1. Health Check
+GET {{baseUrl}}/health
+
+### 2. Get All Leaderboards (Public)
+GET {{baseUrl}}/api/manual-leaderboards?status=active&limit=10
+
+### 3. Create Leaderboard (Admin Only)
+POST {{baseUrl}}/api/manual-leaderboards/admin/create
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "title": "Weekly High Roller Challenge",
+  "description": "Compete for the highest total wagers this week!",
+  "prizePool": "$500",
+  "startDate": "2026-05-01T00:00:00Z",
+  "endDate": "2026-05-08T00:00:00Z",
+  "prizes": [
+    {
+      "position": 1,
+      "prizeAmount": "$250",
+      "prizeDescription": "First Place Winner"
+    },
+    {
+      "position": 2,
+      "prizeAmount": "$150",
+      "prizeDescription": "Second Place"
+    },
+    {
+      "position": 3,
+      "prizeAmount": "$100",
+      "prizeDescription": "Third Place"
+    }
+  ]
+}
+
+### 4. Get Leaderboard Details (Public)
+GET {{baseUrl}}/api/manual-leaderboards/LEADERBOARD_ID_HERE
+
+### 5. Add Wager (Admin Only)
+POST {{baseUrl}}/api/manual-leaderboards/admin/LEADERBOARD_ID_HERE/wagers
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "userId": "USER_ID_HERE",
+  "amount": 1500.50,
+  "notes": "Big win on slots"
+}
+
+### 6. Update Prize Distribution (Admin Only)
+PUT {{baseUrl}}/api/manual-leaderboards/admin/LEADERBOARD_ID_HERE/prizes
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "prizes": [
+    {
+      "position": 1,
+      "prizeAmount": "$300",
+      "prizeDescription": "First Place - Updated"
+    },
+    {
+      "position": 2,
+      "prizeAmount": "$200",
+      "prizeDescription": "Second Place - Updated"
+    }
+  ]
+}
+
+### 7. Export Leaderboard (Admin Only - JSON)
+GET {{baseUrl}}/api/manual-leaderboards/admin/LEADERBOARD_ID_HERE/export
+Authorization: Bearer {{adminToken}}
+
+### 8. Export Leaderboard (Admin Only - CSV)
+GET {{baseUrl}}/api/manual-leaderboards/admin/LEADERBOARD_ID_HERE/export?format=csv
+Authorization: Bearer {{adminToken}}
+
+### 9. Get User Total Wagers (Authenticated)
+GET {{baseUrl}}/api/manual-leaderboards/LEADERBOARD_ID_HERE/user-total
+Authorization: Bearer {{adminToken}}
+
+### 10. Delete Leaderboard (Admin Only)
+DELETE {{baseUrl}}/api/manual-leaderboards/admin/LEADERBOARD_ID_HERE
+Authorization: Bearer {{adminToken}}
