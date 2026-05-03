@@ -1,408 +1,325 @@
-# 🚀 Deployment Checklist
-
-## Pre-Deployment Checks
-
-### ✅ Code Quality
-
-- [x] Removed all test files and mock data
-- [x] Removed unused imports and code
-- [x] All TypeScript errors resolved
-- [x] No console.log statements in production code
-- [x] Proper error handling implemented
-
-### ✅ Security
-
-- [x] Environment variables properly configured
-- [x] Secrets not committed to Git
-- [x] CORS configured correctly
-- [x] Rate limiting enabled
-- [x] Input validation on all endpoints
-- [x] SQL injection prevention (using Prisma ORM)
-- [x] XSS protection enabled
-- [x] CSRF protection for OAuth
-
-### ✅ Database
-
-- [x] Migrations created and tested
-- [x] Database indexes optimized
-- [x] Backup strategy in place
-- [x] Connection pooling configured
-
-### ✅ Features Implemented
-
-- [x] Discord OAuth authentication
-- [x] Manual leaderboard system
-  - [x] Create leaderboards
-  - [x] Add wagers
-  - [x] View rankings
-  - [x] Real-time updates (Socket.IO)
-  - [x] CSV export
-  - [x] Automatic expiration
-- [x] Admin dashboard
-- [x] Coming soon pages (Bonus Hunt, Store, Raffles)
-- [x] Background jobs (leaderboard expiration)
+# 🚀 MattySpins Deployment Checklist
+
+## Phase 1: Pre-Deployment Setup
+
+### 🗄️ Database Setup (AWS RDS)
+
+- [ ] Create AWS RDS PostgreSQL instance
+  - Instance class: `db.t3.micro` (free tier eligible)
+  - Engine: PostgreSQL 15.4+
+  - Storage: 20GB GP2
+  - Enable automated backups
+- [ ] Configure security group for database
+  - Allow PostgreSQL (5432) from EC2 security group
+  - Allow from your IP for initial setup
+- [ ] Note connection details:
+  ```
+  Host: your-db-instance.region.rds.amazonaws.com
+  Port: 5432
+  Database: postgres
+  Username: postgres
+  Password: [your-secure-password]
+  ```
+
+### 🔴 Redis Setup
+
+**Option A: Redis Cloud (Recommended)**
+
+- [ ] Sign up at https://redis.com/try-free/
+- [ ] Create free database (30MB)
+- [ ] Note connection string: `redis://username:password@host:port`
+
+**Option B: AWS ElastiCache**
+
+- [ ] Create ElastiCache Redis cluster
+- [ ] Configure security group
+- [ ] Note endpoint
+
+### 🔐 Discord OAuth Setup
+
+- [ ] Go to https://discord.com/developers/applications
+- [ ] Create new application or use existing
+- [ ] Go to OAuth2 settings
+- [ ] Add redirect URI: `https://yourdomain.com/auth/callback`
+- [ ] Note Client ID and Client Secret
+
+### 🌐 Domain Setup
+
+- [ ] Purchase domain (if needed)
+- [ ] Plan subdomains:
+  - `yourdomain.com` → Frontend (Vercel)
+  - `api.yourdomain.com` → Backend (AWS)
+
+## Phase 2: Backend Deployment (AWS EC2)
+
+### 🖥️ EC2 Instance Setup
+
+- [ ] Launch EC2 instance
+  - AMI: Ubuntu 22.04 LTS
+  - Instance type: `t3.micro` (free tier)
+  - Key pair: Create or use existing
+  - Storage: 8GB GP2 (default)
+- [ ] Configure security group:
+  - SSH (22) from your IP
+  - HTTP (80) from anywhere
+  - HTTPS (443) from anywhere
+  - Custom TCP (3001) from anywhere (temporary)
+- [ ] Note public IP address
+- [ ] Update DNS: Point `api.yourdomain.com` to EC2 IP
+
+### 📦 Server Setup
+
+- [ ] Connect to EC2: `ssh -i your-key.pem ubuntu@your-ec2-ip`
+- [ ] Run deployment script:
+  ```bash
+  # Upload your code to GitHub first
+  wget https://raw.githubusercontent.com/yourusername/your-repo/main/backend/scripts/deploy.sh
+  chmod +x deploy.sh
+  ./deploy.sh
+  ```
+
+### ⚙️ Configuration
+
+- [ ] Create `.env.production` file:
+  ```bash
+  cd /home/ubuntu/mattyspins/backend
+  cp .env.production.example .env.production
+  nano .env.production
+  ```
+- [ ] Fill in all environment variables:
+  - Database URL (RDS connection string)
+  - Redis URL
+  - JWT Secret (generate 32+ character string)
+  - Encryption key (32 characters)
+  - Discord OAuth credentials
+  - CORS origin (your frontend domain)
+
+### 🔄 Application Deployment
+
+- [ ] Build and start application:
+  ```bash
+  npm run build
+  pm2 start ecosystem.config.js --env production
+  pm2 save
+  ```
+- [ ] Test API health: `curl http://localhost:3001/health`
+
+### 🌐 Nginx Configuration
+
+- [ ] Update Nginx config with your domain:
+  ```bash
+  sudo nano /etc/nginx/sites-available/mattyspins-api
+  # Change server_name to api.yourdomain.com
+  sudo nginx -t
+  sudo systemctl reload nginx
+  ```
+
+### 🔒 SSL Certificate
+
+- [ ] Install Certbot:
+  ```bash
+  sudo apt install certbot python3-certbot-nginx -y
+  ```
+- [ ] Get SSL certificate:
+  ```bash
+  sudo certbot --nginx -d api.yourdomain.com
+  ```
+- [ ] Test auto-renewal:
+  ```bash
+  sudo certbot renew --dry-run
+  ```
+
+### ✅ Backend Testing
 
-### ✅ Testing
+- [ ] Test API endpoints:
+  - `https://api.yourdomain.com/health` → Should return OK
+  - `https://api.yourdomain.com/api/manual-leaderboards` → Should return leaderboards
+- [ ] Check PM2 status: `pm2 status`
+- [ ] Check logs: `pm2 logs`
+
+## Phase 3: Frontend Deployment (Vercel)
 
-- [x] Backend API endpoints tested
-- [x] LeaderboardService unit tests passing (13/13)
-- [x] Frontend pages load without errors
-- [x] Real-time updates working
-- [x] Authentication flow tested
+### 📁 Repository Setup
 
----
-
-## Environment Configuration
-
-### Backend (.env)
-
-```env
-# Database
-DATABASE_URL="postgresql://user:password@host:5432/dbname"
-REDIS_URL="redis://host:6379"
-
-# JWT Secrets (CHANGE THESE!)
-JWT_SECRET="generate-new-secret-key-here"
-JWT_REFRESH_SECRET="generate-new-refresh-secret-here"
-JWT_EXPIRES_IN="1h"
-JWT_REFRESH_EXPIRES_IN="7d"
+- [ ] Push code to GitHub (if not already done)
+- [ ] Ensure `frontend/` directory structure is correct
 
-# Discord OAuth
-DISCORD_CLIENT_ID="your-discord-client-id"
-DISCORD_CLIENT_SECRET="your-discord-client-secret"
-DISCORD_REDIRECT_URI="https://yourdomain.com/api/auth/discord/callback"
+### 🚀 Vercel Deployment
 
-# Discord Server Verification (Optional)
-DISCORD_REQUIRE_SERVER_MEMBERSHIP="true"
-DISCORD_GUILD_ID="your-discord-server-id"
-DISCORD_INVITE_URL="https://discord.gg/your-invite"
+**Option A: Vercel CLI**
 
-# Kick OAuth (for future use)
-KICK_API_BASE_URL="https://kick.com/api/v2"
-KICK_OAUTH_BASE_URL="https://kick.com/oauth2"
-KICK_CLIENT_ID="your-kick-client-id"
-KICK_CLIENT_SECRET="your-kick-client-secret"
-KICK_REDIRECT_URI="https://yourdomain.com/api/auth/kick/callback"
-KICK_CHANNEL_NAME="your-channel-name"
+- [ ] Install Vercel CLI: `npm i -g vercel`
+- [ ] Navigate to frontend: `cd frontend`
+- [ ] Deploy: `vercel`
+- [ ] Follow prompts and configure
 
-# Encryption
-ENCRYPTION_SALT="generate-random-salt-32-chars"
-ENCRYPTION_KEY="generate-random-key-32-chars"
-ENCRYPTION_IV="generate-random-iv-16-chars"
+**Option B: Vercel Dashboard**
 
-# Server
-PORT=3001
-NODE_ENV="production"
-CORS_ORIGIN="https://yourdomain.com"
+- [ ] Go to https://vercel.com/dashboard
+- [ ] Click "New Project"
+- [ ] Import from GitHub
+- [ ] Select repository
+- [ ] Configure:
+  - Root Directory: `frontend`
+  - Build Command: `npm run build`
+  - Output Directory: `.next`
+  - Install Command: `npm install`
 
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
+### 🔧 Environment Variables (Vercel)
 
-# Points
-POINTS_PER_MINUTE_VIEWING=1
-BONUS_POINTS_MULTIPLIER=1.5
+- [ ] In Vercel dashboard, go to Project Settings → Environment Variables
+- [ ] Add variables:
+  ```
+  NEXT_PUBLIC_API_URL=https://api.yourdomain.com
+  NEXT_PUBLIC_SOCKET_URL=https://api.yourdomain.com
+  ```
+- [ ] Redeploy after adding variables
 
-# Admin
-ADMIN_DISCORD_IDS="your-discord-user-id"
+### 🌐 Custom Domain (Optional)
 
-# Logging
-LOG_LEVEL="info"
-LOG_FILE="logs/app.log"
+- [ ] In Vercel dashboard, go to Project Settings → Domains
+- [ ] Add custom domain: `yourdomain.com`
+- [ ] Configure DNS as instructed by Vercel
 
-# Security
-BCRYPT_ROUNDS=12
-SESSION_SECRET="generate-new-session-secret"
+### ✅ Frontend Testing
 
-# Webhooks
-WEBHOOK_SECRET="generate-webhook-secret"
-```
+- [ ] Test website: `https://yourdomain.com`
+- [ ] Test authentication flow
+- [ ] Test API connectivity
+- [ ] Test all major features
 
-### Frontend (.env.local)
+## Phase 4: Final Configuration & Testing
 
-```env
-NEXT_PUBLIC_API_URL=https://api.yourdomain.com
-```
+### 🔄 CORS Update
 
----
+- [ ] Update backend CORS settings:
+  ```bash
+  # On EC2 server
+  nano /home/ubuntu/mattyspins/backend/.env.production
+  # Update CORS_ORIGIN=https://yourdomain.com
+  pm2 restart mattyspins-api
+  ```
 
-## Deployment Steps
+### 🔐 Discord OAuth Update
 
-### 1. Database Setup
+- [ ] Update Discord OAuth redirect URI to production domain
+- [ ] Test login flow
 
-```bash
-# Run migrations
-cd backend
-npm run db:migrate
+### 🧪 End-to-End Testing
 
-# Verify database connection
-npm run db:studio
-```
+- [ ] User registration/login
+- [ ] Admin panel access
+- [ ] Leaderboard creation
+- [ ] Wager addition
+- [ ] Real-time updates
+- [ ] Profile management
+- [ ] Schedule management
 
-### 2. Backend Deployment
+### 📊 Monitoring Setup
 
-#### Option A: Traditional Server (VPS/Dedicated)
+- [ ] Set up PM2 monitoring: `pm2 monit`
+- [ ] Configure log rotation
+- [ ] Set up basic monitoring/alerts (optional)
 
-```bash
-# Build backend
-cd backend
-npm run build
+## Phase 5: Security & Optimization
 
-# Start with PM2
-pm2 start dist/index.js --name "streaming-backend"
-pm2 save
-pm2 startup
-```
+### 🔒 Security Hardening
 
-#### Option B: Docker
+- [ ] Update all packages: `sudo apt update && sudo apt upgrade`
+- [ ] Configure UFW firewall
+- [ ] Remove temporary port 3001 from security group
+- [ ] Review and rotate secrets if needed
 
-```bash
-# Build and run
-docker-compose up -d
-```
+### ⚡ Performance Optimization
 
-#### Option C: Cloud Platform (Render/Railway/Heroku)
+- [ ] Enable Nginx gzip compression (already in config)
+- [ ] Configure PM2 clustering if needed
+- [ ] Set up database connection pooling
+- [ ] Monitor resource usage
 
-- Connect GitHub repository
-- Set environment variables
-- Deploy from main branch
+### 💾 Backup Strategy
 
-### 3. Frontend Deployment
+- [ ] Configure RDS automated backups
+- [ ] Set up application code backup
+- [ ] Document recovery procedures
 
-#### Option A: Vercel (Recommended)
+## 🎉 Go Live Checklist
 
-```bash
-# Install Vercel CLI
-npm i -g vercel
+### Final Verification
 
-# Deploy
-cd frontend
-vercel --prod
-```
+- [ ] All environment variables set correctly
+- [ ] SSL certificates working
+- [ ] All API endpoints responding
+- [ ] Frontend loading correctly
+- [ ] Authentication working
+- [ ] Database operations working
+- [ ] Real-time features working
+- [ ] Admin panel accessible
 
-#### Option B: Netlify
+### Documentation
 
-```bash
-# Build
-cd frontend
-npm run build
+- [ ] Update README with production URLs
+- [ ] Document deployment process
+- [ ] Create maintenance procedures
+- [ ] Share admin credentials securely
 
-# Deploy dist folder
-netlify deploy --prod
-```
+### Communication
 
-#### Option C: Traditional Server
+- [ ] Announce to users
+- [ ] Update social media links
+- [ ] Update Discord bot/webhooks if applicable
 
-```bash
-# Build
-cd frontend
-npm run build
-
-# Serve with nginx or similar
-```
-
-### 4. Discord Application Setup
-
-1. Go to https://discord.com/developers/applications
-2. Select your application
-3. Update OAuth2 redirect URI to production URL:
-   - `https://yourdomain.com/api/auth/discord/callback`
-4. Save changes
-
-### 5. DNS Configuration
-
-- Point domain to your server IP
-- Configure SSL certificate (Let's Encrypt recommended)
-- Set up CDN if needed (Cloudflare)
-
-### 6. Post-Deployment Verification
-
-- [ ] Website loads correctly
-- [ ] Discord login works
-- [ ] Admin can create leaderboards
-- [ ] Real-time updates working
-- [ ] Database connections stable
-- [ ] Background jobs running
-- [ ] Logs are being written
-- [ ] Error monitoring active
-
----
-
-## Monitoring & Maintenance
-
-### Logging
-
-- Backend logs: `backend/logs/`
-- Check for errors regularly
-- Set up log rotation
-
-### Database Backups
-
-```bash
-# PostgreSQL backup
-pg_dump -U postgres streaming_backend > backup_$(date +%Y%m%d).sql
-
-# Automated backups (cron)
-0 2 * * * pg_dump -U postgres streaming_backend > /backups/backup_$(date +\%Y\%m\%d).sql
-```
-
-### Monitoring Tools
-
-- **Uptime**: UptimeRobot, Pingdom
-- **Errors**: Sentry
-- **Performance**: New Relic, DataDog
-- **Logs**: Logtail, Papertrail
-
-### Regular Maintenance
-
-- [ ] Weekly database backups
-- [ ] Monthly security updates
-- [ ] Monitor disk space
-- [ ] Review error logs
-- [ ] Check API rate limits
-
----
-
-## Rollback Plan
-
-If deployment fails:
-
-1. **Database**: Restore from backup
-
-   ```bash
-   psql -U postgres streaming_backend < backup_YYYYMMDD.sql
-   ```
-
-2. **Backend**: Revert to previous version
-
-   ```bash
-   git revert HEAD
-   npm run build
-   pm2 restart streaming-backend
-   ```
-
-3. **Frontend**: Rollback deployment
-   ```bash
-   vercel rollback
-   ```
-
----
-
-## Support & Documentation
-
-### Important Files
-
-- `DISCORD_SETUP_GUIDE.md` - Discord OAuth setup
-- `SETUP_FOR_NEW_STREAMER.md` - Initial configuration
-- `README.md` - Project overview
-
-### Admin Access
-
-1. Login with Discord
-2. Get your Discord user ID
-3. Add to `ADMIN_DISCORD_IDS` in backend .env
-4. Restart backend server
-
-### Creating First Leaderboard
-
-1. Login as admin
-2. Go to `/admin/leaderboards`
-3. Click "Create New Leaderboard"
-4. Fill in details and prizes
-5. Start adding wagers!
-
----
-
-## Security Best Practices
-
-### Production Checklist
-
-- [ ] Change all default secrets
-- [ ] Enable HTTPS only
-- [ ] Set secure cookie flags
-- [ ] Configure CSP headers
-- [ ] Enable rate limiting
-- [ ] Set up firewall rules
-- [ ] Regular security audits
-- [ ] Keep dependencies updated
-
-### Secrets Management
-
-- Never commit `.env` files
-- Use environment variables
-- Rotate secrets regularly
-- Use secret management tools (AWS Secrets Manager, HashiCorp Vault)
-
----
-
-## Performance Optimization
-
-### Backend
-
-- [x] Database indexes configured
-- [x] Redis caching enabled
-- [x] Connection pooling active
-- [ ] CDN for static assets
-- [ ] Gzip compression enabled
-
-### Frontend
-
-- [x] Code splitting (Next.js automatic)
-- [x] Image optimization
-- [ ] CDN for assets
-- [ ] Browser caching configured
-
----
-
-## Troubleshooting
+## 🆘 Troubleshooting
 
 ### Common Issues
 
-**Database Connection Failed**
+1. **Database Connection Failed**
+   - Check RDS security group
+   - Verify connection string
+   - Test with: `psql -h your-rds-endpoint -U postgres`
 
-- Check DATABASE_URL
-- Verify database is running
-- Check firewall rules
+2. **Redis Connection Failed**
+   - Verify Redis URL format
+   - Check network connectivity
+   - Test with: `redis-cli -u your-redis-url ping`
 
-**Discord OAuth Error**
+3. **CORS Errors**
+   - Update CORS_ORIGIN in backend
+   - Restart PM2: `pm2 restart all`
 
-- Verify redirect URI matches exactly
-- Check client ID and secret
-- Ensure scopes are correct
+4. **SSL Certificate Issues**
+   - Check domain DNS propagation
+   - Verify Nginx configuration
+   - Renew certificate: `sudo certbot renew`
 
-**Real-time Updates Not Working**
+5. **Build Failures**
+   - Check Node.js version compatibility
+   - Clear npm cache: `npm cache clean --force`
+   - Check for TypeScript errors
 
-- Check Socket.IO connection
-- Verify CORS settings
-- Check firewall for WebSocket
+### Emergency Contacts
 
-**Background Jobs Not Running**
-
-- Check server logs
-- Verify cron job is started
-- Check for errors in job execution
-
----
-
-## Success Criteria
-
-✅ Website is live and accessible
-✅ Users can login with Discord
-✅ Admins can create and manage leaderboards
-✅ Real-time updates are working
-✅ Background jobs are running
-✅ No critical errors in logs
-✅ Performance is acceptable
-✅ Security measures are in place
+- AWS Support: [Your support plan]
+- Vercel Support: https://vercel.com/help
+- Domain Registrar: [Your registrar support]
 
 ---
 
-## Contact & Support
+## 📞 Post-Deployment Support
 
-For issues or questions:
+After deployment, monitor:
 
-- Check documentation first
-- Review error logs
-- Contact development team
+- Server resources (CPU, memory, disk)
+- Application logs
+- Database performance
+- User feedback
 
-**Ready for deployment!** 🚀
+Regular maintenance:
+
+- Update dependencies monthly
+- Review security patches
+- Monitor costs
+- Backup verification
+
+**Estimated Total Time: 4-6 hours**
+**Estimated Monthly Cost: $25-40 (AWS) + $0-20 (Vercel)**

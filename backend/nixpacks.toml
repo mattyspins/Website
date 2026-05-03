@@ -1,0 +1,17 @@
+# Nixpacks Configuration for Railway
+# This file tells Railway how to build and run your Node.js application
+
+[phases.setup]
+nixPkgs = ["nodejs-18_x", "postgresql"]
+
+[phases.install]
+cmds = [
+  "npm ci --only=production",
+  "npx prisma generate"
+]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npx prisma migrate deploy && npm start"
