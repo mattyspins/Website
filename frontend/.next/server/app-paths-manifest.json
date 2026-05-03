@@ -1,7 +1,9 @@
 {
+  "/page": "app/page.js",
   "/leaderboard/[id]/page": "app/leaderboard/[id]/page.js",
-  "/admin/leaderboards/page": "app/admin/leaderboards/page.js",
   "/admin/page": "app/admin/page.js",
-  "/admin/leaderboards/[id]/page": "app/admin/leaderboards/[id]/page.js",
-  "/admin/audit-logs/page": "app/admin/audit-logs/page.js"
+  "/bonus-hunt/page": "app/bonus-hunt/page.js",
+  "/store/page": "app/store/page.js",
+  "/raffle/page": "app/raffle/page.js",
+  "/leaderboard/page": "app/leaderboard/page.js"
 }

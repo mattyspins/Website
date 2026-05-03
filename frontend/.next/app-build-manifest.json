@@ -16,20 +16,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/auth/callback/page.js"
     ],
-    "/leaderboard/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/leaderboard/page.js"
-    ],
-    "/leaderboard/[id]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/leaderboard/[id]/page.js"
-    ],
     "/admin/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/admin/page.js"
+    ],
+    "/profile/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/profile/page.js"
     ],
     "/admin/leaderboards/page": [
       "static/chunks/webpack.js",
@@ -41,15 +36,30 @@
       "static/chunks/main-app.js",
       "static/chunks/app/admin/leaderboards/[id]/page.js"
     ],
+    "/leaderboard/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/leaderboard/page.js"
+    ],
+    "/leaderboard/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/leaderboard/[id]/page.js"
+    ],
     "/bonus-hunt/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/bonus-hunt/page.js"
     ],
-    "/admin/audit-logs/page": [
+    "/raffle/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/audit-logs/page.js"
+      "static/chunks/app/raffle/page.js"
+    ],
+    "/store/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/store/page.js"
     ]
   }
 }
