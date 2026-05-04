@@ -189,11 +189,12 @@ process.on('SIGINT', () => {
 });
 
 // Start server
-const PORT = env.PORT || 3001;
+const PORT = process.env.PORT || env.PORT || 3001;
 const HOST = '0.0.0.0'; // Listen on all network interfaces for Railway
 server.listen(PORT, HOST, () => {
-  logger.info(`🚀 Server running on port ${PORT} in ${env.NODE_ENV} mode`);
-  logger.info(`📊 Health check available at http://localhost:${PORT}/health`);
+  logger.info(`🚀 Server running on ${HOST}:${PORT} in ${env.NODE_ENV} mode`);
+  logger.info(`📊 Health check available at http://${HOST}:${PORT}/health`);
+  logger.info(`🌍 Environment PORT: ${process.env.PORT}`);
 
   // Start background jobs - TEMPORARILY DISABLED until migrations run
   // LeaderboardExpirationJob.start();

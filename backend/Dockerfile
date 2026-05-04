@@ -23,11 +23,11 @@ RUN npx prisma generate
 # Build TypeScript
 RUN npm run build
 
-# Expose port
-EXPOSE 3001
-
 # Set environment to production
 ENV NODE_ENV=production
+
+# Railway will assign PORT dynamically, don't expose a specific port
+# The application will bind to the PORT environment variable
 
 # Start the application directly
 CMD ["node", "dist/index.js"]
