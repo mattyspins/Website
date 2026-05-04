@@ -190,7 +190,8 @@ process.on('SIGINT', () => {
 
 // Start server
 const PORT = env.PORT || 3001;
-server.listen(PORT, () => {
+const HOST = '0.0.0.0'; // Listen on all network interfaces for Railway
+server.listen(PORT, HOST, () => {
   logger.info(`🚀 Server running on port ${PORT} in ${env.NODE_ENV} mode`);
   logger.info(`📊 Health check available at http://localhost:${PORT}/health`);
 
