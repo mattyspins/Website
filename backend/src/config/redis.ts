@@ -4,6 +4,9 @@ import { validateEnv } from '@/config/env';
 
 const env = validateEnv();
 
+// Check if Redis is configured
+const isRedisEnabled = env.REDIS_URL && env.REDIS_URL !== '';
+
 // Redis connection configuration
 const redisConfig = {
   retryDelayOnFailover: 100,
@@ -15,34 +18,41 @@ const redisConfig = {
   commandTimeout: 5000,
 };
 
-// Create Redis client
-export const redis = new Redis(env.REDIS_URL, redisConfig);
+// Create Redis client only if enabled
+export const redis = isRedisEnabled
+  ? new Redis(env.REDIS_URL, redisConfig)
+  : null;
 
-// Redis event handlers
-redis.on('connect', () => {
-  logger.info('Connected to Redis');
-});
+// Redis event handlers (only if Redis is enabled)
+if (redis) {
+  redis.on('connect', () => {
+    logger.info('Connected to Redis');
+  });
 
-redis.on('ready', () => {
-  logger.info('Redis is ready');
-});
+  redis.on('ready', () => {
+    logger.info('Redis is ready');
+  });
 
-redis.on('error', error => {
-  logger.error('Redis connection error:', error);
-});
+  redis.on('error', error => {
+    logger.error('Redis connection error:', error);
+  });
 
-redis.on('close', () => {
-  logger.warn('Redis connection closed');
-});
+  redis.on('close', () => {
+    logger.warn('Redis connection closed');
+  });
 
-redis.on('reconnecting', () => {
-  logger.info('Reconnecting to Redis...');
-});
+  redis.on('reconnecting', () => {
+    logger.info('Reconnecting to Redis...');
+  });
+} else {
+  logger.warn('Redis is disabled - caching features will be unavailable');
+}
 
 // Redis utility functions
 export class RedisService {
   // Cache operations
   static async get(key: string): Promise<string | null> {
+    if (!redis) return null;
     try {
       return await redis.get(key);
     } catch (error) {
@@ -52,6 +62,7 @@ export class RedisService {
   }
 
   static async set(key: string, value: string, ttl?: number): Promise<boolean> {
+    if (!redis) return false;
     try {
       if (ttl) {
         await redis.setex(key, ttl, value);
@@ -66,6 +77,7 @@ export class RedisService {
   }
 
   static async del(key: string): Promise<boolean> {
+    if (!redis) return false;
     try {
       await redis.del(key);
       return true;
@@ -106,6 +118,7 @@ export class RedisService {
     score: number,
     member: string
   ): Promise<boolean> {
+    if (!redis) return false;
     try {
       await redis.zadd(key, score, member);
       return true;
@@ -121,6 +134,7 @@ export class RedisService {
     stop: number = -1,
     withScores: boolean = true
   ): Promise<string[] | Array<{ member: string; score: number }>> {
+    if (!redis) return [];
     try {
       if (withScores) {
         const result = await redis.zrevrange(key, start, stop, 'WITHSCORES');
@@ -151,6 +165,7 @@ export class RedisService {
     key: string,
     member: string
   ): Promise<number | null> {
+    if (!redis) return null;
     try {
       const rank = await redis.zrevrank(key, member);
       return rank !== null ? rank + 1 : null; // Convert to 1-based ranking
@@ -167,6 +182,7 @@ export class RedisService {
     key: string,
     member: string
   ): Promise<number | null> {
+    if (!redis) return null;
     try {
       const score = await redis.zscore(key, member);
       return score !== null ? parseFloat(score) : null;
@@ -205,6 +221,14 @@ export class RedisService {
     limit: number,
     windowMs: number
   ): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
+    if (!redis) {
+      // If Redis is disabled, allow all requests
+      return {
+        allowed: true,
+        remaining: limit,
+        resetTime: Date.now() + windowMs,
+      };
+    }
     try {
       const current = await redis.incr(key);
 
@@ -232,6 +256,7 @@ export class RedisService {
 
   // Pub/Sub operations
   static async publish(channel: string, message: string): Promise<boolean> {
+    if (!redis) return false;
     try {
       await redis.publish(channel, message);
       return true;
@@ -254,8 +279,10 @@ export class RedisService {
 
 // Graceful shutdown
 process.on('beforeExit', async () => {
-  logger.info('Disconnecting from Redis...');
-  await redis.quit();
+  if (redis) {
+    logger.info('Disconnecting from Redis...');
+    await redis.quit();
+  }
 });
 
 export default redis;
