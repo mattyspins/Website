@@ -189,7 +189,7 @@ process.on('SIGINT', () => {
 });
 
 // Start server
-const PORT = process.env.PORT || env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || String(env.PORT || 3001), 10);
 const HOST = '0.0.0.0'; // Listen on all network interfaces for Railway
 server.listen(PORT, HOST, () => {
   logger.info(`🚀 Server running on ${HOST}:${PORT} in ${env.NODE_ENV} mode`);
