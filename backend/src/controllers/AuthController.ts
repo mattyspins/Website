@@ -5,6 +5,7 @@ import { DiscordService } from '@/services/DiscordService';
 import { asyncHandler, createError } from '@/middleware/errorHandler';
 import { logger } from '@/utils/logger';
 import { AuthenticatedRequest } from '@/middleware/auth';
+import { RedisService } from '@/config/redis';
 
 export class AuthController {
   // Initiate Discord OAuth flow
@@ -13,14 +14,8 @@ export class AuthController {
       const state = Math.random().toString(36).substring(2, 15);
       const oauthUrl = DiscordService.generateOAuthURL(state);
 
-      // Store state in session/cache for validation
-      // In production, you might want to store this in Redis with expiration
-      res.cookie('oauth_state', state, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        maxAge: 10 * 60 * 1000, // 10 minutes
-      });
+      // Store state in Redis with 10 minute expiration (more reliable than cookies for cross-domain)
+      await RedisService.set(`oauth_state:${state}`, 'valid', 600); // 10 minutes
 
       res.json({
         success: true,
@@ -39,14 +34,26 @@ export class AuthController {
         throw createError.badRequest('Authorization code is required');
       }
 
-      // Validate state parameter
-      const storedState = req.cookies.oauth_state;
-      if (!storedState || storedState !== state) {
-        throw createError.badRequest('Invalid state parameter');
+      if (!state || typeof state !== 'string') {
+        throw createError.badRequest('State parameter is required');
       }
 
-      // Clear state cookie
-      res.clearCookie('oauth_state');
+      // Validate state parameter from Redis
+      const storedState = await RedisService.get(`oauth_state:${state}`);
+      if (!storedState) {
+        logger.warn(
+          'Invalid or expired state parameter in Discord OAuth callback',
+          {
+            providedState: state.substring(0, 8) + '...',
+          }
+        );
+        throw createError.badRequest(
+          'Invalid or expired state parameter - please try logging in again'
+        );
+      }
+
+      // Delete the state from Redis (one-time use)
+      await RedisService.del(`oauth_state:${state}`);
 
       try {
         // Exchange code for Discord tokens
