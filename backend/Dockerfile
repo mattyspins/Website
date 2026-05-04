@@ -26,5 +26,8 @@ RUN npm run build
 # Expose port
 EXPOSE 3001
 
-# Start command - just start the server for now
+# Set environment to production
+ENV NODE_ENV=production
+
+# Start the application directly
 CMD ["node", "dist/index.js"]

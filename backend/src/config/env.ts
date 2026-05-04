@@ -18,7 +18,7 @@ export interface EnvConfig {
   DISCORD_CLIENT_ID: string;
   DISCORD_CLIENT_SECRET: string;
   DISCORD_REDIRECT_URI: string;
-  DISCORD_BOT_TOKEN: string;
+  DISCORD_BOT_TOKEN?: string;
 
   // Kick OAuth
   KICK_API_BASE_URL: string;
@@ -76,7 +76,7 @@ const envSchema = Joi.object({
   DISCORD_CLIENT_ID: Joi.string().required(),
   DISCORD_CLIENT_SECRET: Joi.string().required(),
   DISCORD_REDIRECT_URI: Joi.string().uri().required(),
-  DISCORD_BOT_TOKEN: Joi.string().required(),
+  DISCORD_BOT_TOKEN: Joi.string().optional().allow(''),
 
   // Kick OAuth
   KICK_API_BASE_URL: Joi.string().uri().default('https://kick.com/api/v2'),

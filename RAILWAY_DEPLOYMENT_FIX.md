@@ -1,342 +1,113 @@
-# 🔧 Railway Deployment Fix
+# Railway Deployment Fix Guide
 
-## Issue Resolved
+## Current Issues
 
-The deployment error was caused by the `nixpacks.toml` configuration. Railway's auto-detection works better for Node.js projects.
+1. **Health check failing** - Backend not responding to health checks
+2. **Missing environment variable** - `DISCORD_BOT_TOKEN` is required but might not be set
+3. **Dockerfile was referencing non-existent start.sh** (FIXED)
 
-## Changes Made
+## Step-by-Step Fix
 
-### 1. Removed `nixpacks.toml`
+### 1. Update Railway Environment Variables
 
-Railway will now auto-detect your Node.js project and configure it automatically.
+Go to your Railway project settings and add/verify these environment variables:
 
-### 2. Simplified `railway.toml`
+**CRITICAL - Add this missing variable:**
 
-```toml
-[build]
-builder = "NIXPACKS"
-
-[deploy]
-startCommand = "npx prisma migrate deploy && node dist/index.js"
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
-healthcheckPath = "/health"
-healthcheckTimeout = 100
+```
+DISCORD_BOT_TOKEN=your-discord-bot-token-if-needed
 ```
 
-### 3. Created `build.sh` (optional)
+**Note:** If you don't have a Discord bot token and don't need bot functionality, we need to make this optional in the code.
 
-A build script for manual builds if needed.
+**Verify these are set correctly:**
 
----
-
-## 🚀 How Railway Will Build Your App
-
-Railway will automatically:
-
-1. **Detect Node.js** project
-2. **Install dependencies**: `npm install`
-3. **Generate Prisma client**: `npx prisma generate` (auto-detected)
-4. **Build TypeScript**: `npm run build` (from package.json)
-5. **Run migrations**: `npx prisma migrate deploy` (from startCommand)
-6. **Start server**: `node dist/index.js`
-
----
-
-## ✅ Next Steps
-
-### 1. Commit and Push Changes
-
-```bash
-git add .
-git commit -m "Fix Railway deployment configuration"
-git push origin main
 ```
-
-### 2. Railway Will Auto-Deploy
-
-Railway will automatically detect the push and redeploy.
-
-### 3. Monitor Deployment
-
-1. Go to Railway dashboard
-2. Click on your service
-3. Go to "Deployments" tab
-4. Watch the build logs
-
----
-
-## 🔍 What to Check in Railway
-
-### Environment Variables
-
-Make sure these are set in Railway:
-
-#### Auto-Provided (by Railway services)
-
-```bash
 DATABASE_URL=${{Postgres.DATABASE_URL}}
 REDIS_URL=${{Redis.REDIS_URL}}
-```
-
-#### Required Variables
-
-```bash
+JWT_SECRET=PcfJ5QvtJyPhfdaFPiBEHAA06T3AOrcZsfkWdD9K2aE=
+JWT_REFRESH_SECRET=BFSJxD/2inz+v3wDdEqai5YpZ4kF4bHzoqZvBBWPDcI=
+ENCRYPTION_KEY=PcfJ5QvtJyPhfdaFPiBEHAA06T3AOrcZsfkWdD9K2aE=
+ENCRYPTION_SALT=kick-oauth-encryption-salt-2024-secure
+ENCRYPTION_IV=BFSJxD/2inz+v3wDdEqai5YpZ4kF4bHzoqZvBBWPDcI=
+DISCORD_CLIENT_ID=1497558767762669670
+DISCORD_CLIENT_SECRET=X8IKNd_Kyb5suw9noL4DwY66jygNKC5O
+DISCORD_REDIRECT_URI=https://website-production-ece1.up.railway.app/api/auth/discord/callback
+DISCORD_REQUIRE_SERVER_MEMBERSHIP=true
+DISCORD_GUILD_ID=1488596157616885954
+DISCORD_INVITE_URL=https://discord.gg/n2gCDVwebw
+KICK_CLIENT_ID=01KQ8BG75STSKGMNR3YEVD9JS5
+KICK_CLIENT_SECRET=b1c8ac24b472003090ab7bbfdd25e1ea1bb42c5b4d7666f78d0a47ec1eb4ff5a
+KICK_REDIRECT_URI=https://website-production-ece1.up.railway.app/api/auth/kick/callback
+KICK_CHANNEL_NAME=mattyspins
+CORS_ORIGIN=https://website-cyan-omega-40.vercel.app
+ADMIN_DISCORD_IDS=1435983820968169482,1419427173630214184
+SESSION_SECRET=W7ADNG93LooAO8cB1e1MV0LDkY/lb2vq9egsxE7AI2M=
 NODE_ENV=production
 PORT=3001
-
-# JWT
-JWT_SECRET=your-secret
-JWT_REFRESH_SECRET=your-secret
-JWT_EXPIRES_IN=1h
-JWT_REFRESH_EXPIRES_IN=7d
-
-# Encryption
-ENCRYPTION_KEY=your-key
-ENCRYPTION_SALT=your-salt
-ENCRYPTION_IV=your-iv
-
-# Discord OAuth
-DISCORD_CLIENT_ID=your-id
-DISCORD_CLIENT_SECRET=your-secret
-DISCORD_REDIRECT_URI=https://YOUR-RAILWAY-DOMAIN.up.railway.app/api/auth/discord/callback
-DISCORD_GUILD_ID=your-guild-id
-DISCORD_INVITE_URL=your-invite-url
-DISCORD_REQUIRE_SERVER_MEMBERSHIP=true
-
-# Kick OAuth
-KICK_API_BASE_URL=https://kick.com/api/v2
-KICK_OAUTH_BASE_URL=https://kick.com/oauth2
-KICK_CLIENT_ID=your-id
-KICK_CLIENT_SECRET=your-secret
-KICK_REDIRECT_URI=https://YOUR-RAILWAY-DOMAIN.up.railway.app/api/auth/kick/callback
-KICK_CHANNEL_NAME=mattyspins
-
-# CORS (update after Vercel deployment)
-CORS_ORIGIN=https://your-vercel-domain.vercel.app
-
-# Other settings
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-POINTS_PER_MINUTE_VIEWING=1
-BONUS_POINTS_MULTIPLIER=1.5
-ADMIN_DISCORD_IDS=your-admin-ids
-BCRYPT_ROUNDS=12
-SESSION_SECRET=your-secret
-WEBHOOK_SECRET=your-secret
 LOG_LEVEL=info
 ```
 
----
+### 2. Option A: Make DISCORD_BOT_TOKEN Optional (Recommended)
 
-## 🐛 Troubleshooting
+If you don't need Discord bot functionality, I can update the code to make this optional.
 
-### If Build Still Fails
+### 2. Option B: Get a Discord Bot Token
 
-#### Option 1: Check Build Logs
+1. Go to https://discord.com/developers/applications
+2. Select your application (ID: 1497558767762669670)
+3. Go to "Bot" section
+4. Click "Reset Token" to get a new token
+5. Copy the token and add it to Railway environment variables
 
-Look for specific error messages in Railway build logs.
+### 3. Redeploy
 
-#### Option 2: Verify package.json
+After updating environment variables:
 
-Ensure these scripts exist:
+1. Go to Railway dashboard
+2. Click "Deploy" or push a new commit to trigger deployment
+3. Monitor the deployment logs
 
-```json
-{
-  "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js"
-  }
-}
-```
+### 4. Verify Deployment
 
-#### Option 3: Check Prisma Schema
+Once deployed, test these endpoints:
 
-Ensure `prisma/schema.prisma` is valid:
-
-```bash
-cd backend
-npx prisma validate
-```
-
-#### Option 4: Test Build Locally
-
-```bash
-cd backend
-npm install
-npx prisma generate
-npm run build
-node dist/index.js
-```
-
-### If Deployment Succeeds but App Crashes
-
-#### Check Environment Variables
-
-1. Go to Railway → Your Service → Variables
-2. Verify all required variables are set
-3. Check for typos in variable names
-
-#### Check Database Connection
-
-1. Verify `DATABASE_URL=${{Postgres.DATABASE_URL}}`
-2. Ensure PostgreSQL service is running
-3. Check Railway logs for connection errors
-
-#### Check Redis Connection
-
-1. Verify `REDIS_URL=${{Redis.REDIS_URL}}`
-2. Ensure Redis service is running
-3. Check Railway logs for connection errors
-
-#### Check Migrations
-
-Railway logs should show:
+**Health Check:**
 
 ```
-Running migrations...
-✓ Migrations applied successfully
+https://website-production-ece1.up.railway.app/health
 ```
 
-If not, migrations might have failed. Check:
-
-- Database is accessible
-- Migrations are valid
-- No conflicting migrations
-
----
-
-## 🎯 Expected Build Output
-
-You should see something like this in Railway logs:
+**Discord Login:**
 
 ```
-=== Building ===
-Detected Node.js project
-Installing dependencies...
-npm install
-✓ Dependencies installed
-
-Generating Prisma client...
-npx prisma generate
-✓ Prisma client generated
-
-Building TypeScript...
-npm run build
-✓ Build successful
-
-=== Deploying ===
-Running migrations...
-npx prisma migrate deploy
-✓ Migrations applied
-
-Starting server...
-node dist/index.js
-✓ Server started on port 3001
-✓ Database connected
-✓ Redis connected
-✓ Health check passed
+https://website-cyan-omega-40.vercel.app
 ```
 
----
+## What I Fixed
 
-## 🔄 Alternative: Manual Configuration
+✅ Removed reference to non-existent `start.sh` in Dockerfile
+✅ Set NODE_ENV=production in Dockerfile
+✅ Simplified CMD to directly run the application
 
-If auto-detection still doesn't work, you can manually configure in Railway dashboard:
+## Next Steps After Deployment Works
 
-### Build Settings
+1. Re-enable background job in `backend/src/index.ts` (uncomment `LeaderboardExpirationJob.start()`)
+2. Update Discord OAuth redirect URI in Discord Developer Portal
+3. Test full authentication flow
 
-1. Go to Railway → Your Service → Settings
-2. Scroll to "Build"
-3. Set:
-   - **Build Command**: `npm install && npx prisma generate && npm run build`
-   - **Start Command**: `npx prisma migrate deploy && node dist/index.js`
+## Troubleshooting
 
-### Root Directory
+If health check still fails:
 
-Ensure it's set to `backend` if your backend is in a subdirectory.
+1. Check Railway Deploy Logs for startup errors
+2. Look for environment validation errors
+3. Verify DATABASE_URL and REDIS_URL are correctly linked
+4. Check if port 3001 is being used correctly
 
----
+If Discord login fails:
 
-## 📞 Still Having Issues?
-
-### Check These Common Problems
-
-1. **Wrong Root Directory**
-   - Should be `backend` if backend is in subdirectory
-   - Should be empty if backend is at root
-
-2. **Missing Dependencies**
-   - Check `package.json` includes all dependencies
-   - Run `npm install` locally to verify
-
-3. **TypeScript Errors**
-   - Run `npm run build` locally
-   - Fix any TypeScript errors
-
-4. **Prisma Issues**
-   - Run `npx prisma validate`
-   - Ensure migrations are up to date
-
-5. **Environment Variables**
-   - Double-check all required variables are set
-   - Verify no typos in variable names
-
-### Get Help
-
-- **Railway Discord**: https://discord.gg/railway
-- **Railway Docs**: https://docs.railway.app
-- **Railway Status**: https://status.railway.app
-
----
-
-## ✅ Success Indicators
-
-Your deployment is successful when:
-
-1. ✅ Build completes without errors
-2. ✅ Migrations run successfully
-3. ✅ Server starts on specified port
-4. ✅ Database connection established
-5. ✅ Redis connection established
-6. ✅ Health check returns `{"status":"ok"}`
-
-Test with:
-
-```bash
-curl https://your-railway-domain.up.railway.app/health
-```
-
-Expected response:
-
-```json
-{ "status": "ok" }
-```
-
----
-
-## 🎉 Next Steps After Successful Deployment
-
-1. **Get Your Railway Domain**
-   - Railway → Service → Settings → Domains
-   - Copy the generated domain
-
-2. **Update Environment Variables**
-   - Update `DISCORD_REDIRECT_URI` with Railway domain
-   - Update `KICK_REDIRECT_URI` with Railway domain
-
-3. **Deploy Frontend to Vercel**
-   - Follow `VERCEL_ENV_SETUP.md`
-
-4. **Update CORS**
-   - After Vercel deployment, update `CORS_ORIGIN` in Railway
-
-5. **Test Everything**
-   - Health check
-   - API endpoints
-   - Authentication
-   - Database operations
-
----
-
-**Good luck! 🚀**
+1. Verify CORS_ORIGIN matches your Vercel domain exactly
+2. Check DISCORD_REDIRECT_URI is correct
+3. Verify Discord OAuth credentials are valid
+4. Check Railway HTTP Logs for 502 errors
