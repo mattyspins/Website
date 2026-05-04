@@ -26,9 +26,13 @@ const app = express();
 const server = createServer(app);
 
 // Socket.IO setup
+// Support multiple origins for Socket.IO (with and without www)
+const socketCorsOrigins = env.CORS_ORIGIN.split(',').map(origin =>
+  origin.trim()
+);
 const io = new SocketIOServer(server, {
   cors: {
-    origin: env.CORS_ORIGIN,
+    origin: socketCorsOrigins,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -53,11 +57,22 @@ app.use(
 );
 
 // CORS configuration
-const corsOrigin = env.CORS_ORIGIN.trim(); // Remove any whitespace
-logger.info(`CORS Origin configured: ${corsOrigin}`);
+// Support multiple origins (with and without www)
+const corsOrigins = env.CORS_ORIGIN.split(',').map(origin => origin.trim());
+logger.info(`CORS Origins configured: ${corsOrigins.join(', ')}`);
 app.use(
   cors({
-    origin: corsOrigin,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      if (corsOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
