@@ -194,9 +194,9 @@ server.listen(PORT, () => {
   logger.info(`🚀 Server running on port ${PORT} in ${env.NODE_ENV} mode`);
   logger.info(`📊 Health check available at http://localhost:${PORT}/health`);
 
-  // Start background jobs
-  LeaderboardExpirationJob.start();
-  logger.info('✅ Background jobs started');
+  // Start background jobs - TEMPORARILY DISABLED until migrations run
+  // LeaderboardExpirationJob.start();
+  logger.info('⚠️  Background jobs disabled - run migrations first');
 });
 
 export { app, server, io };
