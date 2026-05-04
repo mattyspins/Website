@@ -115,8 +115,10 @@ export class AuthController {
         );
 
         // Redirect to frontend with tokens
-        const frontendUrl =
+        // Use the first CORS origin for redirects (in case multiple are configured)
+        const corsOrigins =
           process.env['CORS_ORIGIN'] || 'http://localhost:3000';
+        const frontendUrl = corsOrigins.split(',')[0].trim();
         const callbackUrl = `${frontendUrl}/auth/callback?access_token=${encodeURIComponent(tokens.accessToken)}&refresh_token=${encodeURIComponent(tokens.refreshToken)}&user_id=${encodeURIComponent(user.id)}&display_name=${encodeURIComponent(user.displayName)}&is_admin=${user.isAdmin}&is_moderator=${user.isModerator}`;
 
         res.redirect(callbackUrl);
@@ -127,8 +129,10 @@ export class AuthController {
         });
 
         // Redirect to frontend with error
-        const frontendUrl =
+        // Use the first CORS origin for redirects (in case multiple are configured)
+        const corsOrigins =
           process.env['CORS_ORIGIN'] || 'http://localhost:3000';
+        const frontendUrl = corsOrigins.split(',')[0].trim();
         const errorMessage =
           error instanceof Error
             ? error.message
