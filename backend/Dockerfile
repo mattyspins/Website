@@ -23,12 +23,8 @@ RUN npx prisma generate
 # Build TypeScript
 RUN npm run build
 
-# Copy start script
-COPY start.sh ./
-RUN chmod +x start.sh
-
 # Expose port
 EXPOSE 3001
 
-# Start command (migrations + start)
-CMD ["./start.sh"]
+# Start command - just start the server for now
+CMD ["node", "dist/index.js"]
