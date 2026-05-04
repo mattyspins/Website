@@ -53,9 +53,11 @@ app.use(
 );
 
 // CORS configuration
+const corsOrigin = env.CORS_ORIGIN.trim(); // Remove any whitespace
+logger.info(`CORS Origin configured: ${corsOrigin}`);
 app.use(
   cors({
-    origin: env.CORS_ORIGIN,
+    origin: corsOrigin,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
