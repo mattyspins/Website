@@ -44,32 +44,6 @@ export default function Hero() {
           MATTY SPINS
         </motion.h1>
 
-        {/* Partnership Badge */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
-          className="mb-8"
-        >
-          <div className="glass rounded-2xl px-8 py-4 inline-block border-2 border-neon-gold/30">
-            <div className="flex items-center space-x-4">
-              <span className="text-2xl font-bold text-neon-gold">
-                MattySpins
-              </span>
-              <span className="text-3xl">✕</span>
-              <div className="flex items-center space-x-2">
-                <RainbetLogo width={40} height={40} animated={true} />
-                <span className="text-2xl font-bold text-cyan-400">
-                  Rainbet
-                </span>
-              </div>
-            </div>
-            <div className="text-sm text-gray-400 text-center mt-1">
-              Official Partnership
-            </div>
-          </div>
-        </motion.div>
-
         {/* Subtitle */}
         <motion.p
           initial={{ opacity: 0, y: 30 }}
