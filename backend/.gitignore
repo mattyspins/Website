@@ -72,7 +72,7 @@ Thumbs.db
 *.sqlite3
 
 # Prisma
-prisma/migrations/
+# prisma/migrations/ - REMOVED: migrations should be committed
 
 # Testing
 test-results/
