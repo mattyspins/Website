@@ -19,6 +19,7 @@ type TabType =
   | "store";
 
 export default function AdminDashboard() {
+  // Admin Dashboard with Guess the Balance feature - May 2026
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("overview");
