@@ -246,7 +246,7 @@ export class GuessTheBalanceService {
   }
 
   /**
-   * Delete a game (only if in DRAFT status)
+   * Delete a game (DRAFT games or COMPLETED games)
    */
   static async deleteGame(gameId: string): Promise<void> {
     try {
@@ -261,21 +261,30 @@ export class GuessTheBalanceService {
         throw createError.notFound('Game not found');
       }
 
-      if (game.status !== GuessTheBalanceStatus.DRAFT) {
-        throw createError.badRequest('Can only delete games in DRAFT status');
-      }
-
-      if (game.guesses.length > 0) {
+      // Allow deletion of DRAFT games (no guesses) or COMPLETED games
+      if (game.status === GuessTheBalanceStatus.DRAFT) {
+        if (game.guesses.length > 0) {
+          throw createError.badRequest(
+            'Cannot delete draft game with existing guesses'
+          );
+        }
+      } else if (game.status !== GuessTheBalanceStatus.COMPLETED) {
         throw createError.badRequest(
-          'Cannot delete game with existing guesses'
+          'Can only delete games in DRAFT or COMPLETED status'
         );
       }
 
+      // Delete all guesses first (cascade delete)
+      await prisma.guessSubmission.deleteMany({
+        where: { gameId: gameId },
+      });
+
+      // Delete the game
       await prisma.guessTheBalance.delete({
         where: { id: gameId },
       });
 
-      logger.info(`Game ${gameId} deleted`);
+      logger.info(`Game ${gameId} deleted (status: ${game.status})`);
     } catch (error) {
       if (error instanceof Error && 'statusCode' in error) {
         throw error;

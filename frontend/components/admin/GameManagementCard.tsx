@@ -275,13 +275,23 @@ export default function GameManagementCard({
           )}
 
           {game.status === GuessTheBalanceStatus.COMPLETED && (
-            <button
-              onClick={() => setShowViewGuesses(true)}
-              className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-            >
-              <Eye className="w-4 h-4" />
-              <span>View All Guesses</span>
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setShowViewGuesses(true)}
+                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+                <span>View Guesses</span>
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={loading}
+                className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete</span>
+              </button>
+            </div>
           )}
         </div>
 
@@ -337,7 +347,11 @@ export default function GameManagementCard({
       {showDeleteConfirm && (
         <ConfirmDialog
           title="Delete Game"
-          message="Are you sure you want to delete this game? This action cannot be undone."
+          message={
+            game.status === GuessTheBalanceStatus.COMPLETED
+              ? "Are you sure you want to delete this completed game? This will permanently remove the game and all associated guesses. This action cannot be undone."
+              : "Are you sure you want to delete this game? This action cannot be undone."
+          }
           confirmText="Delete Game"
           confirmColor="red"
           onConfirm={handleDeleteGame}
