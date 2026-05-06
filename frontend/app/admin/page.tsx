@@ -13,6 +13,7 @@ type TabType =
   | "overview"
   | "users"
   | "leaderboards"
+  | "guessthebalance"
   | "schedule"
   | "raffles"
   | "store";
@@ -67,6 +68,7 @@ export default function AdminDashboard() {
     { id: "overview", label: "📊 Overview", icon: "📊" },
     { id: "users", label: "👥 Users", icon: "👥" },
     { id: "leaderboards", label: "🏆 Leaderboards", icon: "🏆" },
+    { id: "guessthebalance", label: "🎯 Guess the Balance", icon: "🎯" },
     { id: "schedule", label: "📅 Schedule", icon: "📅" },
     // Raffles and Store will be available after Kick OAuth implementation
     // { id: "raffles", label: "🎟️ Raffles", icon: "🎟️" },
@@ -85,6 +87,12 @@ export default function AdminDashboard() {
             <p className="text-gray-400">Manage your streaming platform</p>
           </div>
           <div className="flex gap-3">
+            <button
+              onClick={() => router.push("/admin/guess-the-balance")}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors font-semibold"
+            >
+              🎯 Guess the Balance
+            </button>
             <button
               onClick={() => router.push("/admin/leaderboards")}
               className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors font-semibold"
@@ -169,6 +177,60 @@ export default function AdminDashboard() {
                   <li>
                     • <strong>Export CSV:</strong> Download leaderboard data for
                     record keeping
+                  </li>
+                </ul>
+              </div>
+            </div>
+          )}
+          {activeTab === "guessthebalance" && (
+            <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">
+                  🎯 Guess the Balance Management
+                </h2>
+                <button
+                  onClick={() =>
+                    (window.location.href = "/admin/guess-the-balance")
+                  }
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors font-semibold"
+                >
+                  ➕ Manage Games
+                </button>
+              </div>
+              <p className="text-gray-300 mb-4">
+                Create and manage Guess the Balance games for your bonus hunts.{" "}
+                <a
+                  href="/admin/guess-the-balance"
+                  className="text-purple-400 hover:text-purple-300 underline"
+                >
+                  Go to full management page
+                </a>
+                .
+              </p>
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                <h3 className="text-lg font-bold text-white mb-2">
+                  Quick Guide:
+                </h3>
+                <ul className="text-gray-300 space-y-2">
+                  <li>
+                    • <strong>Create Game:</strong> Set starting balance, number
+                    of bonuses, and break-even multiplier
+                  </li>
+                  <li>
+                    • <strong>Open Guessing:</strong> Allow viewers to submit
+                    their guesses
+                  </li>
+                  <li>
+                    • <strong>Close Guessing:</strong> Stop accepting new
+                    guesses before revealing results
+                  </li>
+                  <li>
+                    • <strong>Complete Game:</strong> Enter final balance and
+                    automatically determine the winner
+                  </li>
+                  <li>
+                    • <strong>Award Points:</strong> Winner receives points
+                    automatically
                   </li>
                 </ul>
               </div>

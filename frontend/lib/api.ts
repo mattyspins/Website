@@ -19,6 +19,16 @@ export const api = {
       headers: getAuthHeaders(),
       ...options,
     });
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: "Unknown error" }));
+      throw new Error(
+        errorData.error || errorData.message || `HTTP ${response.status}`,
+      );
+    }
+
     return response.json();
   },
 
@@ -29,6 +39,16 @@ export const api = {
       body: JSON.stringify(data),
       ...options,
     });
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: "Unknown error" }));
+      throw new Error(
+        errorData.error || errorData.message || `HTTP ${response.status}`,
+      );
+    }
+
     return response.json();
   },
 
@@ -42,12 +62,42 @@ export const api = {
     return response.json();
   },
 
+  patch: async (endpoint: string, data?: any, options?: RequestInit) => {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+      body: data ? JSON.stringify(data) : undefined,
+      ...options,
+    });
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: "Unknown error" }));
+      throw new Error(
+        errorData.error || errorData.message || `HTTP ${response.status}`,
+      );
+    }
+
+    return response.json();
+  },
+
   delete: async (endpoint: string, options?: RequestInit) => {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
       ...options,
     });
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: "Unknown error" }));
+      throw new Error(
+        errorData.error || errorData.message || `HTTP ${response.status}`,
+      );
+    }
+
     return response.json();
   },
 };

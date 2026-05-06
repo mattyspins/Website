@@ -49,6 +49,9 @@ model User {
   sessions               UserSession[]
   statistics             UserStatistics?
   viewingSessions        ViewingSession[]
+  createdGames           GuessTheBalance[]     @relation("GuessTheBalanceCreator")
+  wonGames               GuessTheBalance[]     @relation("GuessTheBalanceWinner")
+  guessSubmissions       GuessSubmission[]
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")
@@ -373,4 +376,54 @@ model AuditLog {
   target     User?    @relation("TargetAuditLogs", fields: [targetId], references: [id])
 
   @@map("audit_logs")
+}
+
+
+model GuessTheBalance {
+  id                   String                    @id @default(uuid())
+  title                String?
+  description          String?
+  startingBalance      Decimal                   @map("starting_balance") @db.Decimal(12, 2)
+  numberOfBonuses      Int                       @map("number_of_bonuses")
+  breakEvenMultiplier  Decimal                   @map("break_even_multiplier") @db.Decimal(6, 2)
+  finalBalance         Decimal?                  @map("final_balance") @db.Decimal(12, 2)
+  status               GuessTheBalanceStatus     @default(DRAFT)
+  winnerId             String?                   @map("winner_id")
+  winnerGuess          Decimal?                  @map("winner_guess") @db.Decimal(12, 2)
+  winnerReward         Int?                      @default(0) @map("winner_reward")
+  createdBy            String                    @map("created_by")
+  createdAt            DateTime                  @default(now()) @map("created_at")
+  openedAt             DateTime?                 @map("opened_at")
+  closedAt             DateTime?                 @map("closed_at")
+  completedAt          DateTime?                 @map("completed_at")
+  creator              User                      @relation("GuessTheBalanceCreator", fields: [createdBy], references: [id])
+  winner               User?                     @relation("GuessTheBalanceWinner", fields: [winnerId], references: [id])
+  guesses              GuessSubmission[]
+
+  @@index([status])
+  @@index([createdBy])
+  @@map("guess_the_balance")
+}
+
+model GuessSubmission {
+  id           String          @id @default(uuid())
+  gameId       String          @map("game_id")
+  userId       String          @map("user_id")
+  guessAmount  Decimal         @map("guess_amount") @db.Decimal(12, 2)
+  submittedAt  DateTime        @default(now()) @map("submitted_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+  game         GuessTheBalance @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, userId])
+  @@index([gameId])
+  @@index([userId])
+  @@map("guess_submissions")
+}
+
+enum GuessTheBalanceStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  COMPLETED
 }

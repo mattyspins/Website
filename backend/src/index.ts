@@ -130,6 +130,7 @@ import manualLeaderboardRoutes from '@/routes/manualLeaderboard';
 import adminRoutes from '@/routes/admin';
 import moderatorRoutes from '@/routes/moderator';
 import scheduleRoutes from '@/routes/schedule';
+import guessTheBalanceRoutes from '@/routes/guessTheBalance';
 // Commented out until Kick OAuth is implemented
 // import viewingRoutes from '@/routes/viewing';
 // import storeRoutes from '@/routes/store';
@@ -142,6 +143,7 @@ app.use('/api/manual-leaderboards', manualLeaderboardRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/moderator', moderatorRoutes);
 app.use('/api/schedule', scheduleRoutes);
+app.use('/api/guess-the-balance', guessTheBalanceRoutes);
 // Commented out until Kick OAuth is implemented
 // app.use('/api/viewing', viewingRoutes);
 // app.use('/api/store', storeRoutes);
