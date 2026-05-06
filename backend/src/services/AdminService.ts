@@ -64,7 +64,7 @@ export class AdminService {
         prisma.user.count(),
         prisma.user.count({
           where: {
-            lastActive: {
+            lastActiveAt: {
               gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
             },
           },
