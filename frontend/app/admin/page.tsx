@@ -70,10 +70,10 @@ export default function AdminDashboard() {
     { id: "users", label: "👥 Users", icon: "👥" },
     { id: "leaderboards", label: "🏆 Leaderboards", icon: "🏆" },
     { id: "guessthebalance", label: "🎯 Guess the Balance", icon: "🎯" },
+    { id: "store", label: "🛒 Store", icon: "🛒" },
     { id: "schedule", label: "📅 Schedule", icon: "📅" },
-    // Raffles and Store will be available after Kick OAuth implementation
+    // Raffles will be available after Kick OAuth implementation
     // { id: "raffles", label: "🎟️ Raffles", icon: "🎟️" },
-    // { id: "store", label: "🛒 Store", icon: "🛒" },
   ];
 
   return (
@@ -95,6 +95,12 @@ export default function AdminDashboard() {
               🎯 Guess the Balance
             </button>
             <button
+              onClick={() => router.push("/admin/store")}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors font-semibold text-sm sm:text-base"
+            >
+              🛒 Manage Store
+            </button>
+            <button
               onClick={() => router.push("/admin/leaderboards")}
               className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors font-semibold text-sm sm:text-base"
             >
@@ -102,7 +108,7 @@ export default function AdminDashboard() {
             </button>
             <button
               onClick={() => router.push("/")}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base"
+              className="bg-gray-600 hover:bg-gray-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base"
             >
               Back to Home
             </button>
@@ -237,6 +243,7 @@ export default function AdminDashboard() {
               </div>
             </div>
           )}
+          {activeTab === "store" && <AdminStore />}
           {activeTab === "schedule" && <AdminSchedule />}
         </div>
       </div>
