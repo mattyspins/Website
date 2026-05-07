@@ -126,43 +126,43 @@ export default function GameManagementCard({
         </div>
 
         {/* Game Info Grid */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-green-500/10 rounded-lg p-3">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4">
+          <div className="bg-green-500/10 rounded-lg p-2 sm:p-3">
             <div className="flex items-center mb-1">
-              <DollarSign className="w-4 h-4 text-green-400 mr-1" />
+              <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 mr-1" />
               <p className="text-gray-400 text-xs">Starting</p>
             </div>
-            <p className="text-green-400 font-bold text-lg">
+            <p className="text-green-400 font-bold text-sm sm:text-lg">
               ${game.startingBalance.toLocaleString()}
             </p>
           </div>
 
-          <div className="bg-purple-500/10 rounded-lg p-3">
+          <div className="bg-purple-500/10 rounded-lg p-2 sm:p-3">
             <div className="flex items-center mb-1">
-              <Target className="w-4 h-4 text-purple-400 mr-1" />
+              <Target className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400 mr-1" />
               <p className="text-gray-400 text-xs">Bonuses</p>
             </div>
-            <p className="text-purple-400 font-bold text-lg">
+            <p className="text-purple-400 font-bold text-sm sm:text-lg">
               {game.numberOfBonuses}
             </p>
           </div>
 
-          <div className="bg-blue-500/10 rounded-lg p-3">
+          <div className="bg-blue-500/10 rounded-lg p-2 sm:p-3">
             <div className="flex items-center mb-1">
-              <TrendingUp className="w-4 h-4 text-blue-400 mr-1" />
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400 mr-1" />
               <p className="text-gray-400 text-xs">Break-even</p>
             </div>
-            <p className="text-blue-400 font-bold text-lg">
+            <p className="text-blue-400 font-bold text-sm sm:text-lg">
               {game.breakEvenMultiplier}x
             </p>
           </div>
 
-          <div className="bg-yellow-500/10 rounded-lg p-3">
+          <div className="bg-yellow-500/10 rounded-lg p-2 sm:p-3">
             <div className="flex items-center mb-1">
-              <Users className="w-4 h-4 text-yellow-400 mr-1" />
+              <Users className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 mr-1" />
               <p className="text-gray-400 text-xs">Guesses</p>
             </div>
-            <p className="text-yellow-400 font-bold text-lg">
+            <p className="text-yellow-400 font-bold text-sm sm:text-lg">
               {game.totalGuesses || 0}
             </p>
           </div>
@@ -203,11 +203,11 @@ export default function GameManagementCard({
         {/* Action Buttons */}
         <div className="space-y-2">
           {game.status === GuessTheBalanceStatus.DRAFT && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
                 onClick={handleOpenGuessing}
                 disabled={loading}
-                className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-base"
               >
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -221,7 +221,7 @@ export default function GameManagementCard({
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 disabled={loading}
-                className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-base"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Delete</span>
@@ -230,10 +230,10 @@ export default function GameManagementCard({
           )}
 
           {game.status === GuessTheBalanceStatus.OPEN && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
                 onClick={() => setShowViewGuesses(true)}
-                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
               >
                 <Eye className="w-4 h-4" />
                 <span>View Guesses</span>
@@ -241,7 +241,7 @@ export default function GameManagementCard({
               <button
                 onClick={() => setShowCloseConfirm(true)}
                 disabled={loading}
-                className="flex items-center justify-center space-x-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                className="flex items-center justify-center space-x-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-base"
               >
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -256,17 +256,17 @@ export default function GameManagementCard({
           )}
 
           {game.status === GuessTheBalanceStatus.CLOSED && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
                 onClick={() => setShowViewGuesses(true)}
-                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
               >
                 <Eye className="w-4 h-4" />
                 <span>View Guesses</span>
               </button>
               <button
                 onClick={() => setShowCompleteModal(true)}
-                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold py-2 px-4 rounded-lg transition-all"
+                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-all text-sm sm:text-base"
               >
                 <Trophy className="w-4 h-4" />
                 <span>Draw Winner</span>
@@ -275,10 +275,10 @@ export default function GameManagementCard({
           )}
 
           {game.status === GuessTheBalanceStatus.COMPLETED && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
                 onClick={() => setShowViewGuesses(true)}
-                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
               >
                 <Eye className="w-4 h-4" />
                 <span>View Guesses</span>
@@ -286,7 +286,7 @@ export default function GameManagementCard({
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 disabled={loading}
-                className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+                className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-base"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Delete</span>

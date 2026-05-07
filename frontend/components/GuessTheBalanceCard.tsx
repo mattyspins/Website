@@ -52,12 +52,12 @@ export default function GuessTheBalanceCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="bg-black/50 backdrop-blur-lg border border-green-500/30 rounded-2xl p-6 hover:border-green-400/50 transition-all"
+      className="bg-black/50 backdrop-blur-lg border border-green-500/30 rounded-2xl p-4 sm:p-6 hover:border-green-400/50 transition-all"
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 space-y-2 sm:space-y-0">
         <div className="flex-1">
-          <h3 className="text-2xl font-bold text-white mb-2">
+          <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">
             {game.title || `Bonus Hunt #${game.id.slice(0, 8)}`}
           </h3>
           {game.description && (
@@ -65,50 +65,50 @@ export default function GuessTheBalanceCard({
           )}
         </div>
         <span
-          className={`${getStatusColor(game.status)} px-3 py-1 rounded-full text-white text-sm font-semibold whitespace-nowrap ml-3`}
+          className={`${getStatusColor(game.status)} px-3 py-1 rounded-full text-white text-xs sm:text-sm font-semibold whitespace-nowrap self-start sm:ml-3`}
         >
           {getStatusText(game.status)}
         </span>
       </div>
 
       {/* Game Info Grid */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="bg-green-500/10 rounded-lg p-3">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
+        <div className="bg-green-500/10 rounded-lg p-2 sm:p-3">
           <div className="flex items-center mb-1">
-            <DollarSign className="w-4 h-4 text-green-400 mr-1" />
+            <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 mr-1" />
             <p className="text-gray-400 text-xs">Starting Balance</p>
           </div>
-          <p className="text-green-400 font-bold text-lg">
+          <p className="text-green-400 font-bold text-sm sm:text-lg">
             ${game.startingBalance.toLocaleString()}
           </p>
         </div>
 
-        <div className="bg-purple-500/10 rounded-lg p-3">
+        <div className="bg-purple-500/10 rounded-lg p-2 sm:p-3">
           <div className="flex items-center mb-1">
-            <Target className="w-4 h-4 text-purple-400 mr-1" />
+            <Target className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400 mr-1" />
             <p className="text-gray-400 text-xs">Bonuses</p>
           </div>
-          <p className="text-purple-400 font-bold text-lg">
+          <p className="text-purple-400 font-bold text-sm sm:text-lg">
             {game.numberOfBonuses}
           </p>
         </div>
 
-        <div className="bg-blue-500/10 rounded-lg p-3">
+        <div className="bg-blue-500/10 rounded-lg p-2 sm:p-3">
           <div className="flex items-center mb-1">
-            <TrendingUp className="w-4 h-4 text-blue-400 mr-1" />
+            <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400 mr-1" />
             <p className="text-gray-400 text-xs">Break-even</p>
           </div>
-          <p className="text-blue-400 font-bold text-lg">
+          <p className="text-blue-400 font-bold text-sm sm:text-lg">
             {game.breakEvenMultiplier}x
           </p>
         </div>
 
-        <div className="bg-yellow-500/10 rounded-lg p-3">
+        <div className="bg-yellow-500/10 rounded-lg p-2 sm:p-3">
           <div className="flex items-center mb-1">
-            <Users className="w-4 h-4 text-yellow-400 mr-1" />
+            <Users className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 mr-1" />
             <p className="text-gray-400 text-xs">Guesses</p>
           </div>
-          <p className="text-yellow-400 font-bold text-lg">
+          <p className="text-yellow-400 font-bold text-sm sm:text-lg">
             {game.totalGuesses || 0}
           </p>
         </div>
@@ -117,8 +117,8 @@ export default function GuessTheBalanceCard({
       {/* Guess Form or Status */}
       {game.status === "OPEN" ? (
         !isAuthenticated ? (
-          <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg p-4 text-center">
-            <p className="text-blue-300 font-semibold">
+          <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg p-3 sm:p-4 text-center">
+            <p className="text-blue-300 font-semibold text-sm sm:text-base">
               Please login with Discord to submit your guess
             </p>
           </div>
@@ -134,14 +134,14 @@ export default function GuessTheBalanceCard({
         ) : (
           <button
             onClick={() => setShowGuessForm(true)}
-            className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105"
+            className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-all transform hover:scale-105 text-sm sm:text-base"
           >
             Submit Your Guess
           </button>
         )
       ) : game.status === "CLOSED" ? (
-        <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4 text-center">
-          <p className="text-yellow-300 font-semibold">
+        <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 sm:p-4 text-center">
+          <p className="text-yellow-300 font-semibold text-sm sm:text-base">
             Guessing is closed. Waiting for results...
           </p>
         </div>

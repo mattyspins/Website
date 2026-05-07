@@ -62,18 +62,20 @@ export default function BonusHuntPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-6 pt-24">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <div className="flex items-center justify-center mb-4">
-            <Target className="w-16 h-16 text-green-400 mr-4" />
-            <h1 className="text-5xl font-bold text-white">Guess the Balance</h1>
+          <div className="flex flex-col sm:flex-row items-center justify-center mb-4">
+            <Target className="w-12 h-12 sm:w-16 sm:h-16 text-green-400 mb-2 sm:mb-0 sm:mr-4" />
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white text-center sm:text-left">
+              Guess the Balance
+            </h1>
           </div>
-          <p className="text-gray-300 text-lg">
+          <p className="text-gray-300 text-base sm:text-lg">
             Predict the final balance of bonus hunts and win points!
           </p>
         </motion.div>
@@ -113,24 +115,26 @@ export default function BonusHuntPage() {
           transition={{ delay: 0.1 }}
           className="mb-12"
         >
-          <div className="flex items-center mb-6">
-            <TrendingUp className="w-8 h-8 text-green-400 mr-3" />
-            <h2 className="text-3xl font-bold text-white">Active Games</h2>
+          <div className="flex items-center mb-4 sm:mb-6">
+            <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-green-400 mr-2 sm:mr-3" />
+            <h2 className="text-2xl sm:text-3xl font-bold text-white">
+              Active Games
+            </h2>
           </div>
 
           {activeGames.length === 0 ? (
-            <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-12 text-center">
-              <div className="text-6xl mb-6">🎯</div>
-              <h3 className="text-2xl font-bold text-white mb-4">
+            <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-8 sm:p-12 text-center">
+              <div className="text-4xl sm:text-6xl mb-4 sm:mb-6">🎯</div>
+              <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
                 No Active Games
               </h3>
-              <p className="text-gray-400 text-lg">
+              <p className="text-gray-400 text-base sm:text-lg">
                 There are currently no active games. Check back soon for new
                 bonus hunts!
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
               {activeGames.map((game, index) => (
                 <GuessTheBalanceCard
                   key={game.id}
@@ -151,12 +155,14 @@ export default function BonusHuntPage() {
             transition={{ delay: 0.2 }}
             className="mb-12"
           >
-            <div className="flex items-center mb-6">
-              <Trophy className="w-8 h-8 text-yellow-400 mr-3" />
-              <h2 className="text-3xl font-bold text-white">Recent Winners</h2>
+            <div className="flex items-center mb-4 sm:mb-6">
+              <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-400 mr-2 sm:mr-3" />
+              <h2 className="text-2xl sm:text-3xl font-bold text-white">
+                Recent Winners
+              </h2>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
               {completedGames.map((game, index) => (
                 <CompletedGameCard key={game.id} game={game} index={index} />
               ))}
@@ -168,48 +174,48 @@ export default function BonusHuntPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-gradient-to-r from-purple-500/10 to-green-500/10 border border-purple-500/30 rounded-2xl p-6"
+          className="bg-gradient-to-r from-purple-500/10 to-green-500/10 border border-purple-500/30 rounded-2xl p-4 sm:p-6"
         >
-          <h3 className="text-xl font-bold text-white mb-3">
+          <h3 className="text-lg sm:text-xl font-bold text-white mb-3">
             How to Play Guess the Balance
           </h3>
-          <ul className="space-y-2 text-gray-300">
+          <ul className="space-y-2 text-gray-300 text-sm sm:text-base">
             <li className="flex items-start">
-              <span className="text-green-400 mr-2">•</span>
+              <span className="text-green-400 mr-2 flex-shrink-0">•</span>
               <span>
                 <strong>Login Required:</strong> You must be logged in with
                 Discord to submit guesses
               </span>
             </li>
             <li className="flex items-start">
-              <span className="text-green-400 mr-2">•</span>
+              <span className="text-green-400 mr-2 flex-shrink-0">•</span>
               <span>
                 When a bonus hunt starts, the admin will open guessing for the
                 game
               </span>
             </li>
             <li className="flex items-start">
-              <span className="text-green-400 mr-2">•</span>
+              <span className="text-green-400 mr-2 flex-shrink-0">•</span>
               <span>
                 Submit your guess for what the final balance will be after all
                 bonuses are opened
               </span>
             </li>
             <li className="flex items-start">
-              <span className="text-green-400 mr-2">•</span>
+              <span className="text-green-400 mr-2 flex-shrink-0">•</span>
               <span>
                 You can update your guess anytime before guessing closes
               </span>
             </li>
             <li className="flex items-start">
-              <span className="text-green-400 mr-2">•</span>
+              <span className="text-green-400 mr-2 flex-shrink-0">•</span>
               <span>
                 The player with the closest guess to the final balance wins
                 points!
               </span>
             </li>
             <li className="flex items-start">
-              <span className="text-green-400 mr-2">•</span>
+              <span className="text-green-400 mr-2 flex-shrink-0">•</span>
               <span>
                 In case of a tie, the player who submitted their guess first
                 wins

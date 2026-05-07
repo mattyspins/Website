@@ -39,40 +39,42 @@ export default function ConfirmDialog({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-gradient-to-br from-gray-900 to-black border border-gray-700 rounded-2xl p-6 w-full max-w-md"
+          className="bg-gradient-to-br from-gray-900 to-black border border-gray-700 rounded-2xl p-4 sm:p-6 w-full max-w-md"
         >
           {/* Icon */}
-          <div className="flex justify-center mb-4">
-            <div className="bg-yellow-500/20 rounded-full p-3">
-              <AlertTriangle className="w-8 h-8 text-yellow-400" />
+          <div className="flex justify-center mb-3 sm:mb-4">
+            <div className="bg-yellow-500/20 rounded-full p-2 sm:p-3">
+              <AlertTriangle className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-400" />
             </div>
           </div>
 
           {/* Title */}
-          <h2 className="text-2xl font-bold text-white text-center mb-3">
+          <h2 className="text-xl sm:text-2xl font-bold text-white text-center mb-2 sm:mb-3">
             {title}
           </h2>
 
           {/* Message */}
-          <p className="text-gray-300 text-center mb-6">{message}</p>
+          <p className="text-gray-300 text-center mb-4 sm:mb-6 text-sm sm:text-base">
+            {message}
+          </p>
 
           {/* Buttons */}
-          <div className="flex space-x-4">
+          <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
             <button
               onClick={onCancel}
-              className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+              className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-colors text-sm sm:text-base"
               disabled={loading}
             >
               Cancel
             </button>
             <button
               onClick={onConfirm}
-              className={`flex-1 bg-gradient-to-r ${getColorClasses()} text-white font-bold py-3 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center`}
+              className={`flex-1 bg-gradient-to-r ${getColorClasses()} text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base`}
               disabled={loading}
             >
               {loading ? (

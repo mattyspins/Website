@@ -114,7 +114,7 @@ export default function AdminGuessTheBalancePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-6 pt-24">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -122,30 +122,33 @@ export default function AdminGuessTheBalancePage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
             <div className="flex items-center">
               <button
                 onClick={() => router.push("/admin")}
-                className="mr-4 text-gray-400 hover:text-white transition-colors"
+                className="mr-3 sm:mr-4 text-gray-400 hover:text-white transition-colors"
               >
-                <ArrowLeft className="w-6 h-6" />
+                <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
               <div className="flex items-center">
-                <Target className="w-12 h-12 text-green-400 mr-4" />
+                <Target className="w-8 h-8 sm:w-12 sm:h-12 text-green-400 mr-3 sm:mr-4" />
                 <div>
-                  <h1 className="text-4xl font-bold text-white">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
                     Guess the Balance
                   </h1>
-                  <p className="text-gray-400">Manage bonus hunt games</p>
+                  <p className="text-gray-400 text-sm sm:text-base">
+                    Manage bonus hunt games
+                  </p>
                 </div>
               </div>
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center space-x-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-lg transition-all font-semibold transform hover:scale-105"
+              className="flex items-center justify-center space-x-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg transition-all font-semibold transform hover:scale-105 text-sm sm:text-base"
             >
-              <Plus className="w-5 h-5" />
-              <span>Create New Game</span>
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Create New Game</span>
+              <span className="sm:hidden">Create Game</span>
             </button>
           </div>
         </motion.div>
@@ -166,7 +169,7 @@ export default function AdminGuessTheBalancePage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8"
         >
           <div
             onClick={() => setStatusFilter("ALL")}

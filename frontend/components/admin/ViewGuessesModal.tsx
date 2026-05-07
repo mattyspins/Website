@@ -73,19 +73,21 @@ export default function ViewGuessesModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-4 pt-16 sm:pt-24 bg-black/70 backdrop-blur-sm">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-gradient-to-br from-gray-900 to-black border border-blue-500/30 rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+          className="bg-gradient-to-br from-gray-900 to-black border border-blue-500/30 rounded-2xl p-4 sm:p-6 w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col mt-2 sm:mt-4"
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <Users className="w-8 h-8 text-blue-400 mr-3" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
+            <div className="flex items-center mb-2 sm:mb-0">
+              <Users className="w-6 h-6 sm:w-8 sm:h-8 text-blue-400 mr-2 sm:mr-3" />
               <div>
-                <h2 className="text-2xl font-bold text-white">{gameTitle}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-white">
+                  {gameTitle}
+                </h2>
                 <p className="text-gray-400 text-sm">
                   {guesses.length} {guesses.length === 1 ? "guess" : "guesses"}
                 </p>
@@ -93,14 +95,14 @@ export default function ViewGuessesModal({
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white transition-colors self-end sm:self-auto"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
 
           {/* Controls */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6">
             {/* Search */}
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -109,7 +111,7 @@ export default function ViewGuessesModal({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by username..."
-                className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
               />
             </div>
 
@@ -117,7 +119,7 @@ export default function ViewGuessesModal({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as "amount" | "time")}
-              className="px-4 py-2 bg-gray-900/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 sm:px-4 py-2 bg-gray-900/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
             >
               <option value="amount">Sort by Amount</option>
               <option value="time">Sort by Time</option>
@@ -151,20 +153,20 @@ export default function ViewGuessesModal({
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-blue-500/50 transition-all"
+                    className="bg-gray-800/50 border border-gray-700 rounded-lg p-3 sm:p-4 hover:border-blue-500/50 transition-all"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center flex-1 mb-2 sm:mb-0">
                         <img
                           src={guess.user?.avatar || "/default-avatar.png"}
                           alt={guess.user?.displayName}
-                          className="w-10 h-10 rounded-full border-2 border-blue-500/50 mr-3"
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-blue-500/50 mr-2 sm:mr-3 flex-shrink-0"
                         />
-                        <div className="flex-1">
-                          <p className="text-white font-semibold">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-semibold text-sm sm:text-base truncate">
                             {guess.user?.displayName || "Unknown User"}
                           </p>
-                          <p className="text-gray-400 text-sm">
+                          <p className="text-gray-400 text-xs sm:text-sm">
                             Submitted:{" "}
                             {new Date(guess.submittedAt).toLocaleString()}
                           </p>
@@ -176,8 +178,8 @@ export default function ViewGuessesModal({
                           )}
                         </div>
                       </div>
-                      <div className="text-right ml-4">
-                        <p className="text-2xl font-bold text-blue-400">
+                      <div className="text-left sm:text-right sm:ml-4">
+                        <p className="text-xl sm:text-2xl font-bold text-blue-400">
                           ${guess.guessAmount.toLocaleString()}
                         </p>
                       </div>
@@ -189,10 +191,10 @@ export default function ViewGuessesModal({
           </div>
 
           {/* Footer */}
-          <div className="mt-6 pt-4 border-t border-gray-700">
+          <div className="mt-4 sm:mt-6 pt-4 border-t border-gray-700">
             <button
               onClick={onClose}
-              className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+              className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-colors text-sm sm:text-base"
             >
               Close
             </button>
