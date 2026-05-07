@@ -28,6 +28,8 @@ const getActivityEmoji = (activity?: string) => {
     "Mixed Games": "🎮",
     "Special Event": "⭐",
     "Community Games": "👥",
+    Freestyle: "🎨",
+    "Viewer Tourney": "🏆",
   };
   return emojiMap[activity || ""] || "🎮";
 };

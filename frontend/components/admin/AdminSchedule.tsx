@@ -26,6 +26,8 @@ const activityOptions = [
   "Mixed Games",
   "Special Event",
   "Community Games",
+  "Freestyle",
+  "Viewer Tourney",
 ];
 
 export default function AdminSchedule() {
@@ -183,6 +185,8 @@ export default function AdminSchedule() {
       "Mixed Games": "🎮",
       "Special Event": "⭐",
       "Community Games": "👥",
+      Freestyle: "🎨",
+      "Viewer Tourney": "🏆",
     };
     return emojiMap[activity || ""] || "🎮";
   };
