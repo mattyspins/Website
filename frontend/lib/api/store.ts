@@ -76,28 +76,39 @@ export const storeApi = {
     if (category) params.append("category", category);
     if (includeInactive) params.append("includeInactive", "true");
 
-    const response = await api.get(`/store/items?${params.toString()}`);
-    return response.data.items;
+    console.log(
+      "Fetching store items from:",
+      `/api/store/items?${params.toString()}`,
+    );
+
+    try {
+      const response = await api.get(`/api/store/items?${params.toString()}`);
+      console.log("Store items response:", response);
+      return response.data.items;
+    } catch (error) {
+      console.error("Store API Error:", error);
+      throw error;
+    }
   },
 
   async getStoreItem(itemId: string): Promise<StoreItem> {
-    const response = await api.get(`/store/items/${itemId}`);
+    const response = await api.get(`/api/store/items/${itemId}`);
     return response.data;
   },
 
   async getStoreCategories(): Promise<StoreCategory[]> {
-    const response = await api.get("/store/categories");
+    const response = await api.get("/api/store/categories");
     return response.data.categories;
   },
 
   async getStoreStatistics(): Promise<StoreStatistics> {
-    const response = await api.get("/store/stats");
+    const response = await api.get("/api/store/stats");
     return response.data;
   },
 
   // User endpoints (require authentication)
   async purchaseItem(request: PurchaseRequest): Promise<StorePurchase> {
-    const response = await api.post("/store/purchase", request);
+    const response = await api.post("/api/store/purchase", request);
     return response.data;
   },
 
@@ -114,7 +125,9 @@ export const storeApi = {
       hasMore: boolean;
     };
   }> {
-    const url = userId ? `/store/purchases/${userId}` : "/store/purchases";
+    const url = userId
+      ? `/api/store/purchases/${userId}`
+      : "/api/store/purchases";
     const params = new URLSearchParams();
     params.append("limit", limit.toString());
     params.append("offset", offset.toString());
@@ -125,7 +138,7 @@ export const storeApi = {
 
   // Admin endpoints
   async createStoreItem(item: CreateStoreItemRequest): Promise<StoreItem> {
-    const response = await api.post("/store/admin/items", item);
+    const response = await api.post("/api/store/admin/items", item);
     return response.data;
   },
 
@@ -133,18 +146,21 @@ export const storeApi = {
     itemId: string,
     updates: Partial<CreateStoreItemRequest>,
   ): Promise<StoreItem> {
-    const response = await api.put(`/store/admin/items/${itemId}`, updates);
+    const response = await api.put(`/api/store/admin/items/${itemId}`, updates);
     return response.data;
   },
 
   async deleteStoreItem(itemId: string): Promise<void> {
-    await api.delete(`/store/admin/items/${itemId}`);
+    await api.delete(`/api/store/admin/items/${itemId}`);
   },
 
   async updateInventory(itemId: string, stock: number): Promise<StoreItem> {
-    const response = await api.patch(`/store/admin/items/${itemId}/inventory`, {
-      stock,
-    });
+    const response = await api.patch(
+      `/api/store/admin/items/${itemId}/inventory`,
+      {
+        stock,
+      },
+    );
     return response.data;
   },
 
@@ -158,7 +174,7 @@ export const storeApi = {
     processedAt: string;
     processedBy: string;
   }> {
-    const response = await api.post(`/store/admin/refund/${purchaseId}`, {
+    const response = await api.post(`/api/store/admin/refund/${purchaseId}`, {
       reason,
     });
     return response.data;
@@ -192,7 +208,7 @@ export const storeApi = {
     if (filters?.itemId) params.append("itemId", filters.itemId);
 
     const response = await api.get(
-      `/store/admin/purchases?${params.toString()}`,
+      `/api/store/admin/purchases?${params.toString()}`,
     );
     return response.data;
   },
