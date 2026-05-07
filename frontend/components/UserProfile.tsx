@@ -65,8 +65,10 @@ export default function UserProfile({
         </div>
 
         {/* Username and Points */}
-        <div className="hidden md:flex flex-col items-start">
-          <span className="text-sm font-semibold">{user.displayName}</span>
+        <div className="hidden md:flex flex-col items-start min-w-0 flex-1 mr-2">
+          <span className="text-sm font-semibold truncate max-w-full">
+            {user.displayName}
+          </span>
           <span className="text-xs text-purple-200">
             {user.points.toLocaleString()} points
           </span>
@@ -121,8 +123,10 @@ export default function UserProfile({
                     </span>
                   )}
                 </div>
-                <div className="flex-1">
-                  <p className="text-white font-semibold">{user.displayName}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-semibold truncate">
+                    {user.displayName}
+                  </p>
                   <p className="text-purple-300 text-sm">
                     {user.points.toLocaleString()} points
                   </p>

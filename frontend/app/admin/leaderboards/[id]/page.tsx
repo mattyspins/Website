@@ -365,11 +365,13 @@ export default function ManageLeaderboardPage() {
                           #{ranking.rank}
                         </span>
                       </td>
-                      <td className="py-3 px-4 font-semibold">
-                        {ranking.username}
+                      <td className="py-3 px-4 font-semibold max-w-0">
+                        <div className="truncate">{ranking.username}</div>
                       </td>
-                      <td className="py-3 px-4 text-gray-400">
-                        {ranking.kickUsername || "-"}
+                      <td className="py-3 px-4 text-gray-400 max-w-0">
+                        <div className="truncate">
+                          {ranking.kickUsername || "-"}
+                        </div>
                       </td>
                       <td className="py-3 px-4 text-right font-semibold text-purple-400">
                         ${ranking.totalWagers.toFixed(2)}

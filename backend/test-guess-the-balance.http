@@ -1,0 +1,185 @@
+### Guess the Balance API Tests
+### Base URL
+@baseUrl = http://localhost:3001/api
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InRlc3QtYWRtaW4taWQiLCJkaXNjb3JkSWQiOiIxNDM1OTgzODIwOTY4MTY5NDgyIiwiaXNBZG1pbiI6dHJ1ZSwiaXNNb2RlcmF0b3IiOmZhbHNlLCJpYXQiOjE3NzgwMDIyMTQsImV4cCI6MTc3ODA4ODYxNH0.NO5Q2GjxZTl6Az3sWOsOWB4VBDbEmFnjaaVgkXj02ks
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InRlc3QtdXNlci1pZCIsImRpc2NvcmRJZCI6InRlc3QtdXNlci1kaXNjb3JkLWlkIiwiaXNBZG1pbiI6ZmFsc2UsImlzTW9kZXJhdG9yIjpmYWxzZSwiaWF0IjoxNzc4MDAyMjE1LCJleHAiOjE3NzgwODg2MTV9.hTUtkM5Tfp6W2EblceOtzNip1aMSntKWjj8jkpc7e0w
+
+### ==================== ADMIN ENDPOINTS ====================
+
+### 1. Create Game (Admin)
+POST {{baseUrl}}/guess-the-balance/admin
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "title": "Epic Bonus Hunt #1",
+  "description": "100 bonuses on Gates of Olympus - Can you guess the final balance?",
+  "startingBalance": 1000.00,
+  "numberOfBonuses": 100,
+  "breakEvenMultiplier": 0.96,
+  "pointsReward": 500
+}
+
+### 2. Get All Games (Admin)
+GET {{baseUrl}}/guess-the-balance/admin
+Authorization: Bearer {{adminToken}}
+
+### 3. Get All Games with Status Filter (Admin)
+GET {{baseUrl}}/guess-the-balance/admin?status=DRAFT
+Authorization: Bearer {{adminToken}}
+
+### 4. Open Guessing (Admin)
+# Replace :id with actual game ID from create response
+PATCH {{baseUrl}}/guess-the-balance/admin/1/open
+Authorization: Bearer {{adminToken}}
+
+### 5. Get All Guesses for a Game (Admin)
+# Replace :id with actual game ID
+GET {{baseUrl}}/guess-the-balance/admin/1/guesses
+Authorization: Bearer {{adminToken}}
+
+### 6. Close Guessing (Admin)
+# Replace :id with actual game ID
+PATCH {{baseUrl}}/guess-the-balance/admin/1/close
+Authorization: Bearer {{adminToken}}
+
+### 7. Complete Game - Draw Winner (Admin)
+# Replace :id with actual game ID
+POST {{baseUrl}}/guess-the-balance/admin/1/complete
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "finalBalance": 1250.50
+}
+
+### 8. Delete Game (Admin)
+# Replace :id with actual game ID
+DELETE {{baseUrl}}/guess-the-balance/admin/1
+Authorization: Bearer {{adminToken}}
+
+### ==================== USER ENDPOINTS ====================
+
+### 9. Get Active Games (User)
+GET {{baseUrl}}/guess-the-balance
+Authorization: Bearer {{userToken}}
+
+### 10. Get Active Games (Public - No Auth)
+GET {{baseUrl}}/guess-the-balance
+
+### 11. Get Game Details (User)
+# Replace :id with actual game ID
+GET {{baseUrl}}/guess-the-balance/1
+Authorization: Bearer {{userToken}}
+
+### 12. Submit Guess (User)
+# Replace :id with actual game ID
+POST {{baseUrl}}/guess-the-balance/1/guess
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "guessAmount": 1200.00
+}
+
+### 13. Update Guess (User - Same endpoint, will upsert)
+# Replace :id with actual game ID
+POST {{baseUrl}}/guess-the-balance/1/guess
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "guessAmount": 1300.00
+}
+
+### 14. Get My Guess (User)
+# Replace :id with actual game ID
+GET {{baseUrl}}/guess-the-balance/1/my-guess
+Authorization: Bearer {{userToken}}
+
+### 15. Get Completed Games (User)
+GET {{baseUrl}}/guess-the-balance/completed
+Authorization: Bearer {{userToken}}
+
+### 16. Get Completed Games (Public - No Auth)
+GET {{baseUrl}}/guess-the-balance/completed
+
+### ==================== ERROR CASES ====================
+
+### 17. Submit Guess - Game Not Open (Should Fail)
+POST {{baseUrl}}/guess-the-balance/1/guess
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "guessAmount": 1500.00
+}
+
+### 18. Submit Guess - Invalid Amount (Should Fail)
+POST {{baseUrl}}/guess-the-balance/1/guess
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "guessAmount": -100.00
+}
+
+### 19. Submit Guess - Missing Amount (Should Fail)
+POST {{baseUrl}}/guess-the-balance/1/guess
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+}
+
+### 20. Open Guessing - Not Admin (Should Fail)
+PATCH {{baseUrl}}/guess-the-balance/admin/1/open
+Authorization: Bearer {{userToken}}
+
+### 21. Complete Game - Missing Final Balance (Should Fail)
+POST {{baseUrl}}/guess-the-balance/admin/1/complete
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+}
+
+### 22. Get Game Details - Invalid ID (Should Fail)
+GET {{baseUrl}}/guess-the-balance/99999
+Authorization: Bearer {{userToken}}
+
+### ==================== COMPLETE WORKFLOW TEST ====================
+
+### WORKFLOW: Complete Game Flow
+# 1. Admin creates game (use request #1)
+# 2. Admin opens guessing (use request #4)
+# 3. User 1 submits guess (use request #12)
+# 4. User 2 submits guess (change token and use request #12)
+# 5. User 1 updates guess (use request #13)
+# 6. Admin views all guesses (use request #5)
+# 7. Admin closes guessing (use request #6)
+# 8. User tries to guess (should fail - use request #17)
+# 9. Admin completes game (use request #7)
+# 10. Users view completed games (use request #15)
+
+### ==================== NOTES ====================
+# 
+# To get tokens:
+# 1. Start the backend server: npm run dev
+# 2. Login via Discord OAuth in the frontend
+# 3. Check browser DevTools > Application > Local Storage
+# 4. Copy the token value
+# 5. Replace {{adminToken}} and {{userToken}} above
+#
+# Admin Token: User must be in ADMIN_DISCORD_IDS env variable
+# User Token: Any authenticated user
+#
+# Test Order:
+# 1. Create game (#1)
+# 2. Open guessing (#4)
+# 3. Submit guesses (#12, #13)
+# 4. View guesses (#5)
+# 5. Close guessing (#6)
+# 6. Complete game (#7)
+# 7. View completed (#15)
+#

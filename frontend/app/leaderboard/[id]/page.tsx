@@ -236,12 +236,12 @@ export default function PublicLeaderboardPage() {
                                 : `#${ranking.rank}`}
                         </div>
 
-                        <div className="flex-1">
-                          <div className="font-bold text-lg">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-lg truncate">
                             {ranking.username}
                           </div>
                           {ranking.kickUsername && (
-                            <div className="text-sm text-gray-400">
+                            <div className="text-sm text-gray-400 truncate">
                               Kick: {ranking.kickUsername}
                             </div>
                           )}

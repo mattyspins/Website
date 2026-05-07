@@ -311,12 +311,14 @@ export default function AdminUsers() {
                   key={user.id}
                   className="border-b border-purple-500/10 hover:bg-purple-500/5"
                 >
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 max-w-0">
                     <div>
-                      <p className="text-white font-semibold">
+                      <p className="text-white font-semibold truncate">
                         {user.displayName}
                       </p>
-                      <p className="text-gray-500 text-sm">{user.discordId}</p>
+                      <p className="text-gray-500 text-sm truncate">
+                        {user.discordId}
+                      </p>
                     </div>
                   </td>
                   <td className="py-3 px-4">
