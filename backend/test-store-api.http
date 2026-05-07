@@ -1,0 +1,25 @@
+### Test Store API Endpoints
+
+# Get store items (public endpoint)
+GET https://website-production-ece1.up.railway.app/api/store/items
+Content-Type: application/json
+
+###
+
+# Get store categories (public endpoint)
+GET https://website-production-ece1.up.railway.app/api/store/categories
+Content-Type: application/json
+
+###
+
+# Get store statistics (public endpoint)
+GET https://website-production-ece1.up.railway.app/api/store/stats
+Content-Type: application/json
+
+###
+
+# Test local backend (if running locally)
+GET http://localhost:3001/api/store/items
+Content-Type: application/json
+
+###

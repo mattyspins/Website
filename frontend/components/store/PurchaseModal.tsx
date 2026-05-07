@@ -30,15 +30,45 @@ export default function PurchaseModal({
 
   useEffect(() => {
     // Get user points from localStorage or API
-    const userInfo = localStorage.getItem("user_info");
-    if (userInfo) {
-      try {
-        const user = JSON.parse(userInfo);
-        setUserPoints(user.points || 0);
-      } catch (err) {
-        console.error("Failed to parse user info:", err);
+    const fetchUserPoints = async () => {
+      const userInfo = localStorage.getItem("user_info");
+      if (userInfo) {
+        try {
+          const user = JSON.parse(userInfo);
+          if (user.points !== undefined) {
+            setUserPoints(user.points || 0);
+            return;
+          }
+        } catch (err) {
+          console.error("Failed to parse user info:", err);
+        }
       }
-    }
+
+      // Fallback: fetch from API if localStorage doesn't have points
+      try {
+        const accessToken = localStorage.getItem("access_token");
+        if (accessToken) {
+          const response = await fetch("/api/auth/me", {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.user) {
+              setUserPoints(data.user.points || 0);
+              // Update localStorage with complete user info
+              localStorage.setItem("user_info", JSON.stringify(data.user));
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch user points:", err);
+      }
+    };
+
+    fetchUserPoints();
   }, []);
 
   const totalPrice = quantity * item.price;

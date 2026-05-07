@@ -37,6 +37,8 @@ export default function AuthButtons() {
           const data = await response.json();
           if (data.success && data.user) {
             setUser(data.user);
+            // Update localStorage with complete user info including points
+            localStorage.setItem("user_info", JSON.stringify(data.user));
           }
         } else {
           // Token invalid, clear it
@@ -165,10 +167,16 @@ export default function AuthButtons() {
 
                     if (response.ok && data.success) {
                       alert("Kick account verified successfully!");
-                      setUser({
+                      const updatedUser = {
                         ...user,
                         kickUsername: data.user.kickUsername,
-                      });
+                      };
+                      setUser(updatedUser);
+                      // Update localStorage with the updated user info
+                      localStorage.setItem(
+                        "user_info",
+                        JSON.stringify(updatedUser),
+                      );
                       setShowKickModal(false);
                     } else {
                       alert(
