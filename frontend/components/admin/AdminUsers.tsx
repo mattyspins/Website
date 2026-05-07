@@ -313,10 +313,16 @@ export default function AdminUsers() {
                 >
                   <td className="py-3 px-4 max-w-0">
                     <div>
-                      <p className="text-white font-semibold truncate">
+                      <p
+                        className="text-white font-semibold truncate"
+                        title={user.displayName}
+                      >
                         {user.displayName}
                       </p>
-                      <p className="text-gray-500 text-sm truncate">
+                      <p
+                        className="text-gray-500 text-sm truncate"
+                        title={user.discordId}
+                      >
                         {user.discordId}
                       </p>
                     </div>

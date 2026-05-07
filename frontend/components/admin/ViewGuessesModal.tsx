@@ -163,7 +163,10 @@ export default function ViewGuessesModal({
                           className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-blue-500/50 mr-2 sm:mr-3 flex-shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-white font-semibold text-sm sm:text-base truncate">
+                          <p
+                            className="text-white font-semibold text-sm sm:text-base truncate"
+                            title={guess.user?.displayName || "Unknown User"}
+                          >
                             {guess.user?.displayName || "Unknown User"}
                           </p>
                           <p className="text-gray-400 text-xs sm:text-sm">

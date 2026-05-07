@@ -86,7 +86,10 @@ export default function CompletedGameCard({
                 )}
               </div>
               <div className="ml-2 sm:ml-3 min-w-0 flex-1">
-                <p className="text-white font-bold text-sm sm:text-base truncate">
+                <p
+                  className="text-white font-bold text-sm sm:text-base truncate"
+                  title={game.winner.displayName}
+                >
                   {game.winner.displayName}
                 </p>
                 <p className="text-yellow-400 text-xs sm:text-sm font-semibold">

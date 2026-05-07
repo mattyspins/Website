@@ -66,7 +66,10 @@ export default function UserProfile({
 
         {/* Username and Points */}
         <div className="hidden md:flex flex-col items-start min-w-0 flex-1 mr-2">
-          <span className="text-sm font-semibold truncate max-w-full">
+          <span
+            className="text-sm font-semibold truncate max-w-full"
+            title={user.displayName}
+          >
             {user.displayName}
           </span>
           <span className="text-xs text-purple-200">
@@ -124,7 +127,10 @@ export default function UserProfile({
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white font-semibold truncate">
+                  <p
+                    className="text-white font-semibold truncate"
+                    title={user.displayName}
+                  >
                     {user.displayName}
                   </p>
                   <p className="text-purple-300 text-sm">

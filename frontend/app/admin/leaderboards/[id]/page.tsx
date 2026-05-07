@@ -366,10 +366,15 @@ export default function ManageLeaderboardPage() {
                         </span>
                       </td>
                       <td className="py-3 px-4 font-semibold max-w-0">
-                        <div className="truncate">{ranking.username}</div>
+                        <div className="truncate" title={ranking.username}>
+                          {ranking.username}
+                        </div>
                       </td>
                       <td className="py-3 px-4 text-gray-400 max-w-0">
-                        <div className="truncate">
+                        <div
+                          className="truncate"
+                          title={ranking.kickUsername || "Not set"}
+                        >
                           {ranking.kickUsername || "-"}
                         </div>
                       </td>

@@ -162,7 +162,10 @@ export default function AdminStoreItemCard({
 
         {/* Item Header */}
         <div className="mb-4">
-          <h3 className="text-lg sm:text-xl font-bold text-white mb-2 truncate">
+          <h3
+            className="text-lg sm:text-xl font-bold text-white mb-2 truncate"
+            title={item.name}
+          >
             {item.name}
           </h3>
           <div className="flex items-center justify-between">
