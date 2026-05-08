@@ -4,6 +4,9 @@ import { motion } from "framer-motion";
 import { ShoppingBag, Package, Star, Filter, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Breadcrumb from "@/components/ui/Breadcrumb";
+import { CardSkeleton } from "@/components/ui/Skeleton";
+import { LoadingError, NetworkError } from "@/components/ui/ErrorState";
 import { storeApi } from "@/lib/api/store";
 import type { StoreItem, StoreCategory } from "@/types/store";
 import StoreItemCard from "@/components/store/StoreItemCard";
@@ -20,6 +23,8 @@ export default function StorePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+
+  const breadcrumbItems = [{ label: "Store" }];
 
   useEffect(() => {
     checkAuth();
@@ -91,8 +96,34 @@ export default function StorePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 flex items-center justify-center pt-20">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
+        <div className="max-w-7xl mx-auto">
+          <Breadcrumb items={breadcrumbItems} className="mb-6" />
+
+          {/* Header Skeleton */}
+          <div className="text-center mb-8 sm:mb-12">
+            <div className="flex flex-col sm:flex-row items-center justify-center mb-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-700 rounded-lg animate-pulse mb-2 sm:mb-0 sm:mr-4" />
+              <div className="h-8 sm:h-10 bg-gray-700 rounded-lg animate-pulse w-64" />
+            </div>
+            <div className="h-4 bg-gray-800 rounded animate-pulse w-80 mx-auto" />
+          </div>
+
+          {/* Filters Skeleton */}
+          <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-4 sm:p-6 mb-8">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1 h-12 bg-gray-700 rounded-lg animate-pulse" />
+              <div className="w-48 h-12 bg-gray-700 rounded-lg animate-pulse" />
+            </div>
+          </div>
+
+          {/* Items Grid Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <CardSkeleton key={index} />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -100,6 +131,9 @@ export default function StorePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
       <div className="max-w-7xl mx-auto">
+        {/* Breadcrumb Navigation */}
+        <Breadcrumb items={breadcrumbItems} className="mb-6" />
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -137,13 +171,9 @@ export default function StorePage() {
         )}
 
         {error && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-8 text-center"
-          >
-            <p className="text-red-300">{error}</p>
-          </motion.div>
+          <div className="mb-8">
+            <NetworkError onRetry={loadStoreData} />
+          </div>
         )}
 
         {/* Filters and Search */}

@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/ToastProvider";
+import Breadcrumb from "@/components/ui/Breadcrumb";
+import { TableSkeleton } from "@/components/ui/Skeleton";
+import { LoadingError } from "@/components/ui/ErrorState";
 import AdminUsers from "@/components/admin/AdminUsers";
 import AdminSchedule from "@/components/admin/AdminSchedule";
 import AdminRaffles from "@/components/admin/AdminRaffles";
@@ -23,8 +26,11 @@ export default function AdminDashboard() {
   // Admin Dashboard with Guess the Balance feature - May 2026
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const { error } = useToast();
+
+  const breadcrumbItems = [{ label: "Admin Dashboard" }];
 
   useEffect(() => {
     checkAdminAccess();
@@ -58,14 +64,39 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error("Admin check failed:", error);
-      router.push("/");
+      setLoadingError("Failed to verify admin access. Please try again.");
+      setLoading(false);
     }
+  };
+
+  const retryAuth = () => {
+    setLoadingError(null);
+    setLoading(true);
+    checkAdminAccess();
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
+        <div className="max-w-7xl mx-auto">
+          <Breadcrumb items={breadcrumbItems} className="mb-6" />
+          <div className="mb-8">
+            <div className="h-8 bg-gray-700 rounded-lg animate-pulse mb-2 w-64"></div>
+            <div className="h-4 bg-gray-800 rounded animate-pulse w-48"></div>
+          </div>
+          <TableSkeleton rows={6} columns={5} />
+        </div>
+      </div>
+    );
+  }
+
+  if (loadingError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
+        <div className="max-w-7xl mx-auto">
+          <Breadcrumb items={breadcrumbItems} className="mb-6" />
+          <LoadingError onRetry={retryAuth} resource="admin dashboard" />
+        </div>
       </div>
     );
   }
@@ -84,6 +115,9 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
       <div className="max-w-7xl mx-auto">
+        {/* Breadcrumb Navigation */}
+        <Breadcrumb items={breadcrumbItems} className="mb-6" />
+
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
           <div>

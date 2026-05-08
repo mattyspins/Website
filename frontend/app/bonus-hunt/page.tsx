@@ -4,6 +4,9 @@ import { motion } from "framer-motion";
 import { Target, Trophy, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Breadcrumb from "@/components/ui/Breadcrumb";
+import { GameCardSkeleton } from "@/components/ui/Skeleton";
+import { LoadingError } from "@/components/ui/ErrorState";
 import { guessTheBalanceApi } from "@/lib/api/guessTheBalance";
 import type { GuessTheBalanceGame } from "@/types/guessTheBalance";
 import GuessTheBalanceCard from "@/components/GuessTheBalanceCard";
@@ -18,6 +21,8 @@ export default function BonusHuntPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const breadcrumbItems = [{ label: "Bonus Hunt", icon: Target }];
 
   useEffect(() => {
     checkAuth();
@@ -55,8 +60,39 @@ export default function BonusHuntPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 flex items-center justify-center pt-20">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
+        <div className="max-w-7xl mx-auto">
+          <Breadcrumb items={breadcrumbItems} className="mb-6" />
+
+          {/* Header Skeleton */}
+          <div className="text-center mb-12">
+            <div className="flex flex-col sm:flex-row items-center justify-center mb-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-700 rounded-lg animate-pulse mb-2 sm:mb-0 sm:mr-4" />
+              <div className="h-8 sm:h-10 bg-gray-700 rounded-lg animate-pulse w-64" />
+            </div>
+            <div className="h-4 bg-gray-800 rounded animate-pulse w-96 mx-auto" />
+          </div>
+
+          {/* Games Grid Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div>
+              <div className="h-6 bg-gray-700 rounded animate-pulse w-32 mb-4" />
+              <div className="space-y-6">
+                {Array.from({ length: 2 }).map((_, index) => (
+                  <GameCardSkeleton key={index} />
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="h-6 bg-gray-700 rounded animate-pulse w-40 mb-4" />
+              <div className="space-y-6">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <GameCardSkeleton key={index} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -64,6 +100,9 @@ export default function BonusHuntPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
       <div className="max-w-7xl mx-auto">
+        {/* Breadcrumb Navigation */}
+        <Breadcrumb items={breadcrumbItems} className="mb-6" />
+
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
