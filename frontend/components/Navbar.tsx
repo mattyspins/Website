@@ -57,7 +57,9 @@ export default function Navbar() {
               </Link>
             ))}
 
-            <AuthButtons />
+            <div data-auth-button>
+              <AuthButtons />
+            </div>
           </div>
 
           {/* Mobile menu button */}
@@ -96,7 +98,10 @@ export default function Navbar() {
                 </Link>
               ))}
 
-              <div className="pt-4 border-t border-gray-700/50">
+              <div
+                className="pt-4 border-t border-gray-700/50"
+                data-auth-button
+              >
                 <AuthButtons />
               </div>
             </div>

@@ -5,6 +5,13 @@ import { useState, useEffect } from "react";
 import UserProfile from "./UserProfile";
 import { useToast } from "./ui/ToastProvider";
 import { API_ENDPOINTS } from "@/lib/api";
+import {
+  storeAuthData,
+  getStoredUser,
+  initializeAuth,
+  clearAuthData,
+  updateStoredUser,
+} from "@/lib/authPersistence";
 
 interface User {
   id: string;
@@ -25,6 +32,15 @@ export default function AuthButtons() {
   // Check if user is logged in on component mount
   useEffect(() => {
     const checkAuth = async () => {
+      // Try to initialize auth from stored tokens
+      const storedUser = await initializeAuth();
+
+      if (storedUser) {
+        setUser(storedUser);
+        return;
+      }
+
+      // Fallback: check with backend if we have a token
       const accessToken = localStorage.getItem("access_token");
       if (!accessToken) return;
 
@@ -39,13 +55,12 @@ export default function AuthButtons() {
           const data = await response.json();
           if (data.success && data.user) {
             setUser(data.user);
-            // Update localStorage with complete user info including points
-            localStorage.setItem("user_info", JSON.stringify(data.user));
+            // Store user info for persistence
+            updateStoredUser(data.user);
           }
         } else {
           // Token invalid, clear it
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("refresh_token");
+          clearAuthData();
         }
       } catch (error) {
         console.error("Auth check failed:", error);
@@ -80,8 +95,8 @@ export default function AuthButtons() {
           "Failed to start Discord login. Please try again.",
         );
       }
-    } catch (error) {
-      console.error("Discord login error:", error);
+    } catch (err) {
+      console.error("Discord login error:", err);
       error(
         "Connection Error",
         "Failed to connect to authentication server. Please try again.",
@@ -110,14 +125,13 @@ export default function AuthButtons() {
             Authorization: `Bearer ${accessToken}`,
           },
         });
-      } catch (error) {
-        console.error("Logout error:", error);
+      } catch (err) {
+        console.error("Logout error:", err);
       }
     }
 
-    // Clear local storage
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
+    // Clear all auth data using the persistence module
+    clearAuthData();
     setUser(null);
 
     // Redirect to home
@@ -199,8 +213,8 @@ export default function AuthButtons() {
                           "Verification failed. Please try again.",
                       );
                     }
-                  } catch (error) {
-                    console.error("Kick verification error:", error);
+                  } catch (err) {
+                    console.error("Kick verification error:", err);
                     error(
                       "Verification Error",
                       "Failed to verify Kick account. Please try again.",

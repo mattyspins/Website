@@ -108,7 +108,48 @@ export default function Hero() {
           </a>
         </motion.div>
 
-        {/* Quick stats - Removed hardcoded numbers, admin will populate via leaderboards and community growth */}
+        {/* Feature Highlights */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.2, duration: 0.8 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto"
+        >
+          <Link
+            href="/leaderboard"
+            className="glass border border-purple-500/30 rounded-xl p-6 hover:border-purple-400/50 transition-all duration-300 hover:scale-105 group"
+          >
+            <div className="text-4xl mb-3 group-hover:animate-bounce">🏆</div>
+            <h3 className="text-xl font-bold text-white mb-2">Compete & Win</h3>
+            <p className="text-gray-400 text-sm">
+              Join leaderboards and compete for amazing prizes
+            </p>
+          </Link>
+
+          <Link
+            href="/bonus-hunt"
+            className="glass border border-green-500/30 rounded-xl p-6 hover:border-green-400/50 transition-all duration-300 hover:scale-105 group"
+          >
+            <div className="text-4xl mb-3 group-hover:animate-bounce">🎯</div>
+            <h3 className="text-xl font-bold text-white mb-2">Guess & Earn</h3>
+            <p className="text-gray-400 text-sm">
+              Predict bonus hunt outcomes and earn points
+            </p>
+          </Link>
+
+          <Link
+            href="/store"
+            className="glass border border-blue-500/30 rounded-xl p-6 hover:border-blue-400/50 transition-all duration-300 hover:scale-105 group"
+          >
+            <div className="text-4xl mb-3 group-hover:animate-bounce">🛍️</div>
+            <h3 className="text-xl font-bold text-white mb-2">
+              Redeem Rewards
+            </h3>
+            <p className="text-gray-400 text-sm">
+              Spend your points on exclusive items and prizes
+            </p>
+          </Link>
+        </motion.div>
       </div>
 
       {/* Scroll indicator */}

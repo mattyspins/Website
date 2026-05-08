@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { storeAuthData } from "@/lib/authPersistence";
 
 export default function AuthCallback() {
   const searchParams = useSearchParams();
@@ -27,10 +28,6 @@ export default function AuthCallback() {
         }
 
         if (accessToken && refreshToken) {
-          // Store tokens in localStorage
-          localStorage.setItem("access_token", accessToken);
-          localStorage.setItem("refresh_token", refreshToken);
-
           // Store user info if available
           const userId = searchParams.get("user_id");
           const displayName = searchParams.get("display_name");
@@ -41,10 +38,18 @@ export default function AuthCallback() {
             const userInfo = {
               id: userId,
               displayName: decodeURIComponent(displayName),
+              avatar: "",
+              points: 0,
               isAdmin: isAdmin === "true",
               isModerator: isModerator === "true",
             };
-            localStorage.setItem("user_info", JSON.stringify(userInfo));
+
+            // Store auth data with persistence (default 1 hour expiry)
+            storeAuthData(accessToken, refreshToken, userInfo, 3600);
+          } else {
+            // Fallback: store tokens without user info
+            localStorage.setItem("access_token", accessToken);
+            localStorage.setItem("refresh_token", refreshToken);
           }
 
           setStatus("success");

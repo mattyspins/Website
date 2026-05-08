@@ -72,8 +72,9 @@ export default function UserProfile({
           >
             {user.displayName}
           </span>
-          <span className="text-xs text-purple-200">
-            {user.points.toLocaleString()} points
+          <span className="text-xs text-yellow-300 font-bold flex items-center">
+            <span className="mr-1">💰</span>
+            {user.points.toLocaleString()} pts
           </span>
         </div>
 
@@ -133,7 +134,8 @@ export default function UserProfile({
                   >
                     {user.displayName}
                   </p>
-                  <p className="text-purple-300 text-sm">
+                  <p className="text-yellow-300 text-sm font-bold flex items-center">
+                    <span className="mr-1">💰</span>
                     {user.points.toLocaleString()} points
                   </p>
                   {user.isAdmin && (
@@ -187,56 +189,12 @@ export default function UserProfile({
                 </button>
               )}
 
-              {/* Dashboard Link (Admin Only) */}
-              {user.isAdmin && (
-                <>
-                  <a
-                    href="/admin"
-                    className="block w-full px-4 py-2 text-left text-sm text-white hover:bg-purple-600/20 transition-colors flex items-center space-x-2"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                      />
-                    </svg>
-                    <span>Admin Dashboard</span>
-                  </a>
-                  <a
-                    href="/admin/audit-logs"
-                    className="block w-full px-4 py-2 text-left text-sm text-white hover:bg-purple-600/20 transition-colors flex items-center space-x-2"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    <span>Audit Logs</span>
-                  </a>
-                </>
-              )}
-
-              {/* Moderator Dashboard (Moderator Only) */}
-              {user.isModerator && !user.isAdmin && (
-                <a
-                  href="/moderator"
-                  className="block w-full px-4 py-2 text-left text-sm text-white hover:bg-blue-600/20 transition-colors flex items-center space-x-2"
-                >
+              {/* Profile Link */}
+              <a
+                href="/profile"
+                className="block w-full px-4 py-2 text-left text-sm text-white hover:bg-purple-600/20 transition-colors"
+              >
+                <div className="flex items-center space-x-2">
                   <svg
                     className="w-5 h-5"
                     fill="none"
@@ -247,33 +205,108 @@ export default function UserProfile({
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                     />
                   </svg>
-                  <span>Moderator Dashboard</span>
-                </a>
+                  <span>My Profile & Stats</span>
+                </div>
+              </a>
+
+              {/* Purchase History Link */}
+              <a
+                href="/profile/purchases"
+                className="block w-full px-4 py-2 text-left text-sm text-white hover:bg-purple-600/20 transition-colors"
+              >
+                <div className="flex items-center space-x-2">
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                    />
+                  </svg>
+                  <span>Purchase History</span>
+                </div>
+              </a>
+
+              {/* Dashboard Link (Admin Only) */}
+              {user.isAdmin && (
+                <>
+                  <a
+                    href="/admin"
+                    className="block w-full px-4 py-2 text-left text-sm text-white hover:bg-purple-600/20 transition-colors"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        />
+                      </svg>
+                      <span>Admin Dashboard</span>
+                    </div>
+                  </a>
+                  <a
+                    href="/admin/audit-logs"
+                    className="block w-full px-4 py-2 text-left text-sm text-white hover:bg-purple-600/20 transition-colors"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                      <span>Audit Logs</span>
+                    </div>
+                  </a>
+                </>
               )}
 
-              {/* Profile Link */}
-              <a
-                href="/profile"
-                className="block w-full px-4 py-2 text-left text-sm text-white hover:bg-purple-600/20 transition-colors flex items-center space-x-2"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {/* Moderator Dashboard (Moderator Only) */}
+              {user.isModerator && !user.isAdmin && (
+                <a
+                  href="/moderator"
+                  className="block w-full px-4 py-2 text-left text-sm text-white hover:bg-blue-600/20 transition-colors"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-                <span>My Profile</span>
-              </a>
+                  <div className="flex items-center space-x-2">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                      />
+                    </svg>
+                    <span>Moderator Dashboard</span>
+                  </div>
+                </a>
+              )}
 
               {/* Divider */}
               <div className="border-t border-purple-500/20 my-2"></div>

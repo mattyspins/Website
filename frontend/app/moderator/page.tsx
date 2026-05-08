@@ -126,8 +126,8 @@ export default function ModeratorDashboard() {
           data.error?.message || "Failed to suspend user",
         );
       }
-    } catch (error) {
-      console.error("Failed to suspend user:", error);
+    } catch (err) {
+      console.error("Failed to suspend user:", err);
       error("Suspension Error", "Failed to suspend user");
     }
   };
@@ -158,8 +158,8 @@ export default function ModeratorDashboard() {
           data.error?.message || "Failed to unsuspend user",
         );
       }
-    } catch (error) {
-      console.error("Failed to unsuspend user:", error);
+    } catch (err) {
+      console.error("Failed to unsuspend user:", err);
       error("Unsuspension Error", "Failed to unsuspend user");
     }
   };

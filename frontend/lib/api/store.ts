@@ -116,15 +116,7 @@ export const storeApi = {
     userId?: string,
     limit = 50,
     offset = 0,
-  ): Promise<{
-    purchases: StorePurchase[];
-    pagination: {
-      limit: number;
-      offset: number;
-      total: number;
-      hasMore: boolean;
-    };
-  }> {
+  ): Promise<any[]> {
     const url = userId
       ? `/api/store/purchases/${userId}`
       : "/api/store/purchases";
@@ -133,7 +125,8 @@ export const storeApi = {
     params.append("offset", offset.toString());
 
     const response = await api.get(`${url}?${params.toString()}`);
-    return response.data;
+    // Return the purchases array with item details
+    return response.data.purchases || [];
   },
 
   // Admin endpoints
