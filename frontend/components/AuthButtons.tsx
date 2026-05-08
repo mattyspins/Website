@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import UserProfile from "./UserProfile";
+import { useToast } from "./ui/ToastProvider";
 import { API_ENDPOINTS } from "@/lib/api";
 
 interface User {
@@ -19,6 +20,7 @@ export default function AuthButtons() {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [showKickModal, setShowKickModal] = useState(false);
+  const { success, error, info } = useToast();
 
   // Check if user is logged in on component mount
   useEffect(() => {
@@ -73,11 +75,17 @@ export default function AuthButtons() {
         window.location.href = data.authUrl;
       } else {
         console.error("Invalid response from server:", data);
-        alert("Failed to start Discord login. Please try again.");
+        error(
+          "Login Failed",
+          "Failed to start Discord login. Please try again.",
+        );
       }
     } catch (error) {
       console.error("Discord login error:", error);
-      alert("Failed to connect to authentication server. Please try again.");
+      error(
+        "Connection Error",
+        "Failed to connect to authentication server. Please try again.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +93,10 @@ export default function AuthButtons() {
 
   const handleKickLogin = () => {
     // Kick login will be implemented after Discord auth
-    alert("Kick login coming soon! Please login with Discord first.");
+    info(
+      "Coming Soon",
+      "Kick login coming soon! Please login with Discord first.",
+    );
   };
 
   const handleLogout = async () => {
@@ -166,7 +177,10 @@ export default function AuthButtons() {
                     const data = await response.json();
 
                     if (response.ok && data.success) {
-                      alert("Kick account verified successfully!");
+                      success(
+                        "Verification Successful",
+                        "Kick account verified successfully!",
+                      );
                       const updatedUser = {
                         ...user,
                         kickUsername: data.user.kickUsername,
@@ -179,14 +193,18 @@ export default function AuthButtons() {
                       );
                       setShowKickModal(false);
                     } else {
-                      alert(
+                      error(
+                        "Verification Failed",
                         data.error?.message ||
                           "Verification failed. Please try again.",
                       );
                     }
                   } catch (error) {
                     console.error("Kick verification error:", error);
-                    alert("Failed to verify Kick account. Please try again.");
+                    error(
+                      "Verification Error",
+                      "Failed to verify Kick account. Please try again.",
+                    );
                   }
                 }}
               >

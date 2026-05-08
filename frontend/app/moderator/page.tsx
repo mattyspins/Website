@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { useToast } from "@/components/ui/ToastProvider";
 import { API_ENDPOINTS } from "@/lib/api";
 
 interface User {
@@ -25,6 +26,7 @@ export default function ModeratorDashboard() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [suspendReason, setSuspendReason] = useState("");
+  const { success, error, warning } = useToast();
   const [suspendDuration, setSuspendDuration] = useState<number>(7);
 
   useEffect(() => {
@@ -47,7 +49,10 @@ export default function ModeratorDashboard() {
       if (response.ok) {
         const data = await response.json();
         if (!data.user?.isModerator && !data.user?.isAdmin) {
-          alert("Access denied. Moderator privileges required.");
+          error(
+            "Access Denied",
+            "Moderator privileges required to access this page.",
+          );
           router.push("/");
         } else {
           setLoading(false);
@@ -85,7 +90,7 @@ export default function ModeratorDashboard() {
 
   const suspendUser = async () => {
     if (!selectedUser || !suspendReason) {
-      alert("Please provide a reason for suspension");
+      warning("Missing Information", "Please provide a reason for suspension");
       return;
     }
 
@@ -109,18 +114,21 @@ export default function ModeratorDashboard() {
       );
 
       if (response.ok) {
-        alert("✅ User suspended successfully!");
+        success("User Suspended", "User suspended successfully!");
         setShowSuspendModal(false);
         setSelectedUser(null);
         setSuspendReason("");
         searchUsers(searchQuery);
       } else {
         const data = await response.json();
-        alert(data.error?.message || "Failed to suspend user");
+        error(
+          "Suspension Failed",
+          data.error?.message || "Failed to suspend user",
+        );
       }
     } catch (error) {
       console.error("Failed to suspend user:", error);
-      alert("Failed to suspend user");
+      error("Suspension Error", "Failed to suspend user");
     }
   };
 
@@ -141,15 +149,18 @@ export default function ModeratorDashboard() {
       });
 
       if (response.ok) {
-        alert("✅ User unsuspended successfully!");
+        success("User Unsuspended", "User unsuspended successfully!");
         searchUsers(searchQuery);
       } else {
         const data = await response.json();
-        alert(data.error?.message || "Failed to unsuspend user");
+        error(
+          "Unsuspension Failed",
+          data.error?.message || "Failed to unsuspend user",
+        );
       }
     } catch (error) {
       console.error("Failed to unsuspend user:", error);
-      alert("Failed to unsuspend user");
+      error("Unsuspension Error", "Failed to unsuspend user");
     }
   };
 

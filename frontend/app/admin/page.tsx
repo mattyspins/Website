@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/ToastProvider";
 import AdminUsers from "@/components/admin/AdminUsers";
 import AdminSchedule from "@/components/admin/AdminSchedule";
 import AdminRaffles from "@/components/admin/AdminRaffles";
@@ -23,6 +24,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("overview");
+  const { error } = useToast();
 
   useEffect(() => {
     checkAdminAccess();
@@ -43,7 +45,10 @@ export default function AdminDashboard() {
       if (response.ok) {
         const data = await response.json();
         if (!data.user?.isAdmin) {
-          alert("Access denied. Admin privileges required.");
+          error(
+            "Access Denied",
+            "Admin privileges required to access this page.",
+          );
           router.push("/");
         } else {
           setLoading(false);
