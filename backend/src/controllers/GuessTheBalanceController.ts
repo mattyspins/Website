@@ -148,6 +148,44 @@ export class GuessTheBalanceController {
   );
 
   /**
+   * Disqualify current winner and select next closest guess
+   * POST /api/admin/guess-the-balance/:id/disqualify-winner
+   */
+  static disqualifyWinner = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user) {
+        throw createError.unauthorized('Authentication required');
+      }
+
+      if (!req.user.isAdmin) {
+        throw createError.forbidden('Admin access required');
+      }
+
+      const { id } = req.params;
+      const { reason } = req.body;
+
+      if (!id) {
+        throw createError.badRequest('Game ID is required');
+      }
+
+      if (!reason || typeof reason !== 'string' || reason.trim().length === 0) {
+        throw createError.badRequest('Disqualification reason is required');
+      }
+
+      const game = await GuessTheBalanceService.disqualifyWinner(
+        id,
+        reason.trim()
+      );
+
+      res.json({
+        success: true,
+        message: 'Winner disqualified and new winner selected',
+        game,
+      });
+    }
+  );
+
+  /**
    * Get all guesses for a game
    * GET /api/admin/guess-the-balance/:id/guesses
    */

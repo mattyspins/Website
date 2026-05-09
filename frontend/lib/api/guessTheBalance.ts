@@ -103,6 +103,23 @@ export const guessTheBalanceApi = {
   },
 
   /**
+   * Disqualify current winner and select next closest guess
+   * @param gameId Game ID
+   * @param reason Reason for disqualification
+   * @returns Updated game with new winner
+   */
+  async disqualifyWinner(
+    gameId: string,
+    reason: string,
+  ): Promise<GuessTheBalanceGame> {
+    const response: GameResponse = await api.post(
+      `/api/guess-the-balance/admin/${gameId}/disqualify-winner`,
+      { reason },
+    );
+    return response.game;
+  },
+
+  /**
    * Get all guesses for a game (admin only)
    * @param gameId Game ID
    * @returns List of all guesses with user info

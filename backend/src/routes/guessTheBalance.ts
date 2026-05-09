@@ -58,6 +58,13 @@ router.post(
   GuessTheBalanceController.completeGame
 );
 
+// Disqualify winner and select next closest
+router.post(
+  '/admin/:id/disqualify-winner',
+  authMiddleware,
+  GuessTheBalanceController.disqualifyWinner
+);
+
 // Get all guesses for a game
 router.get(
   '/admin/:id/guesses',

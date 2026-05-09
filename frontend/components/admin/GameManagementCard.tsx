@@ -13,12 +13,14 @@ import {
   Eye,
   Trash2,
   Loader2,
+  UserX,
 } from "lucide-react";
 import type { GuessTheBalanceGame } from "@/types/guessTheBalance";
 import { GuessTheBalanceStatus } from "@/types/guessTheBalance";
 import { guessTheBalanceApi } from "@/lib/api/guessTheBalance";
 import ViewGuessesModal from "./ViewGuessesModal";
 import CompleteGameModal from "./CompleteGameModal";
+import DisqualifyWinnerModal from "./DisqualifyWinnerModal";
 import ConfirmDialog from "./ConfirmDialog";
 
 interface GameManagementCardProps {
@@ -37,6 +39,7 @@ export default function GameManagementCard({
   const [loading, setLoading] = useState(false);
   const [showViewGuesses, setShowViewGuesses] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showDisqualifyModal, setShowDisqualifyModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -278,7 +281,7 @@ export default function GameManagementCard({
           )}
 
           {game.status === GuessTheBalanceStatus.COMPLETED && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2">
               <button
                 onClick={() => setShowViewGuesses(true)}
                 className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
@@ -286,6 +289,16 @@ export default function GameManagementCard({
                 <Eye className="w-4 h-4" />
                 <span>View Guesses</span>
               </button>
+              {game.winner && (
+                <button
+                  onClick={() => setShowDisqualifyModal(true)}
+                  disabled={loading}
+                  className="flex items-center justify-center space-x-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-base"
+                >
+                  <UserX className="w-4 h-4" />
+                  <span>Disqualify Winner</span>
+                </button>
+              )}
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 disabled={loading}
@@ -330,6 +343,17 @@ export default function GameManagementCard({
           onClose={() => setShowCompleteModal(false)}
           onSuccess={() => {
             setShowCompleteModal(false);
+            onGameUpdated();
+          }}
+        />
+      )}
+
+      {showDisqualifyModal && (
+        <DisqualifyWinnerModal
+          game={game}
+          onClose={() => setShowDisqualifyModal(false)}
+          onSuccess={() => {
+            setShowDisqualifyModal(false);
             onGameUpdated();
           }}
         />

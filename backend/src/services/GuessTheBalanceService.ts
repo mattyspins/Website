@@ -160,7 +160,7 @@ export class GuessTheBalanceService {
         );
       }
 
-      // Calculate winner
+      // Calculate winner (excluding disqualified users)
       const winner = await this.calculateWinner(gameId, data.finalBalance);
 
       // Update game with final balance and winner
@@ -211,6 +211,117 @@ export class GuessTheBalanceService {
       }
       logger.error('Error completing game:', error);
       throw createError.internal('Failed to complete game');
+    }
+  }
+
+  /**
+   * Disqualify current winner and select next closest guess
+   */
+  static async disqualifyWinner(
+    gameId: string,
+    reason: string
+  ): Promise<GameWithWinnerResponse> {
+    try {
+      // Validate game exists and is COMPLETED
+      const game = await prisma.guessTheBalance.findUnique({
+        where: { id: gameId },
+      });
+
+      if (!game) {
+        throw createError.notFound('Game not found');
+      }
+
+      if (game.status !== GuessTheBalanceStatus.COMPLETED) {
+        throw createError.badRequest(
+          'Can only disqualify winner from completed games'
+        );
+      }
+
+      if (!game.winnerId || !game.finalBalance) {
+        throw createError.badRequest('Game has no winner to disqualify');
+      }
+
+      const previousWinnerId = game.winnerId;
+      const previousReward = game.winnerReward || 0;
+
+      // Add previous winner to disqualified list
+      const disqualifiedUsers = (game.metadata as any)?.disqualifiedUsers || [];
+      disqualifiedUsers.push({
+        userId: previousWinnerId,
+        reason,
+        disqualifiedAt: new Date().toISOString(),
+      });
+
+      // Calculate new winner (excluding disqualified users)
+      const newWinner = await this.calculateWinner(
+        gameId,
+        game.finalBalance.toNumber(),
+        disqualifiedUsers.map((d: any) => d.userId)
+      );
+
+      if (!newWinner) {
+        throw createError.badRequest(
+          'No eligible winner found after disqualification'
+        );
+      }
+
+      // Refund points from previous winner if they were awarded
+      if (previousReward > 0) {
+        await this.refundPoints(
+          previousWinnerId,
+          previousReward,
+          `Disqualified from Guess the Balance: ${reason}`
+        );
+      }
+
+      // Update game with new winner
+      const updatedGame = await prisma.guessTheBalance.update({
+        where: { id: gameId },
+        data: {
+          winnerId: newWinner.userId,
+          winnerGuess: new Prisma.Decimal(newWinner.guessAmount),
+          metadata: {
+            ...(game.metadata as any),
+            disqualifiedUsers,
+          },
+        },
+        include: {
+          winner: true,
+        },
+      });
+
+      // Award points to new winner
+      if (previousReward > 0) {
+        await this.awardPoints(
+          newWinner.userId,
+          previousReward,
+          `Won Guess the Balance game: ${game.title || gameId}`
+        );
+
+        // Send win notification to new winner
+        await NotificationService.notifyGameWin(
+          newWinner.userId,
+          game.title || 'Guess the Balance',
+          previousReward,
+          gameId
+        );
+      }
+
+      logger.info(
+        `Game ${gameId} winner disqualified. Previous: ${previousWinnerId}, New: ${newWinner.userId}, Reason: ${reason}`
+      );
+
+      return this.formatGameWithWinnerResponse(
+        updatedGame,
+        newWinner,
+        game.finalBalance.toNumber()
+      );
+    } catch (error) {
+      if (error instanceof Error && 'statusCode' in error) {
+        throw error;
+      }
+      logger.error('Error disqualifying winner:', error);
+      throw createError.internal('Failed to disqualify winner');
     }
   }
 
@@ -600,18 +711,26 @@ export class GuessTheBalanceService {
    */
   private static async calculateWinner(
     gameId: string,
-    finalBalance: number
+    finalBalance: number,
+    excludedUserIds: string[] = []
   ): Promise<WinnerInfo | null> {
     try {
       const guesses = await prisma.guessSubmission.findMany({
-        where: { gameId },
+        where: {
+          gameId,
+          userId: {
+            notIn: excludedUserIds,
+          },
+        },
         orderBy: {
           submittedAt: 'asc', // First submission wins in case of tie
         },
       });
 
       if (guesses.length === 0) {
-        logger.info(`No guesses for game ${gameId}, no winner`);
+        logger.info(
+          `No eligible guesses for game ${gameId}, no winner (excluded: ${excludedUserIds.length})`
+        );
         return null;
       }
 
@@ -639,6 +758,43 @@ export class GuessTheBalanceService {
       };
     } catch (error) {
       logger.error('Error calculating winner:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Refund points from a user
+   */
+  private static async refundPoints(
+    userId: string,
+    points: number,
+    reason: string
+  ): Promise<void> {
+    try {
+      await prisma.$transaction([
+        // Deduct points from user
+        prisma.user.update({
+          where: { id: userId },
+          data: {
+            points: { decrement: points },
+            totalEarned: { decrement: points },
+          },
+        }),
+        // Create point transaction record
+        prisma.pointTransaction.create({
+          data: {
+            userId,
+            amount: -points,
+            transactionType: 'REFUND',
+            reason,
+            referenceType: 'GUESS_THE_BALANCE',
+          },
+        }),
+      ]);
+
+      logger.info(`Refunded ${points} points from user ${userId}: ${reason}`);
+    } catch (error) {
+      logger.error('Error refunding points:', error);
       throw error;
     }
   }
