@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -15,9 +15,26 @@ import {
 } from "lucide-react";
 import AuthButtons from "./AuthButtons";
 import MattySpinsAvatar from "./MattySpinsAvatar";
+import NotificationDropdown from "./NotificationDropdown";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Check if user is logged in
+    const accessToken = localStorage.getItem("access_token");
+    setIsLoggedIn(!!accessToken);
+
+    // Listen for auth changes
+    const handleStorageChange = () => {
+      const token = localStorage.getItem("access_token");
+      setIsLoggedIn(!!token);
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   const navItems = [
     { name: "Home", href: "/", icon: Home },
@@ -56,6 +73,8 @@ export default function Navbar() {
                 <span>{item.name}</span>
               </Link>
             ))}
+
+            {isLoggedIn && <NotificationDropdown />}
 
             <div data-auth-button>
               <AuthButtons />

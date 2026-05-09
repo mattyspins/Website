@@ -1,6 +1,7 @@
 import { PrismaClient, GuessTheBalanceStatus, Prisma } from '@prisma/client';
 import { logger } from '@/utils/logger';
 import { createError } from '@/middleware/errorHandler';
+import { NotificationService } from '@/services/NotificationService';
 import {
   CreateGameDTO,
   CompleteGameDTO,
@@ -184,6 +185,14 @@ export class GuessTheBalanceService {
           winner.userId,
           data.winnerReward,
           `Won Guess the Balance game: ${game.title || gameId}`
+        );
+
+        // Send win notification to user
+        await NotificationService.notifyGameWin(
+          winner.userId,
+          game.title || 'Guess the Balance',
+          data.winnerReward,
+          gameId
         );
       }
 

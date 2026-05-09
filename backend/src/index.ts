@@ -132,6 +132,7 @@ import moderatorRoutes from '@/routes/moderator';
 import scheduleRoutes from '@/routes/schedule';
 import guessTheBalanceRoutes from '@/routes/guessTheBalance';
 import storeRoutes from '@/routes/store';
+import notificationRoutes from '@/routes/notifications';
 // Commented out until Kick OAuth is implemented
 // import viewingRoutes from '@/routes/viewing';
 // import bonusHuntRoutes from '@/routes/bonusHunt';
@@ -145,6 +146,7 @@ app.use('/api/moderator', moderatorRoutes);
 app.use('/api/schedule', scheduleRoutes);
 app.use('/api/guess-the-balance', guessTheBalanceRoutes);
 app.use('/api/store', storeRoutes);
+app.use('/api/notifications', notificationRoutes);
 // Commented out until Kick OAuth is implemented
 // app.use('/api/viewing', viewingRoutes);
 // app.use('/api/bonus-hunt', bonusHuntRoutes);

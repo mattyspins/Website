@@ -5,6 +5,7 @@ import { logger } from '@/utils/logger';
 import { createError } from '@/middleware/errorHandler';
 import { PointsService } from '@/services/PointsService';
 import { StatisticsService } from '@/services/StatisticsService';
+import { NotificationService } from '@/services/NotificationService';
 
 export interface StoreItem {
   id: string;
@@ -254,8 +255,8 @@ export class StoreService {
       // Clear caches
       await this.clearStoreCaches(itemId);
 
-      // Send Discord notification for new purchase
-      await this.sendPurchaseNotification(result, userId, itemId);
+      // Send in-app notifications
+      await this.sendPurchaseNotifications(result, userId, itemId);
 
       logger.info(
         `Store purchase: ${userId} -> ${quantity}x ${itemId} for ${result.totalPrice} points`
@@ -718,19 +719,12 @@ export class StoreService {
     }
   }
 
-  private static async sendPurchaseNotification(
+  private static async sendPurchaseNotifications(
     purchase: any,
     userId: string,
     itemId: string
   ): Promise<void> {
     try {
-      const webhookUrl = process.env['DISCORD_PURCHASE_WEBHOOK_URL'];
-
-      if (!webhookUrl) {
-        logger.warn('Discord purchase webhook URL not configured');
-        return;
-      }
-
       // Get user and item details
       const [user, item] = await Promise.all([
         prisma.user.findUnique({ where: { id: userId } }),
@@ -742,60 +736,44 @@ export class StoreService {
         return;
       }
 
-      const embed = {
-        title: '🛒 New Store Purchase',
-        color: 0x9333ea, // Purple color
-        fields: [
-          {
-            name: '👤 Customer',
-            value: `${user.displayName}\nDiscord ID: ${user.discordId}`,
-            inline: true,
-          },
-          {
-            name: '📦 Item',
-            value: `${item.name}\nCategory: ${item.category}`,
-            inline: true,
-          },
-          {
-            name: '💰 Details',
-            value: `Quantity: ${purchase.quantity}x\nTotal: ${purchase.totalPrice.toLocaleString()} points`,
-            inline: true,
-          },
-          {
-            name: '📋 Status',
-            value:
-              purchase.status === 'completed'
-                ? '✅ Completed (Instant)'
-                : '⏳ Pending (Manual Delivery)',
-            inline: false,
-          },
-          {
-            name: '🆔 Purchase ID',
-            value: `\`${purchase.id}\``,
-            inline: false,
-          },
-        ],
-        timestamp: new Date().toISOString(),
-        footer: {
-          text: 'MattySpins Store',
-        },
-      };
-
-      await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          embeds: [embed],
-        }),
-      });
-
-      logger.info(
-        `Purchase notification sent to Discord for purchase ${purchase.id}`
+      // Notify the user about their purchase
+      await NotificationService.notifyPurchase(
+        userId,
+        item.name,
+        purchase.totalPrice,
+        purchase.id
       );
+
+      // Notify all admins about the purchase
+      const adminDiscordIds = (process.env['ADMIN_DISCORD_IDS'] || '')
+        .split(',')
+        .map(id => id.trim())
+        .filter(Boolean);
+
+      if (adminDiscordIds.length > 0) {
+        const admins = await prisma.user.findMany({
+          where: {
+            discordId: { in: adminDiscordIds },
+          },
+          select: { id: true },
+        });
+
+        await Promise.all(
+          admins.map(admin =>
+            NotificationService.notifyAdminPurchase(
+              admin.id,
+              user.displayName,
+              item.name,
+              purchase.totalPrice,
+              purchase.id
+            )
+          )
+        );
+      }
+
+      logger.info(`Purchase notifications sent for purchase ${purchase.id}`);
     } catch (error) {
-      logger.error('Error sending purchase notification:', error);
+      logger.error('Error sending purchase notifications:', error);
       // Don't throw error - notification failure shouldn't block purchase
     }
   }
