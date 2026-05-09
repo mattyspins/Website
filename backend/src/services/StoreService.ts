@@ -254,6 +254,9 @@ export class StoreService {
       // Clear caches
       await this.clearStoreCaches(itemId);
 
+      // Send Discord notification for new purchase
+      await this.sendPurchaseNotification(result, userId, itemId);
+
       logger.info(
         `Store purchase: ${userId} -> ${quantity}x ${itemId} for ${result.totalPrice} points`
       );
@@ -712,6 +715,88 @@ export class StoreService {
       await Promise.all(keysToDelete.map(key => RedisService.del(key)));
     } catch (error) {
       logger.error('Error clearing store caches:', error);
+    }
+  }
+
+  private static async sendPurchaseNotification(
+    purchase: any,
+    userId: string,
+    itemId: string
+  ): Promise<void> {
+    try {
+      const webhookUrl = process.env['DISCORD_PURCHASE_WEBHOOK_URL'];
+
+      if (!webhookUrl) {
+        logger.warn('Discord purchase webhook URL not configured');
+        return;
+      }
+
+      // Get user and item details
+      const [user, item] = await Promise.all([
+        prisma.user.findUnique({ where: { id: userId } }),
+        prisma.storeItem.findUnique({ where: { id: itemId } }),
+      ]);
+
+      if (!user || !item) {
+        logger.warn('User or item not found for purchase notification');
+        return;
+      }
+
+      const embed = {
+        title: '🛒 New Store Purchase',
+        color: 0x9333ea, // Purple color
+        fields: [
+          {
+            name: '👤 Customer',
+            value: `${user.displayName}\nDiscord ID: ${user.discordId}`,
+            inline: true,
+          },
+          {
+            name: '📦 Item',
+            value: `${item.name}\nCategory: ${item.category}`,
+            inline: true,
+          },
+          {
+            name: '💰 Details',
+            value: `Quantity: ${purchase.quantity}x\nTotal: ${purchase.totalPrice.toLocaleString()} points`,
+            inline: true,
+          },
+          {
+            name: '📋 Status',
+            value:
+              purchase.status === 'completed'
+                ? '✅ Completed (Instant)'
+                : '⏳ Pending (Manual Delivery)',
+            inline: false,
+          },
+          {
+            name: '🆔 Purchase ID',
+            value: `\`${purchase.id}\``,
+            inline: false,
+          },
+        ],
+        timestamp: new Date().toISOString(),
+        footer: {
+          text: 'MattySpins Store',
+        },
+      };
+
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          embeds: [embed],
+        }),
+      });
+
+      logger.info(
+        `Purchase notification sent to Discord for purchase ${purchase.id}`
+      );
+    } catch (error) {
+      logger.error('Error sending purchase notification:', error);
+      // Don't throw error - notification failure shouldn't block purchase
     }
   }
 }
