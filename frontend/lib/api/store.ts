@@ -173,6 +173,14 @@ export const storeApi = {
     return response.data;
   },
 
+  async completePurchase(purchaseId: string): Promise<StorePurchase> {
+    const response = await api.post(
+      `/api/store/admin/complete/${purchaseId}`,
+      {},
+    );
+    return response.data;
+  },
+
   async getAllPurchases(filters?: {
     limit?: number;
     offset?: number;

@@ -370,6 +370,41 @@ export class StoreController {
     }
   );
 
+  // Admin: Complete purchase (mark as delivered)
+  static completePurchase = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) {
+        throw createError.forbidden('Admin access required');
+      }
+
+      const { purchaseId } = req.params;
+
+      if (!purchaseId) {
+        throw createError.badRequest('Purchase ID is required');
+      }
+
+      try {
+        const purchase = await StoreService.completePurchase(
+          purchaseId,
+          req.user.id
+        );
+
+        logger.info(
+          `Purchase completed by admin ${req.user.id}: ${purchaseId}`
+        );
+
+        res.json({
+          success: true,
+          data: purchase,
+          message: 'Purchase marked as completed successfully',
+        });
+      } catch (error) {
+        logger.error('Error completing purchase:', error);
+        throw error;
+      }
+    }
+  );
+
   // Admin: Process refund
   static processRefund = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -430,17 +465,23 @@ export class StoreController {
       const offsetNum = Math.max(parseInt(offset as string) || 0, 0);
 
       try {
-        // This would need to be implemented in StoreService
-        // For now, we'll return a placeholder response
+        const result = await StoreService.getAllPurchases({
+          limit: limitNum,
+          offset: offsetNum,
+          status: status as string,
+          userId: userId as string,
+          itemId: itemId as string,
+        });
+
         res.json({
           success: true,
           data: {
-            purchases: [],
+            purchases: result.purchases,
             pagination: {
               limit: limitNum,
               offset: offsetNum,
-              total: 0,
-              hasMore: false,
+              total: result.total,
+              hasMore: offsetNum + limitNum < result.total,
             },
             filters: {
               status: status || null,
@@ -448,8 +489,6 @@ export class StoreController {
               itemId: itemId || null,
             },
           },
-          message:
-            'Admin purchase management endpoint - implementation pending',
         });
       } catch (error) {
         logger.error('Error getting all purchases:', error);

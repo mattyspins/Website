@@ -290,6 +290,32 @@ export default function AdminPurchases() {
                 </div>
 
                 {/* Actions */}
+                {purchase.status === "pending" && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        try {
+                          await storeApi.completePurchase(purchase.id);
+                          success(
+                            "Purchase Completed",
+                            "Purchase marked as completed successfully",
+                          );
+                          loadPurchases();
+                        } catch (err) {
+                          console.error("Complete purchase error:", err);
+                          showError(
+                            "Complete Failed",
+                            "Failed to complete purchase",
+                          );
+                        }
+                      }}
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-semibold flex items-center gap-2"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Mark as Completed
+                    </button>
+                  </div>
+                )}
                 {purchase.status === "completed" && (
                   <div className="flex gap-2">
                     <button

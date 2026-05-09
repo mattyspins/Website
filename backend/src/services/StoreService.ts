@@ -336,6 +336,83 @@ export class StoreService {
     }
   }
 
+  // Complete purchase (mark as delivered)
+  static async completePurchase(
+    purchaseId: string,
+    adminId?: string
+  ): Promise<Purchase> {
+    try {
+      // Get purchase details
+      const purchase = await prisma.storePurchase.findUnique({
+        where: { id: purchaseId },
+        include: {
+          item: true,
+          user: true,
+        },
+      });
+
+      if (!purchase) {
+        throw createError.notFound('Purchase not found');
+      }
+
+      if (purchase.status === 'completed') {
+        throw createError.badRequest('Purchase already completed');
+      }
+
+      if (purchase.status === 'refunded') {
+        throw createError.badRequest('Cannot complete refunded purchase');
+      }
+
+      if (purchase.status === 'failed') {
+        throw createError.badRequest('Cannot complete failed purchase');
+      }
+
+      // Update purchase status to completed
+      const updatedPurchase = await prisma.storePurchase.update({
+        where: { id: purchaseId },
+        data: {
+          status: 'completed',
+          deliveredAt: new Date(),
+        },
+      });
+
+      // Send notification to user that their purchase has been completed
+      await NotificationService.createNotification({
+        userId: purchase.userId,
+        type: 'purchase_completed',
+        title: '✅ Purchase Completed',
+        message: `Your purchase of ${purchase.item.name} has been completed and delivered!`,
+        metadata: {
+          actionUrl: '/profile/purchases',
+          purchaseId: purchase.id,
+          itemName: purchase.item.name,
+        },
+      });
+
+      logger.info(
+        `Purchase completed: ${purchaseId} by admin ${adminId || 'system'}`
+      );
+
+      return {
+        id: updatedPurchase.id,
+        userId: updatedPurchase.userId,
+        itemId: updatedPurchase.itemId,
+        quantity: updatedPurchase.quantity,
+        unitPrice: updatedPurchase.unitPrice,
+        totalPrice: updatedPurchase.totalPrice,
+        status: updatedPurchase.status as any,
+        purchasedAt: updatedPurchase.purchasedAt,
+        deliveredAt: updatedPurchase.deliveredAt || undefined,
+        refundedAt: updatedPurchase.refundedAt || undefined,
+        refundReason: updatedPurchase.refundReason || undefined,
+        metadata: updatedPurchase.metadata,
+      };
+    } catch (error) {
+      logger.error('Error completing purchase:', error);
+      throw error;
+    }
+  }
+
   // Process refund
   static async processRefund(
     purchaseId: string,
@@ -690,6 +767,87 @@ export class StoreService {
     } catch (error) {
       logger.error('Error getting store statistics:', error);
       throw createError.internal('Failed to get store statistics');
+    }
+  }
+
+  // Get all purchases (admin)
+  static async getAllPurchases(filters: {
+    limit?: number;
+    offset?: number;
+    status?: string;
+    userId?: string;
+    itemId?: string;
+  }): Promise<{
+    purchases: Purchase[];
+    total: number;
+  }> {
+    try {
+      const where: any = {};
+
+      if (filters.status) {
+        where.status = filters.status;
+      }
+
+      if (filters.userId) {
+        where.userId = filters.userId;
+      }
+
+      if (filters.itemId) {
+        where.itemId = filters.itemId;
+      }
+
+      const [purchases, total] = await Promise.all([
+        prisma.storePurchase.findMany({
+          where,
+          include: {
+            item: {
+              select: {
+                name: true,
+                category: true,
+              },
+            },
+            user: {
+              select: {
+                displayName: true,
+                discordId: true,
+              },
+            },
+          },
+          orderBy: { purchasedAt: 'desc' },
+          take: filters.limit || 50,
+          skip: filters.offset || 0,
+        }),
+        prisma.storePurchase.count({
+          where,
+        }),
+      ]);
+
+      return {
+        purchases: purchases.map(purchase => ({
+          id: purchase.id,
+          userId: purchase.userId,
+          itemId: purchase.itemId,
+          quantity: purchase.quantity,
+          unitPrice: purchase.unitPrice,
+          totalPrice: purchase.totalPrice,
+          status: purchase.status as any,
+          purchasedAt: purchase.purchasedAt,
+          deliveredAt: purchase.deliveredAt || undefined,
+          refundedAt: purchase.refundedAt || undefined,
+          refundReason: purchase.refundReason || undefined,
+          metadata: {
+            ...purchase.metadata,
+            itemName: purchase.item.name,
+            itemCategory: purchase.item.category,
+            userName: purchase.user.displayName,
+            userDiscordId: purchase.user.discordId,
+          },
+        })),
+        total,
+      };
+    } catch (error) {
+      logger.error('Error getting all purchases:', error);
+      throw createError.internal('Failed to get all purchases');
     }
   }
 

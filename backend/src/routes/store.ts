@@ -92,6 +92,13 @@ router.post(
   adminMiddleware,
   StoreController.processRefund
 );
+router.post(
+  '/admin/complete/:purchaseId',
+  adminLimiter,
+  authMiddleware,
+  adminMiddleware,
+  StoreController.completePurchase
+);
 router.get(
   '/admin/purchases',
   adminLimiter,
