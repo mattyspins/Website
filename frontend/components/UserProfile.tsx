@@ -1,7 +1,8 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown, User, ShoppingBag, LayoutDashboard, LogOut } from "lucide-react";
 
 interface UserProfileProps {
   user: {
@@ -14,326 +15,114 @@ interface UserProfileProps {
     kickUsername?: string;
   };
   onLogout: () => void;
-  onKickVerification: () => void;
 }
 
-export default function UserProfile({
-  user,
-  onLogout,
-  onKickVerification,
-}: UserProfileProps) {
+export default function UserProfile({ user, onLogout }: UserProfileProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
     };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      {/* Profile Button */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+    <div className="relative" ref={ref}>
+      <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2 rounded-lg transition-all duration-300 font-semibold border border-purple-400/30"
+        className="flex items-center gap-2.5 bg-navy-700/60 hover:bg-navy-700 border border-gold-500/15 hover:border-gold-500/30 text-white px-3 py-1.5 rounded-lg transition-all duration-200"
       >
         {/* Avatar */}
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center overflow-hidden">
+        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gold-600 to-gold-400 flex items-center justify-center overflow-hidden shrink-0">
           {user.avatar ? (
-            <img
-              src={user.avatar}
-              alt={user.displayName}
-              className="w-full h-full object-cover"
-            />
+            <img src={user.avatar} alt={user.displayName} className="w-full h-full object-cover" />
           ) : (
-            <span className="text-white font-bold text-sm">
+            <span className="text-white font-bold text-xs">
               {user.displayName.charAt(0).toUpperCase()}
             </span>
           )}
         </div>
 
-        {/* Username and Points */}
-        <div className="hidden md:flex flex-col items-start min-w-0 flex-1 mr-2">
-          <span
-            className="text-sm font-semibold truncate max-w-full"
-            title={user.displayName}
-          >
-            {user.displayName}
-          </span>
-          <span className="text-xs text-yellow-300 font-bold flex items-center">
-            <span className="mr-1">💰</span>
-            {user.points.toLocaleString()} pts
+        <div className="hidden md:flex flex-col items-start leading-tight">
+          <span className="text-sm font-semibold truncate max-w-[120px]">{user.displayName}</span>
+          <span className="text-xs text-gold-400 font-medium">
+            {user.points.toLocaleString()} coins
           </span>
         </div>
 
-        {/* Admin Badge */}
-        {user.isAdmin && (
-          <span className="hidden md:inline-block bg-yellow-500 text-black text-xs px-2 py-0.5 rounded-full font-bold">
-            ADMIN
+        {(user.isAdmin || user.isModerator) && (
+          <span className={`hidden md:inline text-xs px-1.5 py-0.5 rounded font-bold ${
+            user.isAdmin ? "bg-gold-500/20 text-gold-400 border border-gold-500/30" : "bg-gold-500/20 text-gold-400 border border-gold-500/30"
+          }`}>
+            {user.isAdmin ? "ADMIN" : "MOD"}
           </span>
         )}
 
-        {/* Dropdown Arrow */}
-        <svg
-          className={`w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </motion.button>
+        <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+      </button>
 
-      {/* Dropdown Menu */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-2 w-64 bg-black/95 backdrop-blur-lg border border-purple-500/30 rounded-lg shadow-2xl overflow-hidden z-50"
+            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 mt-2 w-56 bg-navy-800/95 backdrop-blur-xl border border-gold-500/15 rounded-xl shadow-2xl overflow-hidden z-50"
           >
-            {/* User Info Section */}
-            <div className="p-4 border-b border-purple-500/20">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center overflow-hidden">
+            {/* Header */}
+            <div className="px-4 py-3 border-b border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold-600 to-gold-400 flex items-center justify-center overflow-hidden shrink-0">
                   {user.avatar ? (
-                    <img
-                      src={user.avatar}
-                      alt={user.displayName}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={user.avatar} alt={user.displayName} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-white font-bold text-lg">
-                      {user.displayName.charAt(0).toUpperCase()}
-                    </span>
+                    <span className="text-white font-bold">{user.displayName.charAt(0).toUpperCase()}</span>
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p
-                    className="text-white font-semibold truncate"
-                    title={user.displayName}
-                  >
-                    {user.displayName}
-                  </p>
-                  <p className="text-yellow-300 text-sm font-bold flex items-center">
-                    <span className="mr-1">💰</span>
-                    {user.points.toLocaleString()} points
-                  </p>
-                  {user.isAdmin && (
-                    <span className="inline-block bg-yellow-500 text-black text-xs px-2 py-0.5 rounded-full font-bold mt-1">
-                      ADMIN
-                    </span>
-                  )}
-                  {user.isModerator && !user.isAdmin && (
-                    <span className="inline-block bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-bold mt-1">
-                      MOD
-                    </span>
-                  )}
+                <div className="min-w-0">
+                  <p className="text-white font-semibold text-sm truncate">{user.displayName}</p>
+                  <p className="text-gold-400 text-xs font-medium">{user.points.toLocaleString()} coins</p>
                 </div>
               </div>
             </div>
 
-            {/* Menu Items */}
-            <div className="py-2">
-              {/* Kick Verification Status */}
-              {user.kickUsername ? (
-                <div className="px-4 py-2 text-sm">
-                  <div className="flex items-center space-x-2 text-green-400">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    <span>Kick: {user.kickUsername}</span>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    onKickVerification();
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-white hover:bg-purple-600/20 transition-colors flex items-center space-x-2"
-                >
-                  <div className="w-5 h-5 bg-[#53FC18] rounded-sm flex items-center justify-center">
-                    <span className="text-black text-xs font-bold">K</span>
-                  </div>
-                  <span>Verify Kick Account</span>
-                </button>
-              )}
-
-              {/* Profile Link */}
-              <a
-                href="/profile"
-                className="block w-full px-4 py-2 text-left text-sm text-white hover:bg-purple-600/20 transition-colors"
-              >
-                <div className="flex items-center space-x-2">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                  <span>My Profile & Stats</span>
-                </div>
+            {/* Menu items */}
+            <div className="px-3 pb-2 space-y-0.5">
+              <a href="/profile" className="flex items-center gap-2.5 px-2 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                <User className="w-4 h-4 shrink-0" />
+                My Profile
+              </a>
+              <a href="/profile/purchases" className="flex items-center gap-2.5 px-2 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                <ShoppingBag className="w-4 h-4 shrink-0" />
+                Purchase History
               </a>
 
-              {/* Purchase History Link */}
-              <a
-                href="/profile/purchases"
-                className="block w-full px-4 py-2 text-left text-sm text-white hover:bg-purple-600/20 transition-colors"
-              >
-                <div className="flex items-center space-x-2">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                    />
-                  </svg>
-                  <span>Purchase History</span>
-                </div>
-              </a>
-
-              {/* Dashboard Link (Admin Only) */}
               {user.isAdmin && (
-                <>
-                  <a
-                    href="/admin"
-                    className="block w-full px-4 py-2 text-left text-sm text-white hover:bg-purple-600/20 transition-colors"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                        />
-                      </svg>
-                      <span>Admin Dashboard</span>
-                    </div>
-                  </a>
-                  <a
-                    href="/admin/audit-logs"
-                    className="block w-full px-4 py-2 text-left text-sm text-white hover:bg-purple-600/20 transition-colors"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
-                      </svg>
-                      <span>Audit Logs</span>
-                    </div>
-                  </a>
-                </>
+                <a href="/admin" className="flex items-center gap-2.5 px-2 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                  <LayoutDashboard className="w-4 h-4 shrink-0" />
+                  Admin Dashboard
+                </a>
               )}
-
-              {/* Moderator Dashboard (Moderator Only) */}
               {user.isModerator && !user.isAdmin && (
-                <a
-                  href="/moderator"
-                  className="block w-full px-4 py-2 text-left text-sm text-white hover:bg-blue-600/20 transition-colors"
-                >
-                  <div className="flex items-center space-x-2">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                      />
-                    </svg>
-                    <span>Moderator Dashboard</span>
-                  </div>
+                <a href="/moderator" className="flex items-center gap-2.5 px-2 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                  <LayoutDashboard className="w-4 h-4 shrink-0" />
+                  Moderator Panel
                 </a>
               )}
 
-              {/* Divider */}
-              <div className="border-t border-purple-500/20 my-2"></div>
-
-              {/* Logout Button */}
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  onLogout();
-                }}
-                className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-600/20 transition-colors flex items-center space-x-2"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              <div className="border-t border-white/5 pt-1 mt-1">
+                <button
+                  onClick={() => { setIsOpen(false); onLogout(); }}
+                  className="w-full flex items-center gap-2.5 px-2 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/8 rounded-lg transition-colors"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                  />
-                </svg>
-                <span>Logout</span>
-              </button>
+                  <LogOut className="w-4 h-4 shrink-0" />
+                  Log Out
+                </button>
+              </div>
             </div>
           </motion.div>
         )}

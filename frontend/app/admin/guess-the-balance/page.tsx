@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -97,7 +97,7 @@ export default function AdminGuessTheBalancePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500"></div>
       </div>
     );
@@ -114,7 +114,7 @@ export default function AdminGuessTheBalancePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
+    <div className="min-h-screen  p-3 sm:p-6 pt-20 sm:pt-24">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -243,7 +243,7 @@ export default function AdminGuessTheBalancePage() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-12 text-center"
           >
-            <div className="text-6xl mb-6">🎯</div>
+            <div className="text-6xl mb-6">ðŸŽ¯</div>
             <h2 className="text-3xl font-bold text-white mb-4">
               {statusFilter === "ALL"
                 ? "No Games Yet"
@@ -288,3 +288,4 @@ export default function AdminGuessTheBalancePage() {
     </div>
   );
 }
+

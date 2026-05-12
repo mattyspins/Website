@@ -465,22 +465,16 @@ export class GuessTheBalanceService {
     try {
       const games = await prisma.guessTheBalance.findMany({
         where: {
-          status: GuessTheBalanceStatus.OPEN,
+          status: { in: [GuessTheBalanceStatus.OPEN, GuessTheBalanceStatus.CLOSED] },
         },
         include: {
           guesses: userId
             ? {
-                where: {
-                  userId,
-                },
-                select: {
-                  id: true,
-                },
+                where: { userId },
+                select: { id: true, guessAmount: true },
               }
             : {
-                select: {
-                  id: true,
-                },
+                select: { id: true },
               },
         },
         orderBy: {
@@ -491,8 +485,9 @@ export class GuessTheBalanceService {
       return games.map(game => {
         const response = this.formatGameResponse(game);
         response.totalGuesses = game.guesses.length;
-        if (userId) {
-          response.userHasGuessed = game.guesses.length > 0;
+        if (userId && game.guesses.length > 0) {
+          response.userHasGuessed = true;
+          response.userGuessAmount = (game.guesses[0] as any).guessAmount;
         }
         return response;
       });

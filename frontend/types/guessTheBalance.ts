@@ -25,6 +25,8 @@ export interface GuessTheBalanceGame {
   closedAt?: string;
   completedAt?: string;
   totalGuesses?: number;
+  userHasGuessed?: boolean;
+  userGuessAmount?: number;
   winner?: WinnerInfo;
 }
 

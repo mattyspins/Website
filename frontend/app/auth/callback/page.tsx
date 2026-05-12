@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -74,7 +74,7 @@ export default function AuthCallback() {
   }, [searchParams, router]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 flex items-center justify-center">
+    <div className="min-h-screen  flex items-center justify-center">
       <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-8 max-w-md w-full mx-4">
         <div className="text-center">
           {status === "loading" && (
@@ -140,3 +140,4 @@ export default function AuthCallback() {
     </div>
   );
 }
+

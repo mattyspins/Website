@@ -109,6 +109,11 @@ export const API_ENDPOINTS = {
   AUTH_DISCORD_INITIATE: `${API_URL}/api/auth/discord/initiate`,
   AUTH_LOGOUT: `${API_URL}/api/auth/logout`,
   AUTH_KICK_VERIFY: `${API_URL}/api/auth/kick/verify`,
+  KICK_VERIFY_INITIATE: `${API_URL}/api/auth/kick-verify/initiate`,
+  KICK_VERIFY_STATUS: `${API_URL}/api/auth/kick-verify/status`,
+  KICK_OAUTH_INITIATE: `${API_URL}/api/auth/kick/initiate`,
+  KICK_OAUTH_STATUS: `${API_URL}/api/auth/kick/status`,
+  KICK_OAUTH_UNLINK: `${API_URL}/api/auth/kick/unlink`,
 
   // Admin
   ADMIN_USERS_SEARCH: `${API_URL}/api/admin/users/search`,

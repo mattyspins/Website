@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import {
@@ -67,14 +67,14 @@ export default function AdminStorePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 flex items-center justify-center pt-20">
+      <div className="min-h-screen  flex items-center justify-center pt-20">
         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
+    <div className="min-h-screen  p-3 sm:p-6 pt-20 sm:pt-24">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -118,7 +118,7 @@ export default function AdminStorePage() {
                   : "text-gray-400 hover:text-white hover:bg-purple-600/20"
               }`}
             >
-              📦 Store Items
+              ðŸ“¦ Store Items
             </button>
             <button
               onClick={() => setActiveTab("purchases")}
@@ -128,7 +128,7 @@ export default function AdminStorePage() {
                   : "text-gray-400 hover:text-white hover:bg-purple-600/20"
               }`}
             >
-              🛒 Purchases
+              ðŸ›’ Purchases
             </button>
           </div>
         </motion.div>
@@ -240,7 +240,7 @@ export default function AdminStorePage() {
             >
               {filteredItems.length === 0 ? (
                 <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-8 sm:p-12 text-center">
-                  <div className="text-4xl sm:text-6xl mb-4 sm:mb-6">📦</div>
+                  <div className="text-4xl sm:text-6xl mb-4 sm:mb-6">ðŸ“¦</div>
                   <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
                     No Items Found
                   </h3>
@@ -297,7 +297,7 @@ export default function AdminStorePage() {
                             {item.itemName}
                           </p>
                           <p className="text-gray-400 text-sm">
-                            {item.totalSold} sold •{" "}
+                            {item.totalSold} sold â€¢{" "}
                             {item.revenue.toLocaleString()} points revenue
                           </p>
                         </div>
@@ -323,3 +323,4 @@ export default function AdminStorePage() {
     </div>
   );
 }
+

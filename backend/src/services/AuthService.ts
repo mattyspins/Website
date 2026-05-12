@@ -42,6 +42,7 @@ export interface UserSession {
   isAdmin: boolean;
   isModerator: boolean;
   kickUsername?: string;
+  kickVerified?: boolean;
   rainbetUsername?: string;
   rainbetVerified?: boolean;
   createdAt?: string;
@@ -143,9 +144,15 @@ export class AuthService {
         displayName: user.displayName,
         avatar: user.avatarUrl,
         points: user.points,
+        totalEarned: user.totalEarned,
+        totalSpent: user.totalSpent,
         isAdmin: user.isAdmin,
         isModerator: user.isModerator,
         kickUsername: user.kickUsername || undefined,
+        kickVerified: user.kickVerified,
+        rainbetUsername: user.rainbetUsername || undefined,
+        rainbetVerified: user.rainbetVerified,
+        createdAt: user.createdAt.toISOString(),
       };
     } catch (error) {
       logger.error('Error creating/updating user from Discord:', {
@@ -280,6 +287,9 @@ export class AuthService {
         isAdmin: session.user.isAdmin,
         isModerator: session.user.isModerator,
         kickUsername: session.user.kickUsername || undefined,
+        kickVerified: session.user.kickVerified,
+        rainbetUsername: session.user.rainbetUsername || undefined,
+        rainbetVerified: session.user.rainbetVerified,
       };
 
       const newTokens = this.generateTokens(userSession);
@@ -378,6 +388,7 @@ export class AuthService {
         isAdmin: user.isAdmin,
         isModerator: user.isModerator,
         kickUsername: user.kickUsername || undefined,
+        kickVerified: user.kickVerified,
         rainbetUsername: user.rainbetUsername || undefined,
         rainbetVerified: user.rainbetVerified,
         createdAt: user.createdAt.toISOString(),
@@ -426,7 +437,7 @@ export class AuthService {
 
       if (user?.rainbetUsername) {
         throw createError.badRequest(
-          'Rainbet username already set. Contact an admin to change it.'
+          'AceBet username already set. Contact an admin to change it.'
         );
       }
 

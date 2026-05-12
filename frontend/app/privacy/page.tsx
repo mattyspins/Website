@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -8,7 +8,7 @@ export default function PrivacyPolicy() {
   const lastUpdated = "January 1, 2024";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-4 pt-20">
+    <div className="min-h-screen  p-4 pt-20">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <motion.div
@@ -57,20 +57,20 @@ export default function PrivacyPolicy() {
               Information You Provide:
             </h3>
             <ul className="text-gray-300 space-y-2 ml-6 mb-4">
-              <li>• Discord account information (username, ID, avatar)</li>
-              <li>• Kick.com username (if you choose to link it)</li>
-              <li>• Communication preferences</li>
-              <li>• Any content you submit to the Platform</li>
+              <li>â€¢ Discord account information (username, ID, avatar)</li>
+              <li>â€¢ Kick.com username (if you choose to link it)</li>
+              <li>â€¢ Communication preferences</li>
+              <li>â€¢ Any content you submit to the Platform</li>
             </ul>
 
             <h3 className="text-xl font-semibold text-white mb-3">
               Information We Collect Automatically:
             </h3>
             <ul className="text-gray-300 space-y-2 ml-6">
-              <li>• Usage data and analytics</li>
-              <li>• Device and browser information</li>
-              <li>• IP address and location data</li>
-              <li>• Cookies and similar technologies</li>
+              <li>â€¢ Usage data and analytics</li>
+              <li>â€¢ Device and browser information</li>
+              <li>â€¢ IP address and location data</li>
+              <li>â€¢ Cookies and similar technologies</li>
             </ul>
           </section>
 
@@ -82,12 +82,12 @@ export default function PrivacyPolicy() {
               We use the information we collect to:
             </p>
             <ul className="text-gray-300 space-y-2 ml-6">
-              <li>• Provide and maintain our services</li>
-              <li>• Process transactions and manage your account</li>
-              <li>• Send you updates and promotional communications</li>
-              <li>• Improve our Platform and user experience</li>
-              <li>• Ensure security and prevent fraud</li>
-              <li>• Comply with legal obligations</li>
+              <li>â€¢ Provide and maintain our services</li>
+              <li>â€¢ Process transactions and manage your account</li>
+              <li>â€¢ Send you updates and promotional communications</li>
+              <li>â€¢ Improve our Platform and user experience</li>
+              <li>â€¢ Ensure security and prevent fraud</li>
+              <li>â€¢ Comply with legal obligations</li>
             </ul>
           </section>
 
@@ -101,11 +101,11 @@ export default function PrivacyPolicy() {
               circumstances:
             </p>
             <ul className="text-gray-300 space-y-2 ml-6">
-              <li>• With your consent</li>
-              <li>• To comply with legal requirements</li>
-              <li>• To protect our rights and safety</li>
-              <li>• With service providers who assist our operations</li>
-              <li>• In connection with a business transfer</li>
+              <li>â€¢ With your consent</li>
+              <li>â€¢ To comply with legal requirements</li>
+              <li>â€¢ To protect our rights and safety</li>
+              <li>â€¢ With service providers who assist our operations</li>
+              <li>â€¢ In connection with a business transfer</li>
             </ul>
           </section>
 
@@ -141,12 +141,12 @@ export default function PrivacyPolicy() {
               regarding your personal information:
             </p>
             <ul className="text-gray-300 space-y-2 ml-6">
-              <li>• Access to your personal information</li>
-              <li>• Correction of inaccurate information</li>
-              <li>• Deletion of your personal information</li>
-              <li>• Restriction of processing</li>
-              <li>• Data portability</li>
-              <li>• Objection to processing</li>
+              <li>â€¢ Access to your personal information</li>
+              <li>â€¢ Correction of inaccurate information</li>
+              <li>â€¢ Deletion of your personal information</li>
+              <li>â€¢ Restriction of processing</li>
+              <li>â€¢ Data portability</li>
+              <li>â€¢ Objection to processing</li>
             </ul>
           </section>
 
@@ -210,3 +210,4 @@ export default function PrivacyPolicy() {
     </div>
   );
 }
+

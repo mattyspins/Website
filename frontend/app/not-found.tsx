@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -7,7 +7,7 @@ import MattySpinsAvatar from "@/components/MattySpinsAvatar";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 flex items-center justify-center px-4">
+    <div className="min-h-screen  flex items-center justify-center px-4">
       <div className="text-center max-w-2xl mx-auto">
         {/* Animated 404 */}
         <motion.div
@@ -78,25 +78,25 @@ export default function NotFound() {
               href="/leaderboard"
               className="text-gray-400 hover:text-white transition-colors"
             >
-              🏆 Leaderboards
+              ðŸ† Leaderboards
             </Link>
             <Link
               href="/bonus-hunt"
               className="text-gray-400 hover:text-white transition-colors"
             >
-              🎯 Bonus Hunt
+              ðŸŽ¯ Bonus Hunt
             </Link>
             <Link
               href="/store"
               className="text-gray-400 hover:text-white transition-colors"
             >
-              🛒 Store
+              ðŸ›’ Store
             </Link>
             <Link
               href="/raffle"
               className="text-gray-400 hover:text-white transition-colors"
             >
-              🎟️ Raffles
+              ðŸŽŸï¸ Raffles
             </Link>
           </div>
         </motion.div>
@@ -117,3 +117,4 @@ export default function NotFound() {
     </div>
   );
 }
+

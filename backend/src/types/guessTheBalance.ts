@@ -40,6 +40,7 @@ export interface GameResponse {
   completedAt?: Date;
   totalGuesses?: number;
   userHasGuessed?: boolean;
+  userGuessAmount?: number;
 }
 
 export interface GameWithWinnerResponse extends GameResponse {

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import { Target, Trophy, TrendingUp } from "lucide-react";
@@ -60,7 +60,7 @@ export default function BonusHuntPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
+      <div className="min-h-screen  p-3 sm:p-6 pt-20 sm:pt-24">
         <div className="max-w-7xl mx-auto">
           <Breadcrumb items={breadcrumbItems} className="mb-6" />
 
@@ -98,7 +98,7 @@ export default function BonusHuntPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
+    <div className="min-h-screen  p-3 sm:p-6 pt-20 sm:pt-24">
       <div className="max-w-7xl mx-auto">
         {/* Breadcrumb Navigation */}
         <Breadcrumb items={breadcrumbItems} className="mb-6" />
@@ -163,7 +163,7 @@ export default function BonusHuntPage() {
 
           {activeGames.length === 0 ? (
             <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-8 sm:p-12 text-center">
-              <div className="text-4xl sm:text-6xl mb-4 sm:mb-6">🎯</div>
+              <div className="text-4xl sm:text-6xl mb-4 sm:mb-6">ðŸŽ¯</div>
               <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
                 No Active Games
               </h3>
@@ -220,41 +220,41 @@ export default function BonusHuntPage() {
           </h3>
           <ul className="space-y-2 text-gray-300 text-sm sm:text-base">
             <li className="flex items-start">
-              <span className="text-green-400 mr-2 flex-shrink-0">•</span>
+              <span className="text-green-400 mr-2 flex-shrink-0">â€¢</span>
               <span>
                 <strong>Login Required:</strong> You must be logged in with
                 Discord to submit guesses
               </span>
             </li>
             <li className="flex items-start">
-              <span className="text-green-400 mr-2 flex-shrink-0">•</span>
+              <span className="text-green-400 mr-2 flex-shrink-0">â€¢</span>
               <span>
                 When a bonus hunt starts, the admin will open guessing for the
                 game
               </span>
             </li>
             <li className="flex items-start">
-              <span className="text-green-400 mr-2 flex-shrink-0">•</span>
+              <span className="text-green-400 mr-2 flex-shrink-0">â€¢</span>
               <span>
                 Submit your guess for what the final balance will be after all
                 bonuses are opened
               </span>
             </li>
             <li className="flex items-start">
-              <span className="text-green-400 mr-2 flex-shrink-0">•</span>
+              <span className="text-green-400 mr-2 flex-shrink-0">â€¢</span>
               <span>
                 You can update your guess anytime before guessing closes
               </span>
             </li>
             <li className="flex items-start">
-              <span className="text-green-400 mr-2 flex-shrink-0">•</span>
+              <span className="text-green-400 mr-2 flex-shrink-0">â€¢</span>
               <span>
                 The player with the closest guess to the final balance wins
                 points!
               </span>
             </li>
             <li className="flex items-start">
-              <span className="text-green-400 mr-2 flex-shrink-0">•</span>
+              <span className="text-green-400 mr-2 flex-shrink-0">â€¢</span>
               <span>
                 In case of a tie, the player who submitted their guess first
                 wins
@@ -266,3 +266,4 @@ export default function BonusHuntPage() {
     </div>
   );
 }
+

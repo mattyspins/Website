@@ -41,22 +41,12 @@ router.post('/refresh', refreshLimiter, AuthController.refreshToken);
 router.get('/status', optionalAuthMiddleware, AuthController.getAuthStatus);
 
 // Protected routes
-/* KICK OAUTH ROUTES DISABLED - Not currently used
-router.get(
-  '/kick/initiate',
-  authMiddleware,
-  authLimiter,
-  AuthController.initiateKickAuth
-);
-router.get(
-  '/kick/callback',
-  authMiddleware,
-  authLimiter,
-  AuthController.handleKickCallback
-);
+router.get('/kick/initiate', authMiddleware, authLimiter, AuthController.initiateKickAuth);
+// Kick callback is PUBLIC — user identity resolved via Redis state
+router.get('/kick/callback', authLimiter, AuthController.handleKickCallback);
 router.delete('/kick/unlink', authMiddleware, AuthController.unlinkKickAccount);
 router.get('/kick/status', authMiddleware, AuthController.getKickStatus);
-*/
+
 router.get('/me', authMiddleware, AuthController.getCurrentUser);
 router.post('/logout', authMiddleware, AuthController.logout);
 router.get('/validate', authMiddleware, AuthController.validateToken);
@@ -70,5 +60,8 @@ router.post(
   authMiddleware,
   AuthController.submitRainbetUsername
 );
+// Kick chat-based verification
+router.post('/kick-verify/initiate', authLimiter, authMiddleware, AuthController.initiateKickChatVerify);
+router.get('/kick-verify/status', authMiddleware, AuthController.checkKickVerifyStatus);
 
 export default router;

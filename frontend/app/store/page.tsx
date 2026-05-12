@@ -1,12 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ShoppingBag, Package, Star, Filter, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Breadcrumb from "@/components/ui/Breadcrumb";
-import { CardSkeleton } from "@/components/ui/Skeleton";
-import { LoadingError, NetworkError } from "@/components/ui/ErrorState";
 import { storeApi } from "@/lib/api/store";
 import type { StoreItem, StoreCategory } from "@/types/store";
 import StoreItemCard from "@/components/store/StoreItemCard";
@@ -20,14 +16,11 @@ export default function StorePage() {
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
-  const breadcrumbItems = [{ label: "Store" }];
-
   useEffect(() => {
-    checkAuth();
+    setIsAuthenticated(!!localStorage.getItem("access_token"));
     loadStoreData();
   }, []);
 
@@ -35,25 +28,15 @@ export default function StorePage() {
     loadItems();
   }, [selectedCategory]);
 
-  const checkAuth = () => {
-    const token = localStorage.getItem("access_token");
-    setIsAuthenticated(!!token);
-  };
-
   const loadStoreData = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      const [categoriesData] = await Promise.all([
-        storeApi.getStoreCategories(),
-      ]);
-
+      const categoriesData = await storeApi.getStoreCategories();
       setCategories(categoriesData);
       await loadItems();
-    } catch (err) {
-      console.error("Failed to load store data:", err);
-      setError("Failed to load store. Please try again later.");
+    } catch {
+      setError("Failed to load store. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -61,13 +44,10 @@ export default function StorePage() {
 
   const loadItems = async () => {
     try {
-      const itemsData = await storeApi.getStoreItems(
-        selectedCategory || undefined,
-      );
-      setItems(itemsData);
-    } catch (err) {
-      console.error("Failed to load items:", err);
-      setError("Failed to load items. Please try again later.");
+      const data = await storeApi.getStoreItems(selectedCategory || undefined);
+      setItems(data);
+    } catch {
+      setError("Failed to load items. Please try again.");
     }
   };
 
@@ -80,47 +60,23 @@ export default function StorePage() {
     setShowPurchaseModal(true);
   };
 
-  const handlePurchaseSuccess = () => {
-    setShowPurchaseModal(false);
-    setSelectedItem(null);
-    // Optionally reload items to update stock
-    loadItems();
-  };
-
-  const filteredItems = items.filter(
-    (item) =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.description &&
-        item.description.toLowerCase().includes(searchQuery.toLowerCase())),
-  );
+  const filteredItems = items;
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
-        <div className="max-w-7xl mx-auto">
-          <Breadcrumb items={breadcrumbItems} className="mb-6" />
-
-          {/* Header Skeleton */}
-          <div className="text-center mb-8 sm:mb-12">
-            <div className="flex flex-col sm:flex-row items-center justify-center mb-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-700 rounded-lg animate-pulse mb-2 sm:mb-0 sm:mr-4" />
-              <div className="h-8 sm:h-10 bg-gray-700 rounded-lg animate-pulse w-64" />
-            </div>
-            <div className="h-4 bg-gray-800 rounded animate-pulse w-80 mx-auto" />
+      <div className="min-h-screen pt-20 pb-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="h-3 w-12 bg-navy-700 rounded-full animate-pulse mx-auto mb-4" />
+            <div className="h-10 w-64 bg-navy-700 rounded-lg animate-pulse mx-auto mb-3" />
+            <div className="h-4 w-80 bg-navy-800 rounded animate-pulse mx-auto" />
           </div>
-
-          {/* Filters Skeleton */}
-          <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-4 sm:p-6 mb-8">
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1 h-12 bg-gray-700 rounded-lg animate-pulse" />
-              <div className="w-48 h-12 bg-gray-700 rounded-lg animate-pulse" />
-            </div>
-          </div>
-
-          {/* Items Grid Skeleton */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {Array.from({ length: 8 }).map((_, index) => (
-              <CardSkeleton key={index} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-navy-800/60 border border-white/5 rounded-xl p-5 h-44 animate-pulse"
+              />
             ))}
           </div>
         </div>
@@ -129,119 +85,95 @@ export default function StorePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
-      <div className="max-w-7xl mx-auto">
-        {/* Breadcrumb Navigation */}
-        <Breadcrumb items={breadcrumbItems} className="mb-6" />
-
+    <div className="min-h-screen pt-20 pb-16 px-4">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8 sm:mb-12"
+          className="text-center mb-10"
         >
-          <div className="flex flex-col sm:flex-row items-center justify-center mb-4">
-            <ShoppingBag className="w-12 h-12 sm:w-16 sm:h-16 text-purple-400 mb-2 sm:mb-0 sm:mr-4" />
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white text-center sm:text-left">
-              Points Store
-            </h1>
-          </div>
-          <p className="text-gray-300 text-base sm:text-lg">
-            Spend your points on exclusive rewards and prizes!
+          <span className="inline-block bg-gold-500/10 border border-gold-500/30 text-gold-400 text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded mb-4">
+            Shop
+          </span>
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
+            Spend Your <span className="text-gold-400">Coins</span>
+          </h1>
+          <p className="text-gray-500 text-base">
+            Limited items, exclusive drops. Once they&apos;re gone,
+            they&apos;re gone.
           </p>
         </motion.div>
 
-        {!isAuthenticated && (
+        {/* Category filter */}
+        {categories.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-blue-500/20 border border-blue-500/50 rounded-xl p-4 mb-8 text-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="flex flex-wrap gap-2 justify-center mb-8"
           >
-            <p className="text-blue-300">
-              Please{" "}
+            <button
+              onClick={() => setSelectedCategory("")}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                !selectedCategory
+                  ? "bg-gold-500 text-white"
+                  : "bg-navy-800 text-gray-400 hover:text-white border border-white/6"
+              }`}
+            >
+              All
+            </button>
+            {categories.map((cat) => (
               <button
-                onClick={() => router.push("/")}
-                className="underline font-semibold hover:text-blue-200"
+                key={cat.category}
+                onClick={() => setSelectedCategory(cat.category)}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  selectedCategory === cat.category
+                    ? "bg-gold-500 text-white"
+                    : "bg-navy-800 text-gray-400 hover:text-white border border-white/6"
+                }`}
               >
-                login with Discord
-              </button>{" "}
-              to purchase items from the store!
-            </p>
+                {cat.category}{" "}
+                <span className="opacity-60">({cat.itemCount})</span>
+              </button>
+            ))}
           </motion.div>
         )}
 
         {error && (
-          <div className="mb-8">
-            <NetworkError onRetry={loadStoreData} />
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 text-center">
+            <p className="text-red-400 text-sm">{error}</p>
+            <button
+              onClick={loadStoreData}
+              className="text-red-300 hover:text-red-200 text-xs underline mt-1"
+            >
+              Try again
+            </button>
           </div>
         )}
 
-        {/* Filters and Search */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-4 sm:p-6 mb-8"
-        >
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search items..."
-                className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Category Filter */}
-            <div className="flex items-center gap-2">
-              <Filter className="w-5 h-5 text-gray-400" />
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">All Categories</option>
-                {categories.map((category) => (
-                  <option key={category.category} value={category.category}>
-                    {category.category} ({category.itemCount})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Store Items */}
+        {/* Items grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
           {filteredItems.length === 0 ? (
-            <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-8 sm:p-12 text-center">
-              <div className="text-4xl sm:text-6xl mb-4 sm:mb-6">🛍️</div>
-              <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
-                {searchQuery || selectedCategory
-                  ? "No Items Found"
-                  : "Store Coming Soon"}
-              </h3>
-              <p className="text-gray-400 text-base sm:text-lg">
-                {searchQuery || selectedCategory
-                  ? "Try adjusting your search or filter criteria."
-                  : "Items will be added to the store soon. Check back later!"}
+            <div className="text-center py-24">
+              <p className="text-gray-500 text-lg mb-2">No items available</p>
+              <p className="text-gray-600 text-sm">
+                {selectedCategory
+                  ? "Try a different category."
+                  : "Items will be added soon. Check back later!"}
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {filteredItems.map((item, index) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredItems.map((item, i) => (
                 <StoreItemCard
                   key={item.id}
                   item={item}
-                  index={index}
+                  index={i}
                   onPurchase={handlePurchase}
                   isAuthenticated={isAuthenticated}
                 />
@@ -250,50 +182,47 @@ export default function StorePage() {
           )}
         </motion.div>
 
-        {/* How to Earn Points */}
+        {/* How to earn coins */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-gradient-to-r from-purple-500/10 to-green-500/10 border border-purple-500/30 rounded-2xl p-4 sm:p-6 mt-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="mt-12 bg-navy-800/40 border border-white/5 rounded-xl p-6"
         >
-          <h3 className="text-lg sm:text-xl font-bold text-white mb-3">
-            How to Earn Points
+          <h3 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">
+            How to Earn Coins
           </h3>
-          <ul className="space-y-2 text-gray-300 text-sm sm:text-base">
-            <li className="flex items-start">
-              <span className="text-purple-400 mr-2 flex-shrink-0">•</span>
-              <span>
-                <strong>Watch Streams:</strong> Earn points by watching live
-                streams
-              </span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-purple-400 mr-2 flex-shrink-0">•</span>
-              <span>
-                <strong>Participate in Games:</strong> Win points in Guess the
-                Balance and other games
-              </span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-purple-400 mr-2 flex-shrink-0">•</span>
-              <span>
-                <strong>Join Leaderboards:</strong> Compete for top positions to
-                earn bonus points
-              </span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-purple-400 mr-2 flex-shrink-0">•</span>
-              <span>
-                <strong>Daily Activities:</strong> Complete daily challenges and
-                activities
-              </span>
-            </li>
-          </ul>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-500">
+            <div className="flex items-start gap-3">
+              <span className="text-gold-400 mt-0.5">01</span>
+              <div>
+                <p className="text-gray-300 font-medium">Watch Streams</p>
+                <p>
+                  Link your Kick account and earn coins for watching live
+                  streams
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-gold-400 mt-0.5">02</span>
+              <div>
+                <p className="text-gray-300 font-medium">Guess the Balance</p>
+                <p>Win coin rewards by correctly predicting bonus hunt endings</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-gold-400 mt-0.5">03</span>
+              <div>
+                <p className="text-gray-300 font-medium">Community Events</p>
+                <p>
+                  Participate in giveaways and events for bonus coin rewards
+                </p>
+              </div>
+            </div>
+          </div>
         </motion.div>
       </div>
 
-      {/* Purchase Modal */}
       {showPurchaseModal && selectedItem && (
         <PurchaseModal
           item={selectedItem}
@@ -301,7 +230,11 @@ export default function StorePage() {
             setShowPurchaseModal(false);
             setSelectedItem(null);
           }}
-          onSuccess={handlePurchaseSuccess}
+          onSuccess={() => {
+            setShowPurchaseModal(false);
+            setSelectedItem(null);
+            loadItems();
+          }}
         />
       )}
     </div>

@@ -239,7 +239,7 @@ export default function GameManagementCard({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
                 onClick={() => setShowViewGuesses(true)}
-                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
+                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-gold-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
               >
                 <Eye className="w-4 h-4" />
                 <span>View Guesses</span>
@@ -265,7 +265,7 @@ export default function GameManagementCard({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
                 onClick={() => setShowViewGuesses(true)}
-                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
+                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-gold-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
               >
                 <Eye className="w-4 h-4" />
                 <span>View Guesses</span>
@@ -284,7 +284,7 @@ export default function GameManagementCard({
             <div className="grid grid-cols-1 gap-2">
               <button
                 onClick={() => setShowViewGuesses(true)}
-                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
+                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-gold-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-colors text-sm sm:text-base"
               >
                 <Eye className="w-4 h-4" />
                 <span>View Guesses</span>

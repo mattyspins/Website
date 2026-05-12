@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService, UserSession } from '@/services/AuthService';
 import { DiscordService } from '@/services/DiscordService';
-// import { KickOAuthService } from '@/services/KickOAuthService'; // Not used - Kick auth disabled
+import { KickOAuthService } from '@/services/KickOAuthService';
 import { asyncHandler, createError } from '@/middleware/errorHandler';
 import { logger } from '@/utils/logger';
 import { AuthenticatedRequest } from '@/middleware/auth';
 import { RedisService } from '@/config/redis';
+import { prisma } from '@/config/database';
 
 export class AuthController {
   // Initiate Discord OAuth flow
@@ -144,121 +145,89 @@ export class AuthController {
     }
   );
 
-  /* KICK OAUTH DISABLED - Not currently used
-  // Initiate Kick OAuth flow
+  // Initiate Kick OAuth flow — returns auth URL for the user to be redirected to
   static initiateKickAuth = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
       if (!req.user) {
         throw createError.unauthorized('Authentication required');
       }
 
+      // Already linked?
+      const existing = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { kickVerified: true, kickUsername: true },
+      });
+      if (existing?.kickVerified && existing.kickUsername) {
+        const token = req.headers.authorization?.substring(7);
+        if (token) await RedisService.deleteSession(token);
+        return res.json({ success: true, alreadyLinked: true, kickUsername: existing.kickUsername });
+      }
+
       try {
-        // Generate secure state parameter
         const state = KickOAuthService.generateSecureState();
+        const { codeChallenge } = await KickOAuthService.generatePKCE(state);
+        const authUrl = KickOAuthService.generateAuthURL(state, codeChallenge);
 
-        // Generate OAuth URL
-        const authUrl = KickOAuthService.generateAuthURL(state);
+        // Store userId → state in Redis (10-min TTL)
+        await RedisService.set(`kick_oauth_state:${state}`, req.user.id, 600);
 
-        // Store state in session/cache for validation
-        // In production, this should be stored in Redis with expiration
-        res.cookie('kick_oauth_state', state, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          maxAge: 10 * 60 * 1000, // 10 minutes
-          sameSite: 'lax',
-        });
+        logger.info('Kick OAuth flow initiated (PKCE)', { userId: req.user.id });
 
-        logger.info('Kick OAuth flow initiated', {
-          userId: req.user.id,
-          state: state.substring(0, 8) + '...', // Log partial state for debugging
-        });
-
-        res.json({
-          success: true,
-          authUrl,
-          state,
-        });
+        res.json({ success: true, authUrl, state });
       } catch (error) {
-        logger.error('Kick OAuth initiation error:', {
-          userId: req.user?.id,
-          message: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : undefined,
-        });
+        logger.error('Kick OAuth initiation error:', { userId: req.user?.id, message: (error as Error).message });
         throw createError.internal('Failed to initiate Kick OAuth');
       }
     }
   );
 
-  // Handle Kick OAuth callback
+  // Handle Kick OAuth callback — public route, state identifies the user via Redis
   static handleKickCallback = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
-      if (!req.user) {
-        throw createError.unauthorized('Authentication required');
-      }
-
+    async (req: Request, res: Response) => {
       const { code, state } = req.query;
+      const frontendUrl = (process.env['CORS_ORIGIN'] || 'http://localhost:3000').split(',')[0].trim();
 
-      if (!code || typeof code !== 'string') {
-        throw createError.badRequest('Authorization code is required');
+      if (!code || typeof code !== 'string' || !state || typeof state !== 'string') {
+        return res.redirect(`${frontendUrl}/profile?kick_error=Missing+code+or+state`);
       }
 
-      if (!state || typeof state !== 'string') {
-        throw createError.badRequest('State parameter is required');
+      // Look up userId from Redis state
+      const userId = await RedisService.get(`kick_oauth_state:${state}`);
+      if (!userId) {
+        return res.redirect(`${frontendUrl}/profile?kick_error=Session+expired.+Please+try+again.`);
       }
+      await RedisService.del(`kick_oauth_state:${state}`);
 
-      // Validate state parameter for CSRF protection
-      const storedState = req.cookies.kick_oauth_state;
-      if (!storedState || storedState !== state) {
-        logger.warn('Invalid state parameter in Kick OAuth callback', {
-          userId: req.user.id,
-          providedState: state.substring(0, 8) + '...',
-          storedState: storedState?.substring(0, 8) + '...',
-        });
-        throw createError.badRequest(
-          'Invalid state parameter - possible CSRF attack'
-        );
+      // Retrieve PKCE verifier
+      const codeVerifier = await RedisService.get(`kick_pkce:${state}`);
+      if (!codeVerifier) {
+        return res.redirect(`${frontendUrl}/profile?kick_error=Session+expired.+Please+try+again.`);
       }
-
-      // Clear state cookie
-      res.clearCookie('kick_oauth_state');
+      await RedisService.del(`kick_pkce:${state}`);
 
       try {
-        // Exchange authorization code for tokens
-        const tokens = await KickOAuthService.exchangeCodeForTokens(code);
+        // Exchange authorization code for tokens (with PKCE)
+        const tokens = await KickOAuthService.exchangeCodeForTokens(code, codeVerifier);
 
         // Get Kick user info
         const kickUser = await KickOAuthService.getUserInfo(tokens.accessToken);
 
         // Store tokens and user info
-        await KickOAuthService.storeUserTokens(req.user.id, tokens, kickUser);
+        await KickOAuthService.storeUserTokens(userId, tokens, kickUser);
 
         logger.info('Kick OAuth callback successful', {
-          userId: req.user.id,
+          userId,
           kickUsername: kickUser.username,
           kickId: kickUser.id,
         });
 
         // Redirect to frontend with success
-        const frontendUrl =
-          process.env['CORS_ORIGIN'] || 'http://localhost:3000';
         const callbackUrl = `${frontendUrl}/profile?kick_linked=true&kick_username=${encodeURIComponent(kickUser.username)}`;
-
         res.redirect(callbackUrl);
       } catch (error) {
-        logger.error('Kick OAuth callback error:', {
-          userId: req.user.id,
-          message: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : undefined,
-        });
-
-        // Redirect to frontend with error
-        const frontendUrl =
-          process.env['CORS_ORIGIN'] || 'http://localhost:3000';
-        const errorMessage =
-          error instanceof Error ? error.message : 'Kick OAuth failed';
-        const callbackUrl = `${frontendUrl}/profile?kick_error=${encodeURIComponent(errorMessage)}`;
-
-        res.redirect(callbackUrl);
+        logger.error('Kick OAuth callback error:', { userId, message: (error as Error).message });
+        const errorMessage = (error as Error).message || 'Kick OAuth failed';
+        res.redirect(`${frontendUrl}/profile?kick_error=${encodeURIComponent(errorMessage)}`);
       }
     }
   );
@@ -272,6 +241,8 @@ export class AuthController {
 
       try {
         await KickOAuthService.revokeTokens(req.user.id);
+        // Clear kickVerified too
+        await prisma.user.update({ where: { id: req.user.id }, data: { kickVerified: false } });
 
         logger.info('Kick account unlinked successfully', {
           userId: req.user.id,
@@ -355,7 +326,6 @@ export class AuthController {
       }
     }
   );
-  END KICK OAUTH DISABLED */
 
   // Refresh access token
   static refreshToken = asyncHandler(async (req: Request, res: Response) => {
@@ -418,6 +388,7 @@ export class AuthController {
             isAdmin: userSession.isAdmin,
             isModerator: userSession.isModerator,
             kickUsername: userSession.kickUsername,
+            kickVerified: userSession.kickVerified || false,
             rainbetUsername: userSession.rainbetUsername,
             rainbetVerified: userSession.rainbetVerified || false,
             createdAt: userSession.createdAt,
@@ -553,7 +524,7 @@ export class AuthController {
 
         if (userSession?.rainbetUsername) {
           throw createError.badRequest(
-            'Rainbet username already set. Contact an admin to change it.'
+            'AceBet username already set. Contact an admin to change it.'
           );
         }
 
@@ -635,6 +606,100 @@ export class AuthController {
         });
         throw error;
       }
+    }
+  );
+
+  // Initiate Kick chat verification — generates a code the user types in stream chat
+  static initiateKickChatVerify = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user) throw createError.unauthorized('Authentication required');
+
+      const { kickUsername } = req.body;
+      if (!kickUsername || typeof kickUsername !== 'string') {
+        throw createError.badRequest('kickUsername is required');
+      }
+
+      const trimmed = kickUsername.trim().toLowerCase();
+      if (trimmed.length < 2 || trimmed.length > 50) {
+        throw createError.badRequest('Kick username must be 2–50 characters');
+      }
+
+      // Already verified?
+      const existing = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { kickVerified: true, kickUsername: true },
+      });
+      if (existing?.kickVerified && existing.kickUsername) {
+        const token = req.headers.authorization?.substring(7);
+        if (token) await RedisService.deleteSession(token);
+        return res.json({ success: true, alreadyVerified: true, kickUsername: existing.kickUsername });
+      }
+
+      // Note: Kick's API is Cloudflare-protected server-side; we skip the channel existence check
+      // and rely on the chat verification step to confirm the username is real.
+
+      // Check if another verified user already has this username
+      const taken = await prisma.user.findFirst({
+        where: {
+          kickUsername: { equals: trimmed, mode: 'insensitive' },
+          kickVerified: true,
+          id: { not: req.user.id },
+        },
+        select: { id: true },
+      });
+      if (taken) throw createError.conflict('That Kick username is already linked to another account.');
+
+      // Generate 6-char alphanumeric code
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const pendingData = JSON.stringify({ kickUsername: trimmed, code });
+
+      // 10-minute expiry
+      await RedisService.set(`kick_verify:${req.user.id}`, pendingData, 600);
+      await RedisService.set(`kick_verify_code:${code}`, req.user.id, 600);
+
+      logger.info(`KickVerify: initiated for user ${req.user.id} → ${trimmed} code=${code}`);
+
+      res.json({ success: true, code, kickUsername: trimmed, expiresIn: 600 });
+    }
+  );
+
+  // Poll verification status — frontend calls every 5 s
+  static checkKickVerifyStatus = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user) throw createError.unauthorized('Authentication required');
+
+      // Helper: bust the session cache by access token so next /api/auth/me is fresh
+      const bustSessionCache = async () => {
+        const token = req.headers.authorization?.substring(7);
+        if (token) await RedisService.deleteSession(token);
+      };
+
+      // Check if chat verification just completed
+      const verifiedUsername = await RedisService.get(`kick_verified_signal:${req.user.id}`);
+      if (verifiedUsername) {
+        await RedisService.del(`kick_verified_signal:${req.user.id}`);
+        await bustSessionCache();
+        return res.json({ success: true, verified: true, kickUsername: verifiedUsername });
+      }
+
+      // Check DB for already-verified
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { kickVerified: true, kickUsername: true },
+      });
+      if (user?.kickVerified && user.kickUsername) {
+        await bustSessionCache();
+        return res.json({ success: true, verified: true, kickUsername: user.kickUsername });
+      }
+
+      // Return pending info if code still active
+      const pendingRaw = await RedisService.get(`kick_verify:${req.user.id}`);
+      if (pendingRaw) {
+        const { kickUsername: pendingUsername, code } = JSON.parse(pendingRaw);
+        return res.json({ success: true, verified: false, pending: true, kickUsername: pendingUsername, code });
+      }
+
+      res.json({ success: true, verified: false, pending: false });
     }
   );
 }

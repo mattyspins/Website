@@ -235,7 +235,7 @@ export default function AdminStoreItemCard({
         <div className="flex gap-2">
           <button
             onClick={() => setShowEditModal(true)}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm flex items-center justify-center"
+            className="flex-1 bg-blue-600 hover:bg-gold-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm flex items-center justify-center"
           >
             <Edit className="w-4 h-4 mr-1" />
             Edit

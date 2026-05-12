@@ -4,93 +4,83 @@ import { validateEnv } from '@/config/env';
 
 const env = validateEnv();
 
-// Check if Redis is configured
-const isRedisEnabled = env.REDIS_URL && env.REDIS_URL !== '';
+// In-memory fallback store (used when Redis is unavailable)
+interface MemEntry { value: string; expiresAt: number | null; }
+const memStore = new Map<string, MemEntry>();
+
+const memGet = (key: string): string | null => {
+  const entry = memStore.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt && Date.now() > entry.expiresAt) { memStore.delete(key); return null; }
+  return entry.value;
+};
+const memSet = (key: string, value: string, ttlSeconds?: number): void => {
+  memStore.set(key, { value, expiresAt: ttlSeconds ? Date.now() + ttlSeconds * 1000 : null });
+};
+const memDel = (key: string): void => { memStore.delete(key); };
 
 // Redis connection configuration
 const redisConfig = {
   retryDelayOnFailover: 100,
   enableReadyCheck: false,
-  maxRetriesPerRequest: 3,
+  maxRetriesPerRequest: 1,
   lazyConnect: true,
   keepAlive: 30000,
-  connectTimeout: 10000,
-  commandTimeout: 5000,
+  connectTimeout: 5000,
+  commandTimeout: 3000,
 };
 
-// Create Redis client only if enabled
-export const redis = isRedisEnabled
+let redisReady = false;
+
+export const redis = env.REDIS_URL
   ? new Redis(env.REDIS_URL, redisConfig)
   : null;
 
-// Redis event handlers (only if Redis is enabled)
 if (redis) {
-  redis.on('connect', () => {
-    logger.info('Connected to Redis');
-  });
-
-  redis.on('ready', () => {
-    logger.info('Redis is ready');
-  });
-
-  redis.on('error', error => {
-    logger.error('Redis connection error:', error);
-  });
-
-  redis.on('close', () => {
-    logger.warn('Redis connection closed');
-  });
-
-  redis.on('reconnecting', () => {
-    logger.info('Reconnecting to Redis...');
+  redis.on('ready', () => { redisReady = true; logger.info('Connected to Redis'); });
+  redis.on('error', () => { redisReady = false; });
+  redis.on('close', () => { redisReady = false; });
+  // Attempt connection — fall back to in-memory if it fails
+  redis.connect().catch(() => {
+    logger.warn('Redis unavailable — using in-memory fallback store (not suitable for production)');
   });
 } else {
-  logger.warn('Redis is disabled - caching features will be unavailable');
+  logger.warn('Redis URL not set — using in-memory fallback store');
 }
 
 // Redis utility functions
 export class RedisService {
   // Cache operations
   static async get(key: string): Promise<string | null> {
-    if (!redis) return null;
-    try {
-      return await redis.get(key);
-    } catch (error) {
-      logger.error(`Redis GET error for key ${key}:`, error);
-      return null;
+    if (redis && redisReady) {
+      try { return await redis.get(key); } catch { /* fall through */ }
     }
+    return memGet(key);
   }
 
   static async set(key: string, value: string, ttl?: number): Promise<boolean> {
-    if (!redis) return false;
-    try {
-      if (ttl) {
-        await redis.setex(key, ttl, value);
-      } else {
-        await redis.set(key, value);
-      }
-      return true;
-    } catch (error) {
-      logger.error(`Redis SET error for key ${key}:`, error);
-      return false;
+    if (redis && redisReady) {
+      try {
+        if (ttl) { await redis.setex(key, ttl, value); } else { await redis.set(key, value); }
+        return true;
+      } catch { /* fall through */ }
     }
+    memSet(key, value, ttl);
+    return true;
   }
 
   static async del(key: string): Promise<boolean> {
-    if (!redis) return false;
-    try {
-      await redis.del(key);
-      return true;
-    } catch (error) {
-      logger.error(`Redis DEL error for key ${key}:`, error);
-      return false;
+    if (redis && redisReady) {
+      try { await redis.del(key); return true; } catch { /* fall through */ }
     }
+    memDel(key);
+    return true;
   }
 
   // JSON operations
   static async getJSON<T>(key: string): Promise<T | null> {
     try {
-      const value = await redis.get(key);
+      const value = await this.get(key);
       return value ? JSON.parse(value) : null;
     } catch (error) {
       logger.error(`Redis JSON GET error for key ${key}:`, error);

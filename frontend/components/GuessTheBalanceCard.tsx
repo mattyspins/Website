@@ -136,14 +136,28 @@ export default function GuessTheBalanceCard({
             onClick={() => setShowGuessForm(true)}
             className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-3 sm:py-3 px-4 sm:px-6 rounded-lg transition-all transform hover:scale-105 text-sm sm:text-base min-h-[48px] active:scale-95"
           >
-            Submit Your Guess
+            {game.userHasGuessed ? "Update Your Guess" : "Submit Your Guess"}
           </button>
         )
       ) : game.status === "CLOSED" ? (
-        <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 sm:p-4 text-center">
-          <p className="text-yellow-300 font-semibold text-sm sm:text-base">
-            Guessing is closed. Waiting for results...
-          </p>
+        <div className="space-y-2">
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 sm:p-4 text-center">
+            <p className="text-yellow-300 font-semibold text-sm sm:text-base">
+              🔒 Guessing closed — waiting for results
+            </p>
+          </div>
+          {game.userGuessAmount != null ? (
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center justify-between">
+              <span className="text-gray-400 text-sm">Your locked guess</span>
+              <span className="text-green-400 font-bold text-base">
+                ${game.userGuessAmount.toLocaleString()}
+              </span>
+            </div>
+          ) : isAuthenticated ? (
+            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-3 text-center">
+              <p className="text-gray-500 text-sm">You didn't submit a guess for this game</p>
+            </div>
+          ) : null}
         </div>
       ) : null}
 

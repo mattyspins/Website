@@ -1,7 +1,9 @@
 import axios, { AxiosError } from 'axios';
+import crypto from 'crypto';
 import { validateEnv } from '../config/env';
 import { logger } from '../utils/logger';
 import { getEncryptionService } from './EncryptionService';
+import { RedisService } from '../config/redis';
 import { PrismaClient } from '@prisma/client';
 
 const env = validateEnv();
@@ -42,12 +44,19 @@ export class KickOAuthService {
   private static readonly CLIENT_SECRET = env.KICK_CLIENT_SECRET;
   private static readonly REDIRECT_URI = env.KICK_REDIRECT_URI;
 
+  /** Generate a PKCE code_verifier + code_challenge pair and cache verifier in Redis */
+  static async generatePKCE(state: string): Promise<{ codeVerifier: string; codeChallenge: string }> {
+    const codeVerifier = crypto.randomBytes(32).toString('base64url');
+    const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+    // Store verifier alongside the state (same 10-min TTL)
+    await RedisService.set(`kick_pkce:${state}`, codeVerifier, 600);
+    return { codeVerifier, codeChallenge };
+  }
+
   /**
-   * Generates OAuth authorization URL with secure state parameter
-   * Implements Requirements 1.1, 1.2, 15.7
+   * Generates OAuth authorization URL with PKCE and state parameter
    */
-  static generateAuthURL(state: string): string {
-    // Validate state parameter for CSRF protection
+  static generateAuthURL(state: string, codeChallenge: string): string {
     if (!state || state.length < 16) {
       throw new Error('Invalid state parameter for OAuth flow');
     }
@@ -58,12 +67,14 @@ export class KickOAuthService {
       response_type: 'code',
       scope: 'user:read channel:read',
       state: state,
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256',
     });
 
     const authUrl = `${this.OAUTH_BASE_URL}/authorize?${params.toString()}`;
 
-    logger.info('Generated Kick OAuth URL', {
-      state: state.substring(0, 8) + '...', // Log partial state for debugging
+    logger.info('Generated Kick OAuth URL (PKCE)', {
+      state: state.substring(0, 8) + '...',
       redirectUri: this.REDIRECT_URI,
     });
 
@@ -71,17 +82,11 @@ export class KickOAuthService {
   }
 
   /**
-   * Exchanges authorization code for access and refresh tokens
-   * Implements Requirements 1.3
+   * Exchanges authorization code for access and refresh tokens (with PKCE verifier)
    */
-  static async exchangeCodeForTokens(code: string): Promise<KickTokens> {
+  static async exchangeCodeForTokens(code: string, codeVerifier: string): Promise<KickTokens> {
     if (!code || code.trim().length === 0) {
-      throw new KickAPIError(
-        400,
-        'BAD_REQUEST',
-        'Authorization code is required',
-        false
-      );
+      throw new KickAPIError(400, 'BAD_REQUEST', 'Authorization code is required', false);
     }
 
     try {
@@ -95,6 +100,7 @@ export class KickOAuthService {
           client_secret: this.CLIENT_SECRET,
           redirect_uri: this.REDIRECT_URI,
           code: code,
+          code_verifier: codeVerifier,
         },
         {
           headers: {
@@ -339,6 +345,7 @@ export class KickOAuthService {
         data: {
           kickId: kickUser.id,
           kickUsername: kickUser.username,
+          kickVerified: true,
           kickAccessToken: encryptedAccessToken,
           kickRefreshToken: encryptedRefreshToken,
           kickTokenExpiresAt: expiresAt,

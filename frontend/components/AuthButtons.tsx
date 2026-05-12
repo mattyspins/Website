@@ -26,8 +26,7 @@ interface User {
 export default function AuthButtons() {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [showKickModal, setShowKickModal] = useState(false);
-  const { success, error, info } = useToast();
+  const { error, info } = useToast();
 
   // Check if user is logged in on component mount
   useEffect(() => {
@@ -107,10 +106,9 @@ export default function AuthButtons() {
   };
 
   const handleKickLogin = () => {
-    // Kick login will be implemented after Discord auth
     info(
-      "Coming Soon",
-      "Kick login coming soon! Please login with Discord first.",
+      "Login Required",
+      "Please login with Discord first, then link your Kick account in your profile.",
     );
   };
 
@@ -138,118 +136,13 @@ export default function AuthButtons() {
     window.location.href = "/";
   };
 
-  const handleKickVerification = () => {
-    setShowKickModal(true);
-  };
-
   // If user is logged in, show profile dropdown
   if (user) {
     return (
-      <>
-        <UserProfile
-          user={user}
-          onLogout={handleLogout}
-          onKickVerification={handleKickVerification}
-        />
-
-        {/* Kick Verification Modal */}
-        {showKickModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-gradient-to-br from-purple-900/90 to-black border border-purple-500/30 rounded-2xl p-6 max-w-md w-full"
-            >
-              <h3 className="text-2xl font-bold text-white mb-4">
-                Verify Kick Account
-              </h3>
-              <p className="text-gray-300 mb-4">
-                Enter your Kick username to link your account and start earning
-                points for watching streams!
-              </p>
-
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  const formData = new FormData(e.currentTarget);
-                  const kickUsername = formData.get("kickUsername") as string;
-
-                  try {
-                    const accessToken = localStorage.getItem("access_token");
-                    const response = await fetch(
-                      API_ENDPOINTS.AUTH_KICK_VERIFY,
-                      {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                          Authorization: `Bearer ${accessToken}`,
-                        },
-                        body: JSON.stringify({ kickUsername }),
-                      },
-                    );
-
-                    const data = await response.json();
-
-                    if (response.ok && data.success) {
-                      success(
-                        "Verification Successful",
-                        "Kick account verified successfully!",
-                      );
-                      const updatedUser = {
-                        ...user,
-                        kickUsername: data.user.kickUsername,
-                      };
-                      setUser(updatedUser);
-                      // Update localStorage with the updated user info
-                      localStorage.setItem(
-                        "user_info",
-                        JSON.stringify(updatedUser),
-                      );
-                      setShowKickModal(false);
-                    } else {
-                      error(
-                        "Verification Failed",
-                        data.error?.message ||
-                          "Verification failed. Please try again.",
-                      );
-                    }
-                  } catch (err) {
-                    console.error("Kick verification error:", err);
-                    error(
-                      "Verification Error",
-                      "Failed to verify Kick account. Please try again.",
-                    );
-                  }
-                }}
-              >
-                <input
-                  type="text"
-                  name="kickUsername"
-                  placeholder="Enter your Kick username"
-                  className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 mb-4"
-                  required
-                />
-
-                <div className="flex space-x-3">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-[#53FC18] hover:bg-[#45D615] text-black font-semibold px-4 py-2 rounded-lg transition-colors"
-                  >
-                    Verify
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowKickModal(false)}
-                    className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </>
+      <UserProfile
+        user={user}
+        onLogout={handleLogout}
+      />
     );
   }
 

@@ -77,7 +77,7 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
+      <div className="min-h-screen p-3 sm:p-6 pt-20 sm:pt-24">
         <div className="max-w-7xl mx-auto">
           <Breadcrumb items={breadcrumbItems} className="mb-6" />
           <div className="mb-8">
@@ -92,7 +92,7 @@ export default function AdminDashboard() {
 
   if (loadingError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
+      <div className="min-h-screen p-3 sm:p-6 pt-20 sm:pt-24">
         <div className="max-w-7xl mx-auto">
           <Breadcrumb items={breadcrumbItems} className="mb-6" />
           <LoadingError onRetry={retryAuth} resource="admin dashboard" />
@@ -113,7 +113,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
+    <div className="min-h-screen p-3 sm:p-6 pt-20 sm:pt-24">
       <div className="max-w-7xl mx-auto">
         {/* Breadcrumb Navigation */}
         <Breadcrumb items={breadcrumbItems} className="mb-6" />
@@ -126,28 +126,28 @@ export default function AdminDashboard() {
             </h1>
             <p className="text-gray-400">Manage your streaming platform</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => router.push("/admin/guess-the-balance")}
-              className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors font-semibold text-sm sm:text-base"
+              className="bg-navy-700 hover:bg-navy-600 border border-white/8 text-white px-4 py-2 rounded-lg transition-colors font-medium text-sm"
             >
-              🎯 Guess the Balance
+              Guess the Balance
             </button>
             <button
               onClick={() => router.push("/admin/store")}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors font-semibold text-sm sm:text-base"
+              className="bg-navy-700 hover:bg-navy-600 border border-white/8 text-white px-4 py-2 rounded-lg transition-colors font-medium text-sm"
             >
-              🛒 Manage Store
+              Manage Store
             </button>
             <button
               onClick={() => router.push("/admin/leaderboards")}
-              className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors font-semibold text-sm sm:text-base"
+              className="bg-navy-700 hover:bg-navy-600 border border-white/8 text-white px-4 py-2 rounded-lg transition-colors font-medium text-sm"
             >
-              🏆 Manage Leaderboards
+              Manage Leaderboards
             </button>
             <button
               onClick={() => router.push("/")}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base"
+              className="bg-white/5 hover:bg-white/8 border border-white/6 text-gray-400 px-4 py-2 rounded-lg transition-colors text-sm"
             >
               Back to Home
             </button>
@@ -155,22 +155,20 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-2 mb-6">
-          <div className="flex flex-wrap gap-2">
+        <div className="bg-navy-800/60 backdrop-blur-lg border border-white/6 rounded-xl p-2 mb-6">
+          <div className="flex flex-wrap gap-1.5">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as TabType)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   activeTab === tab.id
-                    ? "bg-purple-600 text-white"
-                    : "text-gray-400 hover:text-white hover:bg-purple-600/20"
+                    ? "bg-gold-500 text-white"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
                 }`}
               >
                 <span>{tab.icon}</span>
-                <span className="font-semibold">
-                  {tab.label.replace(/^.+ /, "")}
-                </span>
+                <span>{tab.label.replace(/^.+ /, "")}</span>
               </button>
             ))}
           </div>

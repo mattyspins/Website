@@ -44,7 +44,7 @@ export default function ErrorState({
       icon: "text-blue-400",
       title: "text-blue-300",
       message: "text-blue-200",
-      button: "bg-blue-600 hover:bg-blue-700",
+      button: "bg-blue-600 hover:bg-gold-600",
     },
   };
 

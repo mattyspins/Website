@@ -9,6 +9,7 @@ import ToastProvider from "@/components/ui/ToastProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://mattyspins.com"),
   title: "MattySpins - Premium Gaming Experience",
   description:
     "Join MattySpins for the ultimate gaming community with live streams, leaderboards, and bonus hunts",

@@ -15,6 +15,7 @@ import { notFoundHandler } from '@/middleware/notFoundHandler';
 import { authMiddleware } from '@/middleware/auth';
 import { validateEnv } from '@/config/env';
 import { LeaderboardExpirationJob } from '@/jobs/leaderboardExpiration';
+import { KickChatService } from '@/services/KickChatService';
 
 // Load environment variables
 dotenv.config();
@@ -194,6 +195,7 @@ app.use(errorHandler);
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
   LeaderboardExpirationJob.stop();
+  KickChatService.stop();
   server.close(() => {
     logger.info('Process terminated');
     process.exit(0);
@@ -203,6 +205,7 @@ process.on('SIGTERM', () => {
 process.on('SIGINT', () => {
   logger.info('SIGINT received, shutting down gracefully');
   LeaderboardExpirationJob.stop();
+  KickChatService.stop();
   server.close(() => {
     logger.info('Process terminated');
     process.exit(0);
@@ -220,6 +223,11 @@ server.listen(PORT, HOST, () => {
   // Start background jobs
   LeaderboardExpirationJob.start();
   logger.info('✅ Background jobs started');
+
+  // Start Kick chat listener (verification + chat points)
+  KickChatService.start().catch((err) =>
+    logger.error('KickChatService failed to start', { error: (err as Error).message })
+  );
 });
 
 export { app, server, io };

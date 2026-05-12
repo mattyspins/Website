@@ -1,4 +1,4 @@
-// Standardized color theme for MattySpins
+﻿// Standardized color theme for MattySpins
 export const theme = {
   colors: {
     // Primary brand colors
@@ -106,7 +106,7 @@ export const theme = {
     success: "bg-gradient-to-r from-green-500 to-emerald-500",
     error: "bg-gradient-to-r from-red-500 to-pink-500",
     warning: "bg-gradient-to-r from-yellow-500 to-amber-500",
-    background: "bg-gradient-to-br from-purple-900 via-black to-green-900",
+    background: "",
     card: "bg-gradient-to-br from-gray-900/50 to-black/50",
   },
 
@@ -196,3 +196,4 @@ export const getInputClass = (
 ) => {
   return `px-4 py-3 w-full ${theme.components.input[variant]}`;
 };
+

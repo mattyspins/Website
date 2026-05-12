@@ -162,7 +162,7 @@ export default function AdminUsers() {
 
       if (response.ok) {
         alert(
-          `${editType === "kick" ? "Kick" : "Rainbet"} username updated successfully!`,
+          `${editType === "kick" ? "Kick" : "AceBet"} username updated successfully!`,
         );
         setShowEditModal(false);
         setSelectedUser(null);
@@ -292,7 +292,7 @@ export default function AdminUsers() {
                   Kick
                 </th>
                 <th className="text-left text-gray-400 font-semibold py-3 px-4">
-                  Rainbet
+                  AceBet
                 </th>
                 <th className="text-left text-gray-400 font-semibold py-3 px-4">
                   Points
@@ -343,7 +343,7 @@ export default function AdminUsers() {
                             setNewUsername(user.kickUsername || "");
                             setShowEditModal(true);
                           }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded transition-colors"
+                          className="bg-blue-600 hover:bg-gold-600 text-white text-xs px-2 py-1 rounded transition-colors"
                           title="Edit Kick username"
                         >
                           ✏️ Edit
@@ -411,7 +411,7 @@ export default function AdminUsers() {
                             setNewUsername(user.kickUsername || "");
                             setShowEditModal(true);
                           }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded transition-colors"
+                          className="bg-blue-600 hover:bg-gold-600 text-white text-xs px-2 py-1 rounded transition-colors"
                           title="Edit Kick username"
                         >
                           ✏️ Edit
@@ -427,7 +427,7 @@ export default function AdminUsers() {
                             setNewUsername("");
                             setShowEditModal(true);
                           }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded transition-colors"
+                          className="bg-blue-600 hover:bg-gold-600 text-white text-xs px-2 py-1 rounded transition-colors"
                           title="Set Kick username"
                         >
                           + Set
@@ -449,8 +449,8 @@ export default function AdminUsers() {
                             setNewUsername(user.rainbetUsername || "");
                             setShowEditModal(true);
                           }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded transition-colors"
-                          title="Edit Rainbet username"
+                          className="bg-blue-600 hover:bg-gold-600 text-white text-xs px-2 py-1 rounded transition-colors"
+                          title="Edit AceBet username"
                         >
                           ✏️ Edit
                         </button>
@@ -464,7 +464,7 @@ export default function AdminUsers() {
                           onClick={async () => {
                             if (
                               !confirm(
-                                `Verify Rainbet username "${user.rainbetUsername}" for ${user.displayName}?`,
+                                `Verify AceBet username "${user.rainbetUsername}" for ${user.displayName}?`,
                               )
                             ) {
                               return;
@@ -488,25 +488,25 @@ export default function AdminUsers() {
                               );
 
                               if (response.ok) {
-                                alert("✅ Rainbet username verified!");
+                                alert("✅ AceBet username verified!");
                                 loadAllUsers();
                               } else {
                                 const data = await response.json();
                                 alert(
                                   data.error?.message ||
-                                    "Failed to verify Rainbet username",
+                                    "Failed to verify AceBet username",
                                 );
                               }
                             } catch (error) {
                               console.error(
-                                "Failed to verify Rainbet username:",
+                                "Failed to verify AceBet username:",
                                 error,
                               );
-                              alert("Failed to verify Rainbet username");
+                              alert("Failed to verify AceBet username");
                             }
                           }}
                           className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 rounded transition-colors"
-                          title="Verify Rainbet username"
+                          title="Verify AceBet username"
                         >
                           ✓ Verify
                         </button>
@@ -517,8 +517,8 @@ export default function AdminUsers() {
                             setNewUsername(user.rainbetUsername || "");
                             setShowEditModal(true);
                           }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded transition-colors"
-                          title="Edit Rainbet username"
+                          className="bg-blue-600 hover:bg-gold-600 text-white text-xs px-2 py-1 rounded transition-colors"
+                          title="Edit AceBet username"
                         >
                           ✏️ Edit
                         </button>
@@ -533,8 +533,8 @@ export default function AdminUsers() {
                             setNewUsername("");
                             setShowEditModal(true);
                           }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded transition-colors"
-                          title="Set Rainbet username"
+                          className="bg-blue-600 hover:bg-gold-600 text-white text-xs px-2 py-1 rounded transition-colors"
+                          title="Set AceBet username"
                         >
                           + Set
                         </button>
@@ -629,7 +629,7 @@ export default function AdminUsers() {
                           className={`text-sm px-3 py-1 rounded transition-colors ${
                             user.isModerator
                               ? "bg-gray-600 hover:bg-gray-700 text-white"
-                              : "bg-blue-600 hover:bg-blue-700 text-white"
+                              : "bg-blue-600 hover:bg-gold-600 text-white"
                           }`}
                         >
                           {user.isModerator ? "🔻 Demote" : "⭐ Promote"}
@@ -739,7 +739,7 @@ export default function AdminUsers() {
             className="bg-gradient-to-br from-purple-900/90 to-black border border-purple-500/30 rounded-2xl p-6 max-w-md w-full"
           >
             <h3 className="text-2xl font-bold text-white mb-4">
-              Edit {editType === "kick" ? "Kick" : "Rainbet"} Username
+              Edit {editType === "kick" ? "Kick" : "AceBet"} Username
             </h3>
             <p className="text-gray-300 mb-4">
               User:{" "}
@@ -758,13 +758,13 @@ export default function AdminUsers() {
             <div className="space-y-4">
               <div>
                 <label className="text-gray-400 text-sm mb-2 block">
-                  New {editType === "kick" ? "Kick" : "Rainbet"} Username
+                  New {editType === "kick" ? "Kick" : "AceBet"} Username
                 </label>
                 <input
                   type="text"
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
-                  placeholder={`Enter ${editType === "kick" ? "Kick" : "Rainbet"} username`}
+                  placeholder={`Enter ${editType === "kick" ? "Kick" : "AceBet"} username`}
                   className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
                 />
                 <p className="text-gray-500 text-xs mt-1">
@@ -775,7 +775,7 @@ export default function AdminUsers() {
               {editType === "rainbet" && (
                 <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
                   <p className="text-yellow-400 text-sm">
-                    ⚠️ Changing the Rainbet username will reset verification
+                    ⚠️ Changing the AceBet username will reset verification
                     status
                   </p>
                 </div>

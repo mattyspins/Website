@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -8,7 +8,7 @@ export default function TermsOfService() {
   const lastUpdated = "January 1, 2024";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-4 pt-20">
+    <div className="min-h-screen  p-4 pt-20">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <motion.div
@@ -64,11 +64,11 @@ export default function TermsOfService() {
               MattySpins is a gaming community platform that provides:
             </p>
             <ul className="text-gray-300 space-y-2 ml-6">
-              <li>• Live streaming entertainment</li>
-              <li>• Community leaderboards and competitions</li>
-              <li>• Interactive gaming experiences</li>
-              <li>• Points-based reward system</li>
-              <li>• Community forums and social features</li>
+              <li>â€¢ Live streaming entertainment</li>
+              <li>â€¢ Community leaderboards and competitions</li>
+              <li>â€¢ Interactive gaming experiences</li>
+              <li>â€¢ Points-based reward system</li>
+              <li>â€¢ Community forums and social features</li>
             </ul>
           </section>
 
@@ -81,10 +81,10 @@ export default function TermsOfService() {
               Discord authentication. You are responsible for:
             </p>
             <ul className="text-gray-300 space-y-2 ml-6">
-              <li>• Maintaining the confidentiality of your account</li>
-              <li>• All activities that occur under your account</li>
-              <li>• Providing accurate and current information</li>
-              <li>• Notifying us of any unauthorized use</li>
+              <li>â€¢ Maintaining the confidentiality of your account</li>
+              <li>â€¢ All activities that occur under your account</li>
+              <li>â€¢ Providing accurate and current information</li>
+              <li>â€¢ Notifying us of any unauthorized use</li>
             </ul>
           </section>
 
@@ -96,11 +96,11 @@ export default function TermsOfService() {
               You agree not to use the Platform to:
             </p>
             <ul className="text-gray-300 space-y-2 ml-6">
-              <li>• Violate any applicable laws or regulations</li>
-              <li>• Harass, abuse, or harm other users</li>
-              <li>• Distribute spam, malware, or malicious content</li>
-              <li>• Attempt to gain unauthorized access to systems</li>
-              <li>• Engage in any form of cheating or exploitation</li>
+              <li>â€¢ Violate any applicable laws or regulations</li>
+              <li>â€¢ Harass, abuse, or harm other users</li>
+              <li>â€¢ Distribute spam, malware, or malicious content</li>
+              <li>â€¢ Attempt to gain unauthorized access to systems</li>
+              <li>â€¢ Engage in any form of cheating or exploitation</li>
             </ul>
           </section>
 
@@ -187,3 +187,4 @@ export default function TermsOfService() {
     </div>
   );
 }
+

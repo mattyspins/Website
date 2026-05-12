@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import { ShoppingBag, Calendar, Coins, Package, ArrowLeft } from "lucide-react";
@@ -78,7 +78,7 @@ export default function PurchaseHistoryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
+      <div className="min-h-screen  p-3 sm:p-6 pt-20 sm:pt-24">
         <div className="max-w-7xl mx-auto">
           <Breadcrumb items={breadcrumbItems} className="mb-6" />
           <TableSkeleton rows={5} columns={4} />
@@ -89,7 +89,7 @@ export default function PurchaseHistoryPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
+      <div className="min-h-screen  p-3 sm:p-6 pt-20 sm:pt-24">
         <div className="max-w-7xl mx-auto">
           <Breadcrumb items={breadcrumbItems} className="mb-6" />
           <LoadingError
@@ -102,7 +102,7 @@ export default function PurchaseHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-green-900 p-3 sm:p-6 pt-20 sm:pt-24">
+    <div className="min-h-screen  p-3 sm:p-6 pt-20 sm:pt-24">
       <div className="max-w-7xl mx-auto">
         {/* Breadcrumb Navigation */}
         <Breadcrumb items={breadcrumbItems} className="mb-6" />
@@ -346,3 +346,4 @@ export default function PurchaseHistoryPage() {
     </div>
   );
 }
+
