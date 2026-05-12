@@ -27,6 +27,7 @@ export default function AdminUsers() {
   const [editType, setEditType] = useState<"kick" | "rainbet">("kick");
   const [newUsername, setNewUsername] = useState("");
   const [pointsAmount, setPointsAmount] = useState(0);
+  const [pointsOperation, setPointsOperation] = useState<"add" | "remove">("add");
   const [pointsReason, setPointsReason] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -179,13 +180,19 @@ export default function AdminUsers() {
   };
 
   const adjustPoints = async () => {
-    if (!selectedUser || !pointsReason) {
+    if (!selectedUser || !pointsReason.trim()) {
       alert("Please provide a reason");
+      return;
+    }
+    if (!pointsAmount || pointsAmount <= 0) {
+      alert("Please enter a valid amount greater than 0");
       return;
     }
 
     const accessToken = localStorage.getItem("access_token");
     if (!accessToken) return;
+
+    const finalAmount = pointsOperation === "remove" ? -pointsAmount : pointsAmount;
 
     try {
       const response = await fetch(
@@ -196,17 +203,18 @@ export default function AdminUsers() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
           },
-          body: JSON.stringify({ amount: pointsAmount, reason: pointsReason }),
+          body: JSON.stringify({ amount: finalAmount, reason: pointsReason }),
         },
       );
 
       if (response.ok) {
-        alert("Points adjusted successfully!");
+        alert(`Successfully ${pointsOperation === "add" ? "added" : "removed"} ${pointsAmount.toLocaleString()} coins ${pointsOperation === "add" ? "to" : "from"} ${selectedUser.displayName}!`);
         setShowModal(false);
         setSelectedUser(null);
         setPointsAmount(0);
+        setPointsOperation("add");
         setPointsReason("");
-        searchUsers(searchQuery);
+        loadAllUsers();
       } else {
         const data = await response.json();
         alert(data.error?.message || "Failed to adjust points");
@@ -652,34 +660,53 @@ export default function AdminUsers() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-gradient-to-br from-purple-900/90 to-black border border-purple-500/30 rounded-2xl p-6 max-w-md w-full"
           >
-            <h3 className="text-2xl font-bold text-white mb-4">
-              Adjust Points
+            <h3 className="text-2xl font-bold text-white mb-1">
+              Manage Coins
             </h3>
-            <p className="text-gray-300 mb-4">
-              User:{" "}
-              <span className="text-white font-semibold">
-                {selectedUser.displayName}
+            <p className="text-gray-400 text-sm mb-4">
+              {selectedUser.displayName} &mdash;{" "}
+              <span className="text-purple-300 font-semibold">
+                {selectedUser.points.toLocaleString()} coins
               </span>
-              <br />
-              Current:{" "}
-              <span className="text-purple-400 font-semibold">
-                {selectedUser.points.toLocaleString()}
-              </span>{" "}
-              points
             </p>
 
             <div className="space-y-4">
+              {/* Add / Remove toggle */}
+              <div className="flex rounded-lg overflow-hidden border border-purple-500/30">
+                <button
+                  onClick={() => setPointsOperation("add")}
+                  className={`flex-1 py-2.5 font-semibold text-sm transition-colors ${
+                    pointsOperation === "add"
+                      ? "bg-green-600 text-white"
+                      : "bg-black/40 text-gray-400 hover:text-white"
+                  }`}
+                >
+                  + Add Coins
+                </button>
+                <button
+                  onClick={() => setPointsOperation("remove")}
+                  className={`flex-1 py-2.5 font-semibold text-sm transition-colors ${
+                    pointsOperation === "remove"
+                      ? "bg-red-600 text-white"
+                      : "bg-black/40 text-gray-400 hover:text-white"
+                  }`}
+                >
+                  − Remove Coins
+                </button>
+              </div>
+
               <div>
                 <label className="text-gray-400 text-sm mb-2 block">
-                  Amount (negative to subtract)
+                  Amount
                 </label>
                 <input
                   type="number"
-                  value={pointsAmount}
+                  min="1"
+                  value={pointsAmount || ""}
                   onChange={(e) =>
-                    setPointsAmount(parseInt(e.target.value) || 0)
+                    setPointsAmount(Math.abs(parseInt(e.target.value) || 0))
                   }
-                  placeholder="e.g., 1000 or -500"
+                  placeholder="e.g. 500"
                   className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
                 />
               </div>
@@ -692,33 +719,62 @@ export default function AdminUsers() {
                   type="text"
                   value={pointsReason}
                   onChange={(e) => setPointsReason(e.target.value)}
-                  placeholder="e.g., Bonus reward, Refund, etc."
+                  placeholder="e.g. Bonus reward, Refund, Penalty…"
                   className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
                 />
               </div>
 
-              <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
-                <p className="text-gray-300 text-sm">
-                  New balance:{" "}
-                  <span className="text-purple-400 font-semibold">
-                    {(selectedUser.points + pointsAmount).toLocaleString()}
-                  </span>{" "}
-                  points
-                </p>
-              </div>
+              {pointsAmount > 0 && (
+                <div
+                  className={`border rounded-lg p-3 ${
+                    pointsOperation === "add"
+                      ? "bg-green-500/10 border-green-500/30"
+                      : "bg-red-500/10 border-red-500/30"
+                  }`}
+                >
+                  <p className="text-gray-300 text-sm">
+                    New balance:{" "}
+                    <span
+                      className={`font-semibold ${
+                        pointsOperation === "add"
+                          ? "text-green-400"
+                          : "text-red-400"
+                      }`}
+                    >
+                      {Math.max(
+                        0,
+                        selectedUser.points +
+                          (pointsOperation === "add"
+                            ? pointsAmount
+                            : -pointsAmount),
+                      ).toLocaleString()}
+                    </span>{" "}
+                    coins
+                    <span className="text-gray-500 ml-2">
+                      ({pointsOperation === "add" ? "+" : "-"}
+                      {pointsAmount.toLocaleString()})
+                    </span>
+                  </p>
+                </div>
+              )}
 
               <div className="flex gap-3">
                 <button
                   onClick={adjustPoints}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 rounded-lg transition-colors"
+                  className={`flex-1 font-semibold py-2 rounded-lg transition-colors ${
+                    pointsOperation === "add"
+                      ? "bg-green-600 hover:bg-green-700 text-white"
+                      : "bg-red-600 hover:bg-red-700 text-white"
+                  }`}
                 >
-                  Confirm
+                  {pointsOperation === "add" ? "Add Coins" : "Remove Coins"}
                 </button>
                 <button
                   onClick={() => {
                     setShowModal(false);
                     setSelectedUser(null);
                     setPointsAmount(0);
+                    setPointsOperation("add");
                     setPointsReason("");
                   }}
                   className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition-colors"
