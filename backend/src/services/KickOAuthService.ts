@@ -364,6 +364,37 @@ export class KickOAuthService {
   }
 
   /**
+   * Refreshes stored OAuth tokens for a user using their stored refresh token.
+   * Returns true if successful, false if tokens are missing or refresh fails.
+   */
+  static async refreshUserTokens(userId: string): Promise<boolean> {
+    try {
+      const tokens = await this.getUserTokens(userId);
+      if (!tokens) return false;
+
+      const newTokens = await this.refreshAccessToken(tokens.refreshToken);
+
+      const encryptedAccessToken = encryptionService.encrypt(newTokens.accessToken);
+      const encryptedRefreshToken = encryptionService.encrypt(newTokens.refreshToken);
+      const expiresAt = new Date(Date.now() + newTokens.expiresIn * 1000);
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          kickAccessToken: encryptedAccessToken,
+          kickRefreshToken: encryptedRefreshToken,
+          kickTokenExpiresAt: expiresAt,
+        },
+      });
+
+      return true;
+    } catch (error) {
+      logger.error('Failed to refresh user tokens:', { userId, error });
+      return false;
+    }
+  }
+
+  /**
    * Retrieves and decrypts OAuth tokens for a user
    */
   static async getUserTokens(userId: string): Promise<{

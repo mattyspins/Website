@@ -396,6 +396,7 @@ model GuessTheBalance {
   openedAt             DateTime?                 @map("opened_at")
   closedAt             DateTime?                 @map("closed_at")
   completedAt          DateTime?                 @map("completed_at")
+  metadata             Json?
   creator              User                      @relation("GuessTheBalanceCreator", fields: [createdBy], references: [id])
   winner               User?                     @relation("GuessTheBalanceWinner", fields: [winnerId], references: [id])
   guesses              GuessSubmission[]

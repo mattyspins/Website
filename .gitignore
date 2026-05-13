@@ -48,9 +48,7 @@ next-env.d.ts
 *.db
 *.sqlite
 
-# Prisma
-backend/prisma/migrations/*_*/
-!backend/prisma/migrations/migration_lock.toml
+# Prisma migrations must be committed so Railway can run them on deploy
 
 # Docker
 docker-compose.override.yml
