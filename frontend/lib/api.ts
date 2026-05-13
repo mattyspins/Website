@@ -106,6 +106,7 @@ export const api = {
 export const API_ENDPOINTS = {
   // Auth
   AUTH_ME: `${API_URL}/api/auth/me`,
+  AUTH_REFRESH: `${API_URL}/api/auth/refresh`,
   AUTH_DISCORD_INITIATE: `${API_URL}/api/auth/discord/initiate`,
   AUTH_LOGOUT: `${API_URL}/api/auth/logout`,
   AUTH_KICK_VERIFY: `${API_URL}/api/auth/kick/verify`,
