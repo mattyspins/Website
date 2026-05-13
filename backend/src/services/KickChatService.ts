@@ -10,7 +10,7 @@ const KICK_CHATROOM_ID = parseInt(process.env['KICK_CHATROOM_ID'] || '0', 10);
 const PUSHER_APP_KEY = '32cbd69e4b950bf97679';
 const PUSHER_WS_URL = `wss://ws-us2.pusher.com/app/${PUSHER_APP_KEY}?protocol=7&client=js&version=7.4.0&flash=false`;
 const CHAT_POINTS_AMOUNT = 1;
-const CHAT_POINTS_COOLDOWN_SECONDS = 120; // 1 point per 2 minutes per user
+const CHAT_POINTS_COOLDOWN_SECONDS = 300; // 1 point per 5 minutes per user
 const RECONNECT_DELAY_MS = 10_000;
 
 export class KickChatService {
