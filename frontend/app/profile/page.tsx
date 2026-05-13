@@ -407,17 +407,17 @@ export default function ProfilePage() {
                   rel="noopener noreferrer"
                   className="text-[#53FC18] hover:underline"
                 >
-                  kick.com/mattyspins
+                  kick.com/mattyspinsslots
                 </a>{" "}
-                and type this code in chat:
+                and type this command in chat:
               </p>
               <div
                 className="relative bg-navy-900/80 border border-white/8 rounded-xl px-6 py-5 flex items-center justify-center cursor-pointer group"
-                onClick={() => navigator.clipboard.writeText(kickVerifyCode)}
+                onClick={() => navigator.clipboard.writeText(`!verify ${kickVerifyCode}`)}
                 title="Click to copy"
               >
                 <span className="font-mono font-bold text-2xl tracking-[0.3em] text-[#53FC18]">
-                  {kickVerifyCode}
+                  !verify {kickVerifyCode}
                 </span>
                 <span className="absolute right-3 top-3 text-gray-700 group-hover:text-gray-400 transition-colors">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
