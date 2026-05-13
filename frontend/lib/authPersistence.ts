@@ -3,7 +3,7 @@
  * Handles persistent login sessions across browser restarts
  */
 
-import { API_ENDPOINTS } from "./api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://website-production-ece1.up.railway.app";
 
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
@@ -119,7 +119,7 @@ export async function refreshAccessToken(): Promise<boolean> {
   }
 
   try {
-    const response = await fetch(API_ENDPOINTS.AUTH_REFRESH, {
+    const response = await fetch(`${API_BASE}/api/auth/refresh`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
