@@ -54,11 +54,9 @@ export default function AuthButtons() {
           const data = await response.json();
           if (data.success && data.user) {
             setUser(data.user);
-            // Store user info for persistence
             updateStoredUser(data.user);
           }
         } else {
-          // Token invalid, clear it
           clearAuthData();
         }
       } catch (error) {
@@ -67,6 +65,27 @@ export default function AuthButtons() {
     };
 
     checkAuth();
+
+    // Poll for updated points every 30 seconds
+    const refreshPoints = async () => {
+      const accessToken = localStorage.getItem("access_token");
+      if (!accessToken) return;
+      try {
+        const response = await fetch(API_ENDPOINTS.AUTH_ME, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user) {
+            setUser(data.user);
+            updateStoredUser(data.user);
+          }
+        }
+      } catch {}
+    };
+
+    const interval = setInterval(refreshPoints, 30_000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleDiscordLogin = async () => {
