@@ -16,8 +16,6 @@ export default function Footer() {
     community: [
       { name: "Discord", href: "https://discord.gg/n2gCDVwebw" },
       { name: "Kick", href: "https://kick.com/mattyspinsslots" },
-      { name: "X / Twitter", href: "https://x.com/mattyspinsslots" },
-      { name: "Instagram", href: "https://www.instagram.com/mattyspinsslots/" },
       { name: "AceBet", href: "https://acebet.com" },
     ],
     legal: [
