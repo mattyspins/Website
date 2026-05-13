@@ -106,9 +106,7 @@ export default function Navbar() {
                 </Link>
               );
             })}
-            <div className="pt-3 border-t border-white/5" data-auth-button>
-              <AuthButtons />
-            </div>
+            <AuthButtons inline onNavigate={() => setIsOpen(false)} />
           </div>
         )}
       </nav>
