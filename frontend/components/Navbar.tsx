@@ -25,60 +25,70 @@ export default function Navbar() {
   }, []);
 
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-navy-900/90 backdrop-blur-md border-b border-gold-500/10 shadow-lg"
-          : "bg-transparent"
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 group">
-            <span className="text-lg font-gaming font-bold text-white tracking-wider group-hover:text-gold-400 transition-colors">
-              MATTY<span className="text-gold-400">SPINS</span>
-            </span>
-          </Link>
+    <>
+      {/* Backdrop overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40 md:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    isActive
-                      ? "text-gold-400 bg-gold-500/10 border border-gold-500/20"
-                      : "text-gray-400 hover:text-gold-300 hover:bg-gold-500/5"
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              );
-            })}
-          </div>
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled || isOpen
+            ? "bg-navy-900/95 backdrop-blur-md border-b border-gold-500/10 shadow-lg"
+            : "bg-transparent"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <Link href="/" className="flex items-center space-x-2 group">
+              <span className="text-lg font-gaming font-bold text-white tracking-wider group-hover:text-gold-400 transition-colors">
+                MATTY<span className="text-gold-400">SPINS</span>
+              </span>
+            </Link>
 
-          {/* Auth + Mobile toggle */}
-          <div className="flex items-center gap-3">
-            <div className="hidden md:block" data-auth-button>
-              <AuthButtons />
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-1">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive
+                        ? "text-gold-400 bg-gold-500/10 border border-gold-500/20"
+                        : "text-gray-400 hover:text-gold-300 hover:bg-gold-500/5"
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                );
+              })}
             </div>
 
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="md:hidden text-gray-400 hover:text-white transition-colors p-1"
-            >
-              {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
+            {/* Auth + Mobile toggle */}
+            <div className="flex items-center gap-3">
+              <div className="hidden md:block" data-auth-button>
+                <AuthButtons />
+              </div>
+
+              <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="md:hidden text-gray-400 hover:text-white transition-colors p-1"
+              >
+                {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Mobile menu */}
+        {/* Mobile menu — full-width panel with solid background */}
         {isOpen && (
-          <div className="md:hidden border-t border-white/5 py-4 space-y-1">
+          <div className="md:hidden border-t border-white/5 bg-navy-900 px-4 sm:px-6 py-4 space-y-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -96,12 +106,12 @@ export default function Navbar() {
                 </Link>
               );
             })}
-            <div className="pt-3 border-t border-white/5 px-2" data-auth-button>
+            <div className="pt-3 border-t border-white/5" data-auth-button>
               <AuthButtons />
             </div>
           </div>
         )}
-      </div>
-    </nav>
+      </nav>
+    </>
   );
 }
