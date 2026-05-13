@@ -409,7 +409,8 @@ export default function ProfilePage() {
                 >
                   kick.com/mattyspinsslots
                 </a>{" "}
-                and type this command in chat:
+                and type this command in chat:{" "}
+                <span className="font-mono text-[#53FC18]">!verify &lt;code&gt;</span>
               </p>
               <div
                 className="relative bg-navy-900/80 border border-white/8 rounded-xl px-6 py-5 flex items-center justify-center cursor-pointer group"
