@@ -438,7 +438,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <form onSubmit={handleKickVerifyStart}>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="text"
                   value={kickUsernameInput}
@@ -449,7 +449,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={kickLoading || !kickUsernameInput.trim()}
-                  className="bg-[#53FC18] hover:bg-[#45D615] disabled:opacity-40 text-black font-bold px-5 py-3 rounded-lg transition-all text-xs tracking-widest uppercase whitespace-nowrap"
+                  className="bg-[#53FC18] hover:bg-[#45D615] disabled:opacity-40 text-black font-bold px-5 py-3 rounded-lg transition-all text-xs tracking-widest uppercase whitespace-nowrap w-full sm:w-auto"
                 >
                   {kickLoading ? "..." : "Start Verification"}
                 </button>
@@ -491,7 +491,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <form onSubmit={handleAcebetSave}>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="text"
                   value={acebetInput}
@@ -502,7 +502,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={acebetSaving || !acebetInput.trim()}
-                  className="bg-gold-500 hover:bg-gold-600 disabled:opacity-40 text-white font-bold px-5 py-3 rounded-lg transition-all text-xs tracking-widest uppercase whitespace-nowrap"
+                  className="w-full sm:w-auto bg-gold-500 hover:bg-gold-600 disabled:opacity-40 text-white font-bold px-5 py-3 rounded-lg transition-all text-xs tracking-widest uppercase whitespace-nowrap"
                 >
                   {acebetSaving ? "..." : "Start Verification"}
                 </button>

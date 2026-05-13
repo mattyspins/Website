@@ -71,7 +71,7 @@ export default function UserProfile({ user, onLogout }: UserProfileProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.97 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-2 w-56 bg-navy-800/95 backdrop-blur-xl border border-gold-500/15 rounded-xl shadow-2xl overflow-hidden z-50"
+            className="absolute right-0 mt-2 w-56 max-w-[90vw] bg-navy-800/95 backdrop-blur-xl border border-gold-500/15 rounded-xl shadow-2xl overflow-hidden z-50"
           >
             {/* Header */}
             <div className="px-4 py-3 border-b border-white/5">
