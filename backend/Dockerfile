@@ -26,8 +26,8 @@ RUN npm run build
 # Set environment to production
 ENV NODE_ENV=production
 
-# Railway will assign PORT dynamically, don't expose a specific port
-# The application will bind to the PORT environment variable
+# Copy and set up startup script
+COPY start.sh ./
+RUN chmod +x start.sh
 
-# Start the application directly
-CMD ["node", "dist/index.js"]
+CMD ["/bin/sh", "start.sh"]
