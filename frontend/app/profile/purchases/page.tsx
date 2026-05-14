@@ -182,7 +182,7 @@ export default function PurchaseHistoryPage() {
                         Quantity
                       </th>
                       <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300">
-                        Points Spent
+                        Coins Spent
                       </th>
                       <th className="px-6 py-4 text-center text-sm font-semibold text-gray-300">
                         Date
@@ -288,7 +288,7 @@ export default function PurchaseHistoryPage() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-xs mb-1">Points</p>
+                        <p className="text-gray-400 text-xs mb-1">Coins</p>
                         <p className="text-yellow-400 font-bold flex items-center justify-center">
                           <Coins className="w-3 h-3 mr-1" />
                           {purchase.pointsSpent.toLocaleString()}
@@ -331,7 +331,7 @@ export default function PurchaseHistoryPage() {
               <p className="text-3xl font-bold text-white">
                 {totalSpent.toLocaleString()}
               </p>
-              <p className="text-gray-400 text-sm">Points Spent</p>
+              <p className="text-gray-400 text-sm">Coins Spent</p>
             </div>
             <div className="bg-gradient-to-br from-green-600/20 to-green-900/20 border border-green-500/30 rounded-xl p-6 text-center">
               <Calendar className="w-8 h-8 text-green-400 mx-auto mb-2" />

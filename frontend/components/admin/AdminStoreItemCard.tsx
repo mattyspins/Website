@@ -172,7 +172,7 @@ export default function AdminStoreItemCard({
             <div className="text-2xl font-bold text-purple-400">
               {item.price.toLocaleString()}
             </div>
-            <div className="text-xs text-gray-400">points</div>
+            <div className="text-xs text-gray-400">coins</div>
           </div>
         </div>
 

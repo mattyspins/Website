@@ -141,7 +141,7 @@ export default function AdminRaffles() {
                 <div className="flex items-center space-x-4 text-sm">
                   <span className="text-purple-400">🎁 {raffle.prize}</span>
                   <span className="text-gray-400">
-                    💎 {raffle.ticketPrice} points/ticket
+                    💎 {raffle.ticketPrice} coins/ticket
                   </span>
                   <span className="text-yellow-400">
                     🏆 {raffle.numberOfWinners} winner
@@ -302,7 +302,7 @@ export default function AdminRaffles() {
                   type="text"
                   name="prize"
                   required
-                  placeholder="e.g., 10,000 Points"
+                  placeholder="e.g., 10,000 Coins"
                   className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
                 />
               </div>
@@ -310,7 +310,7 @@ export default function AdminRaffles() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-gray-400 text-sm mb-1 block">
-                    Ticket Price (points)
+                    Ticket Price (coins)
                   </label>
                   <input
                     type="number"

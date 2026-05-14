@@ -178,7 +178,7 @@ export default function EditStoreItemModal({
                   htmlFor="price"
                   className="block text-sm font-medium text-gray-300 mb-2"
                 >
-                  Price (Points) <span className="text-red-400">*</span>
+                  Price (Coins) <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="number"

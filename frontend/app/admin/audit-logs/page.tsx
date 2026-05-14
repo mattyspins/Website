@@ -144,7 +144,7 @@ export default function AuditLogsPage() {
               className="px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500"
             >
               <option value="">All Actions</option>
-              <option value="adjust_points">Adjust Points</option>
+              <option value="adjust_points">Adjust Coins</option>
               <option value="suspend_user">Suspend User</option>
               <option value="unsuspend_user">Unsuspend User</option>
               <option value="delete_user">Delete User</option>

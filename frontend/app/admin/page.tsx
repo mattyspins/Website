@@ -273,7 +273,7 @@ export default function AdminDashboard() {
                     automatically determine the winner
                   </li>
                   <li>
-                    • <strong>Award Points:</strong> Winner receives points
+                    • <strong>Award Coins:</strong> Winner receives coins
                     automatically
                   </li>
                 </ul>

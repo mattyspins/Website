@@ -72,7 +72,7 @@ export default function AdminStats() {
         color="green"
       />
       <StatCard
-        title="Total Points"
+        title="Total Coins"
         value={stats.totalPoints.toLocaleString()}
         icon="💎"
         color="blue"

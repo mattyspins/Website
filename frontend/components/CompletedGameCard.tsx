@@ -124,7 +124,7 @@ export default function CompletedGameCard({
           {game.winner.reward > 0 && (
             <div className="mt-3 bg-green-500/20 border border-green-500/50 rounded-lg p-2 text-center">
               <p className="text-green-300 text-sm font-semibold">
-                Reward: {game.winner.reward.toLocaleString()} points
+                Reward: {game.winner.reward.toLocaleString()} coins
               </p>
             </div>
           )}

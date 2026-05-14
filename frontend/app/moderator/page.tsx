@@ -236,7 +236,7 @@ export default function ModeratorDashboard() {
                     Kick
                   </th>
                   <th className="text-left text-gray-400 font-semibold py-3 px-4">
-                    Points
+                    Coins
                   </th>
                   <th className="text-left text-gray-400 font-semibold py-3 px-4">
                     Status

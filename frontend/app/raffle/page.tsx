@@ -6,7 +6,7 @@ export default function RafflePage() {
   return (
     <ComingSoon
       title="Raffles"
-      description="Enter exciting raffles for a chance to win amazing prizes! Purchase tickets with your points and test your luck."
+      description="Enter exciting raffles for a chance to win amazing prizes! Purchase tickets with your coins and test your luck."
       icon="sparkles"
     />
   );

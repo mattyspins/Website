@@ -303,7 +303,7 @@ export default function AdminUsers() {
                   AceBet
                 </th>
                 <th className="text-left text-gray-400 font-semibold py-3 px-4">
-                  Points
+                  Coins
                 </th>
                 <th className="text-left text-gray-400 font-semibold py-3 px-4">
                   Status
@@ -582,7 +582,7 @@ export default function AdminUsers() {
                         }}
                         className="bg-purple-600 hover:bg-purple-700 text-white text-sm px-3 py-1 rounded transition-colors"
                       >
-                        💎 Points
+                        💎 Coins
                       </button>
                       {!user.isAdmin && (
                         <button

@@ -298,7 +298,7 @@ export default function AdminStorePage() {
                           </p>
                           <p className="text-gray-400 text-sm">
                             {item.totalSold} sold â€¢{" "}
-                            {item.revenue.toLocaleString()} points revenue
+                            {item.revenue.toLocaleString()} coins revenue
                           </p>
                         </div>
                       </div>

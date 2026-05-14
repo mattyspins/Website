@@ -356,7 +356,7 @@ export default function AdminPurchases() {
               </p>
               <p className="text-sm text-red-300">
                 <strong>Refund Amount:</strong>{" "}
-                {selectedPurchase.totalPrice.toLocaleString()} points
+                {selectedPurchase.totalPrice.toLocaleString()} coins
               </p>
             </div>
 
