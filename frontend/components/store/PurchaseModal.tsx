@@ -95,7 +95,7 @@ export default function PurchaseModal({
         quantity,
       });
 
-      // Update user points in localStorage
+      // Optimistically deduct coins in localStorage then signal navbar to refresh
       const userInfo = localStorage.getItem("user_info");
       if (userInfo) {
         try {
@@ -106,6 +106,7 @@ export default function PurchaseModal({
           console.error("Failed to update user points:", err);
         }
       }
+      window.dispatchEvent(new Event("coins-updated"));
 
       onSuccess();
     } catch (err: any) {

@@ -72,8 +72,7 @@ export default function AuthButtons({ inline = false, onNavigate }: AuthButtonsP
 
     checkAuth();
 
-    // Poll for updated points every 30 seconds
-    const refreshPoints = async () => {
+    const refreshBalance = async () => {
       const accessToken = localStorage.getItem("access_token");
       if (!accessToken) return;
       try {
@@ -90,8 +89,24 @@ export default function AuthButtons({ inline = false, onNavigate }: AuthButtonsP
       } catch {}
     };
 
-    const interval = setInterval(refreshPoints, 30_000);
-    return () => clearInterval(interval);
+    // Poll every 10 seconds
+    const interval = setInterval(refreshBalance, 10_000);
+
+    // Refresh immediately when the user returns to this tab
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") refreshBalance();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    // Allow other components to trigger an immediate refresh
+    // (e.g. after a store purchase deducts coins)
+    window.addEventListener("coins-updated", refreshBalance);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("coins-updated", refreshBalance);
+    };
   }, []);
 
   const handleDiscordLogin = async () => {
