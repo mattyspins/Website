@@ -11,6 +11,7 @@ interface MilestoneTier {
   wagerRequired: number;
   reward: number;
   unlocked: boolean;
+  claimStatus: "pending" | "approved" | "rejected" | null;
 }
 
 const TIER_COLORS: Record<string, { border: string; glow: string; badge: string }> = {
@@ -37,6 +38,8 @@ export default function MilestonesPage() {
   const [totalWagered, setTotalWagered] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [claiming, setClaiming] = useState<number | null>(null);
+  const [claimMsgs, setClaimMsgs] = useState<Record<number, string>>({});
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -59,6 +62,32 @@ export default function MilestonesPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleClaim = async (tier: MilestoneTier) => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    setClaiming(tier.id);
+    try {
+      const res = await fetch(API_ENDPOINTS.MILESTONES_CLAIM, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ tierId: tier.id }),
+      });
+      const d = await res.json();
+      if (d.success) {
+        if (d.alreadyClaimed) {
+          setClaimMsgs((m) => ({ ...m, [tier.id]: "Already submitted" }));
+        } else {
+          setTiers((ts) => ts.map((t) => t.id === tier.id ? { ...t, claimStatus: "pending" } : t));
+          setClaimMsgs((m) => ({ ...m, [tier.id]: "Submitted! Check Discord." }));
+        }
+      } else {
+        setClaimMsgs((m) => ({ ...m, [tier.id]: d.error?.message || "Failed." }));
+      }
+    } catch {
+      setClaimMsgs((m) => ({ ...m, [tier.id]: "Network error." }));
+    } finally { setClaiming(null); }
   };
 
   const nextMilestone = tiers.find((t) => !t.unlocked);
@@ -210,10 +239,33 @@ export default function MilestonesPage() {
                     {formatDollar(tier.wagerRequired)} wagered
                   </p>
 
-                  {/* Unlocked banner */}
+                  {/* Unlocked / Claim */}
                   {tier.unlocked && (
-                    <div className="mt-3 w-full bg-gold-500/10 border border-gold-500/20 rounded-lg py-1 text-gold-400 text-xs font-semibold tracking-wide">
-                      UNLOCKED ✓
+                    <div className="mt-3 w-full space-y-1.5">
+                      {tier.claimStatus === "approved" ? (
+                        <div className="bg-green-500/10 border border-green-500/20 rounded-lg py-1.5 text-green-400 text-xs font-semibold tracking-wide text-center">
+                          PAID ✓
+                        </div>
+                      ) : tier.claimStatus === "pending" ? (
+                        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg py-1.5 text-yellow-400 text-xs font-semibold tracking-wide text-center">
+                          CLAIM PENDING
+                        </div>
+                      ) : isAuthenticated ? (
+                        <button
+                          onClick={() => handleClaim(tier)}
+                          disabled={claiming === tier.id}
+                          className="w-full bg-gold-500 hover:bg-gold-600 disabled:opacity-50 text-white text-xs font-bold py-1.5 rounded-lg transition-all uppercase tracking-wide"
+                        >
+                          {claiming === tier.id ? "..." : "Claim $" + tier.reward}
+                        </button>
+                      ) : (
+                        <div className="bg-gold-500/10 border border-gold-500/20 rounded-lg py-1 text-gold-400 text-xs font-semibold tracking-wide text-center">
+                          UNLOCKED ✓
+                        </div>
+                      )}
+                      {claimMsgs[tier.id] && (
+                        <p className="text-xs text-center text-gray-400">{claimMsgs[tier.id]}</p>
+                      )}
                     </div>
                   )}
                 </motion.div>

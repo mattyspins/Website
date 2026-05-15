@@ -19,7 +19,9 @@ export default function AdminMilestones() {
   const [userId, setUserId] = useState("");
   const [userName, setUserName] = useState("");
   const [currentWager, setCurrentWager] = useState<number | null>(null);
+  const [currentDeposited, setCurrentDeposited] = useState<number | null>(null);
   const [newWager, setNewWager] = useState("");
+  const [newDeposited, setNewDeposited] = useState("");
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -31,6 +33,7 @@ export default function AdminMilestones() {
     setUserId("");
     setUserName("");
     setCurrentWager(null);
+    setCurrentDeposited(null);
 
     try {
       const token = localStorage.getItem("access_token");
@@ -47,6 +50,8 @@ export default function AdminMilestones() {
         setUserName(user.displayName);
         setCurrentWager(Number(user.totalWagered ?? 0));
         setNewWager(String(Number(user.totalWagered ?? 0)));
+        setCurrentDeposited(Number(user.totalDeposited ?? 0));
+        setNewDeposited(String(Number(user.totalDeposited ?? 0)));
       }
     } catch {
       setMsg({ type: "error", text: "Search failed." });
@@ -56,28 +61,45 @@ export default function AdminMilestones() {
   };
 
   const handleSave = async () => {
-    if (!userId || newWager === "") return;
+    if (!userId) return;
     setSaving(true);
     setMsg(null);
     try {
       const token = localStorage.getItem("access_token");
-      const res = await fetch(API_ENDPOINTS.ADMIN_USER_WAGER(userId), {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ totalWagered: parseFloat(newWager) }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setCurrentWager(Number(data.user.totalWagered));
-        setMsg({ type: "success", text: `Updated ${userName}'s wager to $${parseFloat(newWager).toLocaleString()}` });
+      const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+      const results: string[] = [];
+
+      if (newWager !== "" && parseFloat(newWager) !== currentWager) {
+        const res = await fetch(API_ENDPOINTS.ADMIN_USER_WAGER(userId), {
+          method: "PATCH", headers,
+          body: JSON.stringify({ totalWagered: parseFloat(newWager) }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setCurrentWager(Number(data.user.totalWagered));
+          results.push(`wager → $${parseFloat(newWager).toLocaleString()}`);
+        }
+      }
+
+      if (newDeposited !== "" && parseFloat(newDeposited) !== currentDeposited) {
+        const res = await fetch(API_ENDPOINTS.ADMIN_USER_DEPOSIT(userId), {
+          method: "PATCH", headers,
+          body: JSON.stringify({ totalDeposited: parseFloat(newDeposited) }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setCurrentDeposited(Number(data.user.totalDeposited));
+          results.push(`deposited → $${parseFloat(newDeposited).toLocaleString()}`);
+        }
+      }
+
+      if (results.length > 0) {
+        setMsg({ type: "success", text: `Updated ${userName}: ${results.join(", ")}` });
       } else {
-        setMsg({ type: "error", text: data.error || "Update failed." });
+        setMsg({ type: "error", text: "No changes detected." });
       }
     } catch {
-      setMsg({ type: "error", text: "Failed to update wager." });
+      setMsg({ type: "error", text: "Failed to update." });
     } finally {
       setSaving(false);
     }
@@ -122,9 +144,15 @@ export default function AdminMilestones() {
                 <p className="text-white font-semibold">{userName}</p>
                 <p className="text-gray-500 text-xs">{userId}</p>
               </div>
-              <div className="text-right">
-                <p className="text-gray-500 text-xs">Current wager</p>
-                <p className="text-gold-400 font-bold">${(currentWager ?? 0).toLocaleString()}</p>
+              <div className="flex gap-4 text-right">
+                <div>
+                  <p className="text-gray-500 text-xs">Wagered</p>
+                  <p className="text-gold-400 font-bold">${(currentWager ?? 0).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs">Deposited</p>
+                  <p className="text-blue-400 font-bold">${(currentDeposited ?? 0).toLocaleString()}</p>
+                </div>
               </div>
             </div>
 
@@ -149,27 +177,31 @@ export default function AdminMilestones() {
             </div>
             <p className="text-gray-500 text-xs">{unlockedCount} / {TIERS.length} milestones unlocked</p>
 
-            {/* Update wager */}
-            <div className="flex gap-3 pt-2">
-              <div className="flex-1">
-                <label className="text-gray-400 text-xs mb-1 block">New Total Wagered (USD)</label>
+            {/* Update wager + deposit */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div>
+                <label className="text-gray-400 text-xs mb-1 block">Total Wagered (USD)</label>
                 <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={newWager}
+                  type="number" min="0" step="0.01" value={newWager}
                   onChange={(e) => setNewWager(e.target.value)}
                   className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30"
                 />
               </div>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="self-end bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors"
-              >
-                {saving ? "Saving..." : "Update"}
-              </button>
+              <div>
+                <label className="text-gray-400 text-xs mb-1 block">Total Deposited (USD)</label>
+                <input
+                  type="number" min="0" step="0.01" value={newDeposited}
+                  onChange={(e) => setNewDeposited(e.target.value)}
+                  className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500/30"
+                />
+              </div>
             </div>
+            <button
+              onClick={handleSave} disabled={saving}
+              className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors"
+            >
+              {saving ? "Saving..." : "Update"}
+            </button>
           </div>
         )}
 

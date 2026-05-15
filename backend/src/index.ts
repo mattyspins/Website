@@ -135,10 +135,13 @@ import guessTheBalanceRoutes from '@/routes/guessTheBalance';
 import storeRoutes from '@/routes/store';
 import notificationRoutes from '@/routes/notifications';
 import milestoneRoutes from '@/routes/milestones';
+import streamEventRoutes from '@/routes/streamEvents';
+import checkinRoutes from '@/routes/checkin';
+import publicProfileRoutes from '@/routes/publicProfile';
+import raffleRoutes from '@/routes/raffles';
 // Commented out until Kick OAuth is implemented
 // import viewingRoutes from '@/routes/viewing';
 // import bonusHuntRoutes from '@/routes/bonusHunt';
-// import raffleRoutes from '@/routes/raffles';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
@@ -150,10 +153,13 @@ app.use('/api/guess-the-balance', guessTheBalanceRoutes);
 app.use('/api/store', storeRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/milestones', milestoneRoutes);
+app.use('/api/stream-events', streamEventRoutes);
+app.use('/api/checkin', checkinRoutes);
+app.use('/api/users', publicProfileRoutes);
+app.use('/api/raffles', raffleRoutes);
 // Commented out until Kick OAuth is implemented
 // app.use('/api/viewing', viewingRoutes);
 // app.use('/api/bonus-hunt', bonusHuntRoutes);
-// app.use('/api/raffles', raffleRoutes);
 
 // Socket.IO connection handling
 io.on('connection', socket => {

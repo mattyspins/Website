@@ -10,10 +10,12 @@ interface User {
   displayName: string;
   avatar?: string;
   points: number;
+  totalWagered?: number;
   discordUsername?: string;
   kickUsername?: string;
   kickVerified?: boolean;
-  acebetUsername?: string;
+  rainbetUsername?: string;
+  rainbetVerified?: boolean;
   createdAt?: string;
 }
 
@@ -45,9 +47,81 @@ export default function ProfilePage() {
   const [acebetSaving, setAcebetSaving] = useState(false);
   const [acebetMsg, setAcebetMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  // Daily check-in state
+  const [checkinClaimed, setCheckinClaimed] = useState(false);
+  const [checkinLoading, setCheckinLoading] = useState(false);
+  const [checkinMsg, setCheckinMsg] = useState<string | null>(null);
+
+  const handleCheckin = async () => {
+    setCheckinLoading(true);
+    setCheckinMsg(null);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(API_ENDPOINTS.CHECKIN_CLAIM, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const d = await res.json();
+      if (d.success) {
+        setCheckinClaimed(true);
+        setCheckinMsg(`+${d.reward} coins claimed!`);
+        setUser((u) => u ? { ...u, points: d.newBalance } : u);
+        window.dispatchEvent(new Event("coins-updated"));
+      } else {
+        setCheckinMsg(d.error?.message || "Already claimed today.");
+        setCheckinClaimed(true);
+      }
+    } catch {
+      setCheckinMsg("Failed. Try again.");
+    } finally {
+      setCheckinLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadProfile();
-    return () => { if (kickPollingRef) clearInterval(kickPollingRef); };
+
+    // Check daily check-in status
+    const checkCheckin = async () => {
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
+      try {
+        const res = await fetch(API_ENDPOINTS.CHECKIN_STATUS, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const d = await res.json();
+        if (d.success) setCheckinClaimed(d.alreadyClaimed);
+      } catch { /* ignore */ }
+    };
+    checkCheckin();
+
+    const refreshCoins = async () => {
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
+      try {
+        const res = await fetch(API_ENDPOINTS.AUTH_ME, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUser((u) => u ? { ...u, points: data.user.points, totalWagered: data.user.totalWagered } : u);
+        }
+      } catch { /* ignore */ }
+    };
+
+    const interval = setInterval(refreshCoins, 10_000);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") refreshCoins();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("coins-updated", refreshCoins);
+
+    return () => {
+      if (kickPollingRef) clearInterval(kickPollingRef);
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("coins-updated", refreshCoins);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -133,7 +207,6 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (res.ok && data.alreadyVerified) {
-        // Already verified in DB — update local state and reload profile
         setUser((u) => u ? { ...u, kickUsername: data.kickUsername || u.kickUsername, kickVerified: true } : u);
         setKickUsernameInput("");
       } else if (res.ok && data.code) {
@@ -207,7 +280,7 @@ export default function ProfilePage() {
       );
       if (res.ok) {
         setAcebetMsg({ type: "success", text: "AceBet username submitted. Pending admin verification." });
-        setUser((u) => u ? { ...u, acebetUsername: acebetInput.trim() } : u);
+        setUser((u) => u ? { ...u, rainbetUsername: acebetInput.trim(), rainbetVerified: false } : u);
         setAcebetInput("");
       } else {
         const d = await res.json().catch(() => ({}));
@@ -215,7 +288,7 @@ export default function ProfilePage() {
       }
     } catch {
       setAcebetMsg({ type: "success", text: "AceBet username submitted. Pending admin verification." });
-      setUser((u) => u ? { ...u, acebetUsername: acebetInput.trim() } : u);
+      setUser((u) => u ? { ...u, rainbetUsername: acebetInput.trim(), rainbetVerified: false } : u);
       setAcebetInput("");
     } finally {
       setAcebetSaving(false);
@@ -243,6 +316,7 @@ export default function ProfilePage() {
   const kickVerified = user.kickVerified && user.kickUsername;
   const kickPending = !kickVerified && !!user.kickUsername;
   const showKickBanner = !kickVerified && !bannerDismissed;
+  const totalWagered = user.totalWagered ?? 0;
 
   return (
     <div className="min-h-screen pt-20 pb-16 px-4">
@@ -270,7 +344,7 @@ export default function ProfilePage() {
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-white font-semibold text-sm mb-0.5">You're in! Discord linked.</p>
+                <p className="text-white font-semibold text-sm mb-0.5">You&apos;re in! Discord linked.</p>
                 <p className="text-gray-400 text-sm">
                   Your Discord is connected. Now link your Kick username below so you can earn coins from chat and show up on the leaderboard.
                 </p>
@@ -300,7 +374,8 @@ export default function ProfilePage() {
           transition={{ delay: 0.05 }}
           className="bg-navy-800/60 border border-white/6 rounded-xl p-6 mb-4"
         >
-          <div className="flex items-start gap-4">
+          {/* Avatar + name row */}
+          <div className="flex items-center gap-4 mb-6">
             <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-gold-600 to-gold-400 flex-shrink-0 flex items-center justify-center">
               {user.avatar ? (
                 <img src={user.avatar} alt={user.displayName} className="w-full h-full object-cover" />
@@ -312,15 +387,10 @@ export default function ProfilePage() {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-white text-xl font-bold mb-1 truncate">{user.displayName}</h2>
-              {user.discordUsername && (
-                <p className="text-gray-500 text-sm mb-0.5">
-                  Discord <span className="text-gray-600 mx-1">·</span>
-                  <span className="text-gray-400">{user.discordUsername}</span>
-                </p>
-              )}
               {user.kickUsername && (
-                <p className="text-gray-500 text-sm mb-0.5 flex items-center gap-2">
-                  Kick <span className="text-gray-600 mx-1">·</span>
+                <p className="text-gray-500 text-sm flex items-center gap-2">
+                  <span className="text-[#53FC18]">Kick</span>
+                  <span className="text-gray-600">·</span>
                   <span className="text-gray-400">{user.kickUsername}</span>
                   {user.kickVerified && (
                     <span className="bg-[#53FC18]/15 text-[#53FC18] border border-[#53FC18]/25 text-xs font-semibold px-2 py-0.5 rounded">
@@ -333,12 +403,124 @@ export default function ProfilePage() {
                 <p className="text-gray-600 text-xs mt-1">Joined {joinedDate}</p>
               )}
             </div>
-            <div className="text-right shrink-0">
-              <p className="text-gray-500 text-xs font-semibold tracking-wider uppercase mb-1">Coin Balance</p>
-              <p className="text-white font-gaming font-bold text-3xl">{user.points.toLocaleString()}</p>
-              <p className="text-gray-600 text-xs">{user.points.toLocaleString()} Lifetime</p>
+          </div>
+
+          {/* Stats row: COINS + WAGERED */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-navy-900/60 border border-white/6 rounded-xl p-4 text-center">
+              <p className="text-gray-500 text-xs font-semibold tracking-widest uppercase mb-2">Coins</p>
+              <p className="text-white font-gaming font-bold text-3xl leading-none">
+                {user.points.toLocaleString()}
+              </p>
+              <p className="text-gray-600 text-xs mt-1.5">Current Balance</p>
+            </div>
+            <div className="bg-navy-900/60 border border-white/6 rounded-xl p-4 text-center">
+              <p className="text-gray-500 text-xs font-semibold tracking-widest uppercase mb-2">Wagered</p>
+              <p className="text-gold-400 font-gaming font-bold text-3xl leading-none">
+                ${totalWagered.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-gray-600 text-xs mt-1.5">Total on AceBet</p>
             </div>
           </div>
+        </motion.div>
+
+        {/* Daily Check-in */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-navy-800/60 border border-white/6 rounded-xl p-5 mb-4 flex items-center gap-4"
+        >
+          <div className="w-10 h-10 rounded-full bg-gold-500/15 flex items-center justify-center shrink-0 text-xl">🎁</div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-semibold text-sm">Daily Check-in</p>
+            <p className="text-gray-500 text-xs mt-0.5">Claim 5 free coins every day just for visiting.</p>
+            {checkinMsg && (
+              <p className={`text-xs mt-1 ${checkinMsg.includes("+") ? "text-green-400" : "text-gray-500"}`}>{checkinMsg}</p>
+            )}
+          </div>
+          <button
+            onClick={handleCheckin}
+            disabled={checkinClaimed || checkinLoading}
+            className={`shrink-0 font-semibold text-xs px-4 py-2 rounded-lg transition-all ${
+              checkinClaimed
+                ? "bg-white/5 text-gray-600 cursor-default"
+                : "bg-gold-500 hover:bg-gold-600 text-white"
+            }`}
+          >
+            {checkinLoading ? "..." : checkinClaimed ? "Claimed ✓" : "Claim 5 Coins"}
+          </button>
+        </motion.div>
+
+        {/* Link AceBet Account */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-navy-800/60 border border-white/6 rounded-xl p-6 mb-4"
+        >
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="w-1 h-5 bg-gold-500 rounded-full" />
+            <h3 className="text-white font-semibold">Link Your AceBet Account</h3>
+          </div>
+          <p className="text-gray-500 text-sm mb-5 ml-3.5">
+            Verify your AceBet username to track your wager and claim leaderboard rewards.
+          </p>
+
+          {user.rainbetUsername ? (
+            <div className="flex items-center gap-3 bg-gold-500/8 border border-gold-500/20 rounded-lg p-4">
+              <div className="w-8 h-8 rounded-full bg-gold-500/20 flex items-center justify-center shrink-0">
+                {user.rainbetVerified ? (
+                  <svg className="w-4 h-4 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-gold-400 font-semibold text-sm">
+                  {user.rainbetVerified ? "AceBet account verified" : "AceBet account submitted"}
+                </p>
+                <p className="text-gray-500 text-xs truncate">
+                  {user.rainbetUsername} · {user.rainbetVerified ? "Verified by admin" : "Pending admin verification"}
+                </p>
+              </div>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded shrink-0 border ${
+                user.rainbetVerified
+                  ? "bg-gold-500/15 text-gold-400 border-gold-500/25"
+                  : "bg-yellow-500/15 text-yellow-400 border-yellow-500/25"
+              }`}>
+                {user.rainbetVerified ? "VERIFIED" : "PENDING"}
+              </span>
+            </div>
+          ) : (
+            <form onSubmit={handleAcebetSave}>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  value={acebetInput}
+                  onChange={(e) => setAcebetInput(e.target.value)}
+                  placeholder="Enter your AceBet username"
+                  className="flex-1 bg-navy-900/60 border border-white/8 rounded-lg px-4 py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gold-500/30 transition-colors"
+                />
+                <button
+                  type="submit"
+                  disabled={acebetSaving || !acebetInput.trim()}
+                  className="w-full sm:w-auto bg-gold-500 hover:bg-gold-600 disabled:opacity-40 text-white font-bold px-5 py-3 rounded-lg transition-all text-xs tracking-widest uppercase whitespace-nowrap"
+                >
+                  {acebetSaving ? "..." : "Submit"}
+                </button>
+              </div>
+              {acebetMsg && (
+                <p className={`text-xs mt-2 ${acebetMsg.type === "success" ? "text-green-400" : "text-red-400"}`}>
+                  {acebetMsg.text}
+                </p>
+              )}
+            </form>
+          )}
         </motion.div>
 
         {/* Link Kick Account */}
@@ -346,7 +528,7 @@ export default function ProfilePage() {
           id="kick-section"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.2 }}
           className="bg-navy-800/60 border border-white/6 rounded-xl p-6 mb-4"
         >
           <div className="flex items-center gap-2.5 mb-1">
@@ -455,63 +637,6 @@ export default function ProfilePage() {
                 </button>
               </div>
               {kickError && <p className="text-red-400 text-xs mt-2">{kickError}</p>}
-            </form>
-          )}
-        </motion.div>
-
-        {/* Link AceBet Account */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="bg-navy-800/60 border border-white/6 rounded-xl p-6 mb-4"
-        >
-          <div className="flex items-center gap-2.5 mb-1">
-            <div className="w-1 h-5 bg-gold-500 rounded-full" />
-            <h3 className="text-white font-semibold">Link Your AceBet Account</h3>
-          </div>
-          <p className="text-gray-500 text-sm mb-5 ml-3.5">
-            Verify your AceBet username to track your wager and claim leaderboard rewards.
-          </p>
-
-          {user.acebetUsername ? (
-            <div className="flex items-center gap-3 bg-gold-500/8 border border-gold-500/20 rounded-lg p-4">
-              <div className="w-8 h-8 rounded-full bg-gold-500/20 flex items-center justify-center shrink-0">
-                <svg className="w-4 h-4 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-gold-400 font-semibold text-sm">AceBet account submitted</p>
-                <p className="text-gray-500 text-xs truncate">{user.acebetUsername} · Pending admin verification</p>
-              </div>
-              <span className="bg-yellow-500/15 text-yellow-400 border border-yellow-500/25 text-xs font-semibold px-2 py-0.5 rounded shrink-0">
-                PENDING
-              </span>
-            </div>
-          ) : (
-            <form onSubmit={handleAcebetSave}>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="text"
-                  value={acebetInput}
-                  onChange={(e) => setAcebetInput(e.target.value)}
-                  placeholder="Enter your AceBet username"
-                  className="flex-1 bg-navy-900/60 border border-white/8 rounded-lg px-4 py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gold-500/30 transition-colors"
-                />
-                <button
-                  type="submit"
-                  disabled={acebetSaving || !acebetInput.trim()}
-                  className="w-full sm:w-auto bg-gold-500 hover:bg-gold-600 disabled:opacity-40 text-white font-bold px-5 py-3 rounded-lg transition-all text-xs tracking-widest uppercase whitespace-nowrap"
-                >
-                  {acebetSaving ? "..." : "Start Verification"}
-                </button>
-              </div>
-              {acebetMsg && (
-                <p className={`text-xs mt-2 ${acebetMsg.type === "success" ? "text-green-400" : "text-red-400"}`}>
-                  {acebetMsg.text}
-                </p>
-              )}
             </form>
           )}
         </motion.div>

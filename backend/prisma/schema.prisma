@@ -32,6 +32,8 @@ model User {
   rainbetUsername        String?               @unique @map("rainbet_username")
   rainbetVerified        Boolean               @default(false) @map("rainbet_verified")
   totalWagered           Decimal               @default(0) @map("total_wagered") @db.Decimal(15, 2)
+  totalDeposited         Decimal               @default(0) @map("total_deposited") @db.Decimal(15, 2)
+  lastDailyCheckIn       DateTime?             @map("last_daily_check_in")
   auditLogsAsAdmin       AuditLog[]            @relation("AdminAuditLogs")
   auditLogsAsTarget      AuditLog[]            @relation("TargetAuditLogs")
   bonusHuntPredictions   BonusHuntPrediction[]
@@ -53,6 +55,7 @@ model User {
   createdGames           GuessTheBalance[]     @relation("GuessTheBalanceCreator")
   wonGames               GuessTheBalance[]     @relation("GuessTheBalanceWinner")
   guessSubmissions       GuessSubmission[]
+  milestoneClaims        MilestoneClaim[]
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")
@@ -428,4 +431,32 @@ enum GuessTheBalanceStatus {
   OPEN
   CLOSED
   COMPLETED
+}
+
+model StreamEvent {
+  id          String   @id @default(uuid())
+  title       String
+  scheduledAt DateTime @map("scheduled_at")
+  gameType    String?  @map("game_type")
+  description String?
+  isLive      Boolean  @default(false) @map("is_live")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([scheduledAt])
+  @@map("stream_events")
+}
+
+model MilestoneClaim {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  tierId    Int      @map("tier_id")
+  tierName  String   @map("tier_name")
+  reward    Int
+  status    String   @default("pending")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tierId])
+  @@map("milestone_claims")
 }

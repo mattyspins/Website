@@ -30,6 +30,7 @@ function formatTimeRemaining(endDate: string): string {
 export default function LeaderboardsPage() {
   const router = useRouter();
   const [leaderboards, setLeaderboards] = useState<Leaderboard[]>([]);
+  const [archived, setArchived] = useState<Leaderboard[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,10 +39,17 @@ export default function LeaderboardsPage() {
 
   const loadLeaderboards = async () => {
     try {
-      const res = await fetch(API_ENDPOINTS.LEADERBOARDS_ACTIVE);
-      if (res.ok) {
-        const data = await res.json();
+      const [activeRes, archivedRes] = await Promise.all([
+        fetch(API_ENDPOINTS.LEADERBOARDS_ACTIVE),
+        fetch(API_ENDPOINTS.LEADERBOARDS_COMPLETED),
+      ]);
+      if (activeRes.ok) {
+        const data = await activeRes.json();
         setLeaderboards(data.leaderboards || []);
+      }
+      if (archivedRes.ok) {
+        const data = await archivedRes.json();
+        setArchived(data.leaderboards || []);
       }
     } catch {
       // silent
@@ -174,6 +182,33 @@ export default function LeaderboardsPage() {
               </motion.div>
             ))}
           </div>
+        )}
+        {/* Archived leaderboards */}
+        {archived.length > 0 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mt-12">
+            <h2 className="text-white font-semibold text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-gray-500" />
+              <span className="text-gray-500">Past Leaderboards</span>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {archived.map((lb) => (
+                <div
+                  key={lb.id}
+                  onClick={() => router.push(`/leaderboard/${lb.id}`)}
+                  className="bg-navy-800/40 border border-white/5 rounded-xl p-5 cursor-pointer hover:border-white/10 transition-colors flex items-center justify-between gap-4"
+                >
+                  <div className="min-w-0">
+                    <p className="text-gray-300 font-semibold text-sm truncate">{lb.title}</p>
+                    <p className="text-gray-600 text-xs mt-0.5">
+                      Ended {new Date(lb.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      {lb.totalPrizePool ? ` · $${lb.totalPrizePool.toLocaleString()} prize pool` : ""}
+                    </p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-gray-600 shrink-0" />
+                </div>
+              ))}
+            </div>
+          </motion.div>
         )}
       </div>
     </div>

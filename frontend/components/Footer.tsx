@@ -137,6 +137,37 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* Responsible Gambling */}
+        <div className="border-t border-white/5 pt-8 mb-8">
+          <div className="bg-[#1a1a1a] border border-white/8 rounded-2xl p-6 max-w-2xl">
+            <div className="flex items-center gap-2.5 mb-3">
+              <svg className="w-5 h-5 text-red-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+              <h3 className="text-red-500 font-gaming font-bold text-sm tracking-widest uppercase">
+                Play Responsibly
+              </h3>
+            </div>
+            <p className="text-gray-400 text-sm leading-relaxed mb-4">
+              Gambling can be addictive. Please gamble responsibly. Only bet what you can afford to lose.
+            </p>
+            <div className="flex items-center gap-3">
+              <span className="border border-white/20 text-gray-400 text-xs font-bold px-2.5 py-1 rounded">
+                18+
+              </span>
+              <a
+                href="https://www.begambleaware.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-400 hover:text-white text-xs font-semibold tracking-widest uppercase flex items-center gap-1.5 transition-colors"
+              >
+                BeGambleAware.org
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+        </div>
+
         <div className="border-t border-white/5 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-600 text-sm">

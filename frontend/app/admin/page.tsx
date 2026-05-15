@@ -7,6 +7,7 @@ import AdminUsers from "@/components/admin/AdminUsers";
 import AdminStore from "@/components/admin/AdminStore";
 import AdminStats from "@/components/admin/AdminStats";
 import AdminMilestones from "@/components/admin/AdminMilestones";
+import AdminSchedule from "@/components/admin/AdminSchedule";
 import { API_ENDPOINTS } from "@/lib/api";
 import {
   LayoutDashboard,
@@ -195,14 +196,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {activeTab === "schedule" && (
-          <div className="bg-navy-800/60 border border-white/6 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-white mb-4">Stream Schedule</h2>
-            <p className="text-gray-400 text-sm">
-              Stream schedule management coming soon. Configure upcoming stream times and events.
-            </p>
-          </div>
-        )}
+        {activeTab === "schedule" && <AdminSchedule />}
 
       </div>
     </div>

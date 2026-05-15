@@ -166,12 +166,42 @@ export const API_ENDPOINTS = {
 
   // Milestones
   MILESTONES: `${API_URL}/api/milestones`,
+  MILESTONES_CLAIM: `${API_URL}/api/milestones/claim`,
+  MILESTONES_CLAIMS_ADMIN: `${API_URL}/api/milestones/claims`,
+  MILESTONES_CLAIM_UPDATE: (claimId: string) => `${API_URL}/api/milestones/claims/${claimId}`,
   ADMIN_USER_WAGER: (userId: string) =>
     `${API_URL}/api/milestones/users/${userId}/wager`,
+  ADMIN_USER_DEPOSIT: (userId: string) =>
+    `${API_URL}/api/milestones/users/${userId}/deposit`,
 
-  // Schedule
+  // Schedule (legacy weekly)
   SCHEDULE_CURRENT: `${API_URL}/api/schedule/current`,
   SCHEDULE_TODAY: `${API_URL}/api/schedule/today`,
   SCHEDULE_LIVE: `${API_URL}/api/schedule/live`,
   SCHEDULE_UPDATE: `${API_URL}/api/schedule/update`,
+
+  // Stream Events
+  STREAM_EVENTS: `${API_URL}/api/stream-events`,
+  STREAM_EVENTS_ALL: `${API_URL}/api/stream-events/all`,
+  STREAM_EVENT: (id: string) => `${API_URL}/api/stream-events/${id}`,
+
+  // Daily Check-in
+  CHECKIN_STATUS: `${API_URL}/api/checkin/status`,
+  CHECKIN_CLAIM: `${API_URL}/api/checkin/claim`,
+
+  // Raffles
+  RAFFLES: `${API_URL}/api/raffles`,
+  RAFFLE: (id: string) => `${API_URL}/api/raffles/${id}`,
+  RAFFLE_PURCHASE: (id: string) => `${API_URL}/api/raffles/${id}/purchase`,
+  RAFFLE_WINNERS: (id: string) => `${API_URL}/api/raffles/${id}/winners`,
+  RAFFLE_USER_TICKETS: (id: string) => `${API_URL}/api/raffles/${id}/tickets`,
+  RAFFLES_ADMIN_ALL: `${API_URL}/api/raffles/admin/all`,
+  RAFFLE_SELECT_WINNERS: (id: string) => `${API_URL}/api/raffles/${id}/select-winners`,
+  RAFFLE_CANCEL: (id: string) => `${API_URL}/api/raffles/${id}/cancel`,
+
+  // Public profiles
+  USER_PUBLIC_PROFILE: (userId: string) => `${API_URL}/api/users/${userId}/profile`,
+
+  // Leaderboard archive
+  LEADERBOARDS_COMPLETED: `${API_URL}/api/manual-leaderboards?status=completed`,
 };

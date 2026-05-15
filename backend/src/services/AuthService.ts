@@ -45,6 +45,7 @@ export interface UserSession {
   kickVerified?: boolean;
   rainbetUsername?: string;
   rainbetVerified?: boolean;
+  totalWagered?: number;
   createdAt?: string;
 }
 
@@ -152,6 +153,7 @@ export class AuthService {
         kickVerified: user.kickVerified,
         rainbetUsername: user.rainbetUsername || undefined,
         rainbetVerified: user.rainbetVerified,
+        totalWagered: Number(user.totalWagered ?? 0),
         createdAt: user.createdAt.toISOString(),
       };
     } catch (error) {
@@ -290,6 +292,7 @@ export class AuthService {
         kickVerified: session.user.kickVerified,
         rainbetUsername: session.user.rainbetUsername || undefined,
         rainbetVerified: session.user.rainbetVerified,
+        totalWagered: Number(session.user.totalWagered ?? 0),
       };
 
       const newTokens = this.generateTokens(userSession);
@@ -391,6 +394,7 @@ export class AuthService {
         kickVerified: user.kickVerified,
         rainbetUsername: user.rainbetUsername || undefined,
         rainbetVerified: user.rainbetVerified,
+        totalWagered: Number(user.totalWagered ?? 0),
         createdAt: user.createdAt.toISOString(),
       };
 

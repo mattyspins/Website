@@ -1,357 +1,144 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { API_ENDPOINTS } from "@/lib/api";
+import { Trash2, Radio } from "lucide-react";
 
-interface ScheduleDay {
-  day: string;
-  streaming: boolean;
-  startTime: string;
-  endTime: string;
-  activity?: string;
-  note?: string;
+interface StreamEvent {
+  id: string;
+  title: string;
+  scheduledAt: string;
+  gameType?: string;
+  description?: string;
+  isLive: boolean;
 }
 
-const SCHEDULE_STORAGE_KEY = "stream_schedule";
-
-const activityOptions = [
-  "Bonus Hunt",
-  "Slots",
-  "Card Games",
-  "Table Games",
-  "Roulette",
-  "Blackjack",
-  "Poker",
-  "Mixed Games",
-  "Special Event",
-  "Community Games",
-  "Freestyle",
-  "Viewer Tourney",
-];
-
 export default function AdminSchedule() {
-  const [schedule, setSchedule] = useState<ScheduleDay[]>([
-    {
-      day: "Monday",
-      streaming: true,
-      startTime: "18:00",
-      endTime: "23:00",
-      activity: "Bonus Hunt",
-    },
-    {
-      day: "Tuesday",
-      streaming: true,
-      startTime: "18:00",
-      endTime: "23:00",
-      activity: "Slots",
-    },
-    {
-      day: "Wednesday",
-      streaming: false,
-      startTime: "",
-      endTime: "",
-      note: "Day off",
-    },
-    {
-      day: "Thursday",
-      streaming: true,
-      startTime: "18:00",
-      endTime: "23:00",
-      activity: "Card Games",
-    },
-    {
-      day: "Friday",
-      streaming: true,
-      startTime: "18:00",
-      endTime: "01:00",
-      activity: "Bonus Hunt",
-    },
-    {
-      day: "Saturday",
-      streaming: true,
-      startTime: "14:00",
-      endTime: "02:00",
-      activity: "Table Games",
-    },
-    {
-      day: "Sunday",
-      streaming: true,
-      startTime: "14:00",
-      endTime: "22:00",
-      activity: "Slots",
-    },
-  ]);
+  const [events, setEvents] = useState<StreamEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [title, setTitle] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [gameType, setGameType] = useState("");
+  const [description, setDescription] = useState("");
 
-  const [editingDay, setEditingDay] = useState<string | null>(null);
+  useEffect(() => { loadEvents(); }, []);
 
-  // Load schedule from API on mount
-  useEffect(() => {
-    loadScheduleFromAPI();
-  }, []);
+  const token = () => localStorage.getItem("access_token") ?? "";
 
-  const loadScheduleFromAPI = async () => {
+  const loadEvents = async () => {
+    setLoading(true);
     try {
-      const response = await fetch(API_ENDPOINTS.SCHEDULE_CURRENT);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data.schedule) {
-          setSchedule(data.data.schedule);
-        }
-      } else {
-        console.error("Failed to load schedule from API");
-      }
-    } catch (error) {
-      console.error("Error loading schedule:", error);
-    }
-  };
-
-  const toggleStreaming = (day: string) => {
-    setSchedule(
-      schedule.map((s) =>
-        s.day === day ? { ...s, streaming: !s.streaming } : s,
-      ),
-    );
-  };
-
-  const updateTime = (
-    day: string,
-    field: "startTime" | "endTime",
-    value: string,
-  ) => {
-    setSchedule(
-      schedule.map((s) => (s.day === day ? { ...s, [field]: value } : s)),
-    );
-  };
-
-  const updateActivity = (day: string, activity: string) => {
-    setSchedule(schedule.map((s) => (s.day === day ? { ...s, activity } : s)));
-  };
-
-  const updateNote = (day: string, note: string) => {
-    setSchedule(schedule.map((s) => (s.day === day ? { ...s, note } : s)));
-  };
-
-  const saveSchedule = async () => {
-    try {
-      const accessToken = localStorage.getItem("access_token");
-      if (!accessToken) {
-        alert("❌ Please log in to save schedule");
-        return;
-      }
-
-      const response = await fetch(API_ENDPOINTS.SCHEDULE_UPDATE, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ schedule }),
+      const res = await fetch(API_ENDPOINTS.STREAM_EVENTS_ALL, {
+        headers: { Authorization: `Bearer ${token()}` },
       });
-
-      if (response.ok) {
-        // Also save to localStorage for immediate local updates
-        localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(schedule));
-
-        // Dispatch custom event to notify other components
-        window.dispatchEvent(
-          new CustomEvent("scheduleUpdated", { detail: schedule }),
-        );
-
-        alert(
-          "✅ Schedule saved successfully! Changes are now visible to all users.",
-        );
-      } else {
-        const errorData = await response.json();
-        alert(
-          `❌ Failed to save schedule: ${errorData.error?.message || "Unknown error"}`,
-        );
-      }
-    } catch (error) {
-      console.error("Failed to save schedule:", error);
-      alert("❌ Failed to save schedule. Please try again.");
-    }
+      const d = await res.json();
+      if (d.success) setEvents(d.events);
+    } catch { /* ignore */ } finally { setLoading(false); }
   };
 
-  const getActivityEmoji = (activity?: string) => {
-    const emojiMap: Record<string, string> = {
-      "Bonus Hunt": "🎰",
-      Slots: "🎲",
-      "Card Games": "🃏",
-      "Table Games": "🎯",
-      Roulette: "🎡",
-      Blackjack: "🂡",
-      Poker: "♠️",
-      "Mixed Games": "🎮",
-      "Special Event": "⭐",
-      "Community Games": "👥",
-      Freestyle: "🎨",
-      "Viewer Tourney": "🏆",
-    };
-    return emojiMap[activity || ""] || "🎮";
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !scheduledAt) return;
+    setSaving(true); setMsg(null);
+    try {
+      const res = await fetch(API_ENDPOINTS.STREAM_EVENTS, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+        body: JSON.stringify({ title: title.trim(), scheduledAt, gameType: gameType.trim() || undefined, description: description.trim() || undefined }),
+      });
+      const d = await res.json();
+      if (d.success) {
+        setMsg({ type: "success", text: "Event created." });
+        setTitle(""); setScheduledAt(""); setGameType(""); setDescription("");
+        loadEvents();
+      } else { setMsg({ type: "error", text: d.error || "Failed." }); }
+    } catch { setMsg({ type: "error", text: "Network error." }); } finally { setSaving(false); }
+  };
+
+  const handleToggleLive = async (event: StreamEvent) => {
+    try {
+      await fetch(API_ENDPOINTS.STREAM_EVENT(event.id), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+        body: JSON.stringify({ isLive: !event.isLive }),
+      });
+      loadEvents();
+    } catch { /* ignore */ }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this event?")) return;
+    try {
+      await fetch(API_ENDPOINTS.STREAM_EVENT(id), { method: "DELETE", headers: { Authorization: `Bearer ${token()}` } });
+      loadEvents();
+    } catch { /* ignore */ }
   };
 
   return (
-    <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-white">Stream Schedule</h2>
-        <button
-          onClick={saveSchedule}
-          className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors font-semibold"
-        >
-          💾 Save Schedule
-        </button>
+    <div className="space-y-6">
+      <div className="bg-navy-800/60 border border-white/6 rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-white mb-4">Add Stream Event</h2>
+        <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2">
+            <label className="text-gray-400 text-xs mb-1 block">Title *</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g. Bonus Hunt Stream"
+              className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30" />
+          </div>
+          <div>
+            <label className="text-gray-400 text-xs mb-1 block">Date &amp; Time *</label>
+            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} required
+              className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30" />
+          </div>
+          <div>
+            <label className="text-gray-400 text-xs mb-1 block">Game / Type</label>
+            <input value={gameType} onChange={(e) => setGameType(e.target.value)} placeholder="e.g. Slots, Bonus Hunt"
+              className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30" />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-gray-400 text-xs mb-1 block">Description</label>
+            <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional details"
+              className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30" />
+          </div>
+          <div className="sm:col-span-2 flex items-center gap-3">
+            <button type="submit" disabled={saving}
+              className="bg-gold-500 hover:bg-gold-600 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors">
+              {saving ? "Adding..." : "Add Event"}
+            </button>
+            {msg && <p className={`text-sm ${msg.type === "success" ? "text-green-400" : "text-red-400"}`}>{msg.text}</p>}
+          </div>
+        </form>
       </div>
 
-      <div className="space-y-4">
-        {schedule.map((day) => (
-          <motion.div
-            key={day.day}
-            whileHover={{ scale: 1.01 }}
-            className={`p-4 rounded-lg transition-all ${
-              day.streaming
-                ? "bg-purple-500/10 border-2 border-purple-500/30"
-                : "bg-red-500/10 border-2 border-red-500"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-4">
-                <h3 className="text-xl font-bold text-white">{day.day}</h3>
-                <button
-                  onClick={() => toggleStreaming(day.day)}
-                  className={`px-4 py-1 rounded-full text-sm font-semibold transition-colors ${
-                    day.streaming
-                      ? "bg-green-500 text-white"
-                      : "bg-red-500 text-white"
-                  }`}
-                >
-                  {day.streaming ? "✅ Streaming" : "🚫 No Stream"}
+      <div className="bg-navy-800/60 border border-white/6 rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-white mb-4">All Events</h2>
+        {loading ? <p className="text-gray-500 text-sm">Loading...</p> : events.length === 0 ? (
+          <p className="text-gray-500 text-sm">No events yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {events.map((event) => (
+              <div key={event.id} className={`flex items-center gap-4 p-4 rounded-xl border ${event.isLive ? "border-red-500/30 bg-red-500/5" : "border-white/5 bg-navy-900/40"}`}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-white font-medium text-sm truncate">{event.title}</p>
+                    {event.isLive && <span className="bg-red-500/20 text-red-400 text-xs font-bold px-1.5 py-0.5 rounded shrink-0">LIVE</span>}
+                  </div>
+                  <p className="text-gray-500 text-xs mt-0.5">
+                    {new Date(event.scheduledAt).toLocaleString()}{event.gameType && ` · ${event.gameType}`}
+                  </p>
+                </div>
+                <button onClick={() => handleToggleLive(event)}
+                  className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${event.isLive ? "border-red-500/30 text-red-400 hover:bg-red-500/10" : "border-white/10 text-gray-400 hover:text-white"}`}>
+                  <Radio className="w-3 h-3" />{event.isLive ? "End Live" : "Set Live"}
                 </button>
-                {day.streaming && day.activity && (
-                  <span className="text-2xl">
-                    {getActivityEmoji(day.activity)}
-                  </span>
-                )}
+                <button onClick={() => handleDelete(event.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1">
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                onClick={() =>
-                  setEditingDay(editingDay === day.day ? null : day.day)
-                }
-                className="text-purple-400 hover:text-purple-300 transition-colors"
-              >
-                {editingDay === day.day ? "✅ Done" : "✏️ Edit"}
-              </button>
-            </div>
-
-            {day.streaming ? (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-gray-400 text-sm mb-1 block">
-                      Start Time
-                    </label>
-                    <input
-                      type="time"
-                      value={day.startTime}
-                      onChange={(e) =>
-                        updateTime(day.day, "startTime", e.target.value)
-                      }
-                      disabled={editingDay !== day.day}
-                      className="w-full px-3 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 disabled:opacity-50"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-gray-400 text-sm mb-1 block">
-                      End Time
-                    </label>
-                    <input
-                      type="time"
-                      value={day.endTime}
-                      onChange={(e) =>
-                        updateTime(day.day, "endTime", e.target.value)
-                      }
-                      disabled={editingDay !== day.day}
-                      className="w-full px-3 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 disabled:opacity-50"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-gray-400 text-sm mb-1 block">
-                    Activity
-                  </label>
-                  <select
-                    value={day.activity || ""}
-                    onChange={(e) => updateActivity(day.day, e.target.value)}
-                    disabled={editingDay !== day.day}
-                    className="w-full px-3 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500 disabled:opacity-50"
-                  >
-                    <option value="">Select activity...</option>
-                    {activityOptions.map((activity) => (
-                      <option key={activity} value={activity}>
-                        {getActivityEmoji(activity)} {activity}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {day.activity && (
-                  <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
-                    <p className="text-purple-300 text-sm">
-                      <span className="text-2xl mr-2">
-                        {getActivityEmoji(day.activity)}
-                      </span>
-                      <span className="font-semibold">{day.activity}</span>
-                      <span className="text-gray-400 ml-2">
-                        • {day.startTime} - {day.endTime}
-                      </span>
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div>
-                <label className="text-gray-400 text-sm mb-1 block">
-                  Note (optional)
-                </label>
-                <input
-                  type="text"
-                  value={day.note || ""}
-                  onChange={(e) => updateNote(day.day, e.target.value)}
-                  disabled={editingDay !== day.day}
-                  placeholder="e.g., Day off, Vacation, etc."
-                  className="w-full px-3 py-2 bg-black/50 border border-red-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-red-500 disabled:opacity-50"
-                />
-              </div>
-            )}
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="mt-6 bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
-        <h3 className="text-white font-semibold mb-2">💡 Tips:</h3>
-        <ul className="text-gray-300 text-sm space-y-1">
-          <li>
-            • Days with streaming are bordered in{" "}
-            <span className="text-purple-400">purple</span>
-          </li>
-          <li>
-            • Days without streaming are bordered in{" "}
-            <span className="text-red-400">red</span>
-          </li>
-          <li>
-            • Select an activity for each streaming day (Bonus Hunt, Slots,
-            etc.)
-          </li>
-          <li>• Click "Edit" to modify times, activities, or notes</li>
-          <li>
-            • Changes are{" "}
-            <span className="text-green-400 font-semibold">
-              immediately visible
-            </span>{" "}
-            on the homepage after saving!
-          </li>
-        </ul>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

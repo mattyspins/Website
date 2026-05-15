@@ -391,6 +391,7 @@ export class AuthController {
             kickVerified: userSession.kickVerified || false,
             rainbetUsername: userSession.rainbetUsername,
             rainbetVerified: userSession.rainbetVerified || false,
+            totalWagered: userSession.totalWagered || 0,
             createdAt: userSession.createdAt,
           },
         });
