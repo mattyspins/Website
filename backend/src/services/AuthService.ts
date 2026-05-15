@@ -364,19 +364,6 @@ export class AuthService {
   // Get user session from token
   static async getUserSession(token: string): Promise<UserSession | null> {
     try {
-      // Try Redis first, but skip cache if an admin recently updated this user
-      const cachedSession = await RedisService.getSession<UserSession>(token);
-      if (cachedSession) {
-        const invalidated = await RedisService.get(`invalidate:${cachedSession.id}`);
-        if (!invalidated) {
-          return cachedSession;
-        }
-        // Cache busted — delete the signal and fall through to DB fetch
-        await RedisService.del(`invalidate:${cachedSession.id}`);
-        await RedisService.deleteSession(token);
-      }
-
-      // Fallback to database
       const decoded = this.verifyToken(token);
       const user = await prisma.user.findUnique({
         where: { id: decoded.id },
@@ -386,7 +373,7 @@ export class AuthService {
         return null;
       }
 
-      const userSession: UserSession = {
+      return {
         id: user.id,
         discordId: user.discordId,
         displayName: user.displayName,
@@ -403,11 +390,6 @@ export class AuthService {
         totalWagered: Number(user.totalWagered ?? 0),
         createdAt: user.createdAt.toISOString(),
       };
-
-      // Cache in Redis
-      await RedisService.setSession(token, userSession, 3600); // 1 hour
-
-      return userSession;
     } catch (error) {
       logger.error('Error getting user session:', {
         message: error instanceof Error ? error.message : 'Unknown error',
