@@ -45,8 +45,12 @@ export default function RewardsPage() {
             DEPO<span className="text-gold-400">SIT BONUS</span>
           </h1>
           <p className="text-gray-400 text-sm max-w-xl mx-auto">
-            To celebrate the new partnership, first-time depositors signing up through the link below can claim a cash bonus.
+            To celebrate the new partnership, signing up through the link below can claim a cash bonus.
           </p>
+          <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold tracking-widest uppercase px-4 py-2 rounded-full mt-4">
+            <AlertCircle className="w-3.5 h-3.5" />
+            First Time Depositors Only
+          </div>
         </motion.div>
 
         {/* CTA link */}
@@ -171,8 +175,9 @@ export default function RewardsPage() {
             Payout Schedule
           </h2>
           <p className="text-gray-400 text-sm">
-            Rewards are processed <span className="text-white font-semibold">weekly on payout day</span> once deposits and referrals have been verified.
-            All deposit bonuses are paid out on the <span className="text-white font-semibold">1st of each month</span>.
+            All deposit bonuses are paid out on the{" "}
+            <span className="text-white font-semibold">1st of each month</span>{" "}
+            once deposits and referrals have been verified.
           </p>
         </motion.div>
 
