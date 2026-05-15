@@ -9,6 +9,7 @@ import AuthButtons from "./AuthButtons";
 const navItems = [
   { name: "Home", href: "/" },
   { name: "Leaderboard", href: "/leaderboard" },
+  { name: "Milestones", href: "/milestones" },
   { name: "Guess the Balance", href: "/bonus-hunt" },
   { name: "Store", href: "/store" },
 ];

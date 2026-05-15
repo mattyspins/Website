@@ -164,6 +164,11 @@ export const API_ENDPOINTS = {
   LEADERBOARDS_EXPORT_CSV: (id: string) =>
     `${API_URL}/api/manual-leaderboards/admin/${id}/export`,
 
+  // Milestones
+  MILESTONES: `${API_URL}/api/milestones`,
+  ADMIN_USER_WAGER: (userId: string) =>
+    `${API_URL}/api/milestones/users/${userId}/wager`,
+
   // Schedule
   SCHEDULE_CURRENT: `${API_URL}/api/schedule/current`,
   SCHEDULE_TODAY: `${API_URL}/api/schedule/today`,

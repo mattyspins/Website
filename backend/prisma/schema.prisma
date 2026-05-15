@@ -31,6 +31,7 @@ model User {
   isModerator            Boolean               @default(false) @map("is_moderator")
   rainbetUsername        String?               @unique @map("rainbet_username")
   rainbetVerified        Boolean               @default(false) @map("rainbet_verified")
+  totalWagered           Decimal               @default(0) @map("total_wagered") @db.Decimal(15, 2)
   auditLogsAsAdmin       AuditLog[]            @relation("AdminAuditLogs")
   auditLogsAsTarget      AuditLog[]            @relation("TargetAuditLogs")
   bonusHuntPredictions   BonusHuntPrediction[]
