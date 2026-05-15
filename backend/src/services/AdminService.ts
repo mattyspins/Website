@@ -325,6 +325,9 @@ export class AdminService {
         });
       });
 
+      // Bust cached session so next /api/auth/me returns the updated balance
+      await RedisService.set(`invalidate:${userId}`, '1', 120);
+
       logger.info(
         `Admin ${adminId} adjusted points for user ${userId}: ${amount} (${reason})`
       );

@@ -364,10 +364,16 @@ export class AuthService {
   // Get user session from token
   static async getUserSession(token: string): Promise<UserSession | null> {
     try {
-      // Try Redis first
+      // Try Redis first, but skip cache if an admin recently updated this user
       const cachedSession = await RedisService.getSession<UserSession>(token);
       if (cachedSession) {
-        return cachedSession;
+        const invalidated = await RedisService.get(`invalidate:${cachedSession.id}`);
+        if (!invalidated) {
+          return cachedSession;
+        }
+        // Cache busted — delete the signal and fall through to DB fetch
+        await RedisService.del(`invalidate:${cachedSession.id}`);
+        await RedisService.deleteSession(token);
       }
 
       // Fallback to database
