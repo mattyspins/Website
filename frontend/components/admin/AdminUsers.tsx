@@ -93,7 +93,7 @@ export default function AdminUsers() {
 
     try {
       const url = query
-        ? `${API_ENDPOINTS.ADMIN_USERS_SEARCH}?q=${encodeURIComponent(query)}`
+        ? `${API_ENDPOINTS.ADMIN_USERS_SEARCH}?query=${encodeURIComponent(query)}`
         : API_ENDPOINTS.ADMIN_USERS_SEARCH;
 
       console.log("Searching users with URL:", url);
@@ -319,18 +319,12 @@ export default function AdminUsers() {
                   key={user.id}
                   className="border-b border-purple-500/10 hover:bg-purple-500/5"
                 >
-                  <td className="py-3 px-4 max-w-0">
+                  <td className="py-3 px-4">
                     <div>
-                      <p
-                        className="text-white font-semibold truncate"
-                        title={user.displayName}
-                      >
+                      <p className="text-white font-semibold whitespace-nowrap">
                         {user.displayName}
                       </p>
-                      <p
-                        className="text-gray-500 text-sm truncate"
-                        title={user.discordId}
-                      >
+                      <p className="text-gray-500 text-sm whitespace-nowrap">
                         {user.discordId}
                       </p>
                     </div>

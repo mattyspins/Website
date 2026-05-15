@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Lock, CheckCircle, Trophy, ExternalLink } from "lucide-react";
+import { Lock, Trophy } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/api";
 
 interface MilestoneTier {
@@ -14,23 +14,21 @@ interface MilestoneTier {
   claimStatus: "pending" | "approved" | "rejected" | null;
 }
 
-const TIER_COLORS: Record<string, { border: string; glow: string; badge: string }> = {
-  Rookie:       { border: "border-gray-600/40",   glow: "",                         badge: "bg-gray-700 text-gray-300" },
-  Hustler:      { border: "border-blue-500/30",   glow: "shadow-blue-500/10",       badge: "bg-blue-900/60 text-blue-300" },
-  Grinder:      { border: "border-green-500/30",  glow: "shadow-green-500/10",      badge: "bg-green-900/60 text-green-300" },
-  "High Roller":{ border: "border-purple-500/30", glow: "shadow-purple-500/10",     badge: "bg-purple-900/60 text-purple-300" },
-  VIP:          { border: "border-gold-500/30",   glow: "shadow-gold-500/10",       badge: "bg-gold-900/60 text-gold-300" },
-  Elite:        { border: "border-gold-400/40",   glow: "shadow-gold-400/15",       badge: "bg-gold-800/60 text-gold-200" },
-  Diamond:      { border: "border-cyan-400/40",   glow: "shadow-cyan-400/15",       badge: "bg-cyan-900/60 text-cyan-300" },
-  Legend:       { border: "border-red-400/50",    glow: "shadow-red-400/20",        badge: "bg-red-900/60 text-red-300" },
+const TIER_META: Record<string, { color: string; bg: string; ring: string; label: string }> = {
+  Rookie:       { color: "text-gray-300",  bg: "from-gray-700/60 to-gray-800/60",   ring: "ring-gray-600/40",   label: "ROOKIE" },
+  Hustler:      { color: "text-blue-300",  bg: "from-blue-900/50 to-navy-800/60",   ring: "ring-blue-500/30",   label: "HUSTLER" },
+  Grinder:      { color: "text-green-300", bg: "from-green-900/50 to-navy-800/60",  ring: "ring-green-500/30",  label: "GRINDER" },
+  "High Roller":{ color: "text-purple-300",bg: "from-purple-900/50 to-navy-800/60", ring: "ring-purple-500/30", label: "HIGH ROLLER" },
+  VIP:          { color: "text-gold-300",  bg: "from-gold-900/40 to-navy-800/60",   ring: "ring-gold-500/30",   label: "VIP" },
+  Elite:        { color: "text-gold-200",  bg: "from-gold-800/40 to-navy-800/60",   ring: "ring-gold-400/40",   label: "ELITE" },
+  Diamond:      { color: "text-cyan-300",  bg: "from-cyan-900/50 to-navy-800/60",   ring: "ring-cyan-400/40",   label: "DIAMOND" },
+  Legend:       { color: "text-red-300",   bg: "from-red-900/50 to-navy-800/60",    ring: "ring-red-400/50",    label: "LEGEND" },
 };
 
-function formatDollar(n: number) {
+function formatWager(n: number) {
   return n >= 1_000_000
     ? `$${(n / 1_000_000).toFixed(1)}M`
-    : n >= 1_000
-    ? `$${(n / 1_000).toFixed(0)}K`
-    : `$${n}`;
+    : `$${(n / 1_000).toFixed(0)}K`;
 }
 
 export default function MilestonesPage() {
@@ -57,11 +55,8 @@ export default function MilestonesPage() {
         setTiers(data.tiers);
         setTotalWagered(Number(data.totalWagered));
       }
-    } catch {
-      // show static tiers with 0 wager on failure
-    } finally {
-      setLoading(false);
-    }
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
   };
 
   const handleClaim = async (tier: MilestoneTier) => {
@@ -148,7 +143,6 @@ export default function MilestonesPage() {
             </div>
           </div>
 
-          {/* Progress bar */}
           {nextMilestone && (
             <div>
               <div className="flex justify-between text-xs text-gray-500 mb-1.5">
@@ -196,78 +190,81 @@ export default function MilestonesPage() {
 
         {/* Milestones grid */}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-navy-800/40 border border-white/5 rounded-xl h-52 animate-pulse" />
+              <div key={i} className="bg-navy-800/40 border border-white/5 rounded-2xl h-64 animate-pulse" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {tiers.map((tier, i) => {
-              const colors = TIER_COLORS[tier.name] ?? TIER_COLORS["Rookie"];
+              const meta = TIER_META[tier.name] ?? TIER_META["Rookie"];
               return (
                 <motion.div
                   key={tier.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.05 * i }}
-                  className={`relative bg-navy-800/60 border ${colors.border} rounded-xl p-5 flex flex-col items-center text-center shadow-lg ${tier.unlocked ? colors.glow : ""} ${tier.unlocked ? "ring-1 ring-gold-500/20" : "opacity-70"}`}
+                  className={`relative bg-gradient-to-b ${meta.bg} border border-white/8 rounded-2xl p-5 flex flex-col items-center text-center ring-1 ${meta.ring} ${!tier.unlocked ? "opacity-60" : ""}`}
                 >
                   {/* Lock / unlock icon */}
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 ${tier.unlocked ? "bg-gold-500/15" : "bg-white/5"}`}>
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${tier.unlocked ? "bg-gold-500/20 ring-2 ring-gold-500/30" : "bg-white/5"}`}>
                     {tier.unlocked ? (
-                      <CheckCircle className="w-8 h-8 text-gold-400" />
+                      <Trophy className="w-8 h-8 text-gold-400" />
                     ) : (
-                      <Lock className="w-7 h-7 text-gray-600" />
+                      <Lock className="w-7 h-7 text-gray-500" />
                     )}
                   </div>
 
-                  {/* Tier name */}
-                  <span className={`text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded mb-2 ${colors.badge}`}>
-                    {tier.name}
+                  {/* Tier badge */}
+                  <span className={`text-[10px] font-black tracking-widest uppercase mb-3 ${meta.color}`}>
+                    {meta.label}
                   </span>
 
-                  {/* Reward */}
-                  <p className="text-gray-400 text-xs uppercase tracking-widest mt-1">Reward</p>
-                  <p className={`text-2xl font-bold mt-0.5 ${tier.unlocked ? "text-gold-400" : "text-gray-400"}`}>
+                  {/* Reward amount */}
+                  <p className={`text-3xl font-black mb-1 ${tier.unlocked ? "text-green-400" : "text-gray-500"}`}>
                     ${tier.reward.toLocaleString()}
                   </p>
+                  <p className="text-gray-500 text-[10px] uppercase tracking-widest mb-4">Cash Reward</p>
 
-                  {/* Requirement */}
-                  <p className="text-gray-500 text-xs uppercase tracking-widest mt-3">Requires</p>
-                  <p className="text-white font-semibold text-sm mt-0.5">
-                    {formatDollar(tier.wagerRequired)} wagered
+                  {/* Wager requirement */}
+                  <p className="text-gray-400 text-xs font-semibold mb-5">
+                    {formatWager(tier.wagerRequired)} WAGERED
                   </p>
 
-                  {/* Unlocked / Claim */}
-                  {tier.unlocked && (
-                    <div className="mt-3 w-full space-y-1.5">
-                      {tier.claimStatus === "approved" ? (
-                        <div className="bg-green-500/10 border border-green-500/20 rounded-lg py-1.5 text-green-400 text-xs font-semibold tracking-wide text-center">
-                          PAID ✓
-                        </div>
-                      ) : tier.claimStatus === "pending" ? (
-                        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg py-1.5 text-yellow-400 text-xs font-semibold tracking-wide text-center">
-                          CLAIM PENDING
-                        </div>
-                      ) : isAuthenticated ? (
+                  {/* Action button */}
+                  <div className="w-full mt-auto">
+                    {tier.claimStatus === "approved" ? (
+                      <div className="w-full bg-green-500/15 border border-green-500/30 rounded-xl py-2 text-green-400 text-xs font-black tracking-widest text-center uppercase">
+                        PAID ✓
+                      </div>
+                    ) : tier.claimStatus === "pending" ? (
+                      <div className="w-full bg-yellow-500/15 border border-yellow-500/25 rounded-xl py-2 text-yellow-400 text-xs font-black tracking-widest text-center uppercase">
+                        PENDING
+                      </div>
+                    ) : tier.unlocked && isAuthenticated ? (
+                      <>
                         <button
                           onClick={() => handleClaim(tier)}
                           disabled={claiming === tier.id}
-                          className="w-full bg-gold-500 hover:bg-gold-600 disabled:opacity-50 text-white text-xs font-bold py-1.5 rounded-lg transition-all uppercase tracking-wide"
+                          className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white text-xs font-black py-2 rounded-xl transition-all uppercase tracking-widest"
                         >
-                          {claiming === tier.id ? "..." : "Claim $" + tier.reward}
+                          {claiming === tier.id ? "..." : `CLAIM $${tier.reward}`}
                         </button>
-                      ) : (
-                        <div className="bg-gold-500/10 border border-gold-500/20 rounded-lg py-1 text-gold-400 text-xs font-semibold tracking-wide text-center">
-                          UNLOCKED ✓
-                        </div>
-                      )}
-                      {claimMsgs[tier.id] && (
-                        <p className="text-xs text-center text-gray-400">{claimMsgs[tier.id]}</p>
-                      )}
-                    </div>
-                  )}
+                        {claimMsgs[tier.id] && (
+                          <p className="text-xs text-center text-gray-400 mt-1.5">{claimMsgs[tier.id]}</p>
+                        )}
+                      </>
+                    ) : tier.unlocked ? (
+                      <div className="w-full bg-gold-500/15 border border-gold-500/25 rounded-xl py-2 text-gold-400 text-xs font-black tracking-widest text-center uppercase">
+                        UNLOCKED ✓
+                      </div>
+                    ) : (
+                      <div className="w-full bg-white/5 border border-white/8 rounded-xl py-2 text-gray-500 text-xs font-black tracking-widest text-center uppercase">
+                        LOCKED
+                      </div>
+                    )}
+                  </div>
                 </motion.div>
               );
             })}
@@ -301,7 +298,7 @@ export default function MilestonesPage() {
               <span className="text-gold-400 mt-0.5">03</span>
               <div>
                 <p className="text-gray-300 font-medium">Claim Rewards</p>
-                <p>Open a ticket in Discord when you hit a milestone to receive your cash reward</p>
+                <p>Click the claim button when you hit a milestone — we&apos;ll reach out via Discord to pay you out</p>
               </div>
             </div>
           </div>
