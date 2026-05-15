@@ -15,6 +15,7 @@ const REQUIREMENTS = [
   "Promo available to players from UK, EU, US, Canada, Australia & New Zealand",
   "Must be following Kick, Instagram & X (links above)",
   "Must be inside the Discord server",
+  "Must have your Kick and AceBet accounts linked on this website (see your profile page)",
   "Deposits must be wagered 3x before reward is eligible",
   "Dice & Limbo wagering does NOT count towards wager requirements",
   "One reward per person / account / device / payment method / IP",
@@ -127,6 +128,13 @@ export default function RewardsPage() {
             <CheckCircle className="w-4 h-4 text-green-400" />
             Requirements
           </h2>
+          <a
+            href="/profile"
+            className="flex items-center gap-2 bg-gold-500/8 border border-gold-500/20 rounded-lg px-4 py-3 mb-4 hover:border-gold-500/40 transition-colors"
+          >
+            <span className="text-gold-400 text-sm font-semibold">Link your accounts →</span>
+            <span className="text-gray-500 text-xs">Connect Kick & AceBet in your profile before claiming</span>
+          </a>
           <ul className="space-y-3">
             {REQUIREMENTS.map((req, i) => (
               <li key={i} className="flex items-start gap-3 text-sm text-gray-400">
@@ -154,7 +162,7 @@ export default function RewardsPage() {
             Open a ticket in the Discord server and include all of the following:
           </p>
           <div className="space-y-2">
-            {["Your casino username", "Proof of deposit", "Proof of follows / Discord membership"].map((item, i) => (
+            {["Your casino username", "Proof of deposit", "Proof of follows / Discord membership", "Kick & AceBet linked on your MattySpins profile"].map((item, i) => (
               <div key={i} className="flex items-center gap-3 bg-navy-900/60 border border-white/5 rounded-lg px-4 py-3">
                 <span className="text-gold-400 font-black text-xs">{String(i + 1).padStart(2, "0")}</span>
                 <p className="text-gray-300 text-sm">{item}</p>
