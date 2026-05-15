@@ -12,7 +12,6 @@ const navItems = [
   { name: "Milestones", href: "/milestones" },
   { name: "Guess the Balance", href: "/bonus-hunt" },
   { name: "Raffles", href: "/raffle" },
-  { name: "Schedule", href: "/schedule" },
   { name: "Rewards", href: "/rewards" },
   { name: "Store", href: "/store" },
 ];

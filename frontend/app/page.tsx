@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Hero from "@/components/Hero";
+import StreamScheduleSection from "@/components/StreamScheduleSection";
 
 export default function Home() {
   const searchParams = useSearchParams();
@@ -47,6 +48,7 @@ export default function Home() {
       )}
 
       <Hero />
+      <StreamScheduleSection />
     </div>
   );
 }
