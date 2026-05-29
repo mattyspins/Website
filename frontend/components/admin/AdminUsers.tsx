@@ -368,7 +368,7 @@ export default function AdminUsers() {
                   onClick={() => setDetailUserId(user.id)}
                   className="border-b border-purple-500/10 hover:bg-purple-500/8 cursor-pointer transition-colors"
                 >
-                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                  <td className="py-3 px-4">
                     <div>
                       <p className="text-white font-semibold whitespace-nowrap">
                         {user.displayName}
@@ -592,12 +592,12 @@ export default function AdminUsers() {
                       </div>
                     )}
                   </td>
-                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                  <td className="py-3 px-4">
                     <span className="text-purple-400 font-semibold">
                       {user.points.toLocaleString()}
                     </span>
                   </td>
-                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                  <td className="py-3 px-4">
                     <div className="flex flex-wrap gap-1.5">
                       {user.isAdmin && (
                         <span className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">ADMIN</span>
