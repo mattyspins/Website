@@ -344,29 +344,31 @@ export default function StreamGamesPage() {
             <motion.div
               initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 280 }}
-              className="fixed top-0 right-0 h-full w-full sm:w-[480px] z-50 flex flex-col bg-[#0d0f17] border-l border-white/8 shadow-2xl"
+              className="fixed top-0 right-0 h-full w-full sm:w-[380px] z-50 flex flex-col bg-[#0d0f17] border-l border-white/8 shadow-2xl"
             >
               {/* Hero banner */}
-              <div className={`relative px-6 pt-10 pb-8 border-b border-white/6 shrink-0`}>
-                {/* Glow blob */}
-                <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-20 pointer-events-none ${selected.iconBg}`} />
-
-                <div className="relative flex items-start justify-between gap-4">
-                  <div>
-                    {selected.badge && (
-                      <span className={`inline-block text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded border mb-3 ${selected.badgeColor}`}>
-                        {selected.badge}
-                      </span>
-                    )}
-                    <div className={`w-14 h-14 rounded-2xl ${selected.iconBg} flex items-center justify-center ${selected.color} mb-4`}>
-                      <span className="scale-125">{selected.icon}</span>
+              <div className="relative px-5 pt-7 pb-5 border-b border-white/6 shrink-0">
+                <div className={`absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl opacity-20 pointer-events-none ${selected.iconBg}`} />
+                <div className="relative flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-10 h-10 rounded-xl ${selected.iconBg} flex items-center justify-center ${selected.color} shrink-0`}>
+                      {selected.icon}
                     </div>
-                    <h2 className="text-white font-black text-2xl font-gaming tracking-wide">{selected.name}</h2>
-                    <p className="text-gray-500 text-sm mt-1">{selected.tagline}</p>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-white font-black text-lg font-gaming tracking-wide">{selected.name}</h2>
+                        {selected.badge && (
+                          <span className={`text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded border ${selected.badgeColor}`}>
+                            {selected.badge}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-gray-500 text-xs mt-0.5">{selected.tagline}</p>
+                    </div>
                   </div>
                   <button
                     onClick={() => setSelected(null)}
-                    className="shrink-0 w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors mt-1"
+                    className="shrink-0 w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -374,7 +376,7 @@ export default function StreamGamesPage() {
               </div>
 
               {/* Scrollable content */}
-              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+              <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
 
                 {/* Description */}
                 <p className="text-gray-400 text-sm leading-relaxed">{selected.description}</p>
