@@ -329,34 +329,30 @@ export default function StreamGamesPage() {
         </motion.div>
       </div>
 
-      {/* Full-screen overlay */}
+      {/* Overlay */}
       <AnimatePresence>
         {selected && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40"
               onClick={() => setSelected(null)}
             />
-
-            {/* Side panel */}
             <motion.div
-              initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 30, stiffness: 280 }}
-              className="fixed top-0 right-0 h-full w-full sm:w-[380px] z-50 flex flex-col bg-[#0d0f17] border-l border-white/8 shadow-2xl"
+              initial={{ opacity: 0, scale: 0.96, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 16 }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
             >
-              {/* Hero banner */}
-              <div className="relative px-5 pt-7 pb-5 border-b border-white/6 shrink-0">
-                <div className={`absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl opacity-20 pointer-events-none ${selected.iconBg}`} />
-                <div className="relative flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
+              <div className={`bg-navy-900 border ${selected.border} rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto`}>
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-5 border-b border-white/6 sticky top-0 bg-navy-900 rounded-t-2xl">
+                  <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-xl ${selected.iconBg} flex items-center justify-center ${selected.color} shrink-0`}>
                       {selected.icon}
                     </div>
-                    <div className="min-w-0">
+                    <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-white font-black text-lg font-gaming tracking-wide">{selected.name}</h2>
+                        <h2 className="text-white font-bold text-lg">{selected.name}</h2>
                         {selected.badge && (
                           <span className={`text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded border ${selected.badgeColor}`}>
                             {selected.badge}
@@ -366,58 +362,44 @@ export default function StreamGamesPage() {
                       <p className="text-gray-500 text-xs mt-0.5">{selected.tagline}</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setSelected(null)}
-                    className="shrink-0 w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
-                  >
-                    <X className="w-4 h-4" />
+                  <button onClick={() => setSelected(null)} className="text-gray-600 hover:text-white transition-colors p-1 shrink-0">
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
-              </div>
 
-              {/* Scrollable content */}
-              <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+                <div className="px-6 py-5 space-y-5">
+                  <p className="text-gray-400 text-sm leading-relaxed">{selected.description}</p>
 
-                {/* Description */}
-                <p className="text-gray-400 text-sm leading-relaxed">{selected.description}</p>
-
-                {/* How it works */}
-                <div>
-                  <p className="text-white text-xs font-bold uppercase tracking-widest mb-3">How it works</p>
-                  <ul className="space-y-3">
-                    {selected.howItWorks.map((step, j) => (
-                      <li key={j} className="flex items-start gap-3 text-sm text-gray-300">
-                        <span className={`w-5 h-5 rounded-full ${selected.iconBg} ${selected.color} flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5`}>
-                          {j + 1}
-                        </span>
-                        {step}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Rewards */}
-                <div className={`border ${selected.border} rounded-2xl p-5`}>
-                  <p className="text-white text-xs font-bold uppercase tracking-widest mb-3">🎁 Rewards can include</p>
-                  <div className="flex flex-wrap gap-2">
-                    {selected.rewards.map((r, j) => (
-                      <span key={j} className={`${selected.iconBg} border ${selected.border} ${selected.color} text-xs px-3 py-1.5 rounded-lg font-medium`}>{r}</span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Note */}
-                <div className="bg-white/3 border border-white/6 rounded-xl px-4 py-3">
-                  <p className="text-gray-400 text-sm">{selected.note}</p>
-                </div>
-
-                {/* Active raffles */}
-                {selected.isRaffle && (
                   <div>
-                    <p className="text-white font-bold text-xs uppercase tracking-widest mb-4">Active Raffles</p>
-                    <RaffleList />
+                    <p className="text-white text-xs font-bold uppercase tracking-widest mb-3">How it works</p>
+                    <ul className="space-y-2">
+                      {selected.howItWorks.map((step, j) => (
+                        <li key={j} className="flex items-start gap-2.5 text-sm text-gray-400">
+                          <span className={`text-xs font-black mt-0.5 shrink-0 ${selected.color}`}>•</span>
+                          {step}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                )}
+
+                  <div className="bg-navy-800/60 border border-white/6 rounded-xl p-4">
+                    <p className="text-white text-xs font-bold uppercase tracking-widest mb-3">🎁 Rewards can include</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selected.rewards.map((r, j) => (
+                        <span key={j} className="bg-white/5 border border-white/8 text-gray-300 text-xs px-3 py-1 rounded-lg">{r}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <p className="text-gray-500 text-xs border-t border-white/5 pt-4">{selected.note}</p>
+
+                  {selected.isRaffle && (
+                    <div>
+                      <p className="text-white font-bold text-xs uppercase tracking-widest mb-4">Active Raffles</p>
+                      <RaffleList />
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           </>
