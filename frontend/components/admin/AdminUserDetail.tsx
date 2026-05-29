@@ -73,7 +73,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
     })
       .then((r) => r.json())
       .then((d) => {
-        const u = d.user ?? d;
+        const u = d.data ?? d.user ?? d;
         setUser(u);
         setNewWager(String(Number(u.totalWagered ?? 0)));
         setNewDeposited(String(Number(u.totalDeposited ?? 0)));

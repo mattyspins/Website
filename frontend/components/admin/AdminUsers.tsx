@@ -366,7 +366,7 @@ export default function AdminUsers() {
                 <tr
                   key={user.id}
                   onClick={() => setDetailUserId(user.id)}
-                  className="border-b border-purple-500/10 hover:bg-purple-500/5 cursor-pointer"
+                  className="border-b border-purple-500/10 hover:bg-purple-500/8 cursor-pointer transition-colors"
                 >
                   <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                     <div>
