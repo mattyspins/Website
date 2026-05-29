@@ -13,6 +13,7 @@ export interface DiscordUser {
   id: string;
   username: string;
   discriminator: string;
+  global_name?: string | null;
   avatar: string | null;
   email?: string;
   verified?: boolean;
@@ -99,7 +100,7 @@ export class AuthService {
     discordUser: DiscordUser
   ): Promise<UserSession> {
     try {
-      const displayName = `${discordUser.username}#${discordUser.discriminator}`;
+      const displayName = discordUser.global_name || discordUser.username;
       const avatarUrl = discordUser.avatar
         ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
         : null;
