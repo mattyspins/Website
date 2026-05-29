@@ -11,7 +11,6 @@ const navItems = [
   { name: "Leaderboard", href: "/leaderboard" },
   { name: "Milestones", href: "/milestones" },
   { name: "Guess the Balance", href: "/bonus-hunt" },
-  { name: "Raffles", href: "/raffle" },
   { name: "Stream Games", href: "/stream-games" },
   { name: "Rewards", href: "/rewards" },
   { name: "Store", href: "/store" },

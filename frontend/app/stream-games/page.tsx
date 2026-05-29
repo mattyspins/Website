@@ -1,8 +1,23 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Crown, Ticket, Swords, Zap, Trophy, Skull, Wheel, Users, Star, ExternalLink } from "lucide-react";
-import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { Crown, Ticket, Swords, Zap, Trophy, Skull, Users, Star, ExternalLink, Clock, ChevronUp } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { API_ENDPOINTS } from "@/lib/api";
+
+interface Raffle {
+  id: string;
+  title: string;
+  description?: string;
+  prize: string;
+  ticketPrice: number;
+  maxTickets: number;
+  ticketsSold: number;
+  status: string;
+  endsAt: string;
+  isFeatured: boolean;
+  numberOfWinners: number;
+}
 
 interface Game {
   id: string;
@@ -11,13 +26,14 @@ interface Game {
   icon: React.ReactNode;
   color: string;
   border: string;
+  iconBg: string;
   badge?: string;
   badgeColor?: string;
   description: string;
   howItWorks: string[];
   rewards: string[];
   note: string;
-  href?: string;
+  isRaffle?: boolean;
 }
 
 const GAMES: Game[] = [
@@ -27,6 +43,7 @@ const GAMES: Game[] = [
     tagline: "Claim the throne with the biggest multiplier",
     icon: <Crown className="w-7 h-7" />,
     color: "text-gold-400",
+    iconBg: "bg-gold-500/15",
     border: "border-gold-500/25",
     badge: "FEATURED",
     badgeColor: "bg-gold-500/15 text-gold-400 border-gold-500/30",
@@ -47,6 +64,7 @@ const GAMES: Game[] = [
     tagline: "Complete a line on the bingo board to win",
     icon: <Star className="w-7 h-7" />,
     color: "text-green-400",
+    iconBg: "bg-green-500/15",
     border: "border-green-500/25",
     description: "A community stream game where viewers compete to complete the bingo board. A wheel spins to select a square, a viewer is picked, and if their bonus profits the square turns green — first to complete a line wins.",
     howItWorks: [
@@ -66,6 +84,7 @@ const GAMES: Game[] = [
     tagline: "Pick a side and fight for your team",
     icon: <Swords className="w-7 h-7" />,
     color: "text-blue-400",
+    iconBg: "bg-blue-500/15",
     border: "border-blue-500/25",
     description: "Viewers split into teams and compete head-to-head. Teams take turns picking slots and bonus buys, and the team with the highest combined multipliers wins the battle.",
     howItWorks: [
@@ -83,6 +102,7 @@ const GAMES: Game[] = [
     tagline: "Request your slot, open it during the reveal",
     icon: <Zap className="w-7 h-7" />,
     color: "text-yellow-400",
+    iconBg: "bg-yellow-500/15",
     border: "border-yellow-500/25",
     badge: "EVERY FRIDAY",
     badgeColor: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
@@ -102,6 +122,7 @@ const GAMES: Game[] = [
     tagline: "Battle through the bracket to be crowned champion",
     icon: <Trophy className="w-7 h-7" />,
     color: "text-purple-400",
+    iconBg: "bg-purple-500/15",
     border: "border-purple-500/25",
     description: "Compete against other viewers in one of the main interactive stream events. Viewers enter a tournament bracket, choose bonus buys during their rounds, and the highest multipliers advance until one player is crowned Tournament Champion 👑.",
     howItWorks: [
@@ -120,6 +141,7 @@ const GAMES: Game[] = [
     tagline: "Survive every round or get eliminated",
     icon: <Skull className="w-7 h-7" />,
     color: "text-red-400",
+    iconBg: "bg-red-500/15",
     border: "border-red-500/25",
     description: "One of the most intense community stream games on MattySpins. Viewers pick their slots each round, and the lowest multiplier is ELIMINATED. The process continues until only one player remains 👑.",
     howItWorks: [
@@ -136,8 +158,9 @@ const GAMES: Game[] = [
     id: "wheel-of-fortune",
     name: "Wheel of Fortune",
     tagline: "Let the wheel decide your fate",
-    icon: <span className="text-2xl">🎡</span>,
+    icon: <span className="text-2xl leading-none">🎡</span>,
     color: "text-pink-400",
+    iconBg: "bg-pink-500/15",
     border: "border-pink-500/25",
     description: "A chaotic community stream game where the wheel controls the action. Viewers are picked, they spin the Wheel of Fortune, and whatever the wheel lands on — that's what happens next. No two spins are ever the same 😂🔥",
     howItWorks: [
@@ -155,6 +178,7 @@ const GAMES: Game[] = [
     tagline: "Vote together. Beat Matty. Claim the rewards.",
     icon: <Users className="w-7 h-7" />,
     color: "text-cyan-400",
+    iconBg: "bg-cyan-500/15",
     border: "border-cyan-500/25",
     description: "One of the most competitive community stream events. Chat votes on every decision — slots, bonus buys, risks and challenges — and goes head-to-head against Matty. If Chat wins, the community earns rewards 🏆. If Matty wins… chat holds the L 😂",
     howItWorks: [
@@ -174,6 +198,7 @@ const GAMES: Game[] = [
     tagline: "Hit 1000x to qualify. Return to fight for the crown.",
     icon: <Crown className="w-7 h-7" />,
     color: "text-orange-400",
+    iconBg: "bg-orange-500/15",
     border: "border-orange-500/25",
     badge: "MONTHLY EVENT",
     badgeColor: "bg-orange-500/15 text-orange-400 border-orange-500/30",
@@ -195,8 +220,9 @@ const GAMES: Game[] = [
     tagline: "Spend your coins on tickets for a chance to win prizes",
     icon: <Ticket className="w-7 h-7" />,
     color: "text-gold-400",
+    iconBg: "bg-gold-500/15",
     border: "border-gold-500/25",
-    href: "/raffle",
+    isRaffle: true,
     description: "Use the coins you earn from the community to enter raffles for real prizes. More tickets = better odds. Winners are announced in Discord.",
     howItWorks: [
       "Earn coins through stream activity, check-ins, and community games",
@@ -205,21 +231,204 @@ const GAMES: Game[] = [
       "Winners are announced in Discord — open a ticket to claim 🏆",
     ],
     rewards: ["Cash prizes", "Community rewards", "Special event prizes"],
-    note: "Check the Raffles page to see all active draws and enter now 👊",
+    note: "Click to view all active raffles and enter now 👊",
   },
 ];
 
+function timeLeft(endsAt: string) {
+  const ms = new Date(endsAt).getTime() - Date.now();
+  if (ms <= 0) return "Ended";
+  const h = Math.floor(ms / 3_600_000);
+  const d = Math.floor(h / 24);
+  if (d > 0) return `${d}d ${h % 24}h left`;
+  const m = Math.floor((ms % 3_600_000) / 60_000);
+  return `${h}h ${m}m left`;
+}
+
+function RaffleSection() {
+  const [raffles, setRaffles] = useState<Raffle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [buying, setBuying] = useState<string | null>(null);
+  const [msgs, setMsgs] = useState<Record<string, { type: "success" | "error"; text: string }>>({});
+  const [userCoins, setUserCoins] = useState(0);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [myTickets, setMyTickets] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    setIsLoggedIn(!!token);
+    fetch(API_ENDPOINTS.RAFFLES, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.raffles) {
+          setRaffles(d.raffles);
+          const init: Record<string, number> = {};
+          for (const r of d.raffles) init[r.id] = 1;
+          setQuantities(init);
+          if (token) loadMyTickets(token, d.raffles);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+    if (token) {
+      fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => r.json())
+        .then((d) => { if (d.user) setUserCoins(d.user.points); })
+        .catch(() => {});
+    }
+  }, []);
+
+  const loadMyTickets = async (token: string, list: Raffle[]) => {
+    const result: Record<string, number> = {};
+    await Promise.all(list.map(async (r) => {
+      try {
+        const res = await fetch(API_ENDPOINTS.RAFFLE_USER_TICKETS(r.id), { headers: { Authorization: `Bearer ${token}` } });
+        const d = await res.json();
+        if (d.tickets) result[r.id] = d.tickets.length;
+      } catch { /* ignore */ }
+    }));
+    setMyTickets(result);
+  };
+
+  const handleBuy = async (raffle: Raffle) => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    const qty = quantities[raffle.id] ?? 1;
+    setBuying(raffle.id);
+    try {
+      const res = await fetch(API_ENDPOINTS.RAFFLE_PURCHASE(raffle.id), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ quantity: qty }),
+      });
+      const d = await res.json();
+      if (d.success || d.tickets) {
+        setUserCoins((c) => c - raffle.ticketPrice * qty);
+        setMyTickets((m) => ({ ...m, [raffle.id]: (m[raffle.id] ?? 0) + qty }));
+        setRaffles((rs) => rs.map((r) => r.id === raffle.id ? { ...r, ticketsSold: r.ticketsSold + qty } : r));
+        setMsgs((m) => ({ ...m, [raffle.id]: { type: "success", text: `${qty} ticket${qty > 1 ? "s" : ""} purchased!` } }));
+        window.dispatchEvent(new Event("coins-updated"));
+      } else {
+        setMsgs((m) => ({ ...m, [raffle.id]: { type: "error", text: d.error?.message || d.message || "Purchase failed." } }));
+      }
+    } catch {
+      setMsgs((m) => ({ ...m, [raffle.id]: { type: "error", text: "Network error." } }));
+    } finally { setBuying(null); }
+  };
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+        {[1, 2, 3].map((i) => <div key={i} className="bg-navy-800/40 border border-white/5 rounded-xl h-48 animate-pulse" />)}
+      </div>
+    );
+  }
+
+  if (raffles.length === 0) {
+    return (
+      <div className="mt-4 text-center py-10 bg-navy-900/40 border border-white/5 rounded-xl">
+        <Ticket className="w-10 h-10 text-gray-700 mx-auto mb-3" />
+        <p className="text-gray-500 text-sm">No active raffles right now. Check back soon!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4">
+      {isLoggedIn && (
+        <p className="text-gold-400 text-sm font-semibold mb-4">
+          Your balance: <span className="font-gaming">{userCoins.toLocaleString()}</span> coins
+        </p>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {raffles.map((raffle) => {
+          const pct = Math.min((raffle.ticketsSold / raffle.maxTickets) * 100, 100);
+          const qty = quantities[raffle.id] ?? 1;
+          const totalCost = raffle.ticketPrice * qty;
+          const canAfford = userCoins >= totalCost;
+          const isSoldOut = raffle.ticketsSold >= raffle.maxTickets;
+          const myCount = myTickets[raffle.id] ?? 0;
+          const msg = msgs[raffle.id];
+
+          return (
+            <div key={raffle.id} className={`bg-navy-900/60 border rounded-xl p-5 flex flex-col ${raffle.isFeatured ? "border-gold-500/30" : "border-white/8"}`}>
+              {raffle.isFeatured && <span className="text-xs font-bold text-gold-400 tracking-widest uppercase mb-2">⭐ Featured</span>}
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <h4 className="text-white font-semibold leading-snug">{raffle.title}</h4>
+                <div className="shrink-0 bg-gold-500/10 border border-gold-500/20 rounded-lg px-2.5 py-1 text-center">
+                  <p className="text-gold-400 font-bold text-sm leading-none">{raffle.ticketPrice}</p>
+                  <p className="text-gray-600 text-[10px]">coins</p>
+                </div>
+              </div>
+              <p className="text-gray-300 text-sm font-medium mb-1">🏆 {raffle.prize}</p>
+              {raffle.description && <p className="text-gray-500 text-xs mb-2">{raffle.description}</p>}
+              <div className="flex items-center gap-1.5 text-gray-500 text-xs mb-3">
+                <Clock className="w-3 h-3" />
+                <span>{timeLeft(raffle.endsAt)}</span>
+                {raffle.numberOfWinners > 1 && <span className="ml-auto text-gold-500/70">{raffle.numberOfWinners} winners</span>}
+              </div>
+              <div className="mb-3">
+                <div className="flex justify-between text-xs text-gray-600 mb-1">
+                  <span>{raffle.ticketsSold} / {raffle.maxTickets} tickets</span>
+                  <span>{pct.toFixed(0)}%</span>
+                </div>
+                <div className="h-1.5 bg-navy-900 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-gold-600 to-gold-400 rounded-full" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+              {myCount > 0 && <p className="text-[#53FC18] text-xs font-semibold mb-2">You have {myCount} ticket{myCount > 1 ? "s" : ""}</p>}
+              {msg && <p className={`text-xs mb-2 ${msg.type === "success" ? "text-green-400" : "text-red-400"}`}>{msg.text}</p>}
+              <div className="mt-auto">
+                {!isLoggedIn ? (
+                  <p className="text-gray-500 text-xs">Login to buy tickets</p>
+                ) : isSoldOut ? (
+                  <p className="text-gray-600 text-xs font-semibold uppercase tracking-wide">Sold Out</p>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={qty}
+                      onChange={(e) => setQuantities((q) => ({ ...q, [raffle.id]: Number(e.target.value) }))}
+                      className="bg-navy-800/60 border border-white/8 rounded-lg px-2 py-2 text-white text-sm focus:outline-none w-16"
+                    >
+                      {[1, 2, 3, 5, 10].map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                    <button
+                      onClick={() => handleBuy(raffle)}
+                      disabled={buying === raffle.id || !canAfford}
+                      className="flex-1 bg-gold-500 hover:bg-gold-600 disabled:opacity-40 text-white font-bold py-2 rounded-lg text-xs tracking-wider uppercase transition-all"
+                    >
+                      {buying === raffle.id ? "..." : `Buy · ${totalCost} coins`}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function StreamGamesPage() {
+  const [openRaffle, setOpenRaffle] = useState(false);
+  const raffleRef = useRef<HTMLDivElement>(null);
+
+  const handleRaffleClick = () => {
+    const next = !openRaffle;
+    setOpenRaffle(next);
+    if (next) {
+      setTimeout(() => raffleRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+    }
+  };
+
   return (
     <div className="min-h-screen pt-20 pb-16 px-4">
       <div className="max-w-6xl mx-auto">
 
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
           <span className="inline-block bg-gold-500/10 border border-gold-500/30 text-gold-400 text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded mb-4">
             Community Events
           </span>
@@ -236,15 +445,17 @@ export default function StreamGamesPage() {
           {GAMES.map((game, i) => (
             <motion.div
               key={game.id}
+              ref={game.isRaffle ? raffleRef : undefined}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className={`bg-navy-800/60 border ${game.border} rounded-2xl p-6 flex flex-col`}
+              transition={{ delay: i * 0.04 }}
+              onClick={game.isRaffle ? handleRaffleClick : undefined}
+              className={`bg-navy-800/60 border ${game.border} rounded-2xl p-6 flex flex-col ${game.isRaffle ? "cursor-pointer hover:border-gold-500/50 transition-colors" : ""} ${game.isRaffle && openRaffle ? "md:col-span-2" : ""}`}
             >
               {/* Card header */}
               <div className="flex items-start justify-between gap-3 mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-xl bg-navy-900/60 border border-white/6 flex items-center justify-center shrink-0 ${game.color}`}>
+                  <div className={`w-12 h-12 rounded-xl ${game.iconBg} border border-white/6 flex items-center justify-center shrink-0 ${game.color}`}>
                     {game.icon}
                   </div>
                   <div>
@@ -259,18 +470,13 @@ export default function StreamGamesPage() {
                     <p className="text-gray-500 text-xs mt-0.5">{game.tagline}</p>
                   </div>
                 </div>
-                {game.href && (
-                  <Link
-                    href={game.href}
-                    className="shrink-0 flex items-center gap-1 text-gold-400 hover:text-gold-300 text-xs font-semibold transition-colors"
-                  >
-                    Enter
-                    <ExternalLink className="w-3 h-3" />
-                  </Link>
+                {game.isRaffle && (
+                  <div className={`text-gray-400 transition-transform duration-300 ${openRaffle ? "" : "rotate-180"}`}>
+                    <ChevronUp className="w-5 h-5" />
+                  </div>
                 )}
               </div>
 
-              {/* Description */}
               <p className="text-gray-400 text-sm leading-relaxed mb-4">{game.description}</p>
 
               {/* How it works */}
@@ -291,15 +497,31 @@ export default function StreamGamesPage() {
                 <p className="text-white text-xs font-bold uppercase tracking-widest mb-2">🎁 Rewards can include</p>
                 <div className="flex flex-wrap gap-2">
                   {game.rewards.map((r, j) => (
-                    <span key={j} className="bg-white/5 border border-white/8 text-gray-300 text-xs px-2.5 py-1 rounded-lg">
-                      {r}
-                    </span>
+                    <span key={j} className="bg-white/5 border border-white/8 text-gray-300 text-xs px-2.5 py-1 rounded-lg">{r}</span>
                   ))}
                 </div>
               </div>
 
-              {/* Note */}
               <p className="text-gray-500 text-xs mt-auto pt-1 border-t border-white/5">{game.note}</p>
+
+              {/* Inline raffle section */}
+              <AnimatePresence>
+                {game.isRaffle && openRaffle && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="pt-4 border-t border-white/8 mt-4">
+                      <p className="text-white font-bold text-sm uppercase tracking-widest mb-1">Active Raffles</p>
+                      <RaffleSection />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           ))}
         </div>
