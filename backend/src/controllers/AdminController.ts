@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { prisma } from '@/config/database';
 import { AdminService } from '@/services/AdminService';
 import { LeaderboardService } from '@/services/LeaderboardService';
 import { RaffleService } from '@/services/RaffleService';
@@ -548,6 +549,30 @@ export class AdminController {
         logger.error('Error toggling moderator status:', error);
         throw error;
       }
+    }
+  );
+
+  static toggleVipStatus = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) throw createError.forbidden('Admin access required');
+      const { userId } = req.params;
+      const { isVip } = req.body;
+      if (typeof isVip !== 'boolean') throw createError.badRequest('isVip must be a boolean');
+      await prisma.user.update({ where: { id: userId }, data: { isVip } });
+      logger.info(`Admin ${req.user.id} set VIP=${isVip} for user ${userId}`);
+      res.json({ success: true, userId, isVip });
+    }
+  );
+
+  static toggleDepositorStatus = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) throw createError.forbidden('Admin access required');
+      const { userId } = req.params;
+      const { isDepositor } = req.body;
+      if (typeof isDepositor !== 'boolean') throw createError.badRequest('isDepositor must be a boolean');
+      await prisma.user.update({ where: { id: userId }, data: { isDepositor } });
+      logger.info(`Admin ${req.user.id} set Depositor=${isDepositor} for user ${userId}`);
+      res.json({ success: true, userId, isDepositor });
     }
   );
 

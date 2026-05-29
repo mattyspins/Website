@@ -16,10 +16,15 @@ interface User {
   isAdmin: boolean;
   isModerator: boolean;
   isSuspended: boolean;
+  isVip: boolean;
+  isDepositor: boolean;
 }
+
+type SortOrder = "az" | "za";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
+  const [sortOrder, setSortOrder] = useState<SortOrder>("az");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -242,7 +247,7 @@ export default function AdminUsers() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by username or Discord ID..."
+            placeholder="Search by username, Kick or Discord ID..."
             className="flex-1 px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
           />
           <button
@@ -264,13 +269,25 @@ export default function AdminUsers() {
         </div>
       </form>
 
-      {/* User Count */}
-      <div className="mb-4">
+      {/* Sort + count bar */}
+      <div className="flex items-center justify-between mb-4">
         <p className="text-gray-400 text-sm">
-          {users.length > 0
-            ? `Showing ${users.length} user${users.length !== 1 ? "s" : ""}`
-            : "No users found"}
+          {users.length > 0 ? `Showing ${users.length} user${users.length !== 1 ? "s" : ""}` : "No users found"}
         </p>
+        <div className="flex rounded-lg overflow-hidden border border-purple-500/30 text-xs font-semibold">
+          <button
+            onClick={() => setSortOrder("az")}
+            className={`px-3 py-1.5 transition-colors ${sortOrder === "az" ? "bg-purple-600 text-white" : "bg-black/40 text-gray-400 hover:text-white"}`}
+          >
+            A → Z
+          </button>
+          <button
+            onClick={() => setSortOrder("za")}
+            className={`px-3 py-1.5 transition-colors ${sortOrder === "za" ? "bg-purple-600 text-white" : "bg-black/40 text-gray-400 hover:text-white"}`}
+          >
+            Z → A
+          </button>
+        </div>
       </div>
 
       {/* Users Table */}
@@ -314,7 +331,10 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
+              {[...users].sort((a, b) => sortOrder === "az"
+                ? a.displayName.localeCompare(b.displayName)
+                : b.displayName.localeCompare(a.displayName)
+              ).map((user) => (
                 <tr
                   key={user.id}
                   className="border-b border-purple-500/10 hover:bg-purple-500/5"
@@ -549,21 +569,21 @@ export default function AdminUsers() {
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-1.5">
                       {user.isAdmin && (
-                        <span className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">
-                          ADMIN
-                        </span>
+                        <span className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">ADMIN</span>
                       )}
                       {user.isModerator && !user.isAdmin && (
-                        <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-                          MOD
-                        </span>
+                        <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-bold">MOD</span>
+                      )}
+                      {user.isVip && (
+                        <span className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full font-bold">VIP</span>
+                      )}
+                      {user.isDepositor && (
+                        <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full font-bold">DEPOSITOR</span>
                       )}
                       {user.isSuspended && (
-                        <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-                          SUSPENDED
-                        </span>
+                        <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">SUSPENDED</span>
                       )}
                     </div>
                   </td>
@@ -577,6 +597,36 @@ export default function AdminUsers() {
                         className="bg-purple-600 hover:bg-purple-700 text-white text-sm px-3 py-1 rounded transition-colors"
                       >
                         💎 Coins
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const accessToken = localStorage.getItem("access_token");
+                          if (!accessToken) return;
+                          const res = await fetch(API_ENDPOINTS.ADMIN_USER_VIP(user.id), {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+                            body: JSON.stringify({ isVip: !user.isVip }),
+                          });
+                          if (res.ok) loadAllUsers();
+                        }}
+                        className={`text-sm px-3 py-1 rounded transition-colors ${user.isVip ? "bg-purple-800 hover:bg-purple-900 text-white" : "bg-purple-500/20 hover:bg-purple-500/40 text-purple-300"}`}
+                      >
+                        {user.isVip ? "Un-VIP" : "⭐ VIP"}
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const accessToken = localStorage.getItem("access_token");
+                          if (!accessToken) return;
+                          const res = await fetch(API_ENDPOINTS.ADMIN_USER_DEPOSITOR(user.id), {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+                            body: JSON.stringify({ isDepositor: !user.isDepositor }),
+                          });
+                          if (res.ok) loadAllUsers();
+                        }}
+                        className={`text-sm px-3 py-1 rounded transition-colors ${user.isDepositor ? "bg-green-800 hover:bg-green-900 text-white" : "bg-green-500/20 hover:bg-green-500/40 text-green-300"}`}
+                      >
+                        {user.isDepositor ? "Un-Dep" : "💰 Dep"}
                       </button>
                       {!user.isAdmin && (
                         <button

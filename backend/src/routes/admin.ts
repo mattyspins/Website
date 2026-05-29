@@ -44,6 +44,8 @@ router.post(
   criticalActionLimiter,
   AdminController.toggleModeratorStatus
 );
+router.post('/users/:userId/vip', criticalActionLimiter, AdminController.toggleVipStatus);
+router.post('/users/:userId/depositor', criticalActionLimiter, AdminController.toggleDepositorStatus);
 router.post(
   '/users/:userId/points',
   criticalActionLimiter,

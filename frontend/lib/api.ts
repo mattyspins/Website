@@ -122,6 +122,10 @@ export const API_ENDPOINTS = {
     `${API_URL}/api/admin/users/${userId}/points`,
   ADMIN_USER_MODERATOR: (userId: string) =>
     `${API_URL}/api/admin/users/${userId}/moderator`,
+  ADMIN_USER_VIP: (userId: string) =>
+    `${API_URL}/api/admin/users/${userId}/vip`,
+  ADMIN_USER_DEPOSITOR: (userId: string) =>
+    `${API_URL}/api/admin/users/${userId}/depositor`,
   ADMIN_USER_SUSPEND: (userId: string) =>
     `${API_URL}/api/admin/users/${userId}/suspend`,
   ADMIN_USER_UNSUSPEND: (userId: string) =>
