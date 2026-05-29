@@ -329,84 +329,93 @@ export default function StreamGamesPage() {
         </motion.div>
       </div>
 
-      {/* Modal */}
+      {/* Full-screen overlay */}
       <AnimatePresence>
         {selected && (
           <>
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
               onClick={() => setSelected(null)}
             />
-            {/* Panel */}
+
+            {/* Side panel */}
             <motion.div
-              initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 60 }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed inset-x-0 bottom-0 md:inset-0 md:flex md:items-center md:justify-center z-50 p-4"
+              initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 280 }}
+              className="fixed top-0 right-0 h-full w-full sm:w-[480px] z-50 flex flex-col bg-[#0d0f17] border-l border-white/8 shadow-2xl"
             >
-              <div className={`bg-navy-900 border ${selected.border} rounded-2xl w-full md:max-w-lg max-h-[85vh] overflow-y-auto`}>
-                {/* Modal header */}
-                <div className="flex items-center justify-between p-6 pb-4 border-b border-white/6 sticky top-0 bg-navy-900 rounded-t-2xl">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl ${selected.iconBg} flex items-center justify-center ${selected.color}`}>
-                      {selected.icon}
+              {/* Hero banner */}
+              <div className={`relative px-6 pt-10 pb-8 border-b border-white/6 shrink-0`}>
+                {/* Glow blob */}
+                <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-20 pointer-events-none ${selected.iconBg}`} />
+
+                <div className="relative flex items-start justify-between gap-4">
+                  <div>
+                    {selected.badge && (
+                      <span className={`inline-block text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded border mb-3 ${selected.badgeColor}`}>
+                        {selected.badge}
+                      </span>
+                    )}
+                    <div className={`w-14 h-14 rounded-2xl ${selected.iconBg} flex items-center justify-center ${selected.color} mb-4`}>
+                      <span className="scale-125">{selected.icon}</span>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-white font-bold text-lg">{selected.name}</h2>
-                        {selected.badge && (
-                          <span className={`text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded border ${selected.badgeColor}`}>
-                            {selected.badge}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-gray-500 text-xs">{selected.tagline}</p>
-                    </div>
+                    <h2 className="text-white font-black text-2xl font-gaming tracking-wide">{selected.name}</h2>
+                    <p className="text-gray-500 text-sm mt-1">{selected.tagline}</p>
                   </div>
-                  <button onClick={() => setSelected(null)} className="text-gray-600 hover:text-white transition-colors p-1">
-                    <X className="w-5 h-5" />
+                  <button
+                    onClick={() => setSelected(null)}
+                    className="shrink-0 w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors mt-1"
+                  >
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
+              </div>
 
-                <div className="p-6 space-y-5">
-                  {/* Description */}
-                  <p className="text-gray-400 text-sm leading-relaxed">{selected.description}</p>
+              {/* Scrollable content */}
+              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
 
-                  {/* How it works */}
-                  <div>
-                    <p className="text-white text-xs font-bold uppercase tracking-widest mb-3">How it works</p>
-                    <ul className="space-y-2">
-                      {selected.howItWorks.map((step, j) => (
-                        <li key={j} className="flex items-start gap-2.5 text-sm text-gray-400">
-                          <span className={`text-xs font-black mt-0.5 shrink-0 ${selected.color}`}>•</span>
-                          {step}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                {/* Description */}
+                <p className="text-gray-400 text-sm leading-relaxed">{selected.description}</p>
 
-                  {/* Rewards */}
-                  <div className="bg-navy-800/60 border border-white/6 rounded-xl p-4">
-                    <p className="text-white text-xs font-bold uppercase tracking-widest mb-3">🎁 Rewards can include</p>
-                    <div className="flex flex-wrap gap-2">
-                      {selected.rewards.map((r, j) => (
-                        <span key={j} className="bg-white/5 border border-white/8 text-gray-300 text-xs px-3 py-1 rounded-lg">{r}</span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Note */}
-                  <p className="text-gray-500 text-xs border-t border-white/5 pt-4">{selected.note}</p>
-
-                  {/* Inline raffles */}
-                  {selected.isRaffle && (
-                    <div className="border-t border-white/6 pt-4">
-                      <p className="text-white font-bold text-sm uppercase tracking-widest mb-4">Active Raffles</p>
-                      <RaffleList />
-                    </div>
-                  )}
+                {/* How it works */}
+                <div>
+                  <p className="text-white text-xs font-bold uppercase tracking-widest mb-3">How it works</p>
+                  <ul className="space-y-3">
+                    {selected.howItWorks.map((step, j) => (
+                      <li key={j} className="flex items-start gap-3 text-sm text-gray-300">
+                        <span className={`w-5 h-5 rounded-full ${selected.iconBg} ${selected.color} flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5`}>
+                          {j + 1}
+                        </span>
+                        {step}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
+
+                {/* Rewards */}
+                <div className={`border ${selected.border} rounded-2xl p-5`}>
+                  <p className="text-white text-xs font-bold uppercase tracking-widest mb-3">🎁 Rewards can include</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selected.rewards.map((r, j) => (
+                      <span key={j} className={`${selected.iconBg} border ${selected.border} ${selected.color} text-xs px-3 py-1.5 rounded-lg font-medium`}>{r}</span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Note */}
+                <div className="bg-white/3 border border-white/6 rounded-xl px-4 py-3">
+                  <p className="text-gray-400 text-sm">{selected.note}</p>
+                </div>
+
+                {/* Active raffles */}
+                {selected.isRaffle && (
+                  <div>
+                    <p className="text-white font-bold text-xs uppercase tracking-widest mb-4">Active Raffles</p>
+                    <RaffleList />
+                  </div>
+                )}
               </div>
             </motion.div>
           </>
