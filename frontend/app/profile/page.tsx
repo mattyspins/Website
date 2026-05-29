@@ -641,6 +641,22 @@ export default function ProfilePage() {
           )}
         </motion.div>
 
+        {/* Purchase History link */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+          <a href="/profile/purchases" className="flex items-center justify-between bg-navy-800/60 border border-white/6 rounded-xl p-5 hover:border-gold-500/20 transition-colors group">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-gold-500/10 flex items-center justify-center shrink-0">
+                <svg className="w-4 h-4 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 11H4L5 9z" /></svg>
+              </div>
+              <div>
+                <p className="text-white font-semibold text-sm">Purchase History</p>
+                <p className="text-gray-500 text-xs mt-0.5">View your store order history</p>
+              </div>
+            </div>
+            <svg className="w-4 h-4 text-gray-600 group-hover:text-gold-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          </a>
+        </motion.div>
+
         {/* Transaction History */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}

@@ -189,8 +189,31 @@ function RaffleList() {
     } finally { setBuying(null); }
   };
 
+  const [pastRaffles, setPastRaffles] = useState<Array<{ id: string; title: string; prize: string; endedAt: string; winners: Array<{ displayName: string }> }>>([]);
+
+  useEffect(() => {
+    fetch(API_ENDPOINTS.LEADERBOARDS_COMPLETED)
+      .then(() => {})
+      .catch(() => {});
+    fetch(API_ENDPOINTS.RAFFLES_ADMIN_ALL || API_ENDPOINTS.RAFFLES)
+      .then((r) => r.json())
+      .then((d) => {
+        const completed = (d.raffles ?? []).filter((r: any) => r.status === "completed" || r.status === "ended");
+        Promise.all(
+          completed.slice(0, 5).map(async (r: any) => {
+            try {
+              const wr = await fetch(API_ENDPOINTS.RAFFLE_WINNERS(r.id));
+              const wd = await wr.json();
+              return { id: r.id, title: r.title, prize: r.prize, endedAt: r.endsAt, winners: wd.winners ?? [] };
+            } catch { return { id: r.id, title: r.title, prize: r.prize, endedAt: r.endsAt, winners: [] }; }
+          })
+        ).then((results) => setPastRaffles(results));
+      })
+      .catch(() => {});
+  }, []);
+
   if (loading) return <div className="text-center py-8 text-gray-500 text-sm">Loading raffles…</div>;
-  if (raffles.length === 0) return (
+  if (raffles.length === 0 && pastRaffles.length === 0) return (
     <div className="text-center py-8">
       <Ticket className="w-10 h-10 text-gray-700 mx-auto mb-3" />
       <p className="text-gray-500 text-sm">No active raffles right now. Check back soon!</p>
@@ -201,6 +224,11 @@ function RaffleList() {
     <div className="space-y-4">
       {isLoggedIn && (
         <p className="text-gold-400 text-sm font-semibold">Balance: <span className="font-gaming">{userCoins.toLocaleString()}</span> coins</p>
+      )}
+      {raffles.length === 0 && (
+        <div className="text-center py-6">
+          <p className="text-gray-500 text-sm">No active raffles right now. Check back soon!</p>
+        </div>
       )}
       {raffles.map((raffle) => {
         const pct = Math.min((raffle.ticketsSold / raffle.maxTickets) * 100, 100);
@@ -259,6 +287,31 @@ function RaffleList() {
           </div>
         );
       })}
+
+      {/* Past winners */}
+      {pastRaffles.length > 0 && (
+        <div className="pt-2">
+          <p className="text-white text-xs font-bold uppercase tracking-widest mb-3 border-t border-white/6 pt-4">Past Winners</p>
+          <div className="space-y-2">
+            {pastRaffles.map((r) => (
+              <div key={r.id} className="bg-navy-900/40 border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-gray-300 text-sm font-semibold truncate">{r.title}</p>
+                  <p className="text-gray-600 text-xs mt-0.5">
+                    {r.prize} · {new Date(r.endedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </p>
+                </div>
+                {r.winners.length > 0 && (
+                  <div className="text-right shrink-0">
+                    <p className="text-[#53FC18] text-xs font-bold">🏆 {r.winners[0].displayName}</p>
+                    {r.winners.length > 1 && <p className="text-gray-600 text-[10px]">+{r.winners.length - 1} more</p>}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

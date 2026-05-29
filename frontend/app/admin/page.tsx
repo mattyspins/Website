@@ -9,6 +9,7 @@ import AdminStats from "@/components/admin/AdminStats";
 import AdminMilestones from "@/components/admin/AdminMilestones";
 import AdminSchedule from "@/components/admin/AdminSchedule";
 import AdminMilestoneClaims from "@/components/admin/AdminMilestoneClaims";
+import AdminRaffles from "@/components/admin/AdminRaffles";
 import { API_ENDPOINTS } from "@/lib/api";
 import {
   LayoutDashboard,
@@ -21,12 +22,14 @@ import {
   ExternalLink,
   Shield,
   ClipboardList,
+  Ticket,
 } from "lucide-react";
 
 type TabId =
   | "overview"
   | "users"
   | "claims"
+  | "raffles"
   | "leaderboards"
   | "guessthebalance"
   | "store"
@@ -37,6 +40,7 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "overview",        label: "Overview",          icon: LayoutDashboard },
   { id: "users",           label: "Users",             icon: Users },
   { id: "claims",          label: "Claims",            icon: ClipboardList },
+  { id: "raffles",         label: "Raffles",           icon: Ticket },
   { id: "leaderboards",    label: "Leaderboards",      icon: Trophy },
   { id: "guessthebalance", label: "Guess the Balance", icon: Target },
   { id: "store",           label: "Store Items",       icon: ShoppingBag },
@@ -138,6 +142,8 @@ export default function AdminDashboard() {
         {activeTab === "milestones" && <AdminMilestones />}
 
         {activeTab === "claims" && <AdminMilestoneClaims />}
+
+        {activeTab === "raffles" && <AdminRaffles />}
 
         {activeTab === "store" && <AdminStore />}
 
