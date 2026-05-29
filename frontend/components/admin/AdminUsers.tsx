@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { API_ENDPOINTS } from "@/lib/api";
-import AdminUserDetail from "./AdminUserDetail";
 
 interface User {
   id: string;
@@ -24,11 +24,11 @@ interface User {
 type SortOrder = "az" | "za";
 
 export default function AdminUsers() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [sortOrder, setSortOrder] = useState<SortOrder>("az");
   const [roleFilter, setRoleFilter] = useState<"all" | "vip" | "depositor" | "moderator" | "suspended">("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -365,7 +365,7 @@ export default function AdminUsers() {
                 ).map((user) => (
                 <tr
                   key={user.id}
-                  onClick={() => setDetailUserId(user.id)}
+                  onClick={() => router.push(`/admin/users/${user.id}`)}
                   className="border-b border-purple-500/10 hover:bg-purple-500/8 cursor-pointer transition-colors"
                 >
                   <td className="py-3 px-4">
@@ -941,12 +941,6 @@ export default function AdminUsers() {
         </div>
       )}
 
-      {/* User detail panel */}
-      <AdminUserDetail
-        userId={detailUserId}
-        onClose={() => setDetailUserId(null)}
-        onRefresh={loadAllUsers}
-      />
     </div>
   );
 }
