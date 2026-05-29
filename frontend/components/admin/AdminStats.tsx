@@ -8,6 +8,7 @@ interface Stats {
   totalUsers: number;
   activeUsers: number;
   totalPoints: number;
+  totalCoinsSpent: number;
   totalTransactions: number;
   recentSignups: number;
   suspendedUsers: number;
@@ -108,9 +109,16 @@ export default function AdminStats() {
         <StatCard
           label="Coins in Circulation"
           value={stats.totalPoints.toLocaleString()}
-          sub="Across all users"
+          sub="Currently held by users"
           icon={<Coins className="w-5 h-5 text-gold-400" />}
           accent="bg-gold-500/15"
+        />
+        <StatCard
+          label="Total Coins Spent"
+          value={(stats.totalCoinsSpent ?? 0).toLocaleString()}
+          sub="All-time by all users"
+          icon={<Coins className="w-5 h-5 text-orange-400" />}
+          accent="bg-orange-500/15"
         />
         <StatCard
           label="Total Transactions"

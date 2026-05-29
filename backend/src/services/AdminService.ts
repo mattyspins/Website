@@ -9,6 +9,7 @@ export interface AdminStats {
   totalUsers: number;
   activeUsers: number;
   totalPoints: number;
+  totalCoinsSpent: number;
   totalTransactions: number;
   totalRaffles: number;
   totalStoreItems: number;
@@ -56,6 +57,7 @@ export class AdminService {
         totalUsers,
         activeUsers,
         pointsAggregate,
+        spentAggregate,
         totalTransactions,
         totalRaffles,
         totalStoreItems,
@@ -65,24 +67,17 @@ export class AdminService {
         prisma.user.count({
           where: {
             lastActiveAt: {
-              gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+              gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
             },
           },
         }),
-        prisma.user.aggregate({
-          _sum: {
-            points: true,
-          },
-        }),
+        prisma.user.aggregate({ _sum: { points: true } }),
+        prisma.user.aggregate({ _sum: { totalSpent: true } }),
         prisma.pointTransaction.count(),
         prisma.raffle.count(),
         prisma.storeItem.count(),
         prisma.userSession.count({
-          where: {
-            expiresAt: {
-              gt: new Date(),
-            },
-          },
+          where: { expiresAt: { gt: new Date() } },
         }),
       ]);
 
@@ -90,6 +85,7 @@ export class AdminService {
         totalUsers,
         activeUsers,
         totalPoints: pointsAggregate._sum.points || 0,
+        totalCoinsSpent: spentAggregate._sum.totalSpent || 0,
         totalTransactions,
         totalRaffles,
         totalStoreItems,
