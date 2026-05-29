@@ -445,11 +445,11 @@ export default function StreamGamesPage() {
               onClick={() => setSelected(null)}
 
             >
-              <div className={`bg-navy-900 border ${selected.border} rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto`}
+              <div className={`bg-navy-900 border ${selected.border} rounded-2xl w-full max-w-md max-h-[85vh] overflow-y-auto`}
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-5 border-b border-white/6 sticky top-0 bg-navy-900 rounded-t-2xl">
+                <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-white/6 sticky top-0 bg-navy-900 rounded-t-2xl">
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-xl ${selected.iconBg} flex items-center justify-center ${selected.color} shrink-0`}>
                       {selected.icon}
@@ -471,7 +471,7 @@ export default function StreamGamesPage() {
                   </button>
                 </div>
 
-                <div className="px-6 py-5 space-y-5">
+                <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5">
                   {/* Live / Today banner inside overlay */}
                   {liveGameNames.has(selected.name) && (
                     <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-3">

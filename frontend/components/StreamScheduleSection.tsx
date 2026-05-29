@@ -102,7 +102,7 @@ export default function StreamScheduleSection() {
                     return (
                       <div
                         key={event.id}
-                        className={`bg-navy-800/60 border rounded-xl p-5 flex items-start gap-4 ${
+                        className={`bg-navy-800/60 border rounded-xl p-3 sm:p-5 flex items-start gap-3 sm:gap-4 ${
                           event.isLive ? "border-red-500/30 bg-red-500/5" : "border-white/6"
                         }`}
                       >

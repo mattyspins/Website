@@ -29,7 +29,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.7 }}
-          className="font-gaming text-5xl md:text-7xl lg:text-8xl font-bold mb-6 tracking-tight"
+          className="font-gaming text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-6 tracking-tight"
         >
           <span className="text-white">MATTY</span>
           <span className="text-gold-400 neon-text">SPINS</span>
@@ -39,7 +39,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
-          className="text-gray-400 text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed"
+          className="text-gray-400 text-base md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed"
         >
           Compete on the leaderboard, guess bonus hunt balances, and redeem
           your coins for exclusive rewards.

@@ -239,7 +239,7 @@ export default function ManageLeaderboardPage() {
           <div className="space-y-5">
             {/* Top 3 podium */}
             {top3.length > 0 && (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[top3[1], top3[0], top3[2]].map((r, i) => {
                   if (!r) return <div key={i} />;
                   const pos = i === 1 ? 1 : i === 0 ? 2 : 3;

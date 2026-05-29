@@ -109,7 +109,7 @@ export default function AdminDashboard() {
 
         {/* Tab bar */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-0">
-          <div className="flex flex-wrap gap-1.5 pb-0">
+          <div className="flex overflow-x-auto scrollbar-hide gap-1 pb-0 -mb-px">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const active = activeTab === tab.id;
@@ -117,14 +117,15 @@ export default function AdminDashboard() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold tracking-wide uppercase transition-all rounded-t-lg border-b-2 ${
+                  className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold tracking-wide uppercase transition-all rounded-t-lg border-b-2 whitespace-nowrap shrink-0 ${
                     active
                       ? "text-gold-400 border-gold-400 bg-gold-500/8"
                       : "text-gray-500 border-transparent hover:text-gray-300 hover:bg-white/3"
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
-                  {tab.label}
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.label.split(" ")[0]}</span>
                 </button>
               );
             })}

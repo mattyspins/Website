@@ -104,7 +104,7 @@ export default function MilestonesPage() {
           <span className="inline-block bg-gold-500/10 border border-gold-500/30 text-gold-400 text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded mb-4">
             AceBet Wager Milestones
           </span>
-          <h1 className="text-4xl md:text-5xl font-bold font-gaming text-white mb-3 tracking-wide">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-gaming text-white mb-3 tracking-wide">
             MILE<span className="text-gold-400">STONES</span>
           </h1>
           <p className="text-gray-400 text-sm max-w-xl mx-auto">

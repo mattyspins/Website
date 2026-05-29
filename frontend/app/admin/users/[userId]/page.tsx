@@ -161,7 +161,7 @@ export default function AdminUserPage() {
   );
 
   return (
-    <div className="min-h-screen pt-20 pb-16 px-4">
+    <div className="min-h-screen pt-20 pb-16 px-3 sm:px-4">
       <div className="max-w-4xl mx-auto">
 
         {/* Breadcrumb */}
@@ -213,7 +213,7 @@ export default function AdminUserPage() {
 
             {/* Stats */}
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-              className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               {[
                 { icon: <Coins className="w-5 h-5 text-purple-400" />, label: "Coins",     value: user.points.toLocaleString(),                          bg: "bg-purple-500/10" },
                 { icon: <Trophy className="w-5 h-5 text-gold-400" />,  label: "Wagered",   value: `$${Number(user.totalWagered).toLocaleString()}`,        bg: "bg-gold-500/10" },

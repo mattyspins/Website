@@ -245,7 +245,7 @@ export default function AdminUsers() {
         }}
         className="mb-6"
       >
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
             type="text"
             value={searchQuery}
@@ -253,22 +253,21 @@ export default function AdminUsers() {
             placeholder="Search by username, Kick or Discord ID..."
             className="flex-1 px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
           />
-          <button
-            type="submit"
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors"
-          >
-            Search
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSearchQuery("");
-              loadAllUsers();
-            }}
-            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition-colors"
-          >
-            Show All
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              className="flex-1 sm:flex-none bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-lg transition-colors text-sm font-semibold"
+            >
+              Search
+            </button>
+            <button
+              type="button"
+              onClick={() => { setSearchQuery(""); loadAllUsers(); }}
+              className="flex-1 sm:flex-none bg-gray-600 hover:bg-gray-700 text-white px-5 py-2 rounded-lg transition-colors text-sm font-semibold"
+            >
+              Show All
+            </button>
+          </div>
         </div>
       </form>
 
@@ -617,13 +616,13 @@ export default function AdminUsers() {
                     </div>
                   </td>
                   <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-1.5">
                       <button
                         onClick={() => {
                           setSelectedUser(user);
                           setShowModal(true);
                         }}
-                        className="bg-purple-600 hover:bg-purple-700 text-white text-sm px-3 py-1 rounded transition-colors"
+                        className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2.5 py-1.5 rounded transition-colors"
                       >
                         💎 Coins
                       </button>

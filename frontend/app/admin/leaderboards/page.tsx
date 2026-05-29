@@ -90,7 +90,7 @@ export default function AdminLeaderboardsPage() {
       <div className="max-w-5xl mx-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8">
           <div className="flex items-center gap-3">
             <a href="/admin" className="text-gray-500 hover:text-white text-sm transition-colors">← Admin</a>
             <span className="text-gray-700">/</span>
@@ -250,7 +250,7 @@ function LeaderboardCard({ lb, onDelete }: { lb: Leaderboard; onDelete: () => vo
   const timeLabel = ms <= 0 ? `Ended ${new Date(lb.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : d > 0 ? `${d}d ${h}h remaining` : `${h}h remaining`;
 
   return (
-    <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-5 flex items-center gap-4 flex-wrap">
+    <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-4 sm:p-5 flex items-center gap-3 flex-wrap">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-1">
           <h3 className="text-white font-bold truncate">{lb.title}</h3>
