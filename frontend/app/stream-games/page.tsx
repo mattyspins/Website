@@ -342,8 +342,11 @@ export default function StreamGamesPage() {
               initial={{ opacity: 0, scale: 0.96, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 16 }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
               className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={() => setSelected(null)}
             >
-              <div className={`bg-navy-900 border ${selected.border} rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto`}>
+              <div className={`bg-navy-900 border ${selected.border} rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto`}
+                onClick={(e) => e.stopPropagation()}
+              >
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-white/6 sticky top-0 bg-navy-900 rounded-t-2xl">
                   <div className="flex items-center gap-3">
