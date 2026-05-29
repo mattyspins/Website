@@ -2,411 +2,307 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { motion } from "framer-motion";
 import { api } from "@/lib/api";
+import { Trophy, Download, Plus, Users, Search, X, Crown } from "lucide-react";
 
-interface User {
-  id: string;
-  displayName: string;
-  kickUsername?: string;
-  points: number;
-}
-
+interface User { id: string; displayName: string; kickUsername?: string; }
 interface Ranking {
-  rank: number;
-  userId: string;
-  username: string;
-  kickUsername?: string;
-  totalWagers: number;
-  wagerCount: number;
-  prize?: string;
-  prizeDescription?: string;
+  rank: number; userId: string; username: string;
+  kickUsername?: string; totalWagers: number; wagerCount: number;
+  prize?: string; prizeDescription?: string;
+}
+interface Leaderboard {
+  id: string; title: string; description?: string;
+  prizePool: string; status: string; startDate: string; endDate: string;
 }
 
-interface Leaderboard {
-  id: string;
-  title: string;
-  description?: string;
-  prizePool: string;
-  status: string;
-  startDate: string;
-  endDate: string;
-}
+const RANK_COLORS: Record<number, string> = {
+  1: "text-gold-400 bg-gold-500/15 border-gold-500/25",
+  2: "text-gray-300 bg-white/8 border-white/10",
+  3: "text-orange-400 bg-orange-500/10 border-orange-500/20",
+};
 
 export default function ManageLeaderboardPage() {
-  const params = useParams();
-  const leaderboardId = params.id as string;
+  const { id: leaderboardId } = useParams() as { id: string };
 
   const [leaderboard, setLeaderboard] = useState<Leaderboard | null>(null);
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<User[]>([]);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [wagerAmount, setWagerAmount] = useState("");
-  const [wagerNotes, setWagerNotes] = useState("");
+
+  // Add wager form
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<User[]>([]);
+  const [selected, setSelected] = useState<User | null>(null);
+  const [amount, setAmount] = useState("");
+  const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [wagerMsg, setWagerMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  useEffect(() => {
-    fetchLeaderboardDetails();
-  }, [leaderboardId]);
+  useEffect(() => { fetchDetails(); }, [leaderboardId]);
 
-  const fetchLeaderboardDetails = async () => {
+  const fetchDetails = async () => {
     try {
-      const response = await api.get(
-        `/api/manual-leaderboards/${leaderboardId}`,
-      );
-      console.log("Leaderboard details response:", response);
-      if (response.success) {
-        setLeaderboard(response.data.leaderboard);
-        setRankings(response.data.rankings);
-      }
-    } catch (error) {
-      console.error("Error fetching leaderboard:", error);
-    } finally {
-      setLoading(false);
-    }
+      const r = await api.get(`/api/manual-leaderboards/${leaderboardId}`);
+      if (r.success) { setLeaderboard(r.data.leaderboard); setRankings(r.data.rankings); }
+    } catch { /* ignore */ } finally { setLoading(false); }
   };
 
-  const searchUsers = async (query: string) => {
-    if (query.trim().length < 2) {
-      setSearchResults([]);
-      return;
-    }
-
+  const searchUsers = async (q: string) => {
+    setQuery(q);
+    if (q.trim().length < 2) { setResults([]); return; }
     try {
-      const response = await api.get(
-        `/api/admin/users/search?q=${encodeURIComponent(query)}`,
-      );
-      console.log("User search response:", response);
-      if (response.success && response.data && response.data.users) {
-        setSearchResults(response.data.users);
-      } else {
-        setSearchResults([]);
-      }
-    } catch (error) {
-      console.error("Error searching users:", error);
-      setSearchResults([]);
-    }
-  };
-
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    searchUsers(value);
-  };
-
-  const selectUser = (user: User) => {
-    setSelectedUser(user);
-    setSearchQuery(user.displayName);
-    setSearchResults([]);
+      const r = await api.get(`/api/admin/users/search?query=${encodeURIComponent(q)}`);
+      if (r.success && r.data?.users) setResults(r.data.users);
+      else setResults([]);
+    } catch { setResults([]); }
   };
 
   const handleAddWager = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!selectedUser) {
-      alert("Please select a user");
-      return;
-    }
-
-    const amount = parseFloat(wagerAmount);
-    if (isNaN(amount) || amount <= 0) {
-      alert("Please enter a valid wager amount");
-      return;
-    }
-
-    setSubmitting(true);
+    if (!selected) return;
+    const amt = parseFloat(amount);
+    if (isNaN(amt) || amt <= 0) { setWagerMsg({ type: "error", text: "Enter a valid amount." }); return; }
+    setSubmitting(true); setWagerMsg(null);
     try {
-      const response = await api.post(
-        `/api/manual-leaderboards/admin/${leaderboardId}/wagers`,
-        {
-          userId: selectedUser.id,
-          amount,
-          notes: wagerNotes,
-        },
-      );
-
-      console.log("Add wager response:", response);
-
-      if (response.success) {
-        alert(
-          `Wager added successfully! User total: ${response.userTotal.toFixed(2)}`,
-        );
-        setWagerAmount("");
-        setWagerNotes("");
-        setSelectedUser(null);
-        setSearchQuery("");
-        fetchLeaderboardDetails();
+      const r = await api.post(`/api/manual-leaderboards/admin/${leaderboardId}/wagers`, { userId: selected.id, amount: amt, notes });
+      if (r.success) {
+        setWagerMsg({ type: "success", text: `Wager added. ${selected.displayName} total: $${r.userTotal?.toFixed(2) ?? amt.toFixed(2)}` });
+        setAmount(""); setNotes(""); setSelected(null); setQuery(""); setResults([]);
+        fetchDetails();
       } else {
-        alert(`Error: ${response.error || "Failed to add wager"}`);
+        setWagerMsg({ type: "error", text: r.error || "Failed to add wager." });
       }
-    } catch (error: any) {
-      console.error("Add wager error:", error);
-      alert(
-        `Error: ${error.response?.data?.error || error.message || "Failed to add wager"}`,
-      );
-    } finally {
-      setSubmitting(false);
-    }
+    } catch { setWagerMsg({ type: "error", text: "Network error." }); } finally { setSubmitting(false); }
   };
 
-  const exportLeaderboard = async () => {
+  const exportCSV = async () => {
     try {
       const token = localStorage.getItem("access_token");
-      const response = await fetch(
+      const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/manual-leaderboards/admin/${leaderboardId}/export?format=csv`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
-
-      if (!response.ok) {
-        throw new Error("Failed to export leaderboard");
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute(
-        "download",
-        `leaderboard-${leaderboardId}-${Date.now()}.csv`,
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      alert("Failed to export leaderboard");
-    }
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `leaderboard-${leaderboardId}.csv`;
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch { alert("Export failed."); }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white p-8 pt-32">
-        <div className="max-w-7xl mx-auto">
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen pt-20 flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-gold-500/30 border-t-gold-500 rounded-full animate-spin" />
+    </div>
+  );
 
-  if (!leaderboard) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white p-8 pt-32">
-        <div className="max-w-7xl mx-auto">
-          <p>Leaderboard not found</p>
-        </div>
+  if (!leaderboard) return (
+    <div className="min-h-screen pt-20 flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-gray-400">Leaderboard not found</p>
+        <a href="/admin/leaderboards" className="text-gold-400 text-sm mt-2 inline-block">← Back</a>
       </div>
-    );
-  }
+    </div>
+  );
 
-  const timeRemaining = new Date(leaderboard.endDate).getTime() - Date.now();
-  const isActive = leaderboard.status === "active" && timeRemaining > 0;
+  const isActive = leaderboard.status === "active" && new Date(leaderboard.endDate).getTime() > Date.now();
+  const msLeft = new Date(leaderboard.endDate).getTime() - Date.now();
+  const dLeft = Math.floor(msLeft / 86400000);
+  const hLeft = Math.floor((msLeft % 86400000) / 3600000);
+  const timeLabel = msLeft <= 0 ? "Ended" : dLeft > 0 ? `${dLeft}d ${hLeft}h left` : `${hLeft}h left`;
+
+  const top3 = rankings.slice(0, 3);
+  const rest = rankings.slice(3);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8 pt-32">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <a
-            href="/admin/leaderboards"
-            className="text-purple-400 hover:text-purple-300 mb-4 inline-block"
-          >
-            ← Back to Leaderboards
-          </a>
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">{leaderboard.title}</h1>
-              {leaderboard.description && (
-                <p className="text-gray-400 mb-4">{leaderboard.description}</p>
-              )}
-              <div className="flex gap-6 text-sm">
-                <div>
-                  <span className="text-gray-400">Prize Pool:</span>{" "}
-                  <span className="font-semibold text-purple-400">
-                    {leaderboard.prizePool}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-400">Status:</span>{" "}
-                  <span className="font-semibold">
-                    {leaderboard.status.toUpperCase()}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-400">Participants:</span>{" "}
-                  <span className="font-semibold">{rankings.length}</span>
-                </div>
+    <div className="min-h-screen pt-20 pb-16 px-4">
+      <div className="max-w-5xl mx-auto">
+
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 text-sm mb-6">
+          <a href="/admin/leaderboards" className="text-gray-500 hover:text-white transition-colors">← Leaderboards</a>
+          <span className="text-gray-700">/</span>
+          <span className="text-gray-300 truncate">{leaderboard.title}</span>
+        </div>
+
+        {/* Header card */}
+        <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-6 mb-6">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 flex-wrap mb-2">
+                <h1 className="text-white font-black text-2xl font-gaming">{leaderboard.title}</h1>
+                <span className={`text-[10px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full border ${
+                  leaderboard.status === "active" ? "bg-green-500/15 text-green-400 border-green-500/25"
+                  : leaderboard.status === "ended" ? "bg-gray-500/15 text-gray-400 border-gray-500/25"
+                  : "bg-gold-500/15 text-gold-400 border-gold-500/25"
+                }`}>
+                  {leaderboard.status.toUpperCase()}
+                </span>
+              </div>
+              {leaderboard.description && <p className="text-gray-500 text-sm mb-3">{leaderboard.description}</p>}
+              <div className="flex flex-wrap gap-5 text-sm">
+                <div><span className="text-gray-500">Prize Pool</span> <span className="text-gold-400 font-bold ml-1">{leaderboard.prizePool}</span></div>
+                <div><span className="text-gray-500">Participants</span> <span className="text-white font-bold ml-1">{rankings.length}</span></div>
+                <div><span className="text-gray-500">Ends</span> <span className={`font-bold ml-1 ${msLeft > 0 ? "text-green-400" : "text-gray-500"}`}>{timeLabel}</span></div>
+                <div><span className="text-gray-500">{new Date(leaderboard.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} → {new Date(leaderboard.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></div>
               </div>
             </div>
-            <button
-              onClick={exportLeaderboard}
-              className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg font-semibold transition"
-            >
-              Export CSV
-            </button>
+            <div className="flex gap-2 shrink-0">
+              <a href={`/leaderboard/${leaderboard.id}`} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-gray-400 font-semibold px-3 py-2 rounded-xl text-xs transition-colors">
+                View Public
+              </a>
+              <button onClick={exportCSV} className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-gray-400 font-semibold px-3 py-2 rounded-xl text-xs transition-colors">
+                <Download className="w-3.5 h-3.5" /> Export CSV
+              </button>
+            </div>
           </div>
         </div>
 
+        {/* Add wager */}
         {isActive && (
-          <div className="bg-gray-800 rounded-lg p-6 mb-8">
-            <h2 className="text-2xl font-bold mb-4">Add Wager</h2>
+          <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-6 mb-6">
+            <h2 className="text-white font-bold mb-4 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-gold-400" /> Add Wager
+            </h2>
             <form onSubmit={handleAddWager} className="space-y-4">
+              {/* User search */}
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  Search User *
-                </label>
+                <label className="text-gray-400 text-xs mb-1 block">Player *</label>
                 <div className="relative">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white"
-                    placeholder="Search by Discord or Kick username..."
-                  />
-                  {searchResults && searchResults.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg max-h-60 overflow-y-auto">
-                      {searchResults.map((user) => (
-                        <button
-                          key={user.id}
-                          type="button"
-                          onClick={() => selectUser(user)}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-600 transition"
-                        >
-                          <div className="font-semibold">
-                            {user.displayName}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                    <input value={query} onChange={(e) => searchUsers(e.target.value)}
+                      placeholder="Search by username or Kick..." className="w-full bg-navy-900/60 border border-white/8 rounded-xl pl-9 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30" />
+                    {selected && (
+                      <button type="button" onClick={() => { setSelected(null); setQuery(""); setResults([]); }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {results.length > 0 && !selected && (
+                    <div className="absolute z-10 w-full mt-1 bg-navy-900 border border-white/10 rounded-xl overflow-hidden shadow-xl">
+                      {results.map((u) => (
+                        <button key={u.id} type="button" onClick={() => { setSelected(u); setQuery(u.displayName); setResults([]); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left">
+                          <div className="w-7 h-7 rounded-full bg-purple-600/40 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                            {u.displayName.charAt(0).toUpperCase()}
                           </div>
-                          {user.kickUsername && (
-                            <div className="text-sm text-gray-400">
-                              Kick: {user.kickUsername}
-                            </div>
-                          )}
+                          <div>
+                            <p className="text-white text-sm font-medium">{u.displayName}</p>
+                            {u.kickUsername && <p className="text-gray-500 text-xs">Kick: {u.kickUsername}</p>}
+                          </div>
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
-                {selectedUser && (
-                  <div className="mt-2 text-sm text-green-400">
-                    Selected: {selectedUser.displayName}
-                    {selectedUser.kickUsername &&
-                      ` (Kick: ${selectedUser.kickUsername})`}
-                  </div>
+                {selected && (
+                  <p className="text-green-400 text-xs mt-1.5 font-semibold">✓ {selected.displayName}{selected.kickUsername ? ` · Kick: ${selected.kickUsername}` : ""}</p>
                 )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Wager Amount *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    value={wagerAmount}
-                    onChange={(e) => setWagerAmount(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white"
-                    placeholder="e.g., 150.50"
-                  />
+                  <label className="text-gray-400 text-xs mb-1 block">Wager Amount ($) *</label>
+                  <input type="number" step="0.01" min="0.01" required value={amount} onChange={(e) => setAmount(e.target.value)}
+                    placeholder="e.g. 150.00" className="w-full bg-navy-900/60 border border-white/8 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Notes (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={wagerNotes}
-                    onChange={(e) => setWagerNotes(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white"
-                    placeholder="Optional notes"
-                  />
+                  <label className="text-gray-400 text-xs mb-1 block">Notes</label>
+                  <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional"
+                    className="w-full bg-navy-900/60 border border-white/8 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30" />
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={submitting || !selectedUser}
-                className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-6 py-2 rounded-lg font-semibold transition"
-              >
-                {submitting ? "Adding..." : "Add Wager"}
-              </button>
+              <div className="flex items-center gap-4">
+                <button type="submit" disabled={submitting || !selected}
+                  className="bg-gold-500 hover:bg-gold-600 disabled:opacity-40 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+                  {submitting ? "Adding…" : "Add Wager"}
+                </button>
+                {wagerMsg && <p className={`text-sm font-medium ${wagerMsg.type === "success" ? "text-green-400" : "text-red-400"}`}>{wagerMsg.text}</p>}
+              </div>
             </form>
           </div>
         )}
 
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h2 className="text-2xl font-bold mb-4">Rankings</h2>
-          {rankings.length === 0 ? (
-            <p className="text-gray-400 text-center py-8">No wagers yet</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left py-3 px-4">Rank</th>
-                    <th className="text-left py-3 px-4">Username</th>
-                    <th className="text-left py-3 px-4">Kick Username</th>
-                    <th className="text-right py-3 px-4">Total Wagers</th>
-                    <th className="text-right py-3 px-4">Wager Count</th>
-                    <th className="text-right py-3 px-4">Prize</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rankings.map((ranking) => (
-                    <tr
-                      key={ranking.userId}
-                      className="border-b border-gray-700 hover:bg-gray-750"
-                    >
-                      <td className="py-3 px-4">
-                        <span className="font-bold text-lg">
-                          #{ranking.rank}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 font-semibold max-w-0">
-                        <div className="truncate" title={ranking.username}>
-                          {ranking.username}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-gray-400 max-w-0">
-                        <div
-                          className="truncate"
-                          title={ranking.kickUsername || "Not set"}
-                        >
-                          {ranking.kickUsername || "-"}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-right font-semibold text-purple-400">
-                        ${ranking.totalWagers.toFixed(2)}
-                      </td>
-                      <td className="py-3 px-4 text-right text-gray-400">
-                        {ranking.wagerCount}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        {ranking.prize ? (
-                          <div>
-                            <div className="font-semibold text-green-400">
-                              {ranking.prize}
-                            </div>
-                            {ranking.prizeDescription && (
-                              <div className="text-xs text-gray-400">
-                                {ranking.prizeDescription}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-gray-500">-</span>
-                        )}
-                      </td>
+        {/* Rankings */}
+        {rankings.length === 0 ? (
+          <div className="text-center py-16 bg-navy-800/40 border border-white/5 rounded-2xl">
+            <Users className="w-10 h-10 text-gray-700 mx-auto mb-3" />
+            <p className="text-gray-500 text-sm">No participants yet. Add wagers to populate the rankings.</p>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {/* Top 3 podium */}
+            {top3.length > 0 && (
+              <div className="grid grid-cols-3 gap-3">
+                {[top3[1], top3[0], top3[2]].map((r, i) => {
+                  if (!r) return <div key={i} />;
+                  const pos = i === 1 ? 1 : i === 0 ? 2 : 3;
+                  return (
+                    <motion.div key={r.userId} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
+                      className={`bg-navy-800/60 border rounded-2xl p-4 text-center ${RANK_COLORS[pos] ? `border-${pos === 1 ? "gold-500/30" : pos === 2 ? "white/10" : "orange-500/20"}` : "border-white/6"} ${pos === 1 ? "ring-1 ring-gold-500/20" : ""}`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 font-black text-sm border ${RANK_COLORS[pos] ?? ""}`}>
+                        {pos === 1 ? <Crown className="w-5 h-5" /> : `#${pos}`}
+                      </div>
+                      <p className="text-white font-bold text-sm truncate">{r.username}</p>
+                      {r.kickUsername && <p className="text-gray-500 text-xs truncate">{r.kickUsername}</p>}
+                      <p className={`font-black text-lg mt-1 ${pos === 1 ? "text-gold-400" : pos === 2 ? "text-gray-300" : "text-orange-400"}`}>
+                        ${r.totalWagers.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                      {r.prize && <p className="text-green-400 text-xs font-semibold mt-1">{r.prize}</p>}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Full table */}
+            <div className="bg-navy-800/60 border border-white/6 rounded-2xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-white/6 flex items-center justify-between">
+                <p className="text-white font-semibold text-sm">All Rankings <span className="text-gray-500 font-normal">({rankings.length})</span></p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-gray-500 text-xs font-semibold uppercase tracking-widest border-b border-white/5">
+                      <th className="text-left px-5 py-3">#</th>
+                      <th className="text-left px-5 py-3">Player</th>
+                      <th className="text-left px-5 py-3">Kick</th>
+                      <th className="text-right px-5 py-3">Wagered</th>
+                      <th className="text-right px-5 py-3">Entries</th>
+                      <th className="text-right px-5 py-3">Prize</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-white/4">
+                    {rankings.map((r) => (
+                      <tr key={r.userId} className="hover:bg-white/2 transition-colors">
+                        <td className="px-5 py-3">
+                          <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-black border ${RANK_COLORS[r.rank] ?? "bg-white/5 border-white/8 text-gray-500"}`}>
+                            {r.rank}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 text-white font-medium max-w-[160px] truncate">{r.username}</td>
+                        <td className="px-5 py-3 text-gray-500 text-xs">{r.kickUsername || "—"}</td>
+                        <td className="px-5 py-3 text-right font-bold text-gold-400">
+                          ${r.totalWagers.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-5 py-3 text-right text-gray-500">{r.wagerCount}</td>
+                        <td className="px-5 py-3 text-right">
+                          {r.prize ? <span className="text-green-400 font-semibold">{r.prize}</span> : <span className="text-gray-700">—</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

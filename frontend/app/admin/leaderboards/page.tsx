@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
+import { Trophy, Plus, Trash2, ExternalLink, Settings, X, ChevronDown } from "lucide-react";
 
 interface Leaderboard {
   id: string;
@@ -20,417 +22,261 @@ interface Prize {
   prizeDescription?: string;
 }
 
+const STATUS_COLORS: Record<string, string> = {
+  active:    "bg-green-500/15 text-green-400 border-green-500/25",
+  upcoming:  "bg-gold-500/15 text-gold-400 border-gold-500/25",
+  ended:     "bg-gray-500/15 text-gray-400 border-gray-500/25",
+  cancelled: "bg-red-500/15 text-red-400 border-red-500/25",
+};
+
 export default function AdminLeaderboardsPage() {
   const [leaderboards, setLeaderboards] = useState<Leaderboard[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    prizePool: "",
-    startDate: "",
-    endDate: "",
-  });
-  const [prizes, setPrizes] = useState<Prize[]>([
-    { position: 1, prizeAmount: "", prizeDescription: "" },
-  ]);
+  const [showCreate, setShowCreate] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ title: "", description: "", prizePool: "", startDate: "", endDate: "" });
+  const [prizes, setPrizes] = useState<Prize[]>([{ position: 1, prizeAmount: "", prizeDescription: "" }]);
 
-  useEffect(() => {
-    fetchLeaderboards();
-  }, []);
+  useEffect(() => { fetchLeaderboards(); }, []);
 
   const fetchLeaderboards = async () => {
     try {
-      const response = await api.get("/api/manual-leaderboards?limit=20");
-      console.log("Leaderboards response:", response);
-      if (response.success) {
-        setLeaderboards(response.leaderboards);
-      }
-    } catch (error) {
-      console.error("Error fetching leaderboards:", error);
-    } finally {
-      setLoading(false);
-    }
+      const r = await api.get("/api/manual-leaderboards?limit=50");
+      if (r.success) setLeaderboards(r.leaderboards);
+    } catch { /* ignore */ } finally { setLoading(false); }
   };
 
-  const handleCreateLeaderboard = async (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setSaving(true); setMsg(null);
     try {
-      console.log("Creating leaderboard with data:", {
+      const r = await api.post("/api/manual-leaderboards/admin/create", {
         ...formData,
         prizes: prizes.filter((p) => p.prizeAmount.trim() !== ""),
       });
-
-      const response = await api.post("/api/manual-leaderboards/admin/create", {
-        ...formData,
-        prizes: prizes.filter((p) => p.prizeAmount.trim() !== ""),
-      });
-
-      console.log("Create leaderboard response:", response);
-
-      if (response.success) {
-        alert("Leaderboard created successfully!");
-        setShowCreateForm(false);
-        setFormData({
-          title: "",
-          description: "",
-          prizePool: "",
-          startDate: "",
-          endDate: "",
-        });
+      if (r.success) {
+        setMsg({ type: "success", text: "Leaderboard created." });
+        setShowCreate(false);
+        setFormData({ title: "", description: "", prizePool: "", startDate: "", endDate: "" });
         setPrizes([{ position: 1, prizeAmount: "", prizeDescription: "" }]);
         fetchLeaderboards();
       } else {
-        alert(`Error: ${response.error || "Failed to create leaderboard"}`);
+        setMsg({ type: "error", text: r.error || "Failed to create." });
       }
-    } catch (error: any) {
-      console.error("Create leaderboard error:", error);
-      alert(
-        `Error: ${error.response?.data?.error || error.message || "Failed to create leaderboard"}`,
-      );
-    }
+    } catch { setMsg({ type: "error", text: "Network error." }); } finally { setSaving(false); }
   };
 
-  const addPrizeField = () => {
-    setPrizes([
-      ...prizes,
-      { position: prizes.length + 1, prizeAmount: "", prizeDescription: "" },
-    ]);
-  };
-
-  const removePrizeField = (index: number) => {
-    setPrizes(prizes.filter((_, i) => i !== index));
-  };
-
-  const updatePrize = (
-    index: number,
-    field: keyof Prize,
-    value: string | number,
-  ) => {
-    const updated = [...prizes];
-    updated[index] = { ...updated[index], [field]: value };
-    setPrizes(updated);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800";
-      case "ended":
-        return "bg-gray-100 text-gray-800";
-      case "cancelled":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const handleDeleteLeaderboard = async (leaderboardId: string) => {
+  const handleDelete = async (id: string) => {
     try {
-      const response = await api.delete(
-        `/api/manual-leaderboards/admin/${leaderboardId}`,
-      );
-
-      if (response.success) {
-        alert("Leaderboard deleted successfully!");
-        setDeleteConfirm(null);
-        fetchLeaderboards(); // Refresh the list
-      } else {
-        alert(`Error: ${response.error || "Failed to delete leaderboard"}`);
-      }
-    } catch (error: any) {
-      console.error("Delete leaderboard error:", error);
-      alert(
-        `Error: ${error.response?.data?.error || error.message || "Failed to delete leaderboard"}`,
-      );
-    }
+      const r = await api.delete(`/api/manual-leaderboards/admin/${id}`);
+      if (r.success) { setDeleteConfirm(null); fetchLeaderboards(); }
+      else setMsg({ type: "error", text: r.error || "Failed to delete." });
+    } catch { setMsg({ type: "error", text: "Network error." }); }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white p-8">
-        <div className="max-w-7xl mx-auto">
-          <p>Loading leaderboards...</p>
-        </div>
-      </div>
-    );
-  }
+  const updatePrize = (i: number, field: keyof Prize, value: string | number) => {
+    const next = [...prizes];
+    next[i] = { ...next[i], [field]: value };
+    setPrizes(next);
+  };
+
+  const active = leaderboards.filter((l) => l.status === "active");
+  const others = leaderboards.filter((l) => l.status !== "active");
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8 pt-32">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold">Manual Leaderboards</h1>
+    <div className="min-h-screen pt-20 pb-16 px-4">
+      <div className="max-w-5xl mx-auto">
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <a href="/admin" className="text-gray-500 hover:text-white text-sm transition-colors">← Admin</a>
+            <span className="text-gray-700">/</span>
+            <h1 className="text-white font-bold text-xl">Leaderboards</h1>
+          </div>
           <button
-            onClick={() => setShowCreateForm(!showCreateForm)}
-            className="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg font-semibold transition"
+            onClick={() => setShowCreate(!showCreate)}
+            className="flex items-center gap-2 bg-gold-500 hover:bg-gold-600 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
           >
-            {showCreateForm ? "Cancel" : "Create New Leaderboard"}
+            <Plus className="w-4 h-4" />
+            New Leaderboard
           </button>
         </div>
 
-        {showCreateForm && (
-          <div className="bg-gray-800 rounded-lg p-6 mb-8">
-            <h2 className="text-2xl font-bold mb-4">Create New Leaderboard</h2>
-            <form onSubmit={handleCreateLeaderboard} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white"
-                  placeholder="e.g., Weekly Gambling Leaderboard"
-                />
-              </div>
+        {msg && (
+          <div className={`mb-5 px-4 py-3 rounded-xl text-sm font-medium border ${msg.type === "success" ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-red-500/10 border-red-500/20 text-red-400"}`}>
+            {msg.text}
+          </div>
+        )}
 
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white"
-                  rows={3}
-                  placeholder="Optional description"
-                />
+        {/* Create form */}
+        <AnimatePresence>
+          {showCreate && (
+            <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
+              className="bg-navy-800/60 border border-white/6 rounded-2xl p-6 mb-8">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-white font-bold">Create Leaderboard</h2>
+                <button onClick={() => setShowCreate(false)} className="text-gray-600 hover:text-white transition-colors"><X className="w-4 h-4" /></button>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Prize Pool *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.prizePool}
-                  onChange={(e) =>
-                    setFormData({ ...formData, prizePool: e.target.value })
-                  }
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white"
-                  placeholder="e.g., $500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Start Date *
-                  </label>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={formData.startDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, startDate: e.target.value })
-                    }
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white"
-                  />
+              <form onSubmit={handleCreate} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="text-gray-400 text-xs mb-1 block">Title *</label>
+                    <input required value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="e.g. May Wager Race" className="w-full bg-navy-900/60 border border-white/8 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="text-gray-400 text-xs mb-1 block">Description</label>
+                    <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      rows={2} placeholder="Optional" className="w-full bg-navy-900/60 border border-white/8 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30 resize-none" />
+                  </div>
+                  <div>
+                    <label className="text-gray-400 text-xs mb-1 block">Prize Pool *</label>
+                    <input required value={formData.prizePool} onChange={(e) => setFormData({ ...formData, prizePool: e.target.value })}
+                      placeholder="e.g. $500" className="w-full bg-navy-900/60 border border-white/8 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30" />
+                  </div>
+                  <div />
+                  <div>
+                    <label className="text-gray-400 text-xs mb-1 block">Start Date *</label>
+                    <input type="datetime-local" required value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                      className="w-full bg-navy-900/60 border border-white/8 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30" />
+                  </div>
+                  <div>
+                    <label className="text-gray-400 text-xs mb-1 block">End Date *</label>
+                    <input type="datetime-local" required value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                      className="w-full bg-navy-900/60 border border-white/8 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30" />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    End Date *
-                  </label>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={formData.endDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, endDate: e.target.value })
-                    }
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white"
-                  />
-                </div>
-              </div>
 
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium">
-                    Prize Distribution
-                  </label>
-                  <button
-                    type="button"
-                    onClick={addPrizeField}
-                    className="text-purple-400 hover:text-purple-300 text-sm"
-                  >
-                    + Add Prize
+                {/* Prizes */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-gray-400 text-xs">Prize Distribution</label>
+                    <button type="button" onClick={() => setPrizes([...prizes, { position: prizes.length + 1, prizeAmount: "", prizeDescription: "" }])}
+                      className="text-gold-400 hover:text-gold-300 text-xs font-semibold transition-colors">+ Add position</button>
+                  </div>
+                  <div className="space-y-2">
+                    {prizes.map((p, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <span className="text-gray-500 text-xs w-8 text-center shrink-0">#{p.position}</span>
+                        <input value={p.prizeAmount} onChange={(e) => updatePrize(i, "prizeAmount", e.target.value)}
+                          placeholder="Prize (e.g. $100)" className="flex-1 bg-navy-900/60 border border-white/8 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-gold-500/30" />
+                        <input value={p.prizeDescription ?? ""} onChange={(e) => updatePrize(i, "prizeDescription", e.target.value)}
+                          placeholder="Label (optional)" className="flex-1 bg-navy-900/60 border border-white/8 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-gold-500/30" />
+                        {prizes.length > 1 && (
+                          <button type="button" onClick={() => setPrizes(prizes.filter((_, j) => j !== i))} className="text-gray-600 hover:text-red-400 transition-colors p-1"><X className="w-3.5 h-3.5" /></button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-1">
+                  <button type="submit" disabled={saving}
+                    className="bg-gold-500 hover:bg-gold-600 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+                    {saving ? "Creating…" : "Create Leaderboard"}
+                  </button>
+                  <button type="button" onClick={() => setShowCreate(false)} className="bg-white/5 hover:bg-white/10 text-gray-400 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+                    Cancel
                   </button>
                 </div>
-                {prizes.map((prize, index) => (
-                  <div key={index} className="flex gap-2 mb-2">
-                    <input
-                      type="number"
-                      value={prize.position}
-                      onChange={(e) =>
-                        updatePrize(index, "position", parseInt(e.target.value))
-                      }
-                      className="w-20 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
-                      placeholder="Pos"
-                    />
-                    <input
-                      type="text"
-                      value={prize.prizeAmount}
-                      onChange={(e) =>
-                        updatePrize(index, "prizeAmount", e.target.value)
-                      }
-                      className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white"
-                      placeholder="Prize amount (e.g., $100)"
-                    />
-                    <input
-                      type="text"
-                      value={prize.prizeDescription || ""}
-                      onChange={(e) =>
-                        updatePrize(index, "prizeDescription", e.target.value)
-                      }
-                      className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white"
-                      placeholder="Description (optional)"
-                    />
-                    {prizes.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removePrizeField(index)}
-                        className="text-red-400 hover:text-red-300 px-3"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-              <div className="flex gap-4">
-                <button
-                  type="submit"
-                  className="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg font-semibold transition"
-                >
-                  Create Leaderboard
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateForm(false)}
-                  className="bg-gray-700 hover:bg-gray-600 px-6 py-2 rounded-lg font-semibold transition"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => <div key={i} className="bg-navy-800/40 border border-white/5 rounded-2xl h-24 animate-pulse" />)}
+          </div>
+        ) : leaderboards.length === 0 ? (
+          <div className="text-center py-20 bg-navy-800/40 border border-white/5 rounded-2xl">
+            <Trophy className="w-12 h-12 text-gray-700 mx-auto mb-3" />
+            <p className="text-gray-400 font-semibold mb-1">No leaderboards yet</p>
+            <p className="text-gray-600 text-sm">Create one to get started.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {active.length > 0 && (
+              <section>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Active</p>
+                <div className="space-y-3">
+                  {active.map((lb) => <LeaderboardCard key={lb.id} lb={lb} onDelete={() => setDeleteConfirm(lb.id)} />)}
+                </div>
+              </section>
+            )}
+            {others.length > 0 && (
+              <section>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">All Others</p>
+                <div className="space-y-3">
+                  {others.map((lb) => <LeaderboardCard key={lb.id} lb={lb} onDelete={() => setDeleteConfirm(lb.id)} />)}
+                </div>
+              </section>
+            )}
           </div>
         )}
+      </div>
 
-        <div className="grid gap-4 mt-5">
-          {leaderboards.length === 0 ? (
-            <div className="bg-gray-800 rounded-lg p-8 text-center">
-              <p className="text-gray-400">
-                No leaderboards found. Create one to get started!
-              </p>
-            </div>
-          ) : (
-            leaderboards.map((lb) => (
-              <div
-                key={lb.id}
-                className="bg-gray-800 rounded-lg p-6 hover:bg-gray-750 transition"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-bold">{lb.title}</h3>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(lb.status)}`}
-                      >
-                        {lb.status.toUpperCase()}
-                      </span>
-                    </div>
-                    {lb.description && (
-                      <p className="text-gray-400 mb-3">{lb.description}</p>
-                    )}
-                    <div className="flex gap-6 text-sm text-gray-400">
-                      <div>
-                        <span className="font-semibold text-purple-400">
-                          Prize Pool:
-                        </span>{" "}
-                        {lb.prizePool}
-                      </div>
-                      <div>
-                        <span className="font-semibold text-purple-400">
-                          Start:
-                        </span>{" "}
-                        {new Date(lb.startDate).toLocaleDateString()}
-                      </div>
-                      <div>
-                        <span className="font-semibold text-purple-400">
-                          End:
-                        </span>{" "}
-                        {new Date(lb.endDate).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <a
-                      href={`/admin/leaderboards/${lb.id}`}
-                      className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-semibold transition"
-                    >
-                      Manage
-                    </a>
-                    <a
-                      href={`/leaderboard/${lb.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm font-semibold transition"
-                    >
-                      View
-                    </a>
-                    <button
-                      onClick={() => setDeleteConfirm(lb.id)}
-                      className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-semibold transition"
-                    >
-                      Delete
-                    </button>
-                  </div>
+      {/* Delete confirm */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40" onClick={() => setDeleteConfirm(null)} />
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="bg-navy-900 border border-red-500/25 rounded-2xl p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+                <h3 className="text-white font-bold mb-2">Delete Leaderboard?</h3>
+                <p className="text-gray-400 text-sm mb-5">This removes all associated wagers and prizes and cannot be undone.</p>
+                <div className="flex gap-3">
+                  <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-xl text-sm transition-colors">Delete</button>
+                  <button onClick={() => setDeleteConfirm(null)} className="flex-1 bg-white/5 hover:bg-white/10 text-gray-400 font-semibold py-2 rounded-xl text-sm transition-colors">Cancel</button>
                 </div>
               </div>
-            ))
-          )}
-        </div>
-
-        {/* Delete Confirmation Modal */}
-        {deleteConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="text-xl font-bold mb-4 text-red-400">
-                Confirm Delete
-              </h3>
-              <p className="text-gray-300 mb-6">
-                Are you sure you want to delete this leaderboard? This action
-                cannot be undone and will remove all associated wagers and
-                prizes.
-              </p>
-              <div className="flex gap-4">
-                <button
-                  onClick={() => handleDeleteLeaderboard(deleteConfirm)}
-                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-semibold transition flex-1"
-                >
-                  Yes, Delete
-                </button>
-                <button
-                  onClick={() => setDeleteConfirm(null)}
-                  className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg font-semibold transition flex-1"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
+            </motion.div>
+          </>
         )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function LeaderboardCard({ lb, onDelete }: { lb: Leaderboard; onDelete: () => void }) {
+  const ended = new Date(lb.endDate).getTime() < Date.now();
+  const ms = new Date(lb.endDate).getTime() - Date.now();
+  const d = Math.floor(ms / 86400000);
+  const h = Math.floor((ms % 86400000) / 3600000);
+  const timeLabel = ms <= 0 ? `Ended ${new Date(lb.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : d > 0 ? `${d}d ${h}h remaining` : `${h}h remaining`;
+
+  return (
+    <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-5 flex items-center gap-4 flex-wrap">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap mb-1">
+          <h3 className="text-white font-bold truncate">{lb.title}</h3>
+          <span className={`text-[10px] font-black tracking-widest uppercase px-2 py-0.5 rounded border ${STATUS_COLORS[lb.status] ?? STATUS_COLORS.ended}`}>
+            {lb.status.toUpperCase()}
+          </span>
+        </div>
+        {lb.description && <p className="text-gray-500 text-xs mb-1.5 truncate">{lb.description}</p>}
+        <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
+          <span className="text-gold-400 font-semibold">{lb.prizePool}</span>
+          <span>{new Date(lb.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} → {new Date(lb.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+          <span className={ended ? "text-gray-600" : "text-green-400"}>{timeLabel}</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <a href={`/admin/leaderboards/${lb.id}`}
+          className="flex items-center gap-1.5 bg-gold-500 hover:bg-gold-600 text-white font-semibold px-3 py-2 rounded-xl text-xs transition-colors">
+          <Settings className="w-3.5 h-3.5" /> Manage
+        </a>
+        <a href={`/leaderboard/${lb.id}`} target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-gray-400 font-semibold px-3 py-2 rounded-xl text-xs transition-colors">
+          <ExternalLink className="w-3.5 h-3.5" /> View
+        </a>
+        <button onClick={onDelete} className="p-2 text-gray-600 hover:text-red-400 transition-colors rounded-xl hover:bg-red-500/10">
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
