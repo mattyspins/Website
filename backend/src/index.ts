@@ -139,8 +139,7 @@ import streamEventRoutes from '@/routes/streamEvents';
 import checkinRoutes from '@/routes/checkin';
 import publicProfileRoutes from '@/routes/publicProfile';
 import raffleRoutes from '@/routes/raffles';
-// Commented out until Kick OAuth is implemented
-// import viewingRoutes from '@/routes/viewing';
+import viewingRoutes from '@/routes/viewing';
 // import bonusHuntRoutes from '@/routes/bonusHunt';
 
 app.use('/api/auth', authRoutes);
@@ -157,8 +156,7 @@ app.use('/api/stream-events', streamEventRoutes);
 app.use('/api/checkin', checkinRoutes);
 app.use('/api/users', publicProfileRoutes);
 app.use('/api/raffles', raffleRoutes);
-// Commented out until Kick OAuth is implemented
-// app.use('/api/viewing', viewingRoutes);
+app.use('/api/viewing', viewingRoutes);
 // app.use('/api/bonus-hunt', bonusHuntRoutes);
 
 // Socket.IO connection handling

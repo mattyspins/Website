@@ -187,6 +187,10 @@ export const API_ENDPOINTS = {
   SCHEDULE_UPDATE: `${API_URL}/api/schedule/update`,
 
   // Stream Events
+  VIEWING_STREAM_STATUS: `${API_URL}/api/viewing/stream/status`,
+  VIEWING_SESSION_START: `${API_URL}/api/viewing/session/start`,
+  VIEWING_SESSION_END: `${API_URL}/api/viewing/session/end`,
+  VIEWING_SESSION_HEARTBEAT: `${API_URL}/api/viewing/session/heartbeat`,
   STREAM_EVENTS: `${API_URL}/api/stream-events`,
   STREAM_EVENTS_ALL: `${API_URL}/api/stream-events/all`,
   STREAM_EVENT: (id: string) => `${API_URL}/api/stream-events/${id}`,

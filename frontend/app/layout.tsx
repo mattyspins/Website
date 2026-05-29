@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ParticleBackground from "@/components/ParticleBackground";
 import ToastProvider from "@/components/ui/ToastProvider";
+import ViewingSessionTracker from "@/components/ViewingSessionTracker";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -67,6 +68,7 @@ export default function RootLayout({
         <ToastProvider>
           <ParticleBackground />
           <Navbar />
+          <ViewingSessionTracker />
           <main className="relative z-10 min-h-screen">{children}</main>
           <Footer />
         </ToastProvider>
