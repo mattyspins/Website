@@ -21,7 +21,20 @@ export default function AdminSchedule() {
   const [title, setTitle] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [gameType, setGameType] = useState("");
-  const [description, setDescription] = useState("");
+
+  const GAME_TYPES = [
+    "King of the Hill",
+    "Bonus Bingo",
+    "Team Battles",
+    "Bonus Hunt",
+    "Slot Tournament",
+    "Last Man Standing",
+    "Wheel of Fortune",
+    "Chat vs Matty",
+    "Royal Rumble",
+    "Raffles",
+    "Freestyle",
+  ];
 
   useEffect(() => { loadEvents(); }, []);
 
@@ -46,12 +59,12 @@ export default function AdminSchedule() {
       const res = await fetch(API_ENDPOINTS.STREAM_EVENTS, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
-        body: JSON.stringify({ title: title.trim(), scheduledAt, gameType: gameType.trim() || undefined, description: description.trim() || undefined }),
+        body: JSON.stringify({ title: title.trim(), scheduledAt, gameType: gameType || undefined }),
       });
       const d = await res.json();
       if (d.success) {
         setMsg({ type: "success", text: "Event created." });
-        setTitle(""); setScheduledAt(""); setGameType(""); setDescription("");
+        setTitle(""); setScheduledAt(""); setGameType("");
         loadEvents();
       } else { setMsg({ type: "error", text: d.error || "Failed." }); }
     } catch { setMsg({ type: "error", text: "Network error." }); } finally { setSaving(false); }
@@ -92,14 +105,12 @@ export default function AdminSchedule() {
               className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30" />
           </div>
           <div>
-            <label className="text-gray-400 text-xs mb-1 block">Game / Type</label>
-            <input value={gameType} onChange={(e) => setGameType(e.target.value)} placeholder="e.g. Slots, Bonus Hunt"
-              className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30" />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="text-gray-400 text-xs mb-1 block">Description</label>
-            <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional details"
-              className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30" />
+            <label className="text-gray-400 text-xs mb-1 block">Game Type</label>
+            <select value={gameType} onChange={(e) => setGameType(e.target.value)}
+              className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30">
+              <option value="">— Select a game —</option>
+              {GAME_TYPES.map((g) => <option key={g} value={g}>{g}</option>)}
+            </select>
           </div>
           <div className="sm:col-span-2 flex items-center gap-3">
             <button type="submit" disabled={saving}
