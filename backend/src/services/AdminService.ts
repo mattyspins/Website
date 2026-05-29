@@ -204,46 +204,31 @@ export class AdminService {
   // Get user details with full information
   static async getUserDetails(userId: string): Promise<any> {
     try {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-          statistics: true,
-          pointTransactions: {
-            orderBy: { createdAt: 'desc' },
-            take: 50,
-          },
-          raffleTickets: {
-            include: {
-              raffle: {
-                select: {
-                  id: true,
-                  name: true,
-                  status: true,
-                },
-              },
+      const [user, watchTimeResult] = await Promise.all([
+        prisma.user.findUnique({
+          where: { id: userId },
+          include: {
+            statistics: true,
+            pointTransactions: {
+              orderBy: { createdAt: 'desc' },
+              take: 20,
             },
           },
-          storePurchases: {
-            include: {
-              item: {
-                select: {
-                  id: true,
-                  name: true,
-                  category: true,
-                },
-              },
-            },
-            orderBy: { purchasedAt: 'desc' },
-            take: 20,
-          },
-        },
-      });
+        }),
+        prisma.viewingSession.aggregate({
+          where: { userId },
+          _sum: { durationMinutes: true },
+        }),
+      ]);
 
       if (!user) {
         throw createError.notFound('User not found');
       }
 
-      return user;
+      return {
+        ...user,
+        totalWatchMinutes: watchTimeResult._sum.durationMinutes ?? 0,
+      };
     } catch (error) {
       logger.error('Error getting user details:', error);
       throw error;

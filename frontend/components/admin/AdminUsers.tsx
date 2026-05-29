@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { API_ENDPOINTS } from "@/lib/api";
+import AdminUserDetail from "./AdminUserDetail";
 
 interface User {
   id: string;
@@ -27,6 +28,7 @@ export default function AdminUsers() {
   const [sortOrder, setSortOrder] = useState<SortOrder>("az");
   const [roleFilter, setRoleFilter] = useState<"all" | "vip" | "depositor" | "moderator" | "suspended">("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -363,9 +365,10 @@ export default function AdminUsers() {
                 ).map((user) => (
                 <tr
                   key={user.id}
-                  className="border-b border-purple-500/10 hover:bg-purple-500/5"
+                  onClick={() => setDetailUserId(user.id)}
+                  className="border-b border-purple-500/10 hover:bg-purple-500/5 cursor-pointer"
                 >
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                     <div>
                       <p className="text-white font-semibold whitespace-nowrap">
                         {user.displayName}
@@ -375,7 +378,7 @@ export default function AdminUsers() {
                       </p>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                     {user.kickVerified ? (
                       <div className="flex items-center gap-2">
                         <span className="text-green-400">
@@ -483,7 +486,7 @@ export default function AdminUsers() {
                       </div>
                     )}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                     {user.rainbetVerified ? (
                       <div className="flex items-center gap-2">
                         <span className="text-green-400">
@@ -589,12 +592,12 @@ export default function AdminUsers() {
                       </div>
                     )}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                     <span className="text-purple-400 font-semibold">
                       {user.points.toLocaleString()}
                     </span>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                     <div className="flex flex-wrap gap-1.5">
                       {user.isAdmin && (
                         <span className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">ADMIN</span>
@@ -613,7 +616,7 @@ export default function AdminUsers() {
                       )}
                     </div>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
@@ -937,6 +940,13 @@ export default function AdminUsers() {
           </motion.div>
         </div>
       )}
+
+      {/* User detail panel */}
+      <AdminUserDetail
+        userId={detailUserId}
+        onClose={() => setDetailUserId(null)}
+        onRefresh={loadAllUsers}
+      />
     </div>
   );
 }
