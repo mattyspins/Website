@@ -25,6 +25,7 @@ type SortOrder = "az" | "za";
 export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [sortOrder, setSortOrder] = useState<SortOrder>("az");
+  const [roleFilter, setRoleFilter] = useState<"all" | "vip" | "depositor" | "moderator" | "suspended">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -269,6 +270,23 @@ export default function AdminUsers() {
         </div>
       </form>
 
+      {/* Role filters */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {(["all", "vip", "depositor", "moderator", "suspended"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setRoleFilter(f)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition-colors border ${
+              roleFilter === f
+                ? "bg-purple-600 border-purple-500 text-white"
+                : "bg-black/30 border-purple-500/20 text-gray-400 hover:text-white"
+            }`}
+          >
+            {f === "all" ? "All Users" : f === "vip" ? "⭐ VIP" : f === "depositor" ? "💰 Depositors" : f === "moderator" ? "Moderators" : "Suspended"}
+          </button>
+        ))}
+      </div>
+
       {/* Sort + count bar */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-gray-400 text-sm">
@@ -331,10 +349,18 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody>
-              {[...users].sort((a, b) => sortOrder === "az"
-                ? a.displayName.localeCompare(b.displayName)
-                : b.displayName.localeCompare(a.displayName)
-              ).map((user) => (
+              {[...users]
+                .filter((u) => {
+                  if (roleFilter === "vip") return u.isVip;
+                  if (roleFilter === "depositor") return u.isDepositor;
+                  if (roleFilter === "moderator") return u.isModerator;
+                  if (roleFilter === "suspended") return u.isSuspended;
+                  return true;
+                })
+                .sort((a, b) => sortOrder === "az"
+                  ? a.displayName.localeCompare(b.displayName)
+                  : b.displayName.localeCompare(a.displayName)
+                ).map((user) => (
                 <tr
                   key={user.id}
                   className="border-b border-purple-500/10 hover:bg-purple-500/5"

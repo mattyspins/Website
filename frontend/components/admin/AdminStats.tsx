@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { API_ENDPOINTS } from "@/lib/api";
+import { Users, Coins, Ticket, Clock, UserCheck, AlertTriangle } from "lucide-react";
 
-interface DashboardStats {
+interface Stats {
   totalUsers: number;
   activeUsers: number;
   totalPoints: number;
@@ -13,112 +13,142 @@ interface DashboardStats {
   suspendedUsers: number;
 }
 
+interface StatCardProps {
+  label: string;
+  value: string | number;
+  sub?: string;
+  icon: React.ReactNode;
+  accent: string;
+  urgent?: boolean;
+}
+
+function StatCard({ label, value, sub, icon, accent, urgent }: StatCardProps) {
+  return (
+    <div className={`bg-navy-800/60 border rounded-xl p-5 flex items-start gap-4 ${urgent ? "border-yellow-500/30" : "border-white/6"}`}>
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${accent}`}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-gray-500 text-xs font-semibold uppercase tracking-widest mb-1">{label}</p>
+        <p className={`text-2xl font-black ${urgent ? "text-yellow-400" : "text-white"}`}>{value}</p>
+        {sub && <p className="text-gray-600 text-xs mt-0.5">{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminStats() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [pendingClaims, setPendingClaims] = useState(0);
+  const [activeRaffles, setActiveRaffles] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadStats();
-  }, []);
+  useEffect(() => { loadAll(); }, []);
 
-  const loadStats = async () => {
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) return;
+  const loadAll = async () => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    const headers = { Authorization: `Bearer ${token}` };
 
     try {
-      const response = await fetch(API_ENDPOINTS.ADMIN_STATS, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const [statsRes, claimsRes, rafflesRes] = await Promise.all([
+        fetch(API_ENDPOINTS.ADMIN_STATS, { headers }),
+        fetch(API_ENDPOINTS.MILESTONES_CLAIMS_ADMIN, { headers }),
+        fetch(API_ENDPOINTS.RAFFLES_ADMIN_ALL, { headers }),
+      ]);
 
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data.data);
+      if (statsRes.ok) {
+        const d = await statsRes.json();
+        setStats(d.data);
       }
-    } catch (error) {
-      console.error("Failed to load stats:", error);
-    } finally {
-      setLoading(false);
-    }
+      if (claimsRes.ok) {
+        const d = await claimsRes.json();
+        const pending = (d.claims ?? []).filter((c: any) => c.status === "pending").length;
+        setPendingClaims(pending);
+      }
+      if (rafflesRes.ok) {
+        const d = await rafflesRes.json();
+        const active = (d.raffles ?? []).filter((r: any) => r.status === "active").length;
+        setActiveRaffles(active);
+      }
+    } catch { /* ignore */ } finally { setLoading(false); }
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="bg-navy-800/40 border border-white/5 rounded-xl h-24 animate-pulse" />
+        ))}
       </div>
     );
   }
 
   if (!stats) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-400">Failed to load statistics</p>
-      </div>
-    );
+    return <p className="text-gray-400 text-sm text-center py-12">Failed to load statistics.</p>;
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <StatCard
-        title="Total Users"
-        value={stats.totalUsers}
-        icon="👥"
-        color="purple"
-      />
-      <StatCard
-        title="Active Users"
-        value={stats.activeUsers}
-        icon="✅"
-        color="green"
-      />
-      <StatCard
-        title="Total Coins"
-        value={stats.totalPoints.toLocaleString()}
-        icon="💎"
-        color="blue"
-      />
-      <StatCard
-        title="Transactions"
-        value={stats.totalTransactions}
-        icon="💳"
-        color="yellow"
-      />
-      <StatCard
-        title="Recent Signups"
-        value={stats.recentSignups}
-        icon="🆕"
-        color="pink"
-      />
-      <StatCard
-        title="Suspended Users"
-        value={stats.suspendedUsers}
-        icon="🚫"
-        color="red"
-      />
-    </div>
-  );
-}
-
-function StatCard({ title, value, icon, color }: any) {
-  const colorClasses: any = {
-    purple: "from-purple-600 to-purple-800",
-    green: "from-green-600 to-green-800",
-    blue: "from-blue-600 to-blue-800",
-    yellow: "from-yellow-600 to-yellow-800",
-    pink: "from-pink-600 to-pink-800",
-    red: "from-red-600 to-red-800",
-  };
-
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      className={`bg-gradient-to-br ${colorClasses[color]} rounded-xl p-6 border border-white/10`}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-4xl">{icon}</span>
-        <span className="text-3xl font-bold text-white">{value}</span>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          label="Total Users"
+          value={stats.totalUsers.toLocaleString()}
+          sub={`${stats.recentSignups} joined recently`}
+          icon={<Users className="w-5 h-5 text-purple-400" />}
+          accent="bg-purple-500/15"
+        />
+        <StatCard
+          label="Active Users"
+          value={stats.activeUsers.toLocaleString()}
+          sub="Last 24 hours"
+          icon={<UserCheck className="w-5 h-5 text-green-400" />}
+          accent="bg-green-500/15"
+        />
+        <StatCard
+          label="Coins in Circulation"
+          value={stats.totalPoints.toLocaleString()}
+          sub="Across all users"
+          icon={<Coins className="w-5 h-5 text-gold-400" />}
+          accent="bg-gold-500/15"
+        />
+        <StatCard
+          label="Total Transactions"
+          value={stats.totalTransactions.toLocaleString()}
+          icon={<Coins className="w-5 h-5 text-blue-400" />}
+          accent="bg-blue-500/15"
+        />
+        <StatCard
+          label="Pending Claims"
+          value={pendingClaims}
+          sub={pendingClaims > 0 ? "Needs review" : "All clear"}
+          icon={<Clock className="w-5 h-5 text-yellow-400" />}
+          accent="bg-yellow-500/15"
+          urgent={pendingClaims > 0}
+        />
+        <StatCard
+          label="Active Raffles"
+          value={activeRaffles}
+          icon={<Ticket className="w-5 h-5 text-pink-400" />}
+          accent="bg-pink-500/15"
+        />
+        <StatCard
+          label="Suspended Users"
+          value={stats.suspendedUsers}
+          icon={<AlertTriangle className="w-5 h-5 text-red-400" />}
+          accent="bg-red-500/15"
+          urgent={stats.suspendedUsers > 0}
+        />
       </div>
-      <p className="text-white/80 font-semibold">{title}</p>
-    </motion.div>
+
+      {pendingClaims > 0 && (
+        <div className="bg-yellow-500/8 border border-yellow-500/25 rounded-xl px-5 py-4 flex items-center gap-3">
+          <Clock className="w-5 h-5 text-yellow-400 shrink-0" />
+          <p className="text-yellow-300 text-sm">
+            <span className="font-bold">{pendingClaims} milestone claim{pendingClaims !== 1 ? "s" : ""}</span> waiting for approval — go to the <span className="font-bold">Claims</span> tab to review.
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
