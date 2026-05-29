@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Ticket, Swords, Zap, Trophy, Skull, Users, Star, ExternalLink, Clock, X } from "lucide-react";
+import { Crown, Ticket, Swords, Zap, Trophy, Skull, Users, Star, ExternalLink, Clock, X, Radio } from "lucide-react";
 import { useEffect, useState } from "react";
 import { API_ENDPOINTS } from "@/lib/api";
 
@@ -319,6 +319,31 @@ function RaffleList() {
 /* ─── Page ───────────────────────────────────────────── */
 export default function StreamGamesPage() {
   const [selected, setSelected] = useState<Game | null>(null);
+  const [liveGameNames, setLiveGameNames] = useState<Set<string>>(new Set());
+  const [todayGameNames, setTodayGameNames] = useState<Set<string>>(new Set());
+
+  // Fetch schedule to know which games are live or happening today
+  useEffect(() => {
+    fetch(API_ENDPOINTS.STREAM_EVENTS)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.success || !d.events) return;
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayEnd   = new Date(todayStart.getTime() + 86400000);
+        const live = new Set<string>();
+        const today = new Set<string>();
+        for (const e of d.events) {
+          if (!e.gameType) continue;
+          if (e.isLive) live.add(e.gameType);
+          const t = new Date(e.scheduledAt);
+          if (t >= todayStart && t < todayEnd) today.add(e.gameType);
+        }
+        setLiveGameNames(live);
+        setTodayGameNames(today);
+      })
+      .catch(() => {});
+  }, []);
 
   // close on Escape
   useEffect(() => {
@@ -346,28 +371,50 @@ export default function StreamGamesPage() {
 
         {/* Game tiles */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {GAMES.map((game, i) => (
-            <motion.button
-              key={game.id}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
-              onClick={() => setSelected(game)}
-              className={`bg-navy-800/60 border ${game.border} rounded-2xl p-5 flex flex-col items-center text-center gap-3 hover:border-opacity-60 hover:bg-navy-700/60 transition-all group`}
-            >
-              <div className={`w-12 h-12 rounded-xl ${game.iconBg} flex items-center justify-center ${game.color} group-hover:scale-110 transition-transform`}>
-                {game.icon}
-              </div>
-              <div>
-                <p className="text-white font-semibold text-sm leading-tight">{game.name}</p>
-                {game.badge && (
-                  <span className={`mt-1.5 inline-block text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded border ${game.badgeColor}`}>
-                    {game.badge}
+          {GAMES.map((game, i) => {
+            const isLive  = liveGameNames.has(game.name);
+            const isToday = !isLive && todayGameNames.has(game.name);
+            return (
+              <motion.button
+                key={game.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+                onClick={() => setSelected(game)}
+                className={`relative border rounded-2xl p-5 flex flex-col items-center text-center gap-3 transition-all group
+                  ${isLive
+                    ? "bg-red-500/8 border-red-500/40 ring-1 ring-red-500/30 hover:bg-red-500/12"
+                    : isToday
+                    ? "bg-gold-500/8 border-gold-500/35 ring-1 ring-gold-500/20 hover:bg-gold-500/12"
+                    : `bg-navy-800/60 ${game.border} hover:bg-navy-700/60 hover:border-opacity-60`
+                  }`}
+              >
+                {/* Live / Today ribbon */}
+                {isLive && (
+                  <span className="absolute top-2 right-2 flex items-center gap-1 bg-red-500 text-white text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded-full animate-pulse">
+                    <Radio className="w-2.5 h-2.5" /> LIVE
                   </span>
                 )}
-              </div>
-            </motion.button>
-          ))}
+                {isToday && (
+                  <span className="absolute top-2 right-2 bg-gold-500/20 text-gold-400 border border-gold-500/30 text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded-full">
+                    TODAY
+                  </span>
+                )}
+
+                <div className={`w-12 h-12 rounded-xl ${isLive ? "bg-red-500/20" : isToday ? "bg-gold-500/15" : game.iconBg} flex items-center justify-center ${isLive ? "text-red-400" : isToday ? "text-gold-400" : game.color} group-hover:scale-110 transition-transform`}>
+                  {game.icon}
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-sm leading-tight">{game.name}</p>
+                  {!isLive && !isToday && game.badge && (
+                    <span className={`mt-1.5 inline-block text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded border ${game.badgeColor}`}>
+                      {game.badge}
+                    </span>
+                  )}
+                </div>
+              </motion.button>
+            );
+          })}
         </div>
 
         {/* Footer CTA */}
@@ -396,6 +443,7 @@ export default function StreamGamesPage() {
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
               className="fixed inset-0 z-50 flex items-center justify-center p-4"
               onClick={() => setSelected(null)}
+
             >
               <div className={`bg-navy-900 border ${selected.border} rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto`}
                 onClick={(e) => e.stopPropagation()}
@@ -424,6 +472,20 @@ export default function StreamGamesPage() {
                 </div>
 
                 <div className="px-6 py-5 space-y-5">
+                  {/* Live / Today banner inside overlay */}
+                  {liveGameNames.has(selected.name) && (
+                    <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-3">
+                      <Radio className="w-4 h-4 text-red-400 animate-pulse shrink-0" />
+                      <p className="text-red-400 font-bold text-sm">This game is LIVE right now — join the stream!</p>
+                    </div>
+                  )}
+                  {!liveGameNames.has(selected.name) && todayGameNames.has(selected.name) && (
+                    <div className="flex items-center gap-2.5 bg-gold-500/10 border border-gold-500/25 rounded-xl px-4 py-3">
+                      <span className="text-gold-400 text-lg shrink-0">📅</span>
+                      <p className="text-gold-300 font-semibold text-sm">Scheduled for today — don&apos;t miss it!</p>
+                    </div>
+                  )}
+
                   <p className="text-gray-400 text-sm leading-relaxed">{selected.description}</p>
 
                   <div>
