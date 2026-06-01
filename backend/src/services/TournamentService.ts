@@ -92,28 +92,18 @@ export class TournamentService {
 
   // ─── Bracket builder ──────────────────────────────────────────────────────
 
-  /**
-   * Generates a standard single-elimination bracket.
-   * Seeding: 1 vs 8, 4 vs 5, 3 vs 6, 2 vs 7  (for 8 players)
-   */
-  private static seedPairings(n: number): [number, number][] {
-    // Build seeded bracket pairs for power-of-2 field
-    const pairs: [number, number][] = [];
-    const slots = Array.from({ length: n }, (_, i) => i + 1);
-    const buildPairs = (s: number[]): [number, number][] => {
-      if (s.length === 2) return [[s[0], s[1]]];
-      const half = s.length / 2;
-      const top = s.slice(0, half);
-      const bottom = [...s.slice(half)].reverse();
-      const result: [number, number][] = [];
-      for (let i = 0; i < top.length; i++) result.push([top[i], bottom[i]]);
-      return result;
-    };
-    return buildPairs(slots);
-  }
-
   private static totalRounds(n: number): number {
     return Math.ceil(Math.log2(n));
+  }
+
+  /** Fisher-Yates shuffle */
+  private static shuffle<T>(arr: T[]): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
   }
 
   // ─── ADMIN: Create ─────────────────────────────────────────────────────────
@@ -312,7 +302,9 @@ export class TournamentService {
 
     const n = participants.length;
     const rounds = TournamentService.totalRounds(n);
-    const pairings = TournamentService.seedPairings(n);
+
+    // Randomly shuffle all participants — slot calls already set, matchups are pure luck
+    const shuffled = TournamentService.shuffle(participants);
 
     // Create all match shells first (for nextMatchId links)
     // Round 1 has ceil(n/2) matches, subsequent rounds halve each time
@@ -349,12 +341,11 @@ export class TournamentService {
       }
     }
 
-    // Seed round 1 participants
+    // Pair shuffled participants sequentially: [0,1], [2,3], [4,5] ...
     const round1Matches = createdMatches.filter((m) => m.round === 1);
-    for (let i = 0; i < pairings.length && i < round1Matches.length; i++) {
-      const [seedA, seedB] = pairings[i];
-      const pA = participants[seedA - 1];
-      const pB = participants[seedB - 1];
+    for (let i = 0; i < round1Matches.length; i++) {
+      const pA = shuffled[i * 2];
+      const pB = shuffled[i * 2 + 1];
       await prisma.tournamentMatchParticipant.createMany({
         data: [
           { matchId: round1Matches[i].id, participantId: pA.id, slotCall: pA.currentSlot },
