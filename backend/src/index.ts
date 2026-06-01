@@ -94,10 +94,12 @@ app.use(
   })
 );
 
-// Rate limiting
+// Global rate limiter — GET requests are skipped (per-route limiters cover them).
+// Only POST/PUT/DELETE write operations are globally capped.
 const limiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
   max: env.RATE_LIMIT_MAX_REQUESTS,
+  skip: (req) => req.method === 'GET',
   message: {
     error: 'Too many requests from this IP, please try again later.',
   },
