@@ -58,6 +58,8 @@ model User {
   wonGames               GuessTheBalance[]     @relation("GuessTheBalanceWinner")
   guessSubmissions       GuessSubmission[]
   milestoneClaims        MilestoneClaim[]
+  createdTournaments     Tournament[]          @relation("TournamentCreator")
+  tournamentParticipations TournamentParticipant[] @relation("TournamentParticipants")
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")
@@ -433,6 +435,100 @@ enum GuessTheBalanceStatus {
   OPEN
   CLOSED
   COMPLETED
+}
+
+enum TournamentStatus {
+  DRAFT
+  REGISTRATION
+  SLOT_SELECTION
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MatchStatus {
+  PENDING
+  SLOT_SELECTION
+  ACTIVE
+  COMPLETED
+}
+
+model Tournament {
+  id               String                  @id @default(uuid())
+  title            String
+  status           TournamentStatus        @default(DRAFT)
+  maxPlayers       Int                     @default(8) @map("max_players")
+  slotTimerSeconds Int                     @default(180) @map("slot_timer_seconds")
+  currentRound     Int                     @default(0) @map("current_round")
+  createdById      String                  @map("created_by_id")
+  createdAt        DateTime                @default(now()) @map("created_at")
+  updatedAt        DateTime                @updatedAt @map("updated_at")
+  createdBy        User                    @relation("TournamentCreator", fields: [createdById], references: [id])
+  participants     TournamentParticipant[]
+  matches          TournamentMatch[]
+
+  @@map("tournaments")
+}
+
+model TournamentParticipant {
+  id                  String                       @id @default(uuid())
+  tournamentId        String                       @map("tournament_id")
+  userId              String                       @map("user_id")
+  seed                Int?
+  currentSlot         String?                      @map("current_slot")
+  slotConfirmed       Boolean                      @default(false) @map("slot_confirmed")
+  slotDeadline        DateTime?                    @map("slot_deadline")
+  eliminated          Boolean                      @default(false)
+  finalPosition       Int?                         @map("final_position")
+  createdAt           DateTime                     @default(now()) @map("created_at")
+  tournament          Tournament                   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user                User                         @relation("TournamentParticipants", fields: [userId], references: [id], onDelete: Cascade)
+  matchParticipations TournamentMatchParticipant[]
+
+  @@unique([tournamentId, userId])
+  @@map("tournament_participants")
+}
+
+model TournamentEntry {
+  id           String   @id @default(uuid())
+  tournamentId String   @map("tournament_id")
+  userId       String   @map("user_id")
+  enteredAt    DateTime @default(now()) @map("entered_at")
+
+  @@unique([tournamentId, userId])
+  @@map("tournament_entries")
+}
+
+model TournamentMatch {
+  id           String                       @id @default(uuid())
+  tournamentId String                       @map("tournament_id")
+  round        Int
+  matchNumber  Int                          @map("match_number")
+  status       MatchStatus                  @default(PENDING)
+  winnerId     String?                      @map("winner_id")
+  nextMatchId  String?                      @map("next_match_id")
+  slotDeadline DateTime?                    @map("slot_deadline")
+  createdAt    DateTime                     @default(now()) @map("created_at")
+  updatedAt    DateTime                     @updatedAt @map("updated_at")
+  tournament   Tournament                   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  participants TournamentMatchParticipant[]
+
+  @@unique([tournamentId, round, matchNumber])
+  @@map("tournament_matches")
+}
+
+model TournamentMatchParticipant {
+  id              String                @id @default(uuid())
+  matchId         String                @map("match_id")
+  participantId   String                @map("participant_id")
+  slotCall        String?               @map("slot_call")
+  slotConfirmed   Boolean               @default(false) @map("slot_confirmed")
+  slotConfirmedAt DateTime?             @map("slot_confirmed_at")
+  match           TournamentMatch       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  participant     TournamentParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, participantId])
+  @@map("tournament_match_participants")
 }
 
 model StreamEvent {

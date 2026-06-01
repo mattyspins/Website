@@ -140,6 +140,8 @@ import checkinRoutes from '@/routes/checkin';
 import publicProfileRoutes from '@/routes/publicProfile';
 import raffleRoutes from '@/routes/raffles';
 import viewingRoutes from '@/routes/viewing';
+import tournamentRoutes from '@/routes/tournament';
+import { setTournamentIO } from '@/controllers/TournamentController';
 // import bonusHuntRoutes from '@/routes/bonusHunt';
 
 app.use('/api/auth', authRoutes);
@@ -157,7 +159,11 @@ app.use('/api/checkin', checkinRoutes);
 app.use('/api/users', publicProfileRoutes);
 app.use('/api/raffles', raffleRoutes);
 app.use('/api/viewing', viewingRoutes);
+app.use('/api/tournaments', tournamentRoutes);
 // app.use('/api/bonus-hunt', bonusHuntRoutes);
+
+// Wire up tournament real-time events
+setTournamentIO(io);
 
 // Socket.IO connection handling
 io.on('connection', socket => {
@@ -175,6 +181,14 @@ io.on('connection', socket => {
   socket.on('leaveLeaderboard', (leaderboardId: string) => {
     socket.leave(`leaderboard:${leaderboardId}`);
     logger.info(`Socket ${socket.id} left leaderboard room: ${leaderboardId}`);
+  });
+
+  // Tournament rooms
+  socket.on('joinTournament', (tournamentId: string) => {
+    socket.join(`tournament:${tournamentId}`);
+  });
+  socket.on('leaveTournament', (tournamentId: string) => {
+    socket.leave(`tournament:${tournamentId}`);
   });
 
   socket.on('disconnect', () => {
