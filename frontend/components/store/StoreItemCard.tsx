@@ -31,14 +31,14 @@ export default function StoreItemCard({
   isAuthenticated,
 }: StoreItemCardProps) {
   const isOutOfStock = item.stock === 0;
-  const totalStock = (item.metadata as any)?.totalStock ?? item.stock;
-  const soldCount = totalStock > 0 ? totalStock - item.stock : 0;
   const timeLeft = formatTimeRemaining((item.metadata as any)?.endDate);
 
   const stockDisplay =
     item.stock === -1
       ? null
-      : `${soldCount >= 0 ? soldCount : "?"}/${totalStock > 0 ? totalStock : "?"}`;
+      : item.stock === 0
+      ? "Sold out"
+      : `${item.stock} left`;
 
   return (
     <motion.div
