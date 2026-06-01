@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Crown, Ticket, Swords, Zap, Trophy, Skull, Users, Star, ExternalLink, Clock, X, Radio } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { API_ENDPOINTS } from "@/lib/api";
 
 /* ─── Types ─────────────────────────────────────────── */
@@ -331,6 +332,7 @@ function RaffleList() {
 
 /* ─── Page ───────────────────────────────────────────── */
 export default function StreamGamesPage() {
+  const router = useRouter();
   const [selected, setSelected] = useState<Game | null>(null);
   const [liveGameNames, setLiveGameNames] = useState<Set<string>>(new Set());
   const [todayGameNames, setTodayGameNames] = useState<Set<string>>(new Set());
@@ -393,7 +395,7 @@ export default function StreamGamesPage() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
-                onClick={() => setSelected(game)}
+                onClick={() => game.link ? router.push(game.link) : setSelected(game)}
                 className={`relative border rounded-2xl p-5 flex flex-col items-center text-center gap-3 transition-all group
                   w-[calc(50%-6px)] sm:w-[calc(33.333%-8px)] lg:w-[calc(25%-9px)]
                   ${isLive
