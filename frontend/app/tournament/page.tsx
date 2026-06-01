@@ -11,7 +11,7 @@ import {
   MyEntryResponse,
 } from "@/types/tournament";
 import { getSocket } from "@/lib/socket";
-import { useAuth } from "@/lib/auth";
+import { API_ENDPOINTS } from "@/lib/api";
 
 // ─── Slot Modal ────────────────────────────────────────────────────────────────
 function SlotModal({
@@ -114,7 +114,7 @@ function StatusBadge({ status }: { status: TournamentStatus }) {
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function TournamentPage() {
-  const { user } = useAuth();
+  const [user, setUser] = useState<{ id: string; isAdmin: boolean } | null>(null);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [selected, setSelected] = useState<Tournament | null>(null);
   const [myEntry, setMyEntry] = useState<MyEntryResponse | null>(null);
@@ -122,6 +122,15 @@ export default function TournamentPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => { if (d.user) setUser(d.user); })
+      .catch(() => {});
+  }, []);
 
   const loadTournaments = useCallback(async () => {
     try {

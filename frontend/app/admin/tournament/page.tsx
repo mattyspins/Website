@@ -10,7 +10,7 @@ import {
   TournamentMatch,
   MatchStatus,
 } from "@/types/tournament";
-import { useAuth } from "@/lib/auth";
+import { API_ENDPOINTS } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 
 // ─── Create Modal ─────────────────────────────────────────────────────────────
@@ -158,8 +158,8 @@ function DrawModal({
 
 // ─── Main Admin Page ──────────────────────────────────────────────────────────
 export default function AdminTournamentPage() {
-  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const [authLoading, setAuthLoading] = useState(true);
 
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [selected, setSelected] = useState<Tournament | null>(null);
@@ -171,8 +171,16 @@ export default function AdminTournamentPage() {
   const [winnerMatchId, setWinnerMatchId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && (!user || !user.isAdmin)) router.push("/");
-  }, [user, authLoading]);
+    const token = localStorage.getItem("access_token");
+    if (!token) { router.push("/"); return; }
+    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.user?.isAdmin) router.push("/");
+        else setAuthLoading(false);
+      })
+      .catch(() => router.push("/"));
+  }, []);
 
   const loadTournaments = useCallback(async () => {
     try {
