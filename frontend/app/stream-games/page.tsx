@@ -19,6 +19,7 @@ interface Game {
   badge?: string; badgeColor?: string;
   description: string; howItWorks: string[]; rewards: string[]; note: string;
   isRaffle?: boolean;
+  link?: string; linkLabel?: string;
 }
 
 /* ─── Game data ──────────────────────────────────────── */
@@ -69,6 +70,17 @@ const GAMES: Game[] = [
     howItWorks: ["Viewers are entered into the tournament bracket", "Players choose bonus buys / slots during their rounds", "Highest multipliers advance through each stage 👀", "Winners progress until one player is crowned Tournament Champion 👑", "Every round is do-or-die — one huge hit can change everything 🔥"],
     rewards: ["Website points", "Giveaway entries", "Community rewards", "Special event prizes"],
     note: "Make sure you're in stream from the start to secure your place 👊",
+    link: "/tournament", linkLabel: "View Tournament Bracket",
+  },
+  {
+    id: "guess-the-balance", name: "Guess the Balance",
+    tagline: "Predict the final balance of the bonus hunt",
+    icon: <span className="text-xl leading-none">🎯</span>, color: "text-emerald-400", iconBg: "bg-emerald-500/15", border: "border-emerald-500/20",
+    description: "Matty runs a bonus hunt and you predict what the final balance will be. The viewer closest to the actual result wins! Submit your guess before the hunt closes and watch to see if your prediction holds up 🎯",
+    howItWorks: ["A bonus hunt session is opened during stream", "Viewers submit their predicted final balance", "Guesses are locked once the hunt begins", "Matty opens all the bonuses live", "The viewer closest to the final balance wins 🏆"],
+    rewards: ["Website points", "Giveaway entries", "Community rewards"],
+    note: "Guess before the hunt starts — late entries are locked out 👊",
+    link: "/bonus-hunt", linkLabel: "Play Guess the Balance",
   },
   {
     id: "last-man-standing", name: "Last Man Standing",
@@ -513,14 +525,14 @@ export default function StreamGamesPage() {
 
                   <p className="text-gray-500 text-xs border-t border-white/5 pt-4">{selected.note}</p>
 
-                  {selected.id === "slot-tournament" && (
+                  {selected.link && (
                     <Link
-                      href="/tournament"
+                      href={selected.link}
                       onClick={() => setSelected(null)}
-                      className="flex items-center justify-center gap-2 w-full bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 font-semibold py-3 rounded-xl transition-colors text-sm"
+                      className={`flex items-center justify-center gap-2 w-full font-semibold py-3 rounded-xl transition-colors text-sm border ${selected.iconBg} ${selected.color} border-current/30 hover:opacity-80`}
                     >
-                      <Trophy className="w-4 h-4" />
-                      View Tournament Bracket
+                      {selected.icon}
+                      {selected.linkLabel ?? "Play Now"}
                     </Link>
                   )}
 
