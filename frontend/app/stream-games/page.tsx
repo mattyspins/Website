@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Crown, Ticket, Swords, Zap, Trophy, Skull, Users, Star, ExternalLink, Clock, X, Radio } from "lucide-react";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { API_ENDPOINTS } from "@/lib/api";
 
 /* ─── Types ─────────────────────────────────────────── */
@@ -511,6 +512,17 @@ export default function StreamGamesPage() {
                   </div>
 
                   <p className="text-gray-500 text-xs border-t border-white/5 pt-4">{selected.note}</p>
+
+                  {selected.id === "slot-tournament" && (
+                    <Link
+                      href="/tournament"
+                      onClick={() => setSelected(null)}
+                      className="flex items-center justify-center gap-2 w-full bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 font-semibold py-3 rounded-xl transition-colors text-sm"
+                    >
+                      <Trophy className="w-4 h-4" />
+                      View Tournament Bracket
+                    </Link>
+                  )}
 
                   {selected.isRaffle && (
                     <div>

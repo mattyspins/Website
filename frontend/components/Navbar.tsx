@@ -12,6 +12,7 @@ const navItems = [
   { name: "Milestones", href: "/milestones" },
   { name: "Guess the Balance", href: "/bonus-hunt" },
   { name: "Stream Games", href: "/stream-games" },
+  { name: "Tournament", href: "/tournament" },
   { name: "Rewards", href: "/rewards" },
   { name: "Store", href: "/store" },
 ];
