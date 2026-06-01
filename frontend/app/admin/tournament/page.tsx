@@ -49,27 +49,40 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
         />
 
         <label className="block text-sm text-white/60 mb-1">Max Players</label>
-        <select
-          value={form.maxPlayers}
-          onChange={(e) => setForm({ ...form, maxPlayers: +e.target.value })}
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white mb-4 focus:outline-none focus:border-yellow-400/50"
-        >
+        <div className="grid grid-cols-4 gap-2 mb-4">
           {[4, 8, 16, 32].map((n) => (
-            <option key={n} value={n}>{n} players</option>
+            <button
+              key={n}
+              type="button"
+              onClick={() => setForm({ ...form, maxPlayers: n })}
+              className={`py-2.5 rounded-lg text-sm font-semibold border transition-colors ${
+                form.maxPlayers === n
+                  ? "bg-yellow-400 text-black border-yellow-400"
+                  : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
+              }`}
+            >
+              {n}
+            </button>
           ))}
-        </select>
+        </div>
 
         <label className="block text-sm text-white/60 mb-1">Slot Timer</label>
-        <select
-          value={form.slotTimerSeconds}
-          onChange={(e) => setForm({ ...form, slotTimerSeconds: +e.target.value })}
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white mb-6 focus:outline-none focus:border-yellow-400/50"
-        >
-          <option value={120}>2 minutes</option>
-          <option value={180}>3 minutes</option>
-          <option value={240}>4 minutes</option>
-          <option value={300}>5 minutes</option>
-        </select>
+        <div className="grid grid-cols-4 gap-2 mb-6">
+          {[{ label: "2 min", value: 120 }, { label: "3 min", value: 180 }, { label: "4 min", value: 240 }, { label: "5 min", value: 300 }].map(({ label, value }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setForm({ ...form, slotTimerSeconds: value })}
+              className={`py-2.5 rounded-lg text-sm font-semibold border transition-colors ${
+                form.slotTimerSeconds === value
+                  ? "bg-yellow-400 text-black border-yellow-400"
+                  : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
         <div className="flex gap-2">
           <button
