@@ -1,13 +1,14 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { TournamentService } from '@/services/TournamentService';
 import { Server as SocketIOServer } from 'socket.io';
+import { AuthenticatedRequest } from '@/middleware/auth';
 
 let _io: SocketIOServer | undefined;
 export const setTournamentIO = (io: SocketIOServer) => { _io = io; };
 
-const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) =>
-  (req: Request, res: Response, next: NextFunction) => fn(req, res, next).catch(next);
+const asyncHandler = (fn: (req: AuthenticatedRequest, res: Response, next: NextFunction) => Promise<void>) =>
+  (req: AuthenticatedRequest, res: Response, next: NextFunction) => fn(req, res, next).catch(next);
 
 const createSchema = z.object({
   title: z.string().min(1).max(100),
