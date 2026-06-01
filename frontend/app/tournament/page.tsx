@@ -115,6 +115,7 @@ function StatusBadge({ status }: { status: TournamentStatus }) {
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function TournamentPage() {
   const [user, setUser] = useState<{ id: string; isAdmin: boolean } | null>(null);
+  const [showRules, setShowRules] = useState(false);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [selected, setSelected] = useState<Tournament | null>(null);
   const [myEntry, setMyEntry] = useState<MyEntryResponse | null>(null);
@@ -295,10 +296,67 @@ export default function TournamentPage() {
     <div className="min-h-screen bg-navy-950 text-white">
       <div className="max-w-7xl mx-auto px-4 pt-28 pb-16">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-1">Tournament</h1>
-          <p className="text-white/50">Single elimination bracket — enter the draw and compete for glory</p>
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-1">Tournament</h1>
+            <p className="text-white/50">Single elimination bracket — enter the draw and compete for glory</p>
+          </div>
+          <button
+            onClick={() => setShowRules(true)}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs font-medium transition-colors"
+          >
+            <span>📋</span> Rules
+          </button>
         </div>
+
+        {/* Rules panel */}
+        {showRules && (
+          <div className="fixed inset-0 z-50 flex justify-end">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowRules(false)} />
+            <div className="relative w-full max-w-sm bg-navy-900 border-l border-white/10 h-full overflow-y-auto p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-bold text-white">How it works</h2>
+                <button onClick={() => setShowRules(false)} className="text-white/40 hover:text-white transition-colors text-xl leading-none">✕</button>
+              </div>
+
+              <div className="space-y-5 text-sm text-white/70 leading-relaxed">
+                <p className="text-white/90">Compete against other viewers in a single-elimination bracket. The highest multiplier each round advances until one player is crowned <span className="text-yellow-400 font-semibold">Tournament Champion 👑</span>.</p>
+
+                <div>
+                  <p className="text-white font-semibold mb-2 text-xs uppercase tracking-widest">The Flow</p>
+                  <ol className="space-y-2">
+                    {[
+                      "Admin opens registration — click Enter Draw to join the luck draw",
+                      "Admin draws the participants — winners are randomly selected",
+                      "Each participant names a slot call within the timer",
+                      "Participants are randomly shuffled into the bracket",
+                      "Each round, Matty plays everyone's slots live on stream",
+                      "The highest multiplier advances to the next round",
+                      "Every round is do-or-die — one huge hit can change everything 🔥",
+                      "Last player standing is crowned Tournament Champion 🏆",
+                    ].map((step, i) => (
+                      <li key={i} className="flex gap-2.5">
+                        <span className="text-yellow-400 font-bold shrink-0">{i + 1}.</span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                  <p className="text-white font-semibold mb-2 text-xs uppercase tracking-widest">🎁 Rewards</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["Website points", "Giveaway entries", "Community rewards", "Special event prizes"].map((r) => (
+                      <span key={r} className="bg-white/5 border border-white/10 text-white/60 text-xs px-2.5 py-1 rounded-lg">{r}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="text-white/40 text-xs border-t border-white/5 pt-4">Make sure you&apos;re in stream from the start to secure your place 👊</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-300 text-sm">
