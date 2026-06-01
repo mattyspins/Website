@@ -171,7 +171,7 @@ export class TournamentService {
     const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!t) throw createError(404, 'Tournament not found');
     if (t.status !== TournamentStatus.REGISTRATION) throw createError(400, 'Must be in REGISTRATION phase');
-    if (count < 2 || count > t.maxPlayers) throw createError(400, `count must be between 2 and ${t.maxPlayers}`);
+    if (count < 1 || count > t.maxPlayers) throw createError(400, `count must be between 1 and ${t.maxPlayers}`);
 
     const entries = await prisma.tournamentEntry.findMany({ where: { tournamentId } });
     if (entries.length < count) throw createError(400, `Not enough entries (${entries.length}) to draw ${count} players`);

@@ -114,13 +114,17 @@ function DrawModal({
   onClose: () => void;
   onDraw: (count: number) => void;
 }) {
-  const [count, setCount] = useState(tournament.maxPlayers);
+  const [count, setCount] = useState(Math.min(tournament.maxPlayers, Math.max(tournament.entryCount, 1)));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
-    if (count < 2 || count > tournament.entryCount) {
-      setError(`Need at least 2 entries. Currently ${tournament.entryCount} entered.`);
+    if (count < 1) {
+      setError("Must draw at least 1 participant.");
+      return;
+    }
+    if (count > tournament.entryCount) {
+      setError(`Only ${tournament.entryCount} entr${tournament.entryCount === 1 ? "y" : "ies"} in the draw.`);
       return;
     }
     setLoading(true);
@@ -145,8 +149,8 @@ function DrawModal({
         <label className="block text-sm text-white/60 mb-1">Number of spots to draw</label>
         <input
           type="number"
-          min={2}
-          max={Math.min(tournament.maxPlayers, tournament.entryCount)}
+          min={1}
+          max={tournament.entryCount}
           value={count}
           onChange={(e) => setCount(+e.target.value)}
           className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white mb-6 focus:outline-none focus:border-yellow-400/50"
@@ -269,7 +273,7 @@ export default function AdminTournamentPage() {
 
   return (
     <div className="min-h-screen bg-navy-950 text-white">
-      <div className="max-w-7xl mx-auto px-4 py-10">
+      <div className="max-w-7xl mx-auto px-4 pt-24 pb-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -343,7 +347,7 @@ export default function AdminTournamentPage() {
                   {selected.status === TournamentStatus.REGISTRATION && (
                     <button
                       onClick={() => setShowDraw(true)}
-                      disabled={actionLoading || selected.entryCount < 2}
+                      disabled={actionLoading || selected.entryCount < 1}
                       className="px-4 py-2 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-300 disabled:opacity-40 transition-colors text-sm"
                     >
                       🎲 Draw Participants
