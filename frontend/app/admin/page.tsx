@@ -23,6 +23,7 @@ import {
   Shield,
   ClipboardList,
   Ticket,
+  FileText,
 } from "lucide-react";
 
 type TabId =
@@ -30,22 +31,18 @@ type TabId =
   | "users"
   | "claims"
   | "raffles"
-  | "leaderboards"
-  | "guessthebalance"
   | "store"
   | "schedule"
   | "milestones";
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
-  { id: "overview",        label: "Overview",          icon: LayoutDashboard },
-  { id: "users",           label: "Users",             icon: Users },
-  { id: "claims",          label: "Claims",            icon: ClipboardList },
-  { id: "raffles",         label: "Raffles",           icon: Ticket },
-  { id: "leaderboards",    label: "Leaderboards",      icon: Trophy },
-  { id: "guessthebalance", label: "Guess the Balance", icon: Target },
-  { id: "store",           label: "Store Items",       icon: ShoppingBag },
-  { id: "milestones",      label: "Milestones",        icon: Medal },
-  { id: "schedule",        label: "Schedule",          icon: Calendar },
+  { id: "overview",  label: "Overview",    icon: LayoutDashboard },
+  { id: "users",     label: "Users",       icon: Users },
+  { id: "claims",    label: "Claims",      icon: ClipboardList },
+  { id: "raffles",   label: "Raffles",     icon: Ticket },
+  { id: "store",     label: "Store",       icon: ShoppingBag },
+  { id: "milestones",label: "Milestones",  icon: Medal },
+  { id: "schedule",  label: "Schedule",    icon: Calendar },
 ];
 
 export default function AdminDashboard() {
@@ -136,7 +133,66 @@ export default function AdminDashboard() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {activeTab === "overview" && <AdminStats />}
+        {activeTab === "overview" && (
+          <div className="space-y-8">
+            <AdminStats />
+            {/* Quick Access */}
+            <div>
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+                Quick Access
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {[
+                  {
+                    href: "/admin/leaderboards",
+                    icon: <Trophy className="w-5 h-5 text-gold-400" />,
+                    bg: "bg-gold-500/10",
+                    title: "Leaderboards",
+                    desc: "Create leaderboards, add wager entries, export CSV",
+                  },
+                  {
+                    href: "/admin/guess-the-balance",
+                    icon: <Target className="w-5 h-5 text-pink-400" />,
+                    bg: "bg-pink-500/10",
+                    title: "Guess the Balance",
+                    desc: "Create games, open/close guessing, award winners",
+                  },
+                  {
+                    href: "/admin/tournament",
+                    icon: <Trophy className="w-5 h-5 text-purple-400" />,
+                    bg: "bg-purple-500/10",
+                    title: "Tournament",
+                    desc: "Create tournaments, draw participants, manage bracket & declare winners",
+                  },
+                  {
+                    href: "/admin/audit-logs",
+                    icon: <FileText className="w-5 h-5 text-blue-400" />,
+                    bg: "bg-blue-500/10",
+                    title: "Audit Logs",
+                    desc: "Full history of all admin actions with before/after values",
+                  },
+                ].map(({ href, icon, bg, title, desc }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    className="group bg-navy-800/60 border border-white/6 hover:border-white/12 rounded-xl p-5 flex items-start gap-4 transition-all hover:bg-navy-800/90"
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${bg}`}>
+                      {icon}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-white font-semibold text-sm">{title}</p>
+                        <ExternalLink className="w-3.5 h-3.5 text-gray-600 group-hover:text-gray-400 transition-colors shrink-0" />
+                      </div>
+                      <p className="text-gray-500 text-xs mt-0.5 leading-relaxed">{desc}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {activeTab === "users" && <AdminUsers />}
 
@@ -147,67 +203,6 @@ export default function AdminDashboard() {
         {activeTab === "raffles" && <AdminRaffles />}
 
         {activeTab === "store" && <AdminStore />}
-
-        {activeTab === "leaderboards" && (
-          <div className="bg-navy-800/60 border border-white/6 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-              <h2 className="text-xl font-bold text-white">Leaderboard Management</h2>
-              <a
-                href="/admin/leaderboards"
-                className="flex items-center gap-2 bg-gold-500 hover:bg-gold-600 text-white px-5 py-2 rounded-lg transition-colors font-semibold text-sm"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open Full Manager
-              </a>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-400">
-              <div className="bg-navy-900/40 border border-white/5 rounded-lg p-4">
-                <p className="text-white font-semibold mb-1">Create Leaderboard</p>
-                <p>Set title, description, dates, and prize pool</p>
-              </div>
-              <div className="bg-navy-900/40 border border-white/5 rounded-lg p-4">
-                <p className="text-white font-semibold mb-1">Add Wagers</p>
-                <p>Manually record user wagers to track rankings</p>
-              </div>
-              <div className="bg-navy-900/40 border border-white/5 rounded-lg p-4">
-                <p className="text-white font-semibold mb-1">Real-time Rankings</p>
-                <p>Rankings update automatically as wagers are added</p>
-              </div>
-              <div className="bg-navy-900/40 border border-white/5 rounded-lg p-4">
-                <p className="text-white font-semibold mb-1">Export CSV</p>
-                <p>Download leaderboard data for record keeping</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "guessthebalance" && (
-          <div className="bg-navy-800/60 border border-white/6 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-              <h2 className="text-xl font-bold text-white">Guess the Balance</h2>
-              <a
-                href="/admin/guess-the-balance"
-                className="flex items-center gap-2 bg-gold-500 hover:bg-gold-600 text-white px-5 py-2 rounded-lg transition-colors font-semibold text-sm"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Manage Games
-              </a>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-400">
-              {[
-                ["Create Game", "Set starting balance, number of bonuses, and break-even multiplier"],
-                ["Open Guessing", "Allow viewers to submit their guesses"],
-                ["Close Guessing", "Stop accepting new guesses before revealing results"],
-                ["Complete & Award Coins", "Enter final balance, winner receives coins automatically"],
-              ].map(([title, desc]) => (
-                <div key={title} className="bg-navy-900/40 border border-white/5 rounded-lg p-4">
-                  <p className="text-white font-semibold mb-1">{title}</p>
-                  <p>{desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {activeTab === "schedule" && <AdminSchedule />}
 
