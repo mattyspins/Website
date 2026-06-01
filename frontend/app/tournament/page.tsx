@@ -309,45 +309,50 @@ export default function TournamentPage() {
           </button>
         </div>
 
-        {/* Rules panel */}
+        {/* Rules modal */}
         {showRules && (
-          <div className="fixed inset-0 z-50 flex justify-end">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowRules(false)} />
-            <div className="relative w-full max-w-sm bg-navy-900 border-l border-white/10 h-full overflow-y-auto p-6 shadow-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-bold text-white">How it works</h2>
-                <button onClick={() => setShowRules(false)} className="text-white/40 hover:text-white transition-colors text-xl leading-none">✕</button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowRules(false)} />
+            <div className="relative w-full max-w-md bg-navy-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xl">🏆</span>
+                  <h2 className="text-base font-bold text-white">How it works</h2>
+                </div>
+                <button onClick={() => setShowRules(false)} className="text-white/30 hover:text-white transition-colors text-lg leading-none">✕</button>
               </div>
 
-              <div className="space-y-5 text-sm text-white/70 leading-relaxed">
+              {/* Body */}
+              <div className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto text-sm text-white/70 leading-relaxed">
                 <p className="text-white/90">Compete against other viewers in a single-elimination bracket. The highest multiplier each round advances until one player is crowned <span className="text-yellow-400 font-semibold">Tournament Champion 👑</span>.</p>
 
                 <div>
-                  <p className="text-white font-semibold mb-2 text-xs uppercase tracking-widest">The Flow</p>
-                  <ol className="space-y-2">
+                  <p className="text-white font-bold mb-3 text-xs uppercase tracking-widest">The Flow</p>
+                  <ol className="space-y-2.5">
                     {[
-                      "Admin opens registration — click Enter Draw to join the luck draw",
-                      "Admin draws the participants — winners are randomly selected",
-                      "Each participant names a slot call within the timer",
+                      "Admin opens registration — click Enter Draw to join",
+                      "Admin draws the participants from everyone who entered",
+                      "Each selected participant names their slot call within the timer",
                       "Participants are randomly shuffled into the bracket",
                       "Each round, Matty plays everyone's slots live on stream",
                       "The highest multiplier advances to the next round",
                       "Every round is do-or-die — one huge hit can change everything 🔥",
                       "Last player standing is crowned Tournament Champion 🏆",
                     ].map((step, i) => (
-                      <li key={i} className="flex gap-2.5">
-                        <span className="text-yellow-400 font-bold shrink-0">{i + 1}.</span>
+                      <li key={i} className="flex gap-3">
+                        <span className="text-yellow-400 font-bold shrink-0 w-4">{i + 1}.</span>
                         <span>{step}</span>
                       </li>
                     ))}
                   </ol>
                 </div>
 
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                  <p className="text-white font-semibold mb-2 text-xs uppercase tracking-widest">🎁 Rewards</p>
+                <div className="bg-white/5 border border-white/8 rounded-xl p-4">
+                  <p className="text-white font-bold mb-2.5 text-xs uppercase tracking-widest">🎁 Rewards can include</p>
                   <div className="flex flex-wrap gap-2">
                     {["Website points", "Giveaway entries", "Community rewards", "Special event prizes"].map((r) => (
-                      <span key={r} className="bg-white/5 border border-white/10 text-white/60 text-xs px-2.5 py-1 rounded-lg">{r}</span>
+                      <span key={r} className="bg-white/5 border border-white/10 text-white/60 text-xs px-3 py-1 rounded-lg">{r}</span>
                     ))}
                   </div>
                 </div>
