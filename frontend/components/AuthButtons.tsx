@@ -110,38 +110,44 @@ export default function AuthButtons({ inline = false, onNavigate }: AuthButtonsP
   }, []);
 
   const handleDiscordLogin = async () => {
-    try {
-      setIsLoading(true);
-      // Call backend to get Discord OAuth URL
-      const response = await fetch(API_ENDPOINTS.AUTH_DISCORD_INITIATE, {
-        method: "GET",
-        credentials: "include",
-      });
+    setIsLoading(true);
+    // Retry once — Railway backend can have a cold-start delay
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const response = await fetch(API_ENDPOINTS.AUTH_DISCORD_INITIATE, {
+          method: "GET",
+          credentials: "include",
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to initiate Discord login");
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          // 429 rate limit
+          if (response.status === 429) {
+            error("Too Many Attempts", "Please wait a moment before trying again.");
+            setIsLoading(false);
+            return;
+          }
+          throw new Error(errData.error || "Failed to initiate Discord login");
+        }
+
+        const data = await response.json();
+        if (data.success && data.authUrl) {
+          window.location.href = data.authUrl;
+          return;
+        }
+        error("Login Failed", "Failed to start Discord login. Please try again.");
+        setIsLoading(false);
+        return;
+      } catch (err) {
+        if (attempt === 2) {
+          console.error("Discord login error:", err);
+          error("Connection Error", "Could not reach the server. Please try again in a moment.");
+          setIsLoading(false);
+        } else {
+          // Wait 1.5s then retry
+          await new Promise((r) => setTimeout(r, 1500));
+        }
       }
-
-      const data = await response.json();
-
-      if (data.success && data.authUrl) {
-        // Redirect to Discord OAuth
-        window.location.href = data.authUrl;
-      } else {
-        console.error("Invalid response from server:", data);
-        error(
-          "Login Failed",
-          "Failed to start Discord login. Please try again.",
-        );
-      }
-    } catch (err) {
-      console.error("Discord login error:", err);
-      error(
-        "Connection Error",
-        "Failed to connect to authentication server. Please try again.",
-      );
-    } finally {
-      setIsLoading(false);
     }
   };
 
