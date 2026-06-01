@@ -39,8 +39,8 @@ const io = new SocketIOServer(server, {
   },
 });
 
-// Trust proxy for rate limiting behind reverse proxy
-app.set('trust proxy', 1);
+// Trust Railway's proxy chain (edge + load balancer = multiple hops)
+app.set('trust proxy', true);
 
 // Security middleware
 app.use(

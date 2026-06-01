@@ -96,7 +96,7 @@ const envSchema = Joi.object({
 
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: Joi.number().default(900000), // 15 minutes
-  RATE_LIMIT_MAX_REQUESTS: Joi.number().default(100),
+  RATE_LIMIT_MAX_REQUESTS: Joi.number().default(500),
 
   // Points
   POINTS_PER_MINUTE_VIEWING: Joi.number().default(1),
