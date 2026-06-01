@@ -492,17 +492,26 @@ export default function AdminTournamentPage() {
             )}
 
             {/* Completed summary */}
-            {selected.status === TournamentStatus.COMPLETED && (
-              <div className="bg-yellow-400/10 border border-yellow-400/20 rounded-xl p-6 text-center">
-                <div className="text-4xl mb-2">🏆</div>
-                <p className="text-yellow-300 font-bold text-lg">Tournament Complete!</p>
-                {selected.participants.find((p) => p.finalPosition === 1) && (
-                  <p className="text-white/60 text-sm mt-1">
-                    Winner: <span className="text-white font-medium">{selected.participants.find((p) => p.finalPosition === 1)?.displayName}</span>
-                  </p>
-                )}
-              </div>
-            )}
+            {selected.status === TournamentStatus.COMPLETED && (() => {
+              const champ = selected.participants.find((p) => p.finalPosition === 1);
+              return (
+                <div className="relative overflow-hidden bg-gradient-to-br from-yellow-500/10 via-amber-500/5 to-transparent border border-yellow-400/25 rounded-2xl p-8 text-center">
+                  {/* Glow */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/5 to-transparent pointer-events-none" />
+                  <div className="text-6xl mb-3 drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]">🏆</div>
+                  <p className="text-xs font-black uppercase tracking-[0.25em] text-yellow-400/70 mb-1">Tournament Complete</p>
+                  {champ && (
+                    <div className="mt-3 flex flex-col items-center gap-2">
+                      {champ.avatarUrl && (
+                        <img src={champ.avatarUrl} alt="" className="w-14 h-14 rounded-full ring-2 ring-yellow-400/60 shadow-[0_0_16px_rgba(250,204,21,0.3)]" />
+                      )}
+                      <p className="text-white font-bold text-xl">{champ.displayName}</p>
+                      {champ.currentSlot && <p className="text-white/40 text-sm italic">{champ.currentSlot}</p>}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
 
