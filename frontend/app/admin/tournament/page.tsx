@@ -294,32 +294,45 @@ export default function AdminTournamentPage() {
           </div>
         )}
 
-        {/* Tournament selector */}
-        {tournaments.length > 0 && (
-          <div className="flex gap-2 mb-6 flex-wrap">
-            {tournaments.map((t) => (
-              <button
+        {/* Tournament list — vertical cards */}
+        <div className="space-y-2 mb-6">
+          {tournaments.map((t) => {
+            const isActive = selected?.id === t.id;
+            const statusColor =
+              t.status === TournamentStatus.IN_PROGRESS ? "bg-green-500/20 text-green-400 border-green-500/30" :
+              t.status === TournamentStatus.REGISTRATION ? "bg-blue-500/20 text-blue-400 border-blue-500/30" :
+              t.status === TournamentStatus.SLOT_SELECTION ? "bg-yellow-400/20 text-yellow-300 border-yellow-400/30" :
+              t.status === TournamentStatus.COMPLETED ? "bg-white/5 text-white/30 border-white/10" :
+              "bg-white/5 text-white/30 border-white/10";
+            return (
+              <div
                 key={t.id}
                 onClick={() => setSelected(t)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                  selected?.id === t.id
-                    ? "bg-yellow-400/20 text-yellow-300 border-yellow-400/30"
-                    : "bg-white/5 text-white/60 hover:bg-white/10 border-white/10"
+                className={`cursor-pointer rounded-xl border transition-all duration-200 ${
+                  isActive ? "border-yellow-400/40 bg-yellow-400/5" : "border-white/8 bg-white/3 hover:border-white/15 hover:bg-white/5"
                 }`}
               >
-                {t.title}
-                <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
-                  t.status === TournamentStatus.IN_PROGRESS ? "bg-green-500/20 text-green-400" :
-                  t.status === TournamentStatus.REGISTRATION ? "bg-blue-500/20 text-blue-400" :
-                  t.status === TournamentStatus.COMPLETED ? "bg-white/10 text-white/30" :
-                  "bg-white/5 text-white/30"
-                }`}>
-                  {t.status.replace("_", " ")}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
+                <div className="flex items-center justify-between px-5 py-3.5 gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      t.status === TournamentStatus.IN_PROGRESS || t.status === TournamentStatus.REGISTRATION ? "bg-green-400 animate-pulse" :
+                      t.status === TournamentStatus.SLOT_SELECTION ? "bg-yellow-400 animate-pulse" : "bg-white/20"
+                    }`} />
+                    <span className="font-semibold text-white text-sm">{t.title}</span>
+                    <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${statusColor}`}>
+                      {t.status.replace(/_/g, " ")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-white/35">
+                    <span>{t.maxPlayers} spots</span>
+                    <span>{t.entryCount} entered</span>
+                    {isActive && <span className="text-yellow-400 text-sm">▾</span>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         {selected && (
           <div className="space-y-6">
@@ -434,43 +447,56 @@ export default function AdminTournamentPage() {
                       return (
                         <div key={match.id} className="p-4 bg-white/5 rounded-lg border border-white/5">
                           <div className="flex items-center justify-between gap-4 flex-wrap">
-                            <div>
-                              <p className="text-xs text-white/40 mb-1">Round {match.round} · Match {match.matchNumber}</p>
-                              <div className="flex items-center gap-3 text-sm">
-                                <span className={`font-medium ${!p1 ? "text-white/30" : "text-white"}`}>
-                                  {player1?.displayName ?? "TBD"}
-                                  {p1?.slotCall && <span className="text-white/40 text-xs ml-1">({p1.slotCall})</span>}
-                                  {p1?.slotConfirmed && <span className="text-green-400 ml-1 text-xs">✓</span>}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-white/40 mb-2">Round {match.round} · Match {match.matchNumber}
+                                <span className={`ml-2 font-semibold ${match.status === MatchStatus.ACTIVE ? "text-green-400" : "text-yellow-400"}`}>
+                                  {match.status === MatchStatus.ACTIVE ? "● Active" : "⏳ Awaiting slots"}
                                 </span>
-                                <span className="text-white/20">vs</span>
-                                <span className={`font-medium ${!p2 ? "text-white/30" : "text-white"}`}>
-                                  {player2?.displayName ?? "TBD"}
-                                  {p2?.slotCall && <span className="text-white/40 text-xs ml-1">({p2.slotCall})</span>}
-                                  {p2?.slotConfirmed && <span className="text-green-400 ml-1 text-xs">✓</span>}
-                                </span>
+                              </p>
+
+                              {/* Player 1 */}
+                              <div className="flex items-center gap-2 mb-1.5">
+                                {player1?.avatarUrl && <img src={player1.avatarUrl} alt="" className="w-5 h-5 rounded-full shrink-0" />}
+                                <span className="text-white font-medium text-sm">{player1?.displayName ?? "TBD"}</span>
+                                {p1?.slotCall && (
+                                  <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${p1.slotConfirmed ? "bg-green-500/20 text-green-300 border border-green-500/30" : "bg-white/5 text-white/50 border border-white/10"}`}>
+                                    {p1.slotCall}
+                                  </span>
+                                )}
+                                {!p1?.slotCall && <span className="text-white/25 text-xs italic">no slot yet</span>}
                               </div>
-                              <span className={`text-xs mt-1 inline-block ${
-                                match.status === MatchStatus.ACTIVE ? "text-green-400" : "text-yellow-400"
-                              }`}>
-                                {match.status === MatchStatus.ACTIVE ? "Active — declare winner" : "Waiting for slot confirmations"}
-                              </span>
+
+                              {/* VS divider */}
+                              <div className="text-white/15 text-xs ml-7 mb-1.5">vs</div>
+
+                              {/* Player 2 */}
+                              <div className="flex items-center gap-2">
+                                {player2?.avatarUrl && <img src={player2.avatarUrl} alt="" className="w-5 h-5 rounded-full shrink-0" />}
+                                <span className="text-white font-medium text-sm">{player2?.displayName ?? "TBD"}</span>
+                                {p2?.slotCall && (
+                                  <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${p2.slotConfirmed ? "bg-green-500/20 text-green-300 border border-green-500/30" : "bg-white/5 text-white/50 border border-white/10"}`}>
+                                    {p2.slotCall}
+                                  </span>
+                                )}
+                                {!p2?.slotCall && <span className="text-white/25 text-xs italic">no slot yet</span>}
+                              </div>
                             </div>
 
                             {match.status === MatchStatus.ACTIVE && p1 && p2 && (
-                              <div className="flex gap-2">
+                              <div className="flex flex-col gap-2 shrink-0">
                                 <button
                                   onClick={() => handleDeclareWinner(match.id, p1.participantId)}
                                   disabled={actionLoading}
-                                  className="px-3 py-1.5 bg-yellow-400/20 text-yellow-300 border border-yellow-400/30 rounded-lg hover:bg-yellow-400/30 disabled:opacity-40 text-xs font-medium transition-colors"
+                                  className="px-3 py-2 bg-yellow-400/15 text-yellow-300 border border-yellow-400/30 rounded-lg hover:bg-yellow-400/25 disabled:opacity-40 text-xs font-semibold transition-colors"
                                 >
-                                  🏆 {player1?.displayName} wins
+                                  👑 {player1?.displayName} wins
                                 </button>
                                 <button
                                   onClick={() => handleDeclareWinner(match.id, p2.participantId)}
                                   disabled={actionLoading}
-                                  className="px-3 py-1.5 bg-yellow-400/20 text-yellow-300 border border-yellow-400/30 rounded-lg hover:bg-yellow-400/30 disabled:opacity-40 text-xs font-medium transition-colors"
+                                  className="px-3 py-2 bg-yellow-400/15 text-yellow-300 border border-yellow-400/30 rounded-lg hover:bg-yellow-400/25 disabled:opacity-40 text-xs font-semibold transition-colors"
                                 >
-                                  🏆 {player2?.displayName} wins
+                                  👑 {player2?.displayName} wins
                                 </button>
                               </div>
                             )}

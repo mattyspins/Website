@@ -369,25 +369,7 @@ export default function TournamentPage() {
           </div>
         )}
 
-        {/* Tournament tabs */}
-        {tournaments.length > 1 && (
-          <div className="flex gap-2 mb-6 flex-wrap">
-            {tournaments.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setSelected(t)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  selected?.id === t.id
-                    ? "bg-yellow-400/20 text-yellow-300 border border-yellow-400/30"
-                    : "bg-white/5 text-white/60 hover:bg-white/10 border border-white/10"
-                }`}
-              >
-                {t.title}
-              </button>
-            ))}
-          </div>
-        )}
-
+        {/* Tournament list — vertical stacked cards */}
         {tournaments.length === 0 && (
           <div className="text-center py-20 text-white/30">
             <div className="text-5xl mb-3">🏆</div>
@@ -395,6 +377,42 @@ export default function TournamentPage() {
             <p className="text-sm mt-1">Check back when a tournament is announced!</p>
           </div>
         )}
+
+        <div className="space-y-3 mb-6">
+          {tournaments.map((t) => {
+            const isActive = selected?.id === t.id;
+            return (
+              <div
+                key={t.id}
+                onClick={() => setSelected(t)}
+                className={`cursor-pointer rounded-xl border transition-all duration-200 ${
+                  isActive
+                    ? "border-yellow-400/40 bg-yellow-400/5"
+                    : "border-white/8 bg-white/3 hover:border-white/15 hover:bg-white/5"
+                }`}
+              >
+                <div className="flex items-center justify-between px-5 py-4 gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${
+                      t.status === TournamentStatus.IN_PROGRESS ? "bg-green-400 animate-pulse" :
+                      t.status === TournamentStatus.REGISTRATION ? "bg-blue-400 animate-pulse" :
+                      t.status === TournamentStatus.SLOT_SELECTION ? "bg-yellow-400 animate-pulse" :
+                      t.status === TournamentStatus.COMPLETED ? "bg-white/20" :
+                      "bg-white/10"
+                    }`} />
+                    <span className="font-semibold text-white truncate">{t.title}</span>
+                    <StatusBadge status={t.status} />
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-white/40 shrink-0">
+                    <span>{t.maxPlayers} spots</span>
+                    <span>{t.entryCount} entered</span>
+                    {isActive && <span className="text-yellow-400">▾</span>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         {selected && (
           <>

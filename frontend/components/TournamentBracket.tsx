@@ -39,7 +39,7 @@ function MatchCard({
     <div
       onClick={onClick}
       className={`
-        relative w-56 rounded-xl border bg-[#0f1117] overflow-hidden select-none
+        relative w-64 rounded-xl border bg-[#0f1117] overflow-hidden select-none
         transition-all duration-200
         ${STATUS_GLOW[match.status] ?? "border-white/8"}
         ${onClick ? "cursor-pointer hover:scale-[1.02] hover:brightness-110" : "cursor-default"}
@@ -84,7 +84,7 @@ function MatchCard({
 
             {/* Slot badge */}
             {mp.slotCall && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-md shrink-0 max-w-[80px] truncate font-medium ${
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-md shrink-0 font-medium whitespace-nowrap ${
                 mp.slotConfirmed
                   ? "bg-green-500/20 text-green-300 border border-green-500/30"
                   : "bg-white/5 text-white/40 border border-white/10"
@@ -126,7 +126,7 @@ export default function TournamentBracket({ tournament, myParticipantId, onMatch
   }
 
   const MATCH_HEIGHT = 96;
-  const ROUND_WIDTH = 260;
+  const ROUND_WIDTH = 290;
   const TOP_OFFSET = 52;
 
   const maxMatchesR1 = matchesByRound[1]?.length ?? 1;
