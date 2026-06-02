@@ -265,7 +265,7 @@ export default function AdminTournamentPage() {
       setTournaments(remaining);
       setSelected(remaining[0] ?? null);
     } catch (e: any) {
-      setError(e.message);
+      setError(e?.message ?? e?.error ?? "Failed to delete tournament");
     } finally {
       setActionLoading(false);
     }
@@ -346,10 +346,10 @@ export default function AdminTournamentPage() {
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.title); }}
                       disabled={actionLoading}
-                      className="ml-1 p-1 rounded text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-30"
+                      className="ml-1 px-2 py-1 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all disabled:opacity-30 text-base"
                       title="Delete tournament"
                     >
-                      🗑
+                      🗑️
                     </button>
                   </div>
                 </div>

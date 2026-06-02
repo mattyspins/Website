@@ -25,7 +25,7 @@ export const api = {
         .json()
         .catch(() => ({ error: "Unknown error" }));
       throw new Error(
-        errorData.error || errorData.message || `HTTP ${response.status}`,
+        (typeof errorData.error === "object" ? errorData.error?.message : errorData.error) || errorData.message || `HTTP ${response.status}`,
       );
     }
 
@@ -45,7 +45,7 @@ export const api = {
         .json()
         .catch(() => ({ error: "Unknown error" }));
       throw new Error(
-        errorData.error || errorData.message || `HTTP ${response.status}`,
+        (typeof errorData.error === "object" ? errorData.error?.message : errorData.error) || errorData.message || `HTTP ${response.status}`,
       );
     }
 
@@ -75,7 +75,7 @@ export const api = {
         .json()
         .catch(() => ({ error: "Unknown error" }));
       throw new Error(
-        errorData.error || errorData.message || `HTTP ${response.status}`,
+        (typeof errorData.error === "object" ? errorData.error?.message : errorData.error) || errorData.message || `HTTP ${response.status}`,
       );
     }
 
@@ -94,7 +94,7 @@ export const api = {
         .json()
         .catch(() => ({ error: "Unknown error" }));
       throw new Error(
-        errorData.error || errorData.message || `HTTP ${response.status}`,
+        (typeof errorData.error === "object" ? errorData.error?.message : errorData.error) || errorData.message || `HTTP ${response.status}`,
       );
     }
 
