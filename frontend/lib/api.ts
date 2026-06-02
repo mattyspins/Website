@@ -142,6 +142,7 @@ export const API_ENDPOINTS = {
     `${API_URL}/api/admin/users/${userId}/rainbet-username`,
   ADMIN_STATS: `${API_URL}/api/admin/dashboard/stats`,
   ADMIN_AUDIT_LOGS: `${API_URL}/api/admin/audit-logs`,
+  ADMIN_ACTIVITY: `${API_URL}/api/admin/activity`,
 
   // Raffles
   RAFFLES_ACTIVE: `${API_URL}/api/raffles/active`,

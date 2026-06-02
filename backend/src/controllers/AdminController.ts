@@ -620,6 +620,94 @@ export class AdminController {
     }
   );
 
+  // Global activity feed (point transactions + store purchases)
+  static getActivityFeed = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) throw createError.forbidden('Admin access required');
+
+      const { page = '1', limit = '50', type = 'all', search = '' } = req.query;
+      const pageNum = Math.max(1, parseInt(page as string) || 1);
+      const limitNum = Math.min(100, parseInt(limit as string) || 50);
+      const skip = (pageNum - 1) * limitNum;
+
+      const { prisma } = await import('@/config/database');
+
+      const userWhere = search
+        ? { user: { displayName: { contains: search as string, mode: 'insensitive' as const } } }
+        : {};
+
+      const [pointTxs, storePurchases, pointTotal, storeTotal] = await Promise.all([
+        type === 'store' ? [] : prisma.pointTransaction.findMany({
+          where: userWhere,
+          include: {
+            user: { select: { id: true, displayName: true, avatarUrl: true } },
+            admin: { select: { id: true, displayName: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: type === 'all' ? limitNum * 2 : limitNum,
+          skip: type === 'all' ? 0 : skip,
+        }),
+        type === 'points' ? [] : prisma.storePurchase.findMany({
+          where: {
+            ...( search ? { user: { displayName: { contains: search as string, mode: 'insensitive' as const } } } : {} ),
+          },
+          include: {
+            user: { select: { id: true, displayName: true, avatarUrl: true } },
+            item: { select: { name: true, category: true } },
+          },
+          orderBy: { purchasedAt: 'desc' },
+          take: type === 'all' ? limitNum * 2 : limitNum,
+          skip: type === 'all' ? 0 : skip,
+        }),
+        type === 'store' ? 0 : prisma.pointTransaction.count({ where: userWhere }),
+        type === 'points' ? 0 : prisma.storePurchase.count({ where: search ? { user: { displayName: { contains: search as string, mode: 'insensitive' as const } } } : {} }),
+      ]);
+
+      // Merge and sort by date
+      const merged = [
+        ...pointTxs.map((t: any) => ({
+          id: t.id,
+          type: 'points' as const,
+          user: t.user,
+          admin: t.admin ?? null,
+          amount: t.amount,
+          transactionType: t.transactionType,
+          reason: t.reason,
+          referenceType: t.referenceType,
+          createdAt: t.createdAt,
+        })),
+        ...storePurchases.map((p: any) => ({
+          id: p.id,
+          type: 'store' as const,
+          user: p.user,
+          admin: null,
+          itemName: p.item?.name,
+          itemCategory: p.item?.category,
+          quantity: p.quantity,
+          totalPrice: p.totalPrice,
+          status: p.status,
+          createdAt: p.purchasedAt,
+        })),
+      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+       .slice(0, limitNum);
+
+      res.json({
+        success: true,
+        data: {
+          items: merged,
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            totalPoints: pointTotal,
+            totalStore: storeTotal,
+            total: pointTotal + storeTotal,
+            totalPages: Math.ceil((pointTotal + storeTotal) / limitNum),
+          },
+        },
+      });
+    }
+  );
+
   // Audit Logs
 
   static getAuditLogs = asyncHandler(

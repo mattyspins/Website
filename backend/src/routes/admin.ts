@@ -98,6 +98,9 @@ router.get(
   AdminController.getUserTransactionHistory
 );
 
+// Activity feed
+router.get('/activity', AdminController.getActivityFeed);
+
 // Audit Logs
 router.get('/audit-logs', AdminController.getAuditLogs);
 
