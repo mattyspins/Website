@@ -506,7 +506,7 @@ export default function AdminTournamentPage() {
                               </div>
                             </div>
 
-                            {match.status === MatchStatus.ACTIVE && p1 && p2 && (
+                            {(match.status === MatchStatus.ACTIVE || match.status === MatchStatus.SLOT_SELECTION) && p1 && p2 && (
                               <div className="flex flex-col gap-2 shrink-0">
                                 <button
                                   onClick={() => handleDeclareWinner(match.id, p1.participantId)}
