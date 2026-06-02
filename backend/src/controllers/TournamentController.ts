@@ -34,9 +34,15 @@ export class TournamentController {
     res.json({ success: true, tournament: result });
   });
 
+  static getEntries = asyncHandler(async (req, res) => {
+    const entries = await TournamentService.getEntries(req.params.id);
+    res.json({ success: true, entries });
+  });
+
   static drawWinners = asyncHandler(async (req, res) => {
     const { count } = drawSchema.parse(req.body);
-    const result = await TournamentService.drawWinners(req.params.id, count, _io);
+    const guaranteedUserIds: string[] = Array.isArray(req.body.guaranteedUserIds) ? req.body.guaranteedUserIds : [];
+    const result = await TournamentService.drawWinners(req.params.id, count, guaranteedUserIds, _io);
     res.json({ success: true, tournament: result });
   });
 

@@ -165,9 +165,31 @@ export class TournamentService {
     return { message: 'Left successfully' };
   }
 
+  // ─── ADMIN: Get all entries ────────────────────────────────────────────────
+
+  static async getEntries(tournamentId: string) {
+    const entries = await prisma.tournamentEntry.findMany({
+      where: { tournamentId },
+      include: { user: { select: { id: true, displayName: true, avatarUrl: true } } },
+      orderBy: { enteredAt: 'asc' },
+    });
+    return entries.map((e) => ({
+      id: e.id,
+      userId: e.userId,
+      displayName: e.user.displayName,
+      avatarUrl: e.user.avatarUrl,
+      enteredAt: e.enteredAt.toISOString(),
+    }));
+  }
+
   // ─── ADMIN: Draw winners ───────────────────────────────────────────────────
 
-  static async drawWinners(tournamentId: string, count: number, io?: SocketIOServer): Promise<TournamentResponse> {
+  static async drawWinners(
+    tournamentId: string,
+    count: number,
+    guaranteedUserIds: string[] = [],
+    io?: SocketIOServer
+  ): Promise<TournamentResponse> {
     const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!t) throw createError(404, 'Tournament not found');
     if (t.status !== TournamentStatus.REGISTRATION) throw createError(400, 'Must be in REGISTRATION phase');
@@ -176,8 +198,20 @@ export class TournamentService {
     const entries = await prisma.tournamentEntry.findMany({ where: { tournamentId } });
     if (entries.length < count) throw createError(400, `Not enough entries (${entries.length}) to draw ${count} players`);
 
-    // Fisher-Yates shuffle and pick `count`
-    const shuffled = [...entries].sort(() => Math.random() - 0.5).slice(0, count);
+    // Validate guaranteed picks are actual entrants
+    const entrantUserIds = new Set(entries.map((e) => e.userId));
+    const validGuaranteed = guaranteedUserIds.filter((id) => entrantUserIds.has(id));
+    if (validGuaranteed.length > count) throw createError(400, 'More guaranteed picks than total spots');
+
+    // Remaining entries not in guaranteed list
+    const remaining = entries.filter((e) => !validGuaranteed.includes(e.userId));
+    const randomSpotsNeeded = count - validGuaranteed.length;
+    const randomPicks = [...remaining].sort(() => Math.random() - 0.5).slice(0, randomSpotsNeeded);
+
+    // Combine: guaranteed first, then random fills
+    const guaranteed = entries.filter((e) => validGuaranteed.includes(e.userId));
+    const allPicked = [...guaranteed, ...randomPicks];
+
     const deadline = new Date(Date.now() + t.slotTimerSeconds * 1000);
 
     await prisma.$transaction([
@@ -185,14 +219,9 @@ export class TournamentService {
         where: { id: tournamentId },
         data: { status: TournamentStatus.SLOT_SELECTION, maxPlayers: count },
       }),
-      ...shuffled.map((e, i) =>
+      ...allPicked.map((e, i) =>
         prisma.tournamentParticipant.create({
-          data: {
-            tournamentId,
-            userId: e.userId,
-            seed: i + 1,
-            slotDeadline: deadline,
-          },
+          data: { tournamentId, userId: e.userId, seed: i + 1, slotDeadline: deadline },
         })
       ),
     ]);

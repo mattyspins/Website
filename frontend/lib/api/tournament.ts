@@ -51,8 +51,13 @@ export const tournamentApi = {
     return data.tournament;
   },
 
-  drawWinners: async (id: string, count: number): Promise<Tournament> => {
-    const data = await api.post(`/api/tournaments/${id}/draw`, { count });
+  getEntries: async (id: string): Promise<{ id: string; userId: string; displayName: string; avatarUrl: string | null; enteredAt: string }[]> => {
+    const data = await api.get(`/api/tournaments/${id}/entries`);
+    return data.entries;
+  },
+
+  drawWinners: async (id: string, count: number, guaranteedUserIds: string[] = []): Promise<Tournament> => {
+    const data = await api.post(`/api/tournaments/${id}/draw`, { count, guaranteedUserIds });
     return data.tournament;
   },
 

@@ -36,6 +36,7 @@ router.post('/matches/:matchId/confirm', authMiddleware, tournamentLimiter, Tour
 // ─── Admin ────────────────────────────────────────────────────────────────────
 router.post('/', authMiddleware, adminMiddleware, adminLimiter, TournamentController.create);
 router.post('/:id/open-registration', authMiddleware, adminMiddleware, adminLimiter, TournamentController.openRegistration);
+router.get('/:id/entries', authMiddleware, adminMiddleware, adminLimiter, TournamentController.getEntries);
 router.post('/:id/draw', authMiddleware, adminMiddleware, adminLimiter, TournamentController.drawWinners);
 router.post('/:id/start', authMiddleware, adminMiddleware, adminLimiter, TournamentController.startTournament);
 router.post('/:id/cancel', authMiddleware, adminMiddleware, adminLimiter, TournamentController.cancel);

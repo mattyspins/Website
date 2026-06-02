@@ -112,61 +112,139 @@ function DrawModal({
 }: {
   tournament: Tournament;
   onClose: () => void;
-  onDraw: (count: number) => void;
+  onDraw: (count: number, guaranteedUserIds: string[]) => void;
 }) {
+  const [entries, setEntries] = useState<{ id: string; userId: string; displayName: string; avatarUrl: string | null }[]>([]);
+  const [guaranteed, setGuaranteed] = useState<Set<string>>(new Set());
   const [count, setCount] = useState(Math.min(tournament.maxPlayers, Math.max(tournament.entryCount, 1)));
-  const [loading, setLoading] = useState(false);
+  const [loadingEntries, setLoadingEntries] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const submit = async () => {
-    if (count < 1) {
-      setError("Must draw at least 1 participant.");
-      return;
-    }
-    if (count > tournament.entryCount) {
-      setError(`Only ${tournament.entryCount} entr${tournament.entryCount === 1 ? "y" : "ies"} in the draw.`);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      onDraw(count);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/tournaments/${tournament.id}/entries`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => { if (d.entries) setEntries(d.entries); })
+      .catch(() => {})
+      .finally(() => setLoadingEntries(false));
+  }, [tournament.id]);
+
+  const toggleGuaranteed = (userId: string) => {
+    setGuaranteed((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+  };
+
+  const guaranteedCount = guaranteed.size;
+  const randomSpotsLeft = Math.max(0, count - guaranteedCount);
+
+  const submit = () => {
+    if (count < 1) { setError("Must draw at least 1 participant."); return; }
+    if (count > tournament.entryCount) { setError(`Only ${tournament.entryCount} entries in the draw.`); return; }
+    if (guaranteedCount > count) { setError("More guaranteed picks than total spots."); return; }
+    onDraw(count, Array.from(guaranteed));
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-navy-900 border border-white/10 rounded-xl p-6 w-full max-w-sm shadow-2xl">
-        <h3 className="text-lg font-semibold text-white mb-2">Draw Tournament Spots</h3>
-        <p className="text-sm text-white/50 mb-4">{tournament.entryCount} entries in the draw</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="bg-navy-900 border border-white/10 rounded-xl w-full max-w-lg shadow-2xl flex flex-col max-h-[85vh]">
+        {/* Header */}
+        <div className="px-6 pt-5 pb-4 border-b border-white/8">
+          <h3 className="text-lg font-semibold text-white mb-0.5">Draw Tournament Spots</h3>
+          <p className="text-sm text-white/40">{tournament.entryCount} people entered</p>
+        </div>
 
-        {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
+        {/* Total spots */}
+        <div className="px-6 py-4 border-b border-white/8">
+          <div className="flex items-center justify-between gap-4">
+            <label className="text-sm text-white/60">Total spots to fill</label>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setCount(Math.max(1, count - 1))} className="w-7 h-7 rounded bg-white/5 text-white/60 hover:bg-white/10 text-sm transition-colors">−</button>
+              <span className="text-white font-bold w-6 text-center">{count}</span>
+              <button onClick={() => setCount(Math.min(tournament.entryCount, count + 1))} className="w-7 h-7 rounded bg-white/5 text-white/60 hover:bg-white/10 text-sm transition-colors">+</button>
+            </div>
+          </div>
+          {guaranteedCount > 0 && (
+            <div className="mt-2 flex gap-4 text-xs text-white/40">
+              <span>✓ <span className="text-yellow-400 font-semibold">{guaranteedCount}</span> guaranteed</span>
+              <span>🎲 <span className="text-white/70 font-semibold">{randomSpotsLeft}</span> random</span>
+            </div>
+          )}
+        </div>
 
-        <label className="block text-sm text-white/60 mb-1">Number of spots to draw</label>
-        <input
-          type="number"
-          min={1}
-          max={tournament.entryCount}
-          value={count}
-          onChange={(e) => setCount(+e.target.value)}
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white mb-6 focus:outline-none focus:border-yellow-400/50"
-        />
+        {/* Entry list */}
+        <div className="overflow-y-auto flex-1 px-6 py-3">
+          <p className="text-xs text-white/35 uppercase tracking-widest font-bold mb-3">
+            Tick to guarantee entry — rest are random
+          </p>
 
-        <div className="flex gap-2">
-          <button
-            onClick={submit}
-            disabled={loading}
-            className="flex-1 bg-yellow-400 text-black font-semibold py-2.5 rounded-lg hover:bg-yellow-300 disabled:opacity-40 transition-colors"
-          >
-            🎲 Draw
-          </button>
-          <button onClick={onClose} className="px-4 border border-white/10 text-white/60 rounded-lg hover:bg-white/5 transition-colors">
-            Cancel
-          </button>
+          {loadingEntries ? (
+            <div className="flex justify-center py-6">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400" />
+            </div>
+          ) : entries.length === 0 ? (
+            <p className="text-white/30 text-sm text-center py-4">No entries yet</p>
+          ) : (
+            <div className="space-y-1.5">
+              {entries.map((e) => {
+                const isGuaranteed = guaranteed.has(e.userId);
+                return (
+                  <div
+                    key={e.userId}
+                    onClick={() => toggleGuaranteed(e.userId)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all ${
+                      isGuaranteed
+                        ? "bg-yellow-400/15 border border-yellow-400/30"
+                        : "bg-white/3 border border-white/5 hover:bg-white/6"
+                    }`}
+                  >
+                    {/* Checkbox */}
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                      isGuaranteed ? "bg-yellow-400 border-yellow-400" : "border-white/20 bg-white/5"
+                    }`}>
+                      {isGuaranteed && <span className="text-black text-[10px] font-black">✓</span>}
+                    </div>
+
+                    {/* Avatar */}
+                    {e.avatarUrl ? (
+                      <img src={e.avatarUrl} alt="" className="w-7 h-7 rounded-full shrink-0" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-white/10 shrink-0 flex items-center justify-center text-xs font-bold text-white/50">
+                        {e.displayName[0]?.toUpperCase()}
+                      </div>
+                    )}
+
+                    <span className={`text-sm font-medium ${isGuaranteed ? "text-yellow-300" : "text-white/80"}`}>
+                      {e.displayName}
+                    </span>
+
+                    {isGuaranteed && (
+                      <span className="ml-auto text-[10px] text-yellow-400 font-bold uppercase tracking-wide">Guaranteed</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-white/8">
+          {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
+          <div className="flex gap-2">
+            <button onClick={submit} className="flex-1 bg-yellow-400 text-black font-semibold py-2.5 rounded-lg hover:bg-yellow-300 transition-colors">
+              🎲 Draw {count} Participant{count !== 1 ? "s" : ""}
+            </button>
+            <button onClick={onClose} className="px-4 border border-white/10 text-white/60 rounded-lg hover:bg-white/5 transition-colors">
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -245,9 +323,9 @@ export default function AdminTournamentPage() {
   };
 
   const handleOpenRegistration = () => withAction(() => tournamentApi.openRegistration(selected!.id));
-  const handleDraw = (count: number) => {
+  const handleDraw = (count: number, guaranteedUserIds: string[]) => {
     setShowDraw(false);
-    withAction(() => tournamentApi.drawWinners(selected!.id, count));
+    withAction(() => tournamentApi.drawWinners(selected!.id, count, guaranteedUserIds));
   };
   const handleStart = () => withAction(() => tournamentApi.startTournament(selected!.id));
   const handleCancel = () => {
