@@ -59,7 +59,7 @@ function MatchCard({
           <div
             key={mp.id}
             className={`
-              flex items-center gap-2.5 px-3 py-2.5
+              flex items-center gap-2.5 px-3 py-3
               ${i === 0 ? "border-b border-white/8" : ""}
               ${isWinner ? "bg-gradient-to-r from-yellow-500/15 to-transparent" : ""}
               ${isLoser ? "opacity-35" : ""}
@@ -77,21 +77,19 @@ function MatchCard({
               </div>
             )}
 
-            {/* Name */}
-            <span className={`truncate flex-1 text-sm font-medium ${isLoser ? "line-through text-white/40" : isWinner ? "text-yellow-300" : "text-white/90"}`}>
-              {p?.displayName ?? "TBD"}
-            </span>
-
-            {/* Slot badge */}
-            {mp.slotCall && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-md shrink-0 font-medium whitespace-nowrap ${
-                mp.slotConfirmed
-                  ? "bg-green-500/20 text-green-300 border border-green-500/30"
-                  : "bg-white/5 text-white/40 border border-white/10"
-              }`}>
-                {mp.slotCall}
-              </span>
-            )}
+            {/* Name + slot stacked */}
+            <div className="flex-1 min-w-0">
+              <div className={`text-sm font-semibold truncate ${isLoser ? "line-through text-white/40" : isWinner ? "text-yellow-300" : "text-white/90"}`}>
+                {p?.displayName ?? "TBD"}
+              </div>
+              {mp.slotCall && (
+                <div className={`text-[11px] mt-0.5 font-medium ${
+                  mp.slotConfirmed ? "text-green-400" : "text-white/40"
+                }`}>
+                  {mp.slotCall}
+                </div>
+              )}
+            </div>
 
             {isWinner && <span className="text-base shrink-0">👑</span>}
           </div>
@@ -125,7 +123,7 @@ export default function TournamentBracket({ tournament, myParticipantId, onMatch
     matchesByRound[r] = matches.filter((m) => m.round === r).sort((a, b) => a.matchNumber - b.matchNumber);
   }
 
-  const MATCH_HEIGHT = 96;
+  const MATCH_HEIGHT = 110;
   const ROUND_WIDTH = 290;
   const TOP_OFFSET = 52;
 
