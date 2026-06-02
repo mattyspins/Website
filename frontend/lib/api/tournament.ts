@@ -79,4 +79,9 @@ export const tournamentApi = {
     const data = await api.post(`/api/tournaments/matches/${matchId}/winner`, { winnerId });
     return data.tournament;
   },
+
+  revertMatchWinner: async (matchId: string): Promise<Tournament> => {
+    const data = await api.delete(`/api/tournaments/matches/${matchId}/winner`);
+    return data.tournament;
+  },
 };

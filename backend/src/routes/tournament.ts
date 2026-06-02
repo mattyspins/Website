@@ -42,5 +42,6 @@ router.post('/:id/cancel', authMiddleware, adminMiddleware, adminLimiter, Tourna
 router.delete('/:id', authMiddleware, adminMiddleware, adminLimiter, TournamentController.deleteTournament);
 router.post('/:id/participants/:participantId/reroll', authMiddleware, adminMiddleware, adminLimiter, TournamentController.rerollParticipant);
 router.post('/matches/:matchId/winner', authMiddleware, adminMiddleware, adminLimiter, TournamentController.declareMatchWinner);
+router.delete('/matches/:matchId/winner', authMiddleware, adminMiddleware, adminLimiter, TournamentController.revertMatchWinner);
 
 export default router;

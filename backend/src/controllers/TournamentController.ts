@@ -56,6 +56,11 @@ export class TournamentController {
     res.json({ success: true, tournament: result });
   });
 
+  static revertMatchWinner = asyncHandler(async (req, res) => {
+    const result = await TournamentService.revertMatchWinner(req.params.matchId, _io);
+    res.json({ success: true, tournament: result });
+  });
+
   static cancel = asyncHandler(async (req, res) => {
     const result = await TournamentService.cancel(req.params.id, _io);
     res.json({ success: true, tournament: result });

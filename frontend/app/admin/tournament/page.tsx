@@ -277,6 +277,11 @@ export default function AdminTournamentPage() {
     withAction(() => tournamentApi.declareMatchWinner(matchId, winnerId));
   };
 
+  const handleRevertWinner = (matchId: string) => {
+    if (!confirm("Revert this result? The match will go back to Active and the loser will be restored.")) return;
+    withAction(() => tournamentApi.revertMatchWinner(matchId));
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -460,7 +465,7 @@ export default function AdminTournamentPage() {
                 <h3 className="text-base font-semibold text-white mb-4">Active Matches</h3>
                 <div className="space-y-3">
                   {selected.matches
-                    .filter((m) => m.status !== MatchStatus.PENDING && m.status !== MatchStatus.COMPLETED)
+                    .filter((m) => m.status !== MatchStatus.PENDING)
                     .map((match) => {
                       const p1 = match.participants[0];
                       const p2 = match.participants[1];
@@ -521,6 +526,18 @@ export default function AdminTournamentPage() {
                                   className="px-3 py-2 bg-yellow-400/15 text-yellow-300 border border-yellow-400/30 rounded-lg hover:bg-yellow-400/25 disabled:opacity-40 text-xs font-semibold transition-colors"
                                 >
                                   👑 {player2?.displayName} wins
+                                </button>
+                              </div>
+                            )}
+
+                            {match.status === MatchStatus.COMPLETED && (
+                              <div className="shrink-0">
+                                <button
+                                  onClick={() => handleRevertWinner(match.id)}
+                                  disabled={actionLoading}
+                                  className="px-3 py-2 border border-orange-500/30 text-orange-400 rounded-lg hover:bg-orange-500/10 disabled:opacity-40 text-xs font-semibold transition-colors"
+                                >
+                                  ↩ Revert
                                 </button>
                               </div>
                             )}

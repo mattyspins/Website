@@ -538,6 +538,73 @@ export class TournamentService {
     return response;
   }
 
+  // ─── ADMIN: Revert match winner ───────────────────────────────────────────
+
+  static async revertMatchWinner(matchId: string, io?: SocketIOServer): Promise<TournamentResponse> {
+    const match = await prisma.tournamentMatch.findUnique({
+      where: { id: matchId },
+      include: { participants: true, tournament: true },
+    });
+    if (!match) throw createError(404, 'Match not found');
+    if (match.status !== MatchStatus.COMPLETED) throw createError(400, 'Match is not completed');
+
+    const previousWinnerId = match.winnerId;
+
+    // If winner was advanced to next match, remove them from it (only if that match isn't completed)
+    if (match.nextMatchId && previousWinnerId) {
+      const nextMatch = await prisma.tournamentMatch.findUnique({ where: { id: match.nextMatchId } });
+      if (nextMatch && nextMatch.status !== MatchStatus.COMPLETED) {
+        await prisma.tournamentMatchParticipant.deleteMany({
+          where: { matchId: match.nextMatchId, participantId: previousWinnerId },
+        });
+        // Reset next match back to PENDING if it now has fewer than 2 participants
+        const remainingInNext = await prisma.tournamentMatchParticipant.count({ where: { matchId: match.nextMatchId } });
+        if (remainingInNext < 2) {
+          await prisma.tournamentMatch.update({
+            where: { id: match.nextMatchId },
+            data: { status: MatchStatus.PENDING, winnerId: null },
+          });
+        }
+      } else if (nextMatch?.status === MatchStatus.COMPLETED) {
+        throw createError(400, 'Cannot revert — the next match has already been completed');
+      }
+    }
+
+    // Restore the match and un-eliminate the loser
+    const loserIds = match.participants
+      .filter((p) => p.participantId !== previousWinnerId)
+      .map((p) => p.participantId);
+
+    await prisma.$transaction([
+      prisma.tournamentMatch.update({
+        where: { id: matchId },
+        data: { status: MatchStatus.ACTIVE, winnerId: null },
+      }),
+      prisma.tournamentParticipant.updateMany({
+        where: { id: { in: loserIds } },
+        data: { eliminated: false },
+      }),
+      // Clear finalPosition if tournament was marked complete
+      ...(previousWinnerId ? [prisma.tournamentParticipant.updateMany({
+        where: { id: previousWinnerId },
+        data: { finalPosition: null },
+      })] : []),
+    ]);
+
+    // If tournament was marked COMPLETED, revert it to IN_PROGRESS
+    if (match.tournament.status === TournamentStatus.COMPLETED) {
+      await prisma.tournament.update({
+        where: { id: match.tournamentId },
+        data: { status: TournamentStatus.IN_PROGRESS },
+      });
+    }
+
+    const updated = await TournamentService.getTournamentWithRelations(match.tournamentId);
+    const response = await TournamentService.formatTournament(updated);
+    io?.to(`tournament:${match.tournamentId}`).emit('tournament:updated', response);
+    return response;
+  }
+
   private static async advanceWinner(matchId: string, winnerId: string) {
     const match = await prisma.tournamentMatch.findUnique({ where: { id: matchId } });
     if (!match?.nextMatchId) return;
