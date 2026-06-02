@@ -116,6 +116,7 @@ function StatusBadge({ status }: { status: TournamentStatus }) {
 export default function TournamentPage() {
   const [user, setUser] = useState<{ id: string; isAdmin: boolean } | null>(null);
   const [showRules, setShowRules] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [selected, setSelected] = useState<Tournament | null>(null);
   const [myEntry, setMyEntry] = useState<MyEntryResponse | null>(null);
@@ -301,12 +302,20 @@ export default function TournamentPage() {
             <h1 className="text-3xl font-bold text-white mb-1">Tournament</h1>
             <p className="text-white/50">Single elimination bracket — enter the draw and compete for glory</p>
           </div>
-          <button
-            onClick={() => setShowRules(true)}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs font-medium transition-colors"
-          >
-            <span>📋</span> Rules
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setShowInstructions(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs font-medium transition-colors"
+            >
+              <span>🎮</span> How to Play
+            </button>
+            <button
+              onClick={() => setShowRules(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs font-medium transition-colors"
+            >
+              <span>📋</span> Rules
+            </button>
+          </div>
         </div>
 
         {/* Rules modal */}
@@ -543,6 +552,65 @@ export default function TournamentPage() {
           </>
         )}
       </div>
+
+      {/* Instructions modal */}
+      {showInstructions && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowInstructions(false)} />
+          <div className="relative w-full max-w-md bg-navy-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">🎮</span>
+                <h2 className="text-base font-bold text-white">How to Play</h2>
+              </div>
+              <button onClick={() => setShowInstructions(false)} className="text-white/30 hover:text-white transition-colors text-lg leading-none">✕</button>
+            </div>
+
+            <div className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto text-sm text-white/70 leading-relaxed">
+
+              <div>
+                <p className="text-white font-bold mb-3 text-xs uppercase tracking-widest">Step 1 — Enter the Draw</p>
+                <p>When registration opens, click <span className="text-yellow-400 font-semibold">Enter Draw</span> to put your name in the raffle. The admin will randomly select participants from everyone who entered.</p>
+              </div>
+
+              <div>
+                <p className="text-white font-bold mb-3 text-xs uppercase tracking-widest">Step 2 — Name Your Slot</p>
+                <p>If you&apos;re selected, you&apos;ll have a limited time to <span className="text-yellow-400 font-semibold">name a slot call</span> — this is the slot game Matty will play for you. Pick wisely! No two players can have the same slot.</p>
+                <div className="mt-2 bg-white/5 border border-white/8 rounded-lg px-3 py-2 text-white/50 text-xs">
+                  Example: <span className="text-white/80">Sweet Bonanza, Book of Dead, Dog House Megaways…</span>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-white font-bold mb-3 text-xs uppercase tracking-widest">Step 3 — Watch the Bracket</p>
+                <p>Once all slots are named, participants are <span className="text-yellow-400 font-semibold">randomly shuffled</span> into a bracket. Matty plays each person&apos;s slot live on stream — the highest multiplier in each match advances.</p>
+              </div>
+
+              <div>
+                <p className="text-white font-bold mb-3 text-xs uppercase tracking-widest">Step 4 — Each Round</p>
+                <p>Every round you can <span className="text-yellow-400 font-semibold">change your slot call</span> or stick with your original pick. Once you confirm it, your slot is locked for that round. Matty then plays both slots — highest multiplier wins the match.</p>
+              </div>
+
+              <div>
+                <p className="text-white font-bold mb-3 text-xs uppercase tracking-widest">Step 5 — Win the Tournament</p>
+                <p>Keep advancing through the bracket until only one player remains. That player is crowned <span className="text-yellow-400 font-semibold">Tournament Champion 👑</span> and earns rewards.</p>
+              </div>
+
+              <div className="bg-yellow-400/8 border border-yellow-400/20 rounded-xl p-4">
+                <p className="text-yellow-300 font-bold text-xs uppercase tracking-widest mb-2">💡 Tips</p>
+                <ul className="space-y-1.5 text-white/60 text-xs">
+                  <li>• Pick volatile slots with high max multipliers for the best chance</li>
+                  <li>• You can change your slot each round — adapt your strategy</li>
+                  <li>• Once you confirm your slot for a round it&apos;s locked, so be sure</li>
+                  <li>• Watch the stream live — it&apos;s more fun to see your slot play!</li>
+                </ul>
+              </div>
+
+              <p className="text-white/40 text-xs border-t border-white/5 pt-4">Be in stream when it goes live to make the most of it 👊</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Initial slot modal */}
       {activeMatch?.id === "initial" && (
