@@ -39,6 +39,7 @@ router.post('/:id/open-registration', authMiddleware, adminMiddleware, adminLimi
 router.post('/:id/draw', authMiddleware, adminMiddleware, adminLimiter, TournamentController.drawWinners);
 router.post('/:id/start', authMiddleware, adminMiddleware, adminLimiter, TournamentController.startTournament);
 router.post('/:id/cancel', authMiddleware, adminMiddleware, adminLimiter, TournamentController.cancel);
+router.delete('/:id', authMiddleware, adminMiddleware, adminLimiter, TournamentController.deleteTournament);
 router.post('/:id/participants/:participantId/reroll', authMiddleware, adminMiddleware, adminLimiter, TournamentController.rerollParticipant);
 router.post('/matches/:matchId/winner', authMiddleware, adminMiddleware, adminLimiter, TournamentController.declareMatchWinner);
 

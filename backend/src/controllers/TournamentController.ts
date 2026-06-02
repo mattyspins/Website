@@ -61,6 +61,11 @@ export class TournamentController {
     res.json({ success: true, tournament: result });
   });
 
+  static deleteTournament = asyncHandler(async (req, res) => {
+    await TournamentService.deleteTournament(req.params.id);
+    res.json({ success: true, message: 'Tournament deleted' });
+  });
+
   // ─── Viewer ───────────────────────────────────────────────────────────────
 
   static getAll = asyncHandler(async (_req, res) => {

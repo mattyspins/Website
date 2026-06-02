@@ -584,6 +584,15 @@ export class TournamentService {
     return response;
   }
 
+  // ─── ADMIN: Delete ───────────────────────────────────────────────────────
+
+  static async deleteTournament(tournamentId: string): Promise<void> {
+    const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
+    if (!t) throw createError(404, 'Tournament not found');
+    // Cascade deletes participants, matches, entries via FK constraints
+    await prisma.tournament.delete({ where: { id: tournamentId } });
+  }
+
   // ─── PUBLIC: Get all ──────────────────────────────────────────────────────
 
   static async getAll(): Promise<TournamentResponse[]> {

@@ -254,6 +254,22 @@ export default function AdminTournamentPage() {
     if (!confirm("Cancel this tournament?")) return;
     withAction(() => tournamentApi.cancel(selected!.id));
   };
+
+  const handleDelete = async (id: string, title: string) => {
+    if (!confirm(`Permanently delete "${title}"? This cannot be undone.`)) return;
+    setActionLoading(true);
+    setError(null);
+    try {
+      await tournamentApi.deleteTournament(id);
+      const remaining = tournaments.filter((t) => t.id !== id);
+      setTournaments(remaining);
+      setSelected(remaining[0] ?? null);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
   const handleReroll = (participantId: string) =>
     withAction(() => tournamentApi.rerollParticipant(selected!.id, participantId));
   const handleDeclareWinner = (matchId: string, winnerId: string) => {
@@ -327,6 +343,14 @@ export default function AdminTournamentPage() {
                     <span>{t.maxPlayers} spots</span>
                     <span>{t.entryCount} entered</span>
                     {isActive && <span className="text-yellow-400 text-sm">▾</span>}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.title); }}
+                      disabled={actionLoading}
+                      className="ml-1 p-1 rounded text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-30"
+                      title="Delete tournament"
+                    >
+                      🗑
+                    </button>
                   </div>
                 </div>
               </div>

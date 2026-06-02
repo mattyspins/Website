@@ -66,6 +66,10 @@ export const tournamentApi = {
     return data.tournament;
   },
 
+  deleteTournament: async (id: string): Promise<void> => {
+    await api.delete(`/api/tournaments/${id}`);
+  },
+
   rerollParticipant: async (tournamentId: string, participantId: string): Promise<Tournament> => {
     const data = await api.post(`/api/tournaments/${tournamentId}/participants/${participantId}/reroll`);
     return data.tournament;
