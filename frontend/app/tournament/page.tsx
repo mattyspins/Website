@@ -264,7 +264,12 @@ export default function TournamentPage() {
         <div className="text-center mb-12">
           <h1 className="text-5xl sm:text-7xl font-black tracking-tight mb-4 leading-none">
             <span className="text-white">SLOT </span>
-            <span style={{ background: "linear-gradient(90deg, #f5c518 0%, #f97316 50%, #ec4899 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            <span style={{
+              background: "linear-gradient(90deg, #fbbf24 0%, #f59e0b 40%, #d97706 70%, #fbbf24 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              textShadow: "0 0 40px rgba(245,158,11,0.3)",
+            }}>
               TOURNAMENT
             </span>
           </h1>
