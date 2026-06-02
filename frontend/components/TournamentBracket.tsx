@@ -1,6 +1,8 @@
 "use client";
 
 import { Tournament, TournamentMatch, MatchStatus, TournamentParticipant } from "@/types/tournament";
+import { findSlot } from "@/lib/slotGames";
+import { SlotImage } from "@/components/SlotPicker";
 
 interface Props {
   tournament: Tournament;
@@ -39,7 +41,7 @@ function MatchCard({
     <div
       onClick={onClick}
       className={`
-        relative w-64 rounded-xl border bg-[#0f1117] overflow-hidden select-none
+        relative w-72 rounded-xl border bg-[#0f1117] overflow-hidden select-none
         transition-all duration-200
         ${STATUS_GLOW[match.status] ?? "border-white/8"}
         ${onClick ? "cursor-pointer hover:scale-[1.02] hover:brightness-110" : "cursor-default"}
@@ -54,44 +56,52 @@ function MatchCard({
         const p = participantMap[mp.participantId];
         const isWinner = match.winnerId === mp.participantId;
         const isLoser = match.status === MatchStatus.COMPLETED && !isWinner;
+        const slotGame = mp.slotCall ? findSlot(mp.slotCall) : null;
 
         return (
           <div
             key={mp.id}
             className={`
-              flex items-center gap-2.5 px-3 py-3
+              flex items-start gap-2.5 px-3 py-3
               ${i === 0 ? "border-b border-white/8" : ""}
               ${isWinner ? "bg-gradient-to-r from-yellow-500/15 to-transparent" : ""}
               ${isLoser ? "opacity-35" : ""}
             `}
           >
             {/* Seed */}
-            <span className="text-[10px] text-white/25 w-3.5 shrink-0 font-mono">{p?.seed ?? "—"}</span>
+            <span className="text-[10px] text-white/25 w-3.5 shrink-0 font-mono mt-1">{p?.seed ?? "—"}</span>
 
-            {/* Avatar */}
-            {p?.avatarUrl ? (
-              <img src={p.avatarUrl} alt="" className={`w-6 h-6 rounded-full shrink-0 ring-1 ${isWinner ? "ring-yellow-400/60" : "ring-white/10"}`} />
+            {/* Slot image OR avatar */}
+            {slotGame ? (
+              <SlotImage src={slotGame.image} name={slotGame.name} size={40} />
+            ) : p?.avatarUrl ? (
+              <img src={p.avatarUrl} alt="" className={`w-10 h-10 rounded-lg shrink-0 ring-1 ${isWinner ? "ring-yellow-400/60" : "ring-white/10"}`} />
             ) : (
-              <div className={`w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[11px] font-bold ring-1 ${isWinner ? "bg-yellow-400/20 text-yellow-300 ring-yellow-400/40" : "bg-white/8 text-white/40 ring-white/10"}`}>
+              <div className={`w-10 h-10 rounded-lg shrink-0 flex items-center justify-center text-sm font-bold ring-1 ${isWinner ? "bg-yellow-400/20 text-yellow-300 ring-yellow-400/40" : "bg-white/8 text-white/40 ring-white/10"}`}>
                 {p?.displayName?.[0]?.toUpperCase() ?? "?"}
               </div>
             )}
 
-            {/* Name + slot stacked */}
+            {/* Username above, slot name below */}
             <div className="flex-1 min-w-0">
-              <div className={`text-sm font-semibold truncate ${isLoser ? "line-through text-white/40" : isWinner ? "text-yellow-300" : "text-white/90"}`}>
-                {p?.displayName ?? "TBD"}
+              <div className="flex items-center gap-1.5">
+                {/* Avatar beside name when slot image is shown */}
+                {slotGame && p?.avatarUrl && (
+                  <img src={p.avatarUrl} alt="" className="w-4 h-4 rounded-full shrink-0" />
+                )}
+                <div className={`text-sm font-semibold truncate ${isLoser ? "line-through text-white/40" : isWinner ? "text-yellow-300" : "text-white/90"}`}>
+                  {p?.displayName ?? "TBD"}
+                </div>
+                {isWinner && <span className="text-sm shrink-0">👑</span>}
               </div>
               {mp.slotCall && (
-                <div className={`text-[11px] mt-0.5 font-medium ${
-                  mp.slotConfirmed ? "text-green-400" : "text-white/40"
+                <div className={`text-[11px] mt-0.5 font-medium truncate ${
+                  mp.slotConfirmed ? "text-green-400" : "text-white/50"
                 }`}>
                   {mp.slotCall}
                 </div>
               )}
             </div>
-
-            {isWinner && <span className="text-base shrink-0">👑</span>}
           </div>
         );
       })}
@@ -123,8 +133,8 @@ export default function TournamentBracket({ tournament, myParticipantId, onMatch
     matchesByRound[r] = matches.filter((m) => m.round === r).sort((a, b) => a.matchNumber - b.matchNumber);
   }
 
-  const MATCH_HEIGHT = 110;
-  const ROUND_WIDTH = 290;
+  const MATCH_HEIGHT = 120;
+  const ROUND_WIDTH = 310;
   const TOP_OFFSET = 52;
 
   const maxMatchesR1 = matchesByRound[1]?.length ?? 1;

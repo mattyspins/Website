@@ -12,6 +12,7 @@ import {
 } from "@/types/tournament";
 import { getSocket } from "@/lib/socket";
 import { API_ENDPOINTS } from "@/lib/api";
+import SlotPicker from "@/components/SlotPicker";
 
 // ─── Slot Modal ────────────────────────────────────────────────────────────────
 function SlotModal({
@@ -44,11 +45,9 @@ function SlotModal({
           </p>
         )}
         <label className="block text-sm text-white/60 mb-1">Your slot call</label>
-        <input
-          type="text" value={slot} onChange={(e) => setSlot(e.target.value)}
-          placeholder="e.g. Book of Dead" maxLength={100}
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/30 focus:outline-none focus:border-yellow-400/50 mb-4"
-        />
+        <div className="mb-4">
+          <SlotPicker value={slot} onChange={setSlot} disabled={isLoading} />
+        </div>
         <div className="flex gap-2">
           <button onClick={() => onSubmit(slot.trim())} disabled={!slot.trim() || isLoading}
             className="flex-1 bg-yellow-400 text-black font-semibold py-2.5 rounded-lg hover:bg-yellow-300 disabled:opacity-40 transition-colors">
