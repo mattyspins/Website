@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState, useCallback } from "react";
 import { API_ENDPOINTS } from "@/lib/api";
 
 interface Raffle {
@@ -18,391 +17,330 @@ interface Raffle {
   endsAt: string;
 }
 
+const STATUS_STYLE: Record<string, string> = {
+  active:    "bg-green-500/20 text-green-300 border border-green-500/30",
+  completed: "bg-white/5 text-white/40 border border-white/10",
+  cancelled: "bg-red-500/10 text-red-400 border border-red-500/20",
+};
+
+function authHeaders() {
+  const token = localStorage.getItem("access_token");
+  return token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : {};
+}
+
 export default function AdminRaffles() {
   const [raffles, setRaffles] = useState<Raffle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedRaffle, setSelectedRaffle] = useState<Raffle | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"active" | "all">("active");
 
-  useEffect(() => {
-    loadRaffles();
-  }, []);
-
-  const loadRaffles = async () => {
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) {
+  const loadRaffles = useCallback(async () => {
+    try {
+      const url = filter === "all" ? API_ENDPOINTS.RAFFLES_ADMIN_ALL : API_ENDPOINTS.RAFFLES_ACTIVE;
+      const res = await fetch(url, { headers: authHeaders() });
+      const data = await res.json();
+      setRaffles(data.data?.raffles ?? data.raffles ?? []);
+    } catch {
+      setError("Failed to load raffles");
+    } finally {
       setLoading(false);
-      return;
     }
+  }, [filter]);
 
+  useEffect(() => { loadRaffles(); }, [loadRaffles]);
+
+  const flash = (msg: string) => {
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(null), 4000);
+  };
+
+  const selectWinners = async (raffle: Raffle) => {
+    if (!confirm(`Select ${raffle.numberOfWinners} winner(s) for "${raffle.title}"?`)) return;
+    setActionLoading(raffle.id + ":winners");
+    setError(null);
     try {
-      const response = await fetch(API_ENDPOINTS.RAFFLES_ACTIVE, {
-        headers: { Authorization: `Bearer ${accessToken}` },
+      const res = await fetch(API_ENDPOINTS.RAFFLES_SELECT_WINNERS(raffle.id), {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({}),
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setRaffles(data.data.raffles || []);
-      }
-    } catch (error) {
-      console.error("Failed to load raffles:", error);
+      const data = await res.json();
+      if (!res.ok) { setError(data.error?.message || "Failed to select winners"); return; }
+      const names = (data.data?.winners ?? [])
+        .map((w: any, i: number) => `${i + 1}. ${w.displayName ?? w.userId}`)
+        .join("\n");
+      flash(`Winners selected!\n${names}`);
+      loadRaffles();
+    } catch {
+      setError("Failed to select winners");
+    } finally {
+      setActionLoading(null);
     }
-    setLoading(false);
   };
 
-  const selectWinner = async (raffleId: string, numberOfWinners: number) => {
-    if (
-      !confirm(
-        `Are you sure you want to select ${numberOfWinners} winner(s) for this raffle?`,
-      )
-    ) {
-      return;
-    }
-
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) return;
-
+  const cancelRaffle = async (raffle: Raffle) => {
+    if (!confirm(`Cancel raffle "${raffle.title}"? This cannot be undone.`)) return;
+    setActionLoading(raffle.id + ":cancel");
+    setError(null);
     try {
-      const response = await fetch(
-        API_ENDPOINTS.RAFFLES_SELECT_WINNERS(raffleId),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({}), // Uses raffle's numberOfWinners
-        },
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        alert(
-          `${data.data.winners.length} winner(s) selected successfully!\n\nWinners:\n${data.data.winners.map((w: any, i: number) => `${i + 1}. User ID: ${w.userId}`).join("\n")}`,
-        );
-        loadRaffles();
-      } else {
-        const data = await response.json();
-        alert(data.error?.message || "Failed to select winners");
-      }
-    } catch (error) {
-      console.error("Failed to select winners:", error);
-      alert("Failed to select winners");
+      const res = await fetch(API_ENDPOINTS.RAFFLE_CANCEL(raffle.id), {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ reason: "Cancelled by admin" }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error?.message || "Failed to cancel raffle"); return; }
+      flash(`Raffle "${raffle.title}" cancelled.`);
+      loadRaffles();
+    } catch {
+      setError("Failed to cancel raffle");
+    } finally {
+      setActionLoading(null);
     }
   };
-
-  const endRaffle = async (raffleId: string) => {
-    if (!confirm("Are you sure you want to end this raffle?")) {
-      return;
-    }
-
-    // TODO: Implement API call
-    alert("Raffle ended! (API integration pending)");
-    console.log("Ending raffle:", raffleId);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-      </div>
-    );
-  }
 
   return (
-    <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-white">Raffle Management</h2>
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-white">Raffle Management</h2>
+          <div className="flex gap-1 mt-2">
+            {(["active", "all"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`text-xs font-semibold px-3 py-1 rounded-full transition-colors ${
+                  filter === f ? "bg-yellow-400 text-black" : "bg-white/5 text-white/40 hover:bg-white/10"
+                }`}
+              >
+                {f === "active" ? "Active" : "All Raffles"}
+              </button>
+            ))}
+          </div>
+        </div>
         <button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors font-semibold"
+          onClick={() => setShowCreate(true)}
+          className="px-4 py-2 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-300 transition-colors text-sm"
         >
-          ➕ Create Raffle
+          + Create Raffle
         </button>
       </div>
 
-      <div className="space-y-4">
-        {raffles.map((raffle) => (
-          <motion.div
-            key={raffle.id}
-            whileHover={{ scale: 1.01 }}
-            className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4"
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h3 className="text-xl font-bold text-white mb-1">
-                  {raffle.title}
-                </h3>
-                {raffle.description && (
-                  <p className="text-gray-400 text-sm mb-2">
-                    {raffle.description}
-                  </p>
+      {error && (
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-300 text-sm">{error}</div>
+      )}
+      {successMsg && (
+        <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-green-300 text-sm whitespace-pre-line">{successMsg}</div>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
+        </div>
+      ) : raffles.length === 0 ? (
+        <div className="text-center py-12 text-white/30">
+          <p className="text-4xl mb-3">🎟️</p>
+          <p>No {filter === "active" ? "active" : ""} raffles yet</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {raffles.map((raffle) => {
+            const pct = raffle.maxTickets > 0 ? Math.min(100, (raffle.ticketsSold / raffle.maxTickets) * 100) : 0;
+            const isActing = actionLoading?.startsWith(raffle.id);
+            return (
+              <div key={raffle.id} className="bg-white/3 border border-white/8 rounded-xl p-4">
+                <div className="flex items-start justify-between gap-4 mb-3 flex-wrap">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-bold text-white truncate">{raffle.title}</h3>
+                      <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full shrink-0 ${STATUS_STYLE[raffle.status] ?? STATUS_STYLE.completed}`}>
+                        {raffle.status}
+                      </span>
+                    </div>
+                    {raffle.description && <p className="text-white/40 text-xs mb-2">{raffle.description}</p>}
+                    <div className="flex flex-wrap gap-3 text-xs text-white/50">
+                      <span className="text-yellow-400 font-medium">🎁 {raffle.prize}</span>
+                      <span>💎 {raffle.ticketPrice} coins/ticket</span>
+                      <span>🏆 {raffle.numberOfWinners} winner{raffle.numberOfWinners > 1 ? "s" : ""}</span>
+                      <span>📅 Ends {new Date(raffle.endsAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="mb-3">
+                  <div className="flex justify-between text-xs text-white/40 mb-1">
+                    <span>Tickets sold</span>
+                    <span className="font-semibold text-white">{raffle.ticketsSold} / {raffle.maxTickets}</span>
+                  </div>
+                  <div className="w-full bg-white/5 rounded-full h-1.5">
+                    <div className="bg-gradient-to-r from-yellow-400 to-amber-500 h-1.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+
+                {/* Actions */}
+                {raffle.status === "active" && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => selectWinners(raffle)}
+                      disabled={!!isActing || raffle.ticketsSold === 0}
+                      className="px-3 py-1.5 bg-yellow-400/15 text-yellow-300 border border-yellow-400/30 rounded-lg hover:bg-yellow-400/25 disabled:opacity-40 text-xs font-semibold transition-colors"
+                    >
+                      {actionLoading === raffle.id + ":winners" ? "Selecting…" : `🎲 Select ${raffle.numberOfWinners} Winner${raffle.numberOfWinners > 1 ? "s" : ""}`}
+                    </button>
+                    <button
+                      onClick={() => cancelRaffle(raffle)}
+                      disabled={!!isActing}
+                      className="px-3 py-1.5 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/10 disabled:opacity-40 text-xs font-semibold transition-colors"
+                    >
+                      {actionLoading === raffle.id + ":cancel" ? "Cancelling…" : "✕ Cancel Raffle"}
+                    </button>
+                  </div>
                 )}
-                <div className="flex items-center space-x-4 text-sm">
-                  <span className="text-purple-400">🎁 {raffle.prize}</span>
-                  <span className="text-gray-400">
-                    💎 {raffle.ticketPrice} coins/ticket
-                  </span>
-                  <span className="text-yellow-400">
-                    🏆 {raffle.numberOfWinners} winner
-                    {raffle.numberOfWinners > 1 ? "s" : ""}
-                  </span>
-                </div>
               </div>
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                  raffle.status === "active"
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-500 text-white"
-                }`}
-              >
-                {raffle.status.toUpperCase()}
-              </span>
-            </div>
-
-            <div className="mb-4">
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-gray-400">Tickets Sold</span>
-                <span className="text-white font-semibold">
-                  {raffle.ticketsSold} / {raffle.maxTickets}
-                </span>
-              </div>
-              <div className="w-full bg-black/50 rounded-full h-2">
-                <div
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
-                  style={{
-                    width: `${(raffle.ticketsSold / raffle.maxTickets) * 100}%`,
-                  }}
-                ></div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-gray-400 text-sm">
-                Ends: {new Date(raffle.endsAt).toLocaleDateString()}
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() =>
-                    selectWinner(raffle.id, raffle.numberOfWinners)
-                  }
-                  disabled={raffle.ticketsSold === 0}
-                  className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-1 rounded transition-colors text-sm font-semibold"
-                >
-                  🎲 Select {raffle.numberOfWinners} Winner
-                  {raffle.numberOfWinners > 1 ? "s" : ""}
-                </button>
-                <button
-                  onClick={() => endRaffle(raffle.id)}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded transition-colors text-sm font-semibold"
-                >
-                  🛑 End Raffle
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Create Raffle Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-gradient-to-br from-purple-900/90 to-black border border-purple-500/30 rounded-2xl p-6 max-w-md w-full"
-          >
-            <h3 className="text-2xl font-bold text-white mb-4">
-              Create New Raffle
-            </h3>
-
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const accessToken = localStorage.getItem("access_token");
-
-                if (!accessToken) {
-                  alert("Please login first");
-                  return;
-                }
-
-                try {
-                  const response = await fetch(API_ENDPOINTS.RAFFLES_CREATE, {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      Authorization: `Bearer ${accessToken}`,
-                    },
-                    body: JSON.stringify({
-                      title: formData.get("title"),
-                      description: formData.get("description"),
-                      prize: formData.get("prize"),
-                      ticketPrice: parseInt(
-                        formData.get("ticketPrice") as string,
-                      ),
-                      maxTickets: parseInt(
-                        formData.get("maxTickets") as string,
-                      ),
-                      maxEntriesPerUser: parseInt(
-                        formData.get("maxEntriesPerUser") as string,
-                      ),
-                      numberOfWinners: parseInt(
-                        formData.get("numberOfWinners") as string,
-                      ),
-                      endDate: formData.get("endDate"),
-                    }),
-                  });
-
-                  if (response.ok) {
-                    alert("Raffle created successfully!");
-                    setShowCreateModal(false);
-                    loadRaffles();
-                  } else {
-                    const data = await response.json();
-                    alert(data.error?.message || "Failed to create raffle");
-                  }
-                } catch (error) {
-                  console.error("Failed to create raffle:", error);
-                  alert("Failed to create raffle");
-                }
-              }}
-              className="space-y-4"
-            >
-              <div>
-                <label className="text-gray-400 text-sm mb-1 block">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  required
-                  placeholder="e.g., Weekly Giveaway"
-                  className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-gray-400 text-sm mb-1 block">
-                  Description (optional)
-                </label>
-                <input
-                  type="text"
-                  name="description"
-                  placeholder="e.g., Win amazing prizes!"
-                  className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-gray-400 text-sm mb-1 block">
-                  Prize
-                </label>
-                <input
-                  type="text"
-                  name="prize"
-                  required
-                  placeholder="e.g., 10,000 Coins"
-                  className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-gray-400 text-sm mb-1 block">
-                    Ticket Price (coins)
-                  </label>
-                  <input
-                    type="number"
-                    name="ticketPrice"
-                    required
-                    min="1"
-                    placeholder="100"
-                    className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-gray-400 text-sm mb-1 block">
-                    Max Tickets
-                  </label>
-                  <input
-                    type="number"
-                    name="maxTickets"
-                    required
-                    min="1"
-                    placeholder="100"
-                    className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-gray-400 text-sm mb-1 block">
-                  Number of Winners
-                </label>
-                <input
-                  type="number"
-                  name="numberOfWinners"
-                  required
-                  min="1"
-                  defaultValue="1"
-                  placeholder="1"
-                  className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  How many winners will be randomly selected
-                </p>
-              </div>
-
-              <div>
-                <label className="text-gray-400 text-sm mb-1 block">
-                  Max Entries Per User
-                </label>
-                <input
-                  type="number"
-                  name="maxEntriesPerUser"
-                  required
-                  min="-1"
-                  defaultValue="-1"
-                  placeholder="-1 for unlimited"
-                  className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Maximum tickets one user can buy (-1 = unlimited)
-                </p>
-              </div>
-
-              <div>
-                <label className="text-gray-400 text-sm mb-1 block">
-                  End Date
-                </label>
-                <input
-                  type="datetime-local"
-                  name="endDate"
-                  required
-                  className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:border-purple-500"
-                />
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition-colors"
-                >
-                  Create
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </motion.div>
+            );
+          })}
         </div>
       )}
+
+      {/* Create Modal */}
+      {showCreate && (
+        <CreateRaffleModal
+          onClose={() => setShowCreate(false)}
+          onCreated={() => { setShowCreate(false); flash("Raffle created!"); loadRaffles(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function CreateRaffleModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    title: "", description: "", prize: "",
+    ticketPrice: "100", maxTickets: "100",
+    numberOfWinners: "1", maxEntriesPerUser: "-1", endDate: "",
+  });
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(API_ENDPOINTS.RAFFLES_CREATE, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          title: form.title,
+          description: form.description || undefined,
+          prize: form.prize,
+          ticketPrice: parseInt(form.ticketPrice),
+          maxTickets: parseInt(form.maxTickets),
+          numberOfWinners: parseInt(form.numberOfWinners),
+          maxEntriesPerUser: parseInt(form.maxEntriesPerUser),
+          endDate: form.endDate,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error?.message || "Failed to create raffle"); return; }
+      onCreated();
+    } catch {
+      setError("Failed to create raffle");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/8">
+          <h3 className="text-lg font-bold text-white">Create Raffle</h3>
+          <button onClick={onClose} className="text-white/30 hover:text-white text-lg">✕</button>
+        </div>
+
+        <form onSubmit={submit} className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+
+          {[
+            { label: "Title", key: "title", placeholder: "e.g., Weekly Giveaway", required: true },
+            { label: "Description (optional)", key: "description", placeholder: "e.g., Win amazing prizes!" },
+            { label: "Prize", key: "prize", placeholder: "e.g., 10,000 Coins", required: true },
+          ].map(({ label, key, placeholder, required }) => (
+            <div key={key}>
+              <label className="block text-sm text-white/60 mb-1">{label}</label>
+              <input
+                type="text"
+                value={form[key as keyof typeof form]}
+                onChange={set(key as keyof typeof form)}
+                placeholder={placeholder}
+                required={required}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/25 text-sm focus:outline-none focus:border-yellow-400/50"
+              />
+            </div>
+          ))}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-white/60 mb-1">Ticket Price (coins)</label>
+              <input type="number" min="1" value={form.ticketPrice} onChange={set("ticketPrice")} required
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-yellow-400/50" />
+            </div>
+            <div>
+              <label className="block text-sm text-white/60 mb-1">Max Tickets</label>
+              <input type="number" min="1" value={form.maxTickets} onChange={set("maxTickets")} required
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-yellow-400/50" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-white/60 mb-1">Number of Winners</label>
+              <input type="number" min="1" value={form.numberOfWinners} onChange={set("numberOfWinners")} required
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-yellow-400/50" />
+            </div>
+            <div>
+              <label className="block text-sm text-white/60 mb-1">Max Entries/User</label>
+              <input type="number" min="-1" value={form.maxEntriesPerUser} onChange={set("maxEntriesPerUser")} required
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-yellow-400/50" />
+              <p className="text-[11px] text-white/25 mt-1">-1 = unlimited</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm text-white/60 mb-1">End Date & Time</label>
+            <input
+              type="datetime-local"
+              value={form.endDate}
+              onChange={set("endDate")}
+              required
+              min={new Date().toISOString().slice(0, 16)}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-yellow-400/50 [color-scheme:dark]"
+            />
+          </div>
+        </form>
+
+        <div className="px-6 py-4 border-t border-white/8 flex gap-2">
+          <button
+            onClick={submit}
+            disabled={loading}
+            className="flex-1 bg-yellow-400 text-black font-semibold py-2.5 rounded-lg hover:bg-yellow-300 disabled:opacity-40 transition-colors text-sm"
+          >
+            {loading ? "Creating…" : "Create Raffle"}
+          </button>
+          <button onClick={onClose} className="px-4 border border-white/10 text-white/60 rounded-lg hover:bg-white/5 transition-colors text-sm">
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

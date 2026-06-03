@@ -16,7 +16,7 @@ export default function NotFound() {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="mb-8"
         >
-          <div className="text-8xl md:text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-purple-500 to-blue-500 mb-4">
+          <div className="text-8xl md:text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-yellow-500 to-blue-500 mb-4">
             404
           </div>
           <MattySpinsAvatar size={120} />
@@ -47,7 +47,7 @@ export default function NotFound() {
         >
           <Link
             href="/"
-            className="btn-glow group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-purple-600 hover:to-blue-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
+            className="btn-glow group bg-gradient-to-r from-blue-600 to-yellow-600 hover:from-yellow-600 hover:to-blue-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
           >
             <Home className="w-5 h-5 group-hover:animate-pulse" />
             <span>Back to Home</span>

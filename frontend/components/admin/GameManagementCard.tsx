@@ -109,7 +109,7 @@ export default function GameManagementCard({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.05 }}
-        className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-6 hover:border-purple-400/50 transition-all"
+        className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-6 hover:border-yellow-400/50 transition-all"
       >
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
@@ -140,12 +140,12 @@ export default function GameManagementCard({
             </p>
           </div>
 
-          <div className="bg-purple-500/10 rounded-lg p-2 sm:p-3">
+          <div className="bg-yellow-500/10 rounded-lg p-2 sm:p-3">
             <div className="flex items-center mb-1">
-              <Target className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400 mr-1" />
+              <Target className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 mr-1" />
               <p className="text-gray-400 text-xs">Bonuses</p>
             </div>
-            <p className="text-purple-400 font-bold text-sm sm:text-lg">
+            <p className="text-yellow-400 font-bold text-sm sm:text-lg">
               {game.numberOfBonuses}
             </p>
           </div>
@@ -272,7 +272,7 @@ export default function GameManagementCard({
               </button>
               <button
                 onClick={() => setShowCompleteModal(true)}
-                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-all text-sm sm:text-base"
+                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition-all text-sm sm:text-base"
               >
                 <Trophy className="w-4 h-4" />
                 <span>Draw Winner</span>

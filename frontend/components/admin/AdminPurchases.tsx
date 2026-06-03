@@ -138,7 +138,7 @@ export default function AdminPurchases() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500"></div>
       </div>
     );
   }
@@ -160,7 +160,7 @@ export default function AdminPurchases() {
   return (
     <div>
       {/* Filters */}
-      <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-4 sm:p-6 mb-6">
+      <div className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-4 sm:p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Search */}
           <div className="relative">
@@ -170,7 +170,7 @@ export default function AdminPurchases() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by item, user, or purchase ID..."
-              className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
             />
           </div>
 
@@ -180,7 +180,7 @@ export default function AdminPurchases() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="flex-1 px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="flex-1 px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
             >
               <option value="">All Statuses</option>
               <option value="pending">Pending</option>
@@ -194,7 +194,7 @@ export default function AdminPurchases() {
 
       {/* Purchases List */}
       {filteredPurchases.length === 0 ? (
-        <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-12 text-center">
+        <div className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-12 text-center">
           <ShoppingBag className="w-16 h-16 text-gray-600 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-white mb-2">
             No Purchases Found
@@ -213,7 +213,7 @@ export default function AdminPurchases() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-xl p-4 sm:p-6 hover:border-purple-400/50 transition-all"
+              className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-xl p-4 sm:p-6 hover:border-yellow-400/50 transition-all"
             >
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 {/* Purchase Info */}
@@ -239,7 +239,7 @@ export default function AdminPurchases() {
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Customer</p>
                       <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-purple-400" />
+                        <User className="w-4 h-4 text-yellow-400" />
                         <p
                           className="text-sm text-white truncate"
                           title={purchase.metadata?.userName}

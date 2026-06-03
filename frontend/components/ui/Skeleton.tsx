@@ -135,7 +135,7 @@ export function TableSkeleton({
 export function GameCardSkeleton({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-6 ${className}`}
+      className={`bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-6 ${className}`}
     >
       <div className="flex items-center justify-between mb-4">
         <Skeleton variant="text" width="40%" />

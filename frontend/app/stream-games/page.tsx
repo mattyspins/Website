@@ -66,7 +66,7 @@ const GAMES: Game[] = [
   {
     id: "slot-tournament", name: "Slot Tournament",
     tagline: "Battle through the bracket to be crowned champion",
-    icon: <Trophy className="w-6 h-6" />, color: "text-purple-400", iconBg: "bg-purple-500/15", border: "border-purple-500/20",
+    icon: <Trophy className="w-6 h-6" />, color: "text-yellow-400", iconBg: "bg-yellow-500/15", border: "border-yellow-500/20",
     description: "Compete against other viewers in one of the main interactive stream events. Viewers enter a tournament bracket, choose bonus buys during their rounds, and the highest multipliers advance until one player is crowned Tournament Champion 👑.",
     howItWorks: ["Viewers are entered into the tournament bracket", "Players choose bonus buys / slots during their rounds", "Highest multipliers advance through each stage 👀", "Winners progress until one player is crowned Tournament Champion 👑", "Every round is do-or-die — one huge hit can change everything 🔥"],
     rewards: ["Website points", "Giveaway entries", "Community rewards", "Special event prizes"],

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/ToastProvider";
 import { API_ENDPOINTS } from "@/lib/api";
+import { Search, ArrowRight, Star, UserCheck } from "lucide-react";
 
 interface User {
   id: string;
@@ -22,924 +23,319 @@ interface User {
 }
 
 type SortOrder = "az" | "za";
+type RoleFilter = "all" | "vip" | "depositor" | "moderator" | "suspended";
 
 export default function AdminUsers() {
   const router = useRouter();
+  const { success, error } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [sortOrder, setSortOrder] = useState<SortOrder>("az");
-  const [roleFilter, setRoleFilter] = useState<"all" | "vip" | "depositor" | "moderator" | "suspended">("all");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editType, setEditType] = useState<"kick" | "rainbet">("kick");
-  const [newUsername, setNewUsername] = useState("");
-  const [pointsAmount, setPointsAmount] = useState(0);
-  const [pointsOperation, setPointsOperation] = useState<"add" | "remove">("add");
-  const [pointsReason, setPointsReason] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const token = () => localStorage.getItem("access_token") ?? "";
+  const authHeaders = () => ({
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token()}`,
+  });
+
   useEffect(() => {
-    loadAllUsers();
+    loadUsers();
   }, []);
 
-  const loadAllUsers = async () => {
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) {
-      console.error("No access token found");
-      setLoading(false);
-      return;
-    }
-
+  const loadUsers = async (query = "") => {
     setLoading(true);
     try {
-      console.log("Loading all users...");
-
-      const response = await fetch(API_ENDPOINTS.ADMIN_USERS_SEARCH, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      console.log("Load all users response status:", response.status);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("All users response:", data);
-        if (data.success && data.data && data.data.users) {
-          setUsers(data.data.users);
-          console.log("Loaded users:", data.data.users.length);
-        } else {
-          console.error("Invalid response format:", data);
-          setUsers([]);
-        }
+      const url = query
+        ? `${API_ENDPOINTS.ADMIN_USERS_SEARCH}?query=${encodeURIComponent(query)}`
+        : API_ENDPOINTS.ADMIN_USERS_SEARCH;
+      const res = await fetch(url, { headers: authHeaders() });
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data.data?.users ?? []);
       } else {
-        const errorData = await response.text();
-        console.error(
-          "Failed to load users:",
-          response.status,
-          response.statusText,
-          errorData,
-        );
         setUsers([]);
+        error("Failed to load", "Could not fetch users.");
       }
-    } catch (error) {
-      console.error("Failed to load users:", error);
+    } catch {
       setUsers([]);
+      error("Error", "Network error while fetching users.");
     } finally {
       setLoading(false);
     }
   };
 
-  const searchUsers = async (query: string) => {
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) {
-      console.error("No access token found");
-      return;
-    }
+  const toggleRole = async (
+    user: User,
+    field: "isVip" | "isDepositor" | "isModerator"
+  ) => {
+    const endpoint =
+      field === "isModerator"
+        ? API_ENDPOINTS.ADMIN_USER_MODERATOR(user.id)
+        : field === "isVip"
+        ? API_ENDPOINTS.ADMIN_USER_VIP(user.id)
+        : API_ENDPOINTS.ADMIN_USER_DEPOSITOR(user.id);
 
     try {
-      const url = query
-        ? `${API_ENDPOINTS.ADMIN_USERS_SEARCH}?query=${encodeURIComponent(query)}`
-        : API_ENDPOINTS.ADMIN_USERS_SEARCH;
-
-      console.log("Searching users with URL:", url);
-      console.log("Access token:", accessToken.substring(0, 20) + "...");
-
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ [field]: !user[field] }),
       });
-
-      console.log("Response status:", response.status);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("User search response:", data);
-        if (data.success && data.data && data.data.users) {
-          setUsers(data.data.users);
-          console.log("Found users:", data.data.users.length);
-        } else {
-          console.error("Invalid response format:", data);
-          setUsers([]);
-        }
-      } else {
-        const errorData = await response.text();
-        console.error(
-          "Failed to search users:",
-          response.status,
-          response.statusText,
-          errorData,
+      if (res.ok) {
+        setUsers((prev) =>
+          prev.map((u) => (u.id === user.id ? { ...u, [field]: !user[field] } : u))
         );
-        setUsers([]);
-      }
-    } catch (error) {
-      console.error("Failed to search users:", error);
-      setUsers([]);
-    }
-  };
-
-  const handleEditUsername = async () => {
-    if (!selectedUser || !newUsername.trim()) {
-      alert("Please provide a username");
-      return;
-    }
-
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) return;
-
-    try {
-      const endpoint =
-        editType === "kick"
-          ? API_ENDPOINTS.ADMIN_EDIT_KICK_USERNAME(selectedUser.id)
-          : API_ENDPOINTS.ADMIN_EDIT_RAINBET_USERNAME(selectedUser.id);
-
-      const fieldName =
-        editType === "kick" ? "kickUsername" : "rainbetUsername";
-
-      const response = await fetch(endpoint, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ [fieldName]: newUsername }),
-      });
-
-      if (response.ok) {
-        alert(
-          `${editType === "kick" ? "Kick" : "AceBet"} username updated successfully!`,
-        );
-        setShowEditModal(false);
-        setSelectedUser(null);
-        setNewUsername("");
-        loadAllUsers(); // Refresh the user list
+        const label =
+          field === "isVip" ? "VIP" : field === "isDepositor" ? "Depositor" : "Moderator";
+        success("Role updated", `${user.displayName} — ${label} ${!user[field] ? "granted" : "removed"}.`);
       } else {
-        const data = await response.json();
-        alert(data.error?.message || `Failed to update ${editType} username`);
+        error("Failed", "Could not update role.");
       }
-    } catch (error) {
-      console.error(`Failed to update ${editType} username:`, error);
-      alert(`Failed to update ${editType} username`);
+    } catch {
+      error("Error", "Network error.");
     }
   };
 
-  const adjustPoints = async () => {
-    if (!selectedUser || !pointsReason.trim()) {
-      alert("Please provide a reason");
-      return;
-    }
-    if (!pointsAmount || pointsAmount <= 0) {
-      alert("Please enter a valid amount greater than 0");
-      return;
-    }
-
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) return;
-
-    const finalAmount = pointsOperation === "remove" ? -pointsAmount : pointsAmount;
-
-    try {
-      const response = await fetch(
-        API_ENDPOINTS.ADMIN_USER_POINTS(selectedUser.id),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ amount: finalAmount, reason: pointsReason }),
-        },
-      );
-
-      if (response.ok) {
-        alert(`Successfully ${pointsOperation === "add" ? "added" : "removed"} ${pointsAmount.toLocaleString()} coins ${pointsOperation === "add" ? "to" : "from"} ${selectedUser.displayName}!`);
-        setShowModal(false);
-        setSelectedUser(null);
-        setPointsAmount(0);
-        setPointsOperation("add");
-        setPointsReason("");
-        loadAllUsers();
-      } else {
-        const data = await response.json();
-        alert(data.error?.message || "Failed to adjust points");
-      }
-    } catch (error) {
-      console.error("Failed to adjust points:", error);
-      alert("Failed to adjust points");
-    }
-  };
+  const filtered = [...users]
+    .filter((u) => {
+      if (roleFilter === "vip") return u.isVip;
+      if (roleFilter === "depositor") return u.isDepositor;
+      if (roleFilter === "moderator") return u.isModerator;
+      if (roleFilter === "suspended") return u.isSuspended;
+      return true;
+    })
+    .sort((a, b) =>
+      sortOrder === "az"
+        ? a.displayName.localeCompare(b.displayName)
+        : b.displayName.localeCompare(a.displayName)
+    );
 
   return (
-    <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-6">
-      <h2 className="text-2xl font-bold text-white mb-4">User Management</h2>
+    <div className="space-y-4">
+      {/* Search bar */}
+      <div className="bg-navy-800/60 border border-white/6 rounded-xl p-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            loadUsers(searchQuery);
+          }}
+          className="flex gap-2"
+        >
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, Kick or Discord ID…"
+              className="w-full pl-9 pr-4 py-2.5 bg-navy-900/60 border border-white/8 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-yellow-500/40"
+            />
+          </div>
+          <button
+            type="submit"
+            className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+          >
+            Search
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery("");
+              loadUsers();
+            }}
+            className="bg-white/6 hover:bg-white/10 text-gray-300 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+          >
+            Clear
+          </button>
+        </form>
+      </div>
 
-      {/* Search */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          searchUsers(searchQuery);
-        }}
-        className="mb-6"
-      >
-        <div className="flex flex-col sm:flex-row gap-2">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by username, Kick or Discord ID..."
-            className="flex-1 px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-          />
-          <div className="flex gap-2">
+      {/* Filters + sort row */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex flex-wrap gap-1.5">
+          {(["all", "vip", "depositor", "moderator", "suspended"] as const).map((f) => (
             <button
-              type="submit"
-              className="flex-1 sm:flex-none bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-lg transition-colors text-sm font-semibold"
+              key={f}
+              onClick={() => setRoleFilter(f)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition-colors border ${
+                roleFilter === f
+                  ? "bg-yellow-600 border-yellow-500 text-white"
+                  : "bg-white/3 border-white/8 text-gray-400 hover:text-white hover:border-white/20"
+              }`}
             >
-              Search
+              {f === "all"
+                ? "All"
+                : f === "depositor"
+                ? "Depositors"
+                : f === "moderator"
+                ? "Moderators"
+                : f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <p className="text-gray-500 text-xs">
+            {filtered.length} user{filtered.length !== 1 ? "s" : ""}
+          </p>
+          <div className="flex rounded-lg overflow-hidden border border-white/8 text-xs font-semibold">
+            <button
+              onClick={() => setSortOrder("az")}
+              className={`px-3 py-1.5 transition-colors ${
+                sortOrder === "az" ? "bg-yellow-600 text-white" : "bg-white/3 text-gray-400 hover:text-white"
+              }`}
+            >
+              A → Z
             </button>
             <button
-              type="button"
-              onClick={() => { setSearchQuery(""); loadAllUsers(); }}
-              className="flex-1 sm:flex-none bg-gray-600 hover:bg-gray-700 text-white px-5 py-2 rounded-lg transition-colors text-sm font-semibold"
+              onClick={() => setSortOrder("za")}
+              className={`px-3 py-1.5 transition-colors ${
+                sortOrder === "za" ? "bg-yellow-600 text-white" : "bg-white/3 text-gray-400 hover:text-white"
+              }`}
             >
-              Show All
+              Z → A
             </button>
           </div>
         </div>
-      </form>
-
-      {/* Role filters */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {(["all", "vip", "depositor", "moderator", "suspended"] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setRoleFilter(f)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition-colors border ${
-              roleFilter === f
-                ? "bg-purple-600 border-purple-500 text-white"
-                : "bg-black/30 border-purple-500/20 text-gray-400 hover:text-white"
-            }`}
-          >
-            {f === "all" ? "All Users" : f === "vip" ? "⭐ VIP" : f === "depositor" ? "💰 Depositors" : f === "moderator" ? "Moderators" : "Suspended"}
-          </button>
-        ))}
       </div>
 
-      {/* Sort + count bar */}
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-gray-400 text-sm">
-          {users.length > 0 ? `Showing ${users.length} user${users.length !== 1 ? "s" : ""}` : "No users found"}
-        </p>
-        <div className="flex rounded-lg overflow-hidden border border-purple-500/30 text-xs font-semibold">
-          <button
-            onClick={() => setSortOrder("az")}
-            className={`px-3 py-1.5 transition-colors ${sortOrder === "az" ? "bg-purple-600 text-white" : "bg-black/40 text-gray-400 hover:text-white"}`}
-          >
-            A → Z
-          </button>
-          <button
-            onClick={() => setSortOrder("za")}
-            className={`px-3 py-1.5 transition-colors ${sortOrder === "za" ? "bg-purple-600 text-white" : "bg-black/40 text-gray-400 hover:text-white"}`}
-          >
-            Z → A
-          </button>
-        </div>
-      </div>
-
-      {/* Users Table */}
-      {loading ? (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading users...</p>
-        </div>
-      ) : users.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-400 text-lg">No users found</p>
-          <p className="text-gray-500 text-sm mt-2">
-            {searchQuery
-              ? "Try a different search term"
-              : "No users have registered yet"}
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-purple-500/30">
-                <th className="text-left text-gray-400 font-semibold py-3 px-4">
-                  User
-                </th>
-                <th className="text-left text-gray-400 font-semibold py-3 px-4">
-                  Kick
-                </th>
-                <th className="text-left text-gray-400 font-semibold py-3 px-4">
-                  AceBet
-                </th>
-                <th className="text-left text-gray-400 font-semibold py-3 px-4">
-                  Coins
-                </th>
-                <th className="text-left text-gray-400 font-semibold py-3 px-4">
-                  Status
-                </th>
-                <th className="text-left text-gray-400 font-semibold py-3 px-4">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...users]
-                .filter((u) => {
-                  if (roleFilter === "vip") return u.isVip;
-                  if (roleFilter === "depositor") return u.isDepositor;
-                  if (roleFilter === "moderator") return u.isModerator;
-                  if (roleFilter === "suspended") return u.isSuspended;
-                  return true;
-                })
-                .sort((a, b) => sortOrder === "az"
-                  ? a.displayName.localeCompare(b.displayName)
-                  : b.displayName.localeCompare(a.displayName)
-                ).map((user) => (
-                <tr
-                  key={user.id}
-                  onClick={() => router.push(`/admin/users/${user.id}`)}
-                  className="border-b border-purple-500/10 hover:bg-purple-500/8 cursor-pointer transition-colors"
-                >
-                  <td className="py-3 px-4">
-                    <div>
-                      <p className="text-white font-semibold whitespace-nowrap">
+      {/* Table */}
+      <div className="bg-navy-800/60 border border-white/6 rounded-xl overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-8 h-8 border-2 border-yellow-500/30 border-t-yellow-500 rounded-full animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-gray-400 font-semibold">No users found</p>
+            {searchQuery && (
+              <p className="text-gray-600 text-sm mt-1">Try a different search term</p>
+            )}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-white/6">
+                  <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-widest py-3 px-4">
+                    User
+                  </th>
+                  <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-widest py-3 px-4">
+                    Coins
+                  </th>
+                  <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-widest py-3 px-4">
+                    Status
+                  </th>
+                  <th className="text-right text-gray-500 text-xs font-semibold uppercase tracking-widest py-3 px-4">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((user) => (
+                  <tr
+                    key={user.id}
+                    className="border-b border-white/4 last:border-0 hover:bg-white/2 transition-colors"
+                  >
+                    {/* User info */}
+                    <td className="py-3.5 px-4">
+                      <p className="text-white font-semibold text-sm leading-tight">
                         {user.displayName}
                       </p>
-                      <p className="text-gray-500 text-sm whitespace-nowrap">
-                        {user.discordId}
-                      </p>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                    {user.kickVerified ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-400">
-                          {user.kickUsername}
-                        </span>
-                        <span className="text-xs text-green-500 ml-1">
-                          ✓ Verified
-                        </span>
+                      <p className="text-gray-600 text-xs mt-0.5">{user.discordId}</p>
+                    </td>
+
+                    {/* Coins */}
+                    <td className="py-3.5 px-4">
+                      <span className="text-yellow-300 font-bold text-sm">
+                        {user.points.toLocaleString()}
+                      </span>
+                    </td>
+
+                    {/* Status badges */}
+                    <td className="py-3.5 px-4">
+                      <div className="flex flex-wrap gap-1">
+                        {user.isAdmin && (
+                          <span className="bg-yellow-500 text-black text-[10px] px-2 py-0.5 rounded-full font-black">
+                            ADMIN
+                          </span>
+                        )}
+                        {user.isModerator && (
+                          <span className="bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                            MOD
+                          </span>
+                        )}
+                        {user.isVip && (
+                          <span className="bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                            VIP
+                          </span>
+                        )}
+                        {user.isDepositor && (
+                          <span className="bg-green-500/20 text-green-300 border border-green-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                            DEP
+                          </span>
+                        )}
+                        {user.isSuspended && (
+                          <span className="bg-red-500/20 text-red-300 border border-red-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                            SUSPENDED
+                          </span>
+                        )}
+                        {!user.isAdmin &&
+                          !user.isModerator &&
+                          !user.isVip &&
+                          !user.isDepositor &&
+                          !user.isSuspended && (
+                            <span className="text-gray-700 text-xs">—</span>
+                          )}
+                      </div>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {!user.isAdmin && (
+                          <>
+                            <button
+                              onClick={() => toggleRole(user, "isVip")}
+                              title={user.isVip ? "Remove VIP" : "Grant VIP"}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                user.isVip
+                                  ? "bg-yellow-500/25 text-yellow-300 hover:bg-yellow-500/40"
+                                  : "bg-white/4 text-gray-600 hover:text-yellow-300 hover:bg-yellow-500/15"
+                              }`}
+                            >
+                              <Star className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => toggleRole(user, "isDepositor")}
+                              title={user.isDepositor ? "Remove Depositor" : "Grant Depositor"}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                user.isDepositor
+                                  ? "bg-green-500/25 text-green-300 hover:bg-green-500/40"
+                                  : "bg-white/4 text-gray-600 hover:text-green-300 hover:bg-green-500/15"
+                              }`}
+                            >
+                              <UserCheck className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
                         <button
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setEditType("kick");
-                            setNewUsername(user.kickUsername || "");
-                            setShowEditModal(true);
-                          }}
-                          className="bg-blue-600 hover:bg-gold-600 text-white text-xs px-2 py-1 rounded transition-colors"
-                          title="Edit Kick username"
+                          onClick={() => router.push(`/admin/users/${user.id}`)}
+                          className="flex items-center gap-1 bg-white/6 hover:bg-white/12 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
                         >
-                          ✏️ Edit
+                          Manage <ArrowRight className="w-3 h-3" />
                         </button>
                       </div>
-                    ) : user.kickUsername ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-yellow-400">
-                          {user.kickUsername}
-                        </span>
-                        <button
-                          onClick={async () => {
-                            if (
-                              !confirm(
-                                `Verify Kick username "${user.kickUsername}" for ${user.displayName}?`,
-                              )
-                            ) {
-                              return;
-                            }
-
-                            const accessToken =
-                              localStorage.getItem("access_token");
-                            if (!accessToken) return;
-
-                            try {
-                              const response = await fetch(
-                                API_ENDPOINTS.ADMIN_VERIFY_KICK(user.id),
-                                {
-                                  method: "POST",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                    Authorization: `Bearer ${accessToken}`,
-                                  },
-                                  body: JSON.stringify({ verified: true }),
-                                },
-                              );
-
-                              if (response.ok) {
-                                alert("✅ Kick username verified!");
-                                loadAllUsers();
-                              } else {
-                                const data = await response.json();
-                                alert(
-                                  data.error?.message ||
-                                    "Failed to verify Kick username",
-                                );
-                              }
-                            } catch (error) {
-                              console.error(
-                                "Failed to verify Kick username:",
-                                error,
-                              );
-                              alert("Failed to verify Kick username");
-                            }
-                          }}
-                          className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 rounded transition-colors"
-                          title="Verify Kick username"
-                        >
-                          ✓ Verify
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setEditType("kick");
-                            setNewUsername(user.kickUsername || "");
-                            setShowEditModal(true);
-                          }}
-                          className="bg-blue-600 hover:bg-gold-600 text-white text-xs px-2 py-1 rounded transition-colors"
-                          title="Edit Kick username"
-                        >
-                          ✏️ Edit
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-500">Not set</span>
-                        <button
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setEditType("kick");
-                            setNewUsername("");
-                            setShowEditModal(true);
-                          }}
-                          className="bg-blue-600 hover:bg-gold-600 text-white text-xs px-2 py-1 rounded transition-colors"
-                          title="Set Kick username"
-                        >
-                          + Set
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                    {user.rainbetVerified ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-400">
-                          {user.rainbetUsername}
-                        </span>
-                        <span className="text-xs text-green-500 ml-1">✓</span>
-                        <button
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setEditType("rainbet");
-                            setNewUsername(user.rainbetUsername || "");
-                            setShowEditModal(true);
-                          }}
-                          className="bg-blue-600 hover:bg-gold-600 text-white text-xs px-2 py-1 rounded transition-colors"
-                          title="Edit AceBet username"
-                        >
-                          ✏️ Edit
-                        </button>
-                      </div>
-                    ) : user.rainbetUsername ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-yellow-400">
-                          {user.rainbetUsername}
-                        </span>
-                        <button
-                          onClick={async () => {
-                            if (
-                              !confirm(
-                                `Verify AceBet username "${user.rainbetUsername}" for ${user.displayName}?`,
-                              )
-                            ) {
-                              return;
-                            }
-
-                            const accessToken =
-                              localStorage.getItem("access_token");
-                            if (!accessToken) return;
-
-                            try {
-                              const response = await fetch(
-                                API_ENDPOINTS.ADMIN_VERIFY_RAINBET(user.id),
-                                {
-                                  method: "POST",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                    Authorization: `Bearer ${accessToken}`,
-                                  },
-                                  body: JSON.stringify({ verified: true }),
-                                },
-                              );
-
-                              if (response.ok) {
-                                alert("✅ AceBet username verified!");
-                                loadAllUsers();
-                              } else {
-                                const data = await response.json();
-                                alert(
-                                  data.error?.message ||
-                                    "Failed to verify AceBet username",
-                                );
-                              }
-                            } catch (error) {
-                              console.error(
-                                "Failed to verify AceBet username:",
-                                error,
-                              );
-                              alert("Failed to verify AceBet username");
-                            }
-                          }}
-                          className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 rounded transition-colors"
-                          title="Verify AceBet username"
-                        >
-                          ✓ Verify
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setEditType("rainbet");
-                            setNewUsername(user.rainbetUsername || "");
-                            setShowEditModal(true);
-                          }}
-                          className="bg-blue-600 hover:bg-gold-600 text-white text-xs px-2 py-1 rounded transition-colors"
-                          title="Edit AceBet username"
-                        >
-                          ✏️ Edit
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-500">Not set</span>
-                        <button
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setEditType("rainbet");
-                            setNewUsername("");
-                            setShowEditModal(true);
-                          }}
-                          className="bg-blue-600 hover:bg-gold-600 text-white text-xs px-2 py-1 rounded transition-colors"
-                          title="Set AceBet username"
-                        >
-                          + Set
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-purple-400 font-semibold">
-                      {user.points.toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex flex-wrap gap-1.5">
-                      {user.isAdmin && (
-                        <span className="bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold">ADMIN</span>
-                      )}
-                      {user.isModerator && !user.isAdmin && (
-                        <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-bold">MOD</span>
-                      )}
-                      {user.isVip && (
-                        <span className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full font-bold">VIP</span>
-                      )}
-                      {user.isDepositor && (
-                        <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full font-bold">DEPOSITOR</span>
-                      )}
-                      {user.isSuspended && (
-                        <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">SUSPENDED</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex flex-wrap gap-1.5">
-                      <button
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setShowModal(true);
-                        }}
-                        className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-2.5 py-1.5 rounded transition-colors"
-                      >
-                        💎 Coins
-                      </button>
-                      <button
-                        onClick={async () => {
-                          const accessToken = localStorage.getItem("access_token");
-                          if (!accessToken) return;
-                          const res = await fetch(API_ENDPOINTS.ADMIN_USER_VIP(user.id), {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-                            body: JSON.stringify({ isVip: !user.isVip }),
-                          });
-                          if (res.ok) loadAllUsers();
-                        }}
-                        className={`text-sm px-3 py-1 rounded transition-colors ${user.isVip ? "bg-purple-800 hover:bg-purple-900 text-white" : "bg-purple-500/20 hover:bg-purple-500/40 text-purple-300"}`}
-                      >
-                        {user.isVip ? "Un-VIP" : "⭐ VIP"}
-                      </button>
-                      <button
-                        onClick={async () => {
-                          const accessToken = localStorage.getItem("access_token");
-                          if (!accessToken) return;
-                          const res = await fetch(API_ENDPOINTS.ADMIN_USER_DEPOSITOR(user.id), {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-                            body: JSON.stringify({ isDepositor: !user.isDepositor }),
-                          });
-                          if (res.ok) loadAllUsers();
-                        }}
-                        className={`text-sm px-3 py-1 rounded transition-colors ${user.isDepositor ? "bg-green-800 hover:bg-green-900 text-white" : "bg-green-500/20 hover:bg-green-500/40 text-green-300"}`}
-                      >
-                        {user.isDepositor ? "Un-Dep" : "💰 Dep"}
-                      </button>
-                      {!user.isAdmin && (
-                        <button
-                          onClick={async () => {
-                            const action = user.isModerator
-                              ? "demote"
-                              : "promote";
-                            if (
-                              !confirm(
-                                `Are you sure you want to ${action} this user ${user.isModerator ? "from" : "to"} moderator?`,
-                              )
-                            ) {
-                              return;
-                            }
-
-                            const accessToken =
-                              localStorage.getItem("access_token");
-                            if (!accessToken) return;
-
-                            try {
-                              const response = await fetch(
-                                API_ENDPOINTS.ADMIN_USER_MODERATOR(user.id),
-                                {
-                                  method: "POST",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                    Authorization: `Bearer ${accessToken}`,
-                                  },
-                                  body: JSON.stringify({
-                                    isModerator: !user.isModerator,
-                                  }),
-                                },
-                              );
-
-                              if (response.ok) {
-                                alert(
-                                  `User ${action}d successfully! They will need to log in again for changes to take effect.`,
-                                );
-                                searchUsers(searchQuery);
-                              } else {
-                                const data = await response.json();
-                                alert(
-                                  data.error?.message ||
-                                    `Failed to ${action} user`,
-                                );
-                              }
-                            } catch (error) {
-                              console.error(`Failed to ${action} user:`, error);
-                              alert(`Failed to ${action} user`);
-                            }
-                          }}
-                          className={`text-sm px-3 py-1 rounded transition-colors ${
-                            user.isModerator
-                              ? "bg-gray-600 hover:bg-gray-700 text-white"
-                              : "bg-blue-600 hover:bg-gold-600 text-white"
-                          }`}
-                        >
-                          {user.isModerator ? "🔻 Demote" : "⭐ Promote"}
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Points Modal */}
-      {showModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-gradient-to-br from-purple-900/90 to-black border border-purple-500/30 rounded-2xl p-6 max-w-md w-full"
-          >
-            <h3 className="text-2xl font-bold text-white mb-1">
-              Manage Coins
-            </h3>
-            <p className="text-gray-400 text-sm mb-4">
-              {selectedUser.displayName} &mdash;{" "}
-              <span className="text-purple-300 font-semibold">
-                {selectedUser.points.toLocaleString()} coins
-              </span>
-            </p>
-
-            <div className="space-y-4">
-              {/* Add / Remove toggle */}
-              <div className="flex rounded-lg overflow-hidden border border-purple-500/30">
-                <button
-                  onClick={() => setPointsOperation("add")}
-                  className={`flex-1 py-2.5 font-semibold text-sm transition-colors ${
-                    pointsOperation === "add"
-                      ? "bg-green-600 text-white"
-                      : "bg-black/40 text-gray-400 hover:text-white"
-                  }`}
-                >
-                  + Add Coins
-                </button>
-                <button
-                  onClick={() => setPointsOperation("remove")}
-                  className={`flex-1 py-2.5 font-semibold text-sm transition-colors ${
-                    pointsOperation === "remove"
-                      ? "bg-red-600 text-white"
-                      : "bg-black/40 text-gray-400 hover:text-white"
-                  }`}
-                >
-                  − Remove Coins
-                </button>
-              </div>
-
-              <div>
-                <label className="text-gray-400 text-sm mb-2 block">
-                  Amount
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={pointsAmount || ""}
-                  onChange={(e) =>
-                    setPointsAmount(Math.abs(parseInt(e.target.value) || 0))
-                  }
-                  placeholder="e.g. 500"
-                  className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-gray-400 text-sm mb-2 block">
-                  Reason
-                </label>
-                <input
-                  type="text"
-                  value={pointsReason}
-                  onChange={(e) => setPointsReason(e.target.value)}
-                  placeholder="e.g. Bonus reward, Refund, Penalty…"
-                  className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-
-              {pointsAmount > 0 && (
-                <div
-                  className={`border rounded-lg p-3 ${
-                    pointsOperation === "add"
-                      ? "bg-green-500/10 border-green-500/30"
-                      : "bg-red-500/10 border-red-500/30"
-                  }`}
-                >
-                  <p className="text-gray-300 text-sm">
-                    New balance:{" "}
-                    <span
-                      className={`font-semibold ${
-                        pointsOperation === "add"
-                          ? "text-green-400"
-                          : "text-red-400"
-                      }`}
-                    >
-                      {Math.max(
-                        0,
-                        selectedUser.points +
-                          (pointsOperation === "add"
-                            ? pointsAmount
-                            : -pointsAmount),
-                      ).toLocaleString()}
-                    </span>{" "}
-                    coins
-                    <span className="text-gray-500 ml-2">
-                      ({pointsOperation === "add" ? "+" : "-"}
-                      {pointsAmount.toLocaleString()})
-                    </span>
-                  </p>
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <button
-                  onClick={adjustPoints}
-                  className={`flex-1 font-semibold py-2 rounded-lg transition-colors ${
-                    pointsOperation === "add"
-                      ? "bg-green-600 hover:bg-green-700 text-white"
-                      : "bg-red-600 hover:bg-red-700 text-white"
-                  }`}
-                >
-                  {pointsOperation === "add" ? "Add Coins" : "Remove Coins"}
-                </button>
-                <button
-                  onClick={() => {
-                    setShowModal(false);
-                    setSelectedUser(null);
-                    setPointsAmount(0);
-                    setPointsOperation("add");
-                    setPointsReason("");
-                  }}
-                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
-      {/* Edit Username Modal */}
-      {showEditModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-gradient-to-br from-purple-900/90 to-black border border-purple-500/30 rounded-2xl p-6 max-w-md w-full"
-          >
-            <h3 className="text-2xl font-bold text-white mb-4">
-              Edit {editType === "kick" ? "Kick" : "AceBet"} Username
-            </h3>
-            <p className="text-gray-300 mb-4">
-              User:{" "}
-              <span className="text-white font-semibold">
-                {selectedUser.displayName}
-              </span>
-              <br />
-              Current:{" "}
-              <span className="text-purple-400 font-semibold">
-                {editType === "kick"
-                  ? selectedUser.kickUsername || "Not set"
-                  : selectedUser.rainbetUsername || "Not set"}
-              </span>
-            </p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-gray-400 text-sm mb-2 block">
-                  New {editType === "kick" ? "Kick" : "AceBet"} Username
-                </label>
-                <input
-                  type="text"
-                  value={newUsername}
-                  onChange={(e) => setNewUsername(e.target.value)}
-                  placeholder={`Enter ${editType === "kick" ? "Kick" : "AceBet"} username`}
-                  className="w-full px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                />
-                <p className="text-gray-500 text-xs mt-1">
-                  Leave empty to remove the username
-                </p>
-              </div>
-
-              {editType === "rainbet" && (
-                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
-                  <p className="text-yellow-400 text-sm">
-                    ⚠️ Changing the AceBet username will reset verification
-                    status
-                  </p>
-                </div>
-              )}
-
-              {editType === "kick" && selectedUser?.kickVerified && (
-                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
-                  <p className="text-yellow-400 text-sm">
-                    ⚠️ Changing the Kick username will reset verification status
-                  </p>
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <button
-                  onClick={handleEditUsername}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 rounded-lg transition-colors"
-                >
-                  Update
-                </button>
-                <button
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setSelectedUser(null);
-                    setNewUsername("");
-                  }}
-                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
-
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

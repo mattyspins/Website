@@ -18,7 +18,7 @@ const TIER_META: Record<string, { color: string; bg: string; ring: string; label
   Rookie:       { color: "text-gray-300",  bg: "from-gray-700/60 to-gray-800/60",   ring: "ring-gray-600/40",   label: "ROOKIE" },
   Hustler:      { color: "text-blue-300",  bg: "from-blue-900/50 to-navy-800/60",   ring: "ring-blue-500/30",   label: "HUSTLER" },
   Grinder:      { color: "text-green-300", bg: "from-green-900/50 to-navy-800/60",  ring: "ring-green-500/30",  label: "GRINDER" },
-  "High Roller":{ color: "text-purple-300",bg: "from-purple-900/50 to-navy-800/60", ring: "ring-purple-500/30", label: "HIGH ROLLER" },
+  "High Roller":{ color: "text-yellow-300",bg: "from-yellow-900/50 to-navy-800/60", ring: "ring-yellow-500/30", label: "HIGH ROLLER" },
   VIP:          { color: "text-gold-300",  bg: "from-gold-900/40 to-navy-800/60",   ring: "ring-gold-500/30",   label: "VIP" },
   Elite:        { color: "text-gold-200",  bg: "from-gold-800/40 to-navy-800/60",   ring: "ring-gold-400/40",   label: "ELITE" },
   Diamond:      { color: "text-cyan-300",  bg: "from-cyan-900/50 to-navy-800/60",   ring: "ring-cyan-400/40",   label: "DIAMOND" },

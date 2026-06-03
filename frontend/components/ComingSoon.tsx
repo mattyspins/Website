@@ -23,7 +23,7 @@ export default function ComingSoon({
   const Icon = icons[icon];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-yellow-900 to-gray-900 flex items-center justify-center px-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -43,8 +43,8 @@ export default function ComingSoon({
           className="mb-8 flex justify-center"
         >
           <div className="relative">
-            <div className="absolute inset-0 bg-purple-500 blur-3xl opacity-50 rounded-full"></div>
-            <Icon className="w-32 h-32 text-purple-400 relative z-10" />
+            <div className="absolute inset-0 bg-yellow-500 blur-3xl opacity-50 rounded-full"></div>
+            <Icon className="w-32 h-32 text-yellow-400 relative z-10" />
           </div>
         </motion.div>
 
@@ -53,7 +53,7 @@ export default function ComingSoon({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="text-6xl font-bold mb-6 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent"
+          className="text-6xl font-bold mb-6 bg-gradient-to-r from-yellow-400 via-pink-400 to-yellow-400 bg-clip-text text-transparent"
         >
           {title}
         </motion.h1>
@@ -75,7 +75,7 @@ export default function ComingSoon({
           transition={{ delay: 0.4 }}
           className="inline-block"
         >
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-4 rounded-full">
+          <div className="bg-gradient-to-r from-yellow-600 to-pink-600 px-8 py-4 rounded-full">
             <span className="text-white font-bold text-lg flex items-center gap-2">
               <Sparkles className="w-5 h-5" />
               COMING SOON
@@ -103,7 +103,7 @@ export default function ComingSoon({
                 repeat: Infinity,
                 delay: i * 0.2,
               }}
-              className="w-2 h-2 bg-purple-400 rounded-full"
+              className="w-2 h-2 bg-yellow-400 rounded-full"
             />
           ))}
         </motion.div>

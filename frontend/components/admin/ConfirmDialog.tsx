@@ -7,7 +7,7 @@ interface ConfirmDialogProps {
   title: string;
   message: string;
   confirmText: string;
-  confirmColor?: "red" | "yellow" | "green" | "purple";
+  confirmColor?: "red" | "yellow" | "green" | "yellow";
   onConfirm: () => void;
   onCancel: () => void;
   loading?: boolean;
@@ -30,8 +30,8 @@ export default function ConfirmDialog({
         return "from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800";
       case "green":
         return "from-green-600 to-green-700 hover:from-green-700 hover:to-green-800";
-      case "purple":
-        return "from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800";
+      case "yellow":
+        return "from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800";
       default:
         return "from-red-600 to-red-700 hover:from-red-700 hover:to-red-800";
     }

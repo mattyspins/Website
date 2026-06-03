@@ -15,18 +15,18 @@ export const theme = {
       900: "#1e3a8a",
     },
 
-    // Secondary purple colors
+    // Secondary amber/gold colors
     secondary: {
-      50: "#faf5ff",
-      100: "#f3e8ff",
-      200: "#e9d5ff",
-      300: "#d8b4fe",
-      400: "#c084fc",
-      500: "#a855f7", // Main purple
-      600: "#9333ea",
-      700: "#7c3aed",
-      800: "#6b21a8",
-      900: "#581c87",
+      50: "#fffbeb",
+      100: "#fef3c7",
+      200: "#fde68a",
+      300: "#fcd34d",
+      400: "#fbbf24",
+      500: "#f59e0b", // Main amber
+      600: "#d97706",
+      700: "#b45309",
+      800: "#92400e",
+      900: "#78350f",
     },
 
     // Accent gold colors
@@ -100,8 +100,8 @@ export const theme = {
 
   // Gradient combinations
   gradients: {
-    primary: "bg-gradient-to-r from-blue-600 to-purple-600",
-    secondary: "bg-gradient-to-r from-purple-600 to-pink-600",
+    primary: "bg-gradient-to-r from-blue-600 to-yellow-600",
+    secondary: "bg-gradient-to-r from-yellow-600 to-pink-600",
     accent: "bg-gradient-to-r from-yellow-500 to-orange-500",
     success: "bg-gradient-to-r from-green-500 to-emerald-500",
     error: "bg-gradient-to-r from-red-500 to-pink-500",
@@ -114,7 +114,7 @@ export const theme = {
   components: {
     button: {
       primary:
-        "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white",
+        "bg-gradient-to-r from-blue-600 to-yellow-600 hover:from-blue-700 hover:to-yellow-700 text-white",
       secondary: "bg-gray-700 hover:bg-gray-600 text-white",
       success:
         "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white",
@@ -132,7 +132,7 @@ export const theme = {
       primary:
         "bg-blue-500/10 backdrop-blur-lg border border-blue-500/30 rounded-2xl",
       secondary:
-        "bg-purple-500/10 backdrop-blur-lg border border-purple-500/30 rounded-2xl",
+        "bg-yellow-500/10 backdrop-blur-lg border border-yellow-500/30 rounded-2xl",
       success:
         "bg-green-500/10 backdrop-blur-lg border border-green-500/30 rounded-2xl",
       error:

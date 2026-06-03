@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { SlotGame, searchSlots } from "@/lib/slotGames";
+import { SlotGame, Volatility, searchSlots } from "@/lib/slotGames";
 
 interface Props {
   value: string;
@@ -11,8 +11,8 @@ interface Props {
 }
 
 function SlotImage({ src, name, size = 32 }: { src: string; name: string; size?: number }) {
-  const [error, setError] = useState(false);
-  if (error) {
+  const [error, setError] = useState(!src); // immediately fall back if no URL
+  if (error || !src) {
     return (
       <div
         className="rounded-lg bg-white/10 flex items-center justify-center text-white/40 font-bold shrink-0"
@@ -34,6 +34,21 @@ function SlotImage({ src, name, size = 32 }: { src: string; name: string; size?:
 }
 
 export { SlotImage };
+
+const VOLATILITY_STYLE: Record<Volatility, string> = {
+  "Low":       "bg-green-500/15 text-green-400 border-green-500/25",
+  "Medium":    "bg-blue-500/15 text-blue-300 border-blue-500/25",
+  "High":      "bg-orange-500/15 text-orange-300 border-orange-500/25",
+  "Very High": "bg-red-500/15 text-red-400 border-red-500/25",
+};
+
+export function VolatilityBadge({ volatility }: { volatility: Volatility }) {
+  return (
+    <span className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border shrink-0 ${VOLATILITY_STYLE[volatility]}`}>
+      {volatility}
+    </span>
+  );
+}
 
 export default function SlotPicker({ value, onChange, placeholder = "Search for a slot…", disabled }: Props) {
   const [query, setQuery] = useState(value);
@@ -108,13 +123,14 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
                 }`}
               >
                 <SlotImage src={game.image} name={game.name} size={36} />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className={`text-sm font-medium truncate ${value === game.name ? "text-yellow-300" : "text-white"}`}>
                     {game.name}
                   </p>
                   <p className="text-xs text-white/35 truncate">{game.provider}</p>
                 </div>
-                {value === game.name && <span className="ml-auto text-yellow-400 shrink-0 text-sm">✓</span>}
+                <VolatilityBadge volatility={game.volatility} />
+                {value === game.name && <span className="text-yellow-400 shrink-0 text-sm">✓</span>}
               </div>
             ))
           )}

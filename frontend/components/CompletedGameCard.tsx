@@ -57,12 +57,12 @@ export default function CompletedGameCard({
           </p>
         </div>
 
-        <div className="bg-purple-500/10 rounded-lg p-2">
+        <div className="bg-yellow-500/10 rounded-lg p-2">
           <div className="flex items-center mb-1">
-            <Target className="w-3 h-3 text-purple-400 mr-1" />
+            <Target className="w-3 h-3 text-yellow-400 mr-1" />
             <p className="text-gray-400 text-xs">Bonuses</p>
           </div>
-          <p className="text-purple-400 font-bold text-xs sm:text-sm">
+          <p className="text-yellow-400 font-bold text-xs sm:text-sm">
             {game.numberOfBonuses}
           </p>
         </div>

@@ -62,7 +62,7 @@ function AvatarCircle({
 
   const colors = [
     "from-blue-500 to-blue-700",
-    "from-purple-500 to-purple-700",
+    "from-yellow-500 to-yellow-700",
     "from-cyan-500 to-cyan-700",
     "from-indigo-500 to-indigo-700",
   ];

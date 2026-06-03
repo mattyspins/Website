@@ -83,12 +83,12 @@ export default function GuessTheBalanceCard({
           </p>
         </div>
 
-        <div className="bg-purple-500/10 rounded-lg p-2 sm:p-3">
+        <div className="bg-yellow-500/10 rounded-lg p-2 sm:p-3">
           <div className="flex items-center mb-1">
-            <Target className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400 mr-1" />
+            <Target className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 mr-1" />
             <p className="text-gray-400 text-xs">Bonuses</p>
           </div>
-          <p className="text-purple-400 font-bold text-sm sm:text-lg">
+          <p className="text-yellow-400 font-bold text-sm sm:text-lg">
             {game.numberOfBonuses}
           </p>
         </div>

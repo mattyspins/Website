@@ -75,11 +75,11 @@ export default function AuthCallback() {
 
   return (
     <div className="min-h-screen  flex items-center justify-center">
-      <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-8 max-w-md w-full mx-4">
+      <div className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-8 max-w-md w-full mx-4">
         <div className="text-center">
           {status === "loading" && (
             <>
-              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-500 mx-auto mb-4"></div>
               <h2 className="text-2xl font-bold text-white mb-2">
                 Authenticating
               </h2>

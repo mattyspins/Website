@@ -108,12 +108,12 @@ export default function EditStoreItemModal({
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-gradient-to-br from-gray-900 to-black border border-purple-500/30 rounded-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto mt-2 sm:mt-4"
+          className="bg-gradient-to-br from-gray-900 to-black border border-yellow-500/30 rounded-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto mt-2 sm:mt-4"
         >
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
             <div className="flex items-center mb-2 sm:mb-0">
-              <Edit className="w-6 h-6 sm:w-8 sm:h-8 text-purple-400 mr-2 sm:mr-3" />
+              <Edit className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-400 mr-2 sm:mr-3" />
               <h2 className="text-xl sm:text-2xl font-bold text-white">
                 Edit Store Item
               </h2>
@@ -144,7 +144,7 @@ export default function EditStoreItemModal({
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="e.g., Premium Discord Role"
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm sm:text-base"
                 disabled={loading}
                 required
               />
@@ -165,7 +165,7 @@ export default function EditStoreItemModal({
                 onChange={handleChange}
                 placeholder="Describe what this item includes..."
                 rows={3}
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-sm sm:text-base"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none text-sm sm:text-base"
                 disabled={loading}
               />
             </div>
@@ -188,7 +188,7 @@ export default function EditStoreItemModal({
                   onChange={handleChange}
                   min="0"
                   placeholder="1000"
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm sm:text-base"
                   disabled={loading}
                   required
                 />
@@ -209,7 +209,7 @@ export default function EditStoreItemModal({
                   value={formData.category}
                   onChange={handleChange}
                   placeholder="e.g., Discord Roles"
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm sm:text-base"
                   disabled={loading}
                   required
                 />
@@ -234,7 +234,7 @@ export default function EditStoreItemModal({
                   onChange={handleChange}
                   min="-1"
                   placeholder="-1 for unlimited"
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm sm:text-base"
                   disabled={loading}
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -255,7 +255,7 @@ export default function EditStoreItemModal({
                   name="deliveryType"
                   value={formData.deliveryType}
                   onChange={handleChange}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm sm:text-base"
                   disabled={loading}
                 >
                   <option value="instant">Instant</option>
@@ -283,7 +283,7 @@ export default function EditStoreItemModal({
                   onChange={handleChange}
                   min="0"
                   placeholder="0"
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm sm:text-base"
                   disabled={loading}
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -348,7 +348,7 @@ export default function EditStoreItemModal({
               </button>
               <button
                 type="submit"
-                className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base"
+                className="flex-1 bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base"
                 disabled={loading}
               >
                 {loading ? (

@@ -167,7 +167,7 @@ export default function ModeratorDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen  flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-500"></div>
       </div>
     );
   }
@@ -187,14 +187,14 @@ export default function ModeratorDashboard() {
           </div>
           <button
             onClick={() => router.push("/")}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+            className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             Back to Home
           </button>
         </div>
 
         {/* User Management */}
-        <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-6">
+        <div className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-6">
           <h2 className="text-2xl font-bold text-white mb-4">
             User Management
           </h2>
@@ -213,11 +213,11 @@ export default function ModeratorDashboard() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by username or Discord ID..."
-                className="flex-1 px-4 py-2 bg-black/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                className="flex-1 px-4 py-2 bg-black/50 border border-yellow-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500"
               />
               <button
                 type="submit"
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors"
+                className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg transition-colors"
               >
                 Search
               </button>
@@ -228,7 +228,7 @@ export default function ModeratorDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-purple-500/30">
+                <tr className="border-b border-yellow-500/30">
                   <th className="text-left text-gray-400 font-semibold py-3 px-4">
                     User
                   </th>
@@ -250,7 +250,7 @@ export default function ModeratorDashboard() {
                 {users.map((user) => (
                   <tr
                     key={user.id}
-                    className="border-b border-purple-500/10 hover:bg-purple-500/5"
+                    className="border-b border-yellow-500/10 hover:bg-yellow-500/5"
                   >
                     <td className="py-3 px-4">
                       <div>
@@ -272,7 +272,7 @@ export default function ModeratorDashboard() {
                       )}
                     </td>
                     <td className="py-3 px-4">
-                      <span className="text-purple-400 font-semibold">
+                      <span className="text-yellow-400 font-semibold">
                         {user.points.toLocaleString()}
                       </span>
                     </td>

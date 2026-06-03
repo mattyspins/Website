@@ -171,7 +171,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
           >
             {loading || !user ? (
               <div className="flex-1 flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : (
               <>
@@ -179,7 +179,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
                 <div className="px-5 pt-6 pb-5 border-b border-white/8 shrink-0">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-purple-400 flex items-center justify-center shrink-0 overflow-hidden">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-400 flex items-center justify-center shrink-0 overflow-hidden">
                         {user.avatarUrl
                           ? <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
                           : <span className="text-white font-bold text-lg">{user.displayName.charAt(0).toUpperCase()}</span>
@@ -199,7 +199,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
                   <div className="flex flex-wrap gap-1.5 mt-4">
                     {user.isAdmin    && <span className="bg-yellow-500 text-black text-[10px] px-2 py-0.5 rounded-full font-black">ADMIN</span>}
                     {user.isModerator && <span className="bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black">MOD</span>}
-                    {user.isVip      && <span className="bg-purple-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black">VIP</span>}
+                    {user.isVip      && <span className="bg-yellow-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black">VIP</span>}
                     {user.isDepositor && <span className="bg-green-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black">DEPOSITOR</span>}
                     {user.isSuspended && <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black">SUSPENDED</span>}
                   </div>
@@ -227,7 +227,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
                   {/* Stats */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-navy-800/60 border border-white/6 rounded-xl px-4 py-3 flex items-center gap-3">
-                      <Coins className="w-5 h-5 text-purple-400 shrink-0" />
+                      <Coins className="w-5 h-5 text-yellow-400 shrink-0" />
                       <div>
                         <p className="text-gray-500 text-[10px] uppercase tracking-widest">Coins</p>
                         <p className="text-white font-bold">{user.points.toLocaleString()}</p>
@@ -268,7 +268,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
                       {!user.isAdmin && (
                         <RoleToggle label="Moderator" active={user.isModerator} color="blue" onToggle={() => toggleRole("isModerator", user.isModerator)} />
                       )}
-                      <RoleToggle label="VIP" active={user.isVip} color="purple" onToggle={() => toggleRole("isVip", user.isVip)} />
+                      <RoleToggle label="VIP" active={user.isVip} color="yellow" onToggle={() => toggleRole("isVip", user.isVip)} />
                       <RoleToggle label="Depositor" active={user.isDepositor} color="green" onToggle={() => toggleRole("isDepositor", user.isDepositor)} />
                     </div>
                   </div>
@@ -281,11 +281,11 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
                       <button onClick={() => setCoinsOp("remove")} className={`flex-1 py-2 text-xs font-bold transition-colors ${coinsOp === "remove" ? "bg-red-600 text-white" : "bg-black/30 text-gray-400"}`}>− Remove</button>
                     </div>
                     <input type="number" min="1" value={coinsAmount} onChange={(e) => setCoinsAmount(e.target.value)}
-                      placeholder="Amount" className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500/40" />
+                      placeholder="Amount" className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-yellow-500/40" />
                     <input type="text" value={coinsReason} onChange={(e) => setCoinsReason(e.target.value)}
-                      placeholder="Reason (required)" className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500/40" />
+                      placeholder="Reason (required)" className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-yellow-500/40" />
                     <button onClick={handleCoins} disabled={coinsSaving || !coinsAmount || !coinsReason.trim()}
-                      className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-40 text-white font-bold py-2 rounded-lg text-xs uppercase tracking-wide transition-colors">
+                      className="w-full bg-yellow-600 hover:bg-yellow-700 disabled:opacity-40 text-white font-bold py-2 rounded-lg text-xs uppercase tracking-wide transition-colors">
                       {coinsSaving ? "Saving…" : "Apply"}
                     </button>
                     {coinsMsg && <p className={`text-xs ${coinsMsg.startsWith("✓") ? "text-green-400" : "text-red-400"}`}>{coinsMsg}</p>}
@@ -345,7 +345,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
 function RoleToggle({ label, active, color, onToggle }: { label: string; active: boolean; color: string; onToggle: () => void }) {
   const colors: Record<string, string> = {
     blue:   active ? "bg-blue-600 border-blue-500 text-white"   : "bg-white/3 border-white/10 text-gray-400",
-    purple: active ? "bg-purple-600 border-purple-500 text-white" : "bg-white/3 border-white/10 text-gray-400",
+    yellow: active ? "bg-yellow-600 border-yellow-500 text-white" : "bg-white/3 border-white/10 text-gray-400",
     green:  active ? "bg-green-600 border-green-500 text-white"  : "bg-white/3 border-white/10 text-gray-400",
   };
   return (

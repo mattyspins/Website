@@ -162,7 +162,7 @@ export default function BonusHuntPage() {
           </div>
 
           {activeGames.length === 0 ? (
-            <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-8 sm:p-12 text-center">
+            <div className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-8 sm:p-12 text-center">
               <div className="text-4xl sm:text-6xl mb-4 sm:mb-6">ðŸŽ¯</div>
               <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
                 No Active Games
@@ -213,7 +213,7 @@ export default function BonusHuntPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-gradient-to-r from-purple-500/10 to-green-500/10 border border-purple-500/30 rounded-2xl p-4 sm:p-6"
+          className="bg-gradient-to-r from-yellow-500/10 to-green-500/10 border border-yellow-500/30 rounded-2xl p-4 sm:p-6"
         >
           <h3 className="text-lg sm:text-xl font-bold text-white mb-3">
             How to Play Guess the Balance

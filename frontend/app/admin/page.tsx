@@ -159,8 +159,8 @@ export default function AdminDashboard() {
                   },
                   {
                     href: "/admin/tournament",
-                    icon: <Trophy className="w-5 h-5 text-purple-400" />,
-                    bg: "bg-purple-500/10",
+                    icon: <Trophy className="w-5 h-5 text-yellow-400" />,
+                    bg: "bg-yellow-500/10",
                     title: "Tournament",
                     desc: "Create tournaments, draw participants, manage bracket & declare winners",
                   },

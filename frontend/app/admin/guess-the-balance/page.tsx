@@ -98,7 +98,7 @@ export default function AdminGuessTheBalancePage() {
   if (loading) {
     return (
       <div className="min-h-screen  flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-500"></div>
       </div>
     );
   }
@@ -175,8 +175,8 @@ export default function AdminGuessTheBalancePage() {
             onClick={() => setStatusFilter("ALL")}
             className={`bg-black/50 backdrop-blur-lg border rounded-xl p-4 cursor-pointer transition-all ${
               statusFilter === "ALL"
-                ? "border-purple-500 ring-2 ring-purple-500/50"
-                : "border-purple-500/30 hover:border-purple-500/50"
+                ? "border-yellow-500 ring-2 ring-yellow-500/50"
+                : "border-yellow-500/30 hover:border-yellow-500/50"
             }`}
           >
             <p className="text-gray-400 text-sm mb-1">Total Games</p>
@@ -241,7 +241,7 @@ export default function AdminGuessTheBalancePage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-12 text-center"
+            className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-12 text-center"
           >
             <div className="text-6xl mb-6">ðŸŽ¯</div>
             <h2 className="text-3xl font-bold text-white mb-4">

@@ -218,7 +218,7 @@ export default function StreamSchedule() {
 
                   {item.activity && (
                     <div className="text-right">
-                      <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm">
+                      <span className="bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded-full text-sm">
                         {item.activity}
                       </span>
                     </div>
@@ -248,7 +248,7 @@ export default function StreamSchedule() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.2, duration: 0.6 }}
-        className="mt-6 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg border border-purple-500/30"
+        className="mt-6 p-4 bg-gradient-to-r from-yellow-500/20 to-pink-500/20 rounded-lg border border-yellow-500/30"
       >
         <p className="text-sm text-gray-300 text-center">
           <span className="text-neon-pink font-semibold">Pro Tip:</span> Follow

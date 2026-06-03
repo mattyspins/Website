@@ -115,7 +115,7 @@ export default function PurchaseHistoryPage() {
         >
           <Link
             href="/profile"
-            className="inline-flex items-center text-purple-400 hover:text-purple-300 mb-4 transition-colors"
+            className="inline-flex items-center text-yellow-400 hover:text-yellow-300 mb-4 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Profile
@@ -123,7 +123,7 @@ export default function PurchaseHistoryPage() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center mb-2">
-                <ShoppingBag className="w-8 h-8 text-purple-400 mr-3" />
+                <ShoppingBag className="w-8 h-8 text-yellow-400 mr-3" />
                 <h1 className="text-3xl sm:text-4xl font-bold text-white">
                   Purchase History
                 </h1>
@@ -132,7 +132,7 @@ export default function PurchaseHistoryPage() {
                 View all your store purchases and transactions
               </p>
             </div>
-            <div className="bg-gradient-to-br from-purple-600/20 to-purple-900/20 border border-purple-500/30 rounded-xl p-4 text-center">
+            <div className="bg-gradient-to-br from-yellow-600/20 to-yellow-900/20 border border-yellow-500/30 rounded-xl p-4 text-center">
               <p className="text-gray-400 text-sm mb-1">Total Spent</p>
               <p className="text-yellow-300 font-bold text-2xl flex items-center justify-center">
                 <Coins className="w-6 h-6 mr-2" />
@@ -147,7 +147,7 @@ export default function PurchaseHistoryPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-xl overflow-hidden"
+          className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-xl overflow-hidden"
         >
           {purchases.length === 0 ? (
             <div className="p-12 text-center">
@@ -160,7 +160,7 @@ export default function PurchaseHistoryPage() {
               </p>
               <a
                 href="/store"
-                className="inline-block bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                className="inline-block bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
               >
                 Visit Store
               </a>
@@ -170,7 +170,7 @@ export default function PurchaseHistoryPage() {
               {/* Desktop Table View */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-purple-900/30 border-b border-purple-500/30">
+                  <thead className="bg-yellow-900/30 border-b border-yellow-500/30">
                     <tr>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
                         Item
@@ -199,7 +199,7 @@ export default function PurchaseHistoryPage() {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className="hover:bg-purple-900/10 transition-colors"
+                        className="hover:bg-yellow-900/10 transition-colors"
                       >
                         <td className="px-6 py-4">
                           <p className="text-white font-semibold">
@@ -257,7 +257,7 @@ export default function PurchaseHistoryPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="p-4 hover:bg-purple-900/10 transition-colors"
+                    className="p-4 hover:bg-yellow-900/10 transition-colors"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
@@ -319,8 +319,8 @@ export default function PurchaseHistoryPage() {
             transition={{ delay: 0.2 }}
             className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8"
           >
-            <div className="bg-gradient-to-br from-purple-600/20 to-purple-900/20 border border-purple-500/30 rounded-xl p-6 text-center">
-              <Package className="w-8 h-8 text-purple-400 mx-auto mb-2" />
+            <div className="bg-gradient-to-br from-yellow-600/20 to-yellow-900/20 border border-yellow-500/30 rounded-xl p-6 text-center">
+              <Package className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
               <p className="text-3xl font-bold text-white">
                 {purchases.length}
               </p>

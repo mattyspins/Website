@@ -5,9 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Coins, Trophy, Wallet, Clock, Check,
-  Shield, Star, UserCheck, Ban, Edit2, X, Save
+  Shield, Star, UserCheck, Ban, TrendingUp, ShoppingCart
 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/api";
+import { useToast } from "@/components/ui/ToastProvider";
 
 interface UserDetail {
   id: string;
@@ -65,6 +66,10 @@ export default function AdminUserPage() {
   const [wagerSaving, setWagerSaving] = useState(false);
   const [wagerMsg, setWagerMsg] = useState("");
 
+  // Suspend
+  const [suspendSaving, setSuspendSaving] = useState(false);
+
+  const { success, error: toastError } = useToast();
   const token = () => localStorage.getItem("access_token") ?? "";
 
   useEffect(() => {
@@ -145,9 +150,36 @@ export default function AdminUserPage() {
     } catch { setWagerMsg("Network error."); } finally { setWagerSaving(false); }
   };
 
+  const handleSuspend = async () => {
+    if (!user) return;
+    setSuspendSaving(true);
+    const endpoint = user.isSuspended
+      ? API_ENDPOINTS.ADMIN_USER_UNSUSPEND(user.id)
+      : API_ENDPOINTS.ADMIN_USER_SUSPEND(user.id);
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+      });
+      if (res.ok) {
+        setUser((u) => u ? { ...u, isSuspended: !u.isSuspended } : u);
+        success(
+          user.isSuspended ? "User unsuspended" : "User suspended",
+          user.displayName
+        );
+      } else {
+        toastError("Failed", "Could not update suspension status.");
+      }
+    } catch {
+      toastError("Error", "Network error.");
+    } finally {
+      setSuspendSaving(false);
+    }
+  };
+
   if (loading) return (
     <div className="min-h-screen pt-20 flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-purple-500/40 border-t-purple-500 rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-yellow-500/40 border-t-yellow-500 rounded-full animate-spin" />
     </div>
   );
 
@@ -155,7 +187,7 @@ export default function AdminUserPage() {
     <div className="min-h-screen pt-20 flex items-center justify-center">
       <div className="text-center">
         <p className="text-gray-400 text-lg font-semibold mb-2">User not found</p>
-        <button onClick={() => router.back()} className="text-purple-400 text-sm hover:text-purple-300 transition-colors">← Back</button>
+        <button onClick={() => router.back()} className="text-yellow-400 text-sm hover:text-yellow-300 transition-colors">← Back</button>
       </div>
     </div>
   );
@@ -178,7 +210,7 @@ export default function AdminUserPage() {
           className="bg-navy-800/60 border border-white/6 rounded-2xl p-6 mb-5">
           <div className="flex items-start gap-5 flex-wrap">
             {/* Avatar */}
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-600 to-purple-400 flex items-center justify-center shrink-0 overflow-hidden ring-4 ring-purple-500/20">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-600 to-yellow-400 flex items-center justify-center shrink-0 overflow-hidden ring-4 ring-yellow-500/20">
               {user.avatarUrl
                 ? <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
                 : <span className="text-white font-black text-3xl">{user.displayName.charAt(0).toUpperCase()}</span>
@@ -192,7 +224,7 @@ export default function AdminUserPage() {
               <div className="flex flex-wrap gap-1.5">
                 {user.isAdmin     && <span className="bg-yellow-500 text-black text-xs px-2.5 py-0.5 rounded-full font-black">ADMIN</span>}
                 {user.isModerator && <span className="bg-blue-500 text-white text-xs px-2.5 py-0.5 rounded-full font-black">MODERATOR</span>}
-                {user.isVip       && <span className="bg-purple-500 text-white text-xs px-2.5 py-0.5 rounded-full font-black">VIP</span>}
+                {user.isVip       && <span className="bg-yellow-500 text-white text-xs px-2.5 py-0.5 rounded-full font-black">VIP</span>}
                 {user.isDepositor && <span className="bg-green-600 text-white text-xs px-2.5 py-0.5 rounded-full font-black">DEPOSITOR</span>}
                 {user.isSuspended && <span className="bg-red-500 text-white text-xs px-2.5 py-0.5 rounded-full font-black">SUSPENDED</span>}
               </div>
@@ -213,12 +245,14 @@ export default function AdminUserPage() {
 
             {/* Stats */}
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-              className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+              className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
               {[
-                { icon: <Coins className="w-5 h-5 text-purple-400" />, label: "Coins",     value: user.points.toLocaleString(),                          bg: "bg-purple-500/10" },
-                { icon: <Trophy className="w-5 h-5 text-gold-400" />,  label: "Wagered",   value: `$${Number(user.totalWagered).toLocaleString()}`,        bg: "bg-gold-500/10" },
-                { icon: <Wallet className="w-5 h-5 text-blue-400" />,  label: "Deposited", value: `$${Number(user.totalDeposited).toLocaleString()}`,      bg: "bg-blue-500/10" },
-                { icon: <Clock className="w-5 h-5 text-green-400" />,  label: "Watch Time", value: fmt(user.totalWatchMinutes),                            bg: "bg-green-500/10" },
+                { icon: <Coins className="w-5 h-5 text-yellow-400" />,       label: "Balance",     value: user.points.toLocaleString(),                     bg: "bg-yellow-500/10" },
+                { icon: <TrendingUp className="w-5 h-5 text-green-400" />,   label: "Total Earned", value: (user.totalEarned ?? 0).toLocaleString(),          bg: "bg-green-500/10" },
+                { icon: <ShoppingCart className="w-5 h-5 text-orange-400" />,label: "Total Spent",  value: (user.totalSpent ?? 0).toLocaleString(),           bg: "bg-orange-500/10" },
+                { icon: <Trophy className="w-5 h-5 text-gold-400" />,        label: "Wagered",      value: `$${Number(user.totalWagered).toLocaleString()}`,  bg: "bg-gold-500/10" },
+                { icon: <Wallet className="w-5 h-5 text-blue-400" />,        label: "Deposited",    value: `$${Number(user.totalDeposited).toLocaleString()}`,bg: "bg-blue-500/10" },
+                { icon: <Clock className="w-5 h-5 text-teal-400" />,         label: "Watch Time",   value: fmt(user.totalWatchMinutes),                       bg: "bg-teal-500/10" },
               ].map(({ icon, label, value, bg }) => (
                 <div key={label} className={`${bg} border border-white/6 rounded-2xl p-4 flex flex-col gap-2`}>
                   <div className="flex items-center gap-2">
@@ -301,7 +335,7 @@ export default function AdminUserPage() {
                 {!user.isAdmin && (
                   <RoleToggle label="Moderator" icon={<Shield className="w-3.5 h-3.5" />} active={user.isModerator} color="blue" onToggle={() => toggleRole("isModerator", user.isModerator)} />
                 )}
-                <RoleToggle label="VIP" icon={<Star className="w-3.5 h-3.5" />} active={user.isVip} color="purple" onToggle={() => toggleRole("isVip", user.isVip)} />
+                <RoleToggle label="VIP" icon={<Star className="w-3.5 h-3.5" />} active={user.isVip} color="yellow" onToggle={() => toggleRole("isVip", user.isVip)} />
                 <RoleToggle label="Depositor" icon={<UserCheck className="w-3.5 h-3.5" />} active={user.isDepositor} color="green" onToggle={() => toggleRole("isDepositor", user.isDepositor)} />
               </div>
             </motion.div>
@@ -316,11 +350,11 @@ export default function AdminUserPage() {
                 <button onClick={() => setCoinsOp("remove")} className={`flex-1 py-2 text-xs font-bold transition-colors ${coinsOp === "remove" ? "bg-red-600 text-white" : "bg-black/30 text-gray-400"}`}>− Remove</button>
               </div>
               <input type="number" min="1" value={coinsAmount} onChange={(e) => setCoinsAmount(e.target.value)}
-                placeholder="Amount" className="w-full bg-navy-900/60 border border-white/8 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500/40" />
+                placeholder="Amount" className="w-full bg-navy-900/60 border border-white/8 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-yellow-500/40" />
               <input type="text" value={coinsReason} onChange={(e) => setCoinsReason(e.target.value)}
-                placeholder="Reason (required)" className="w-full bg-navy-900/60 border border-white/8 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500/40" />
+                placeholder="Reason (required)" className="w-full bg-navy-900/60 border border-white/8 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-yellow-500/40" />
               <button onClick={handleCoins} disabled={coinsSaving || !coinsAmount || !coinsReason.trim()}
-                className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-40 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
+                className="w-full bg-yellow-600 hover:bg-yellow-700 disabled:opacity-40 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
                 {coinsSaving ? "Saving…" : "Apply"}
               </button>
               {coinsMsg && <p className={`text-xs font-medium ${coinsMsg.startsWith("✓") ? "text-green-400" : "text-red-400"}`}>{coinsMsg}</p>}
@@ -347,6 +381,31 @@ export default function AdminUserPage() {
               {wagerMsg && <p className={`text-xs font-medium ${wagerMsg.startsWith("✓") ? "text-green-400" : "text-red-400"}`}>{wagerMsg}</p>}
             </motion.div>
 
+            {/* Suspend / Unsuspend */}
+            {!user.isAdmin && (
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.13 }}
+                className="bg-navy-800/60 border border-white/6 rounded-2xl p-5 space-y-3">
+                <h2 className="text-white font-bold text-sm uppercase tracking-widest">Account</h2>
+                <p className="text-gray-500 text-xs">
+                  {user.isSuspended
+                    ? "This account is currently suspended. Users cannot log in while suspended."
+                    : "Suspending will immediately invalidate all sessions."}
+                </p>
+                <button
+                  onClick={handleSuspend}
+                  disabled={suspendSaving}
+                  className={`w-full flex items-center justify-center gap-2 font-bold py-2.5 rounded-xl text-sm transition-colors disabled:opacity-40 ${
+                    user.isSuspended
+                      ? "bg-green-600 hover:bg-green-700 text-white"
+                      : "bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 hover:border-red-600"
+                  }`}
+                >
+                  <Ban className="w-4 h-4" />
+                  {suspendSaving ? "Saving…" : user.isSuspended ? "Unsuspend Account" : "Suspend Account"}
+                </button>
+              </motion.div>
+            )}
+
           </div>
         </div>
       </div>
@@ -357,7 +416,7 @@ export default function AdminUserPage() {
 function RoleToggle({ label, icon, active, color, onToggle }: { label: string; icon: React.ReactNode; active: boolean; color: string; onToggle: () => void }) {
   const colors: Record<string, { on: string; off: string }> = {
     blue:   { on: "bg-blue-600 border-blue-500 text-white",     off: "bg-white/3 border-white/8 text-gray-400 hover:border-white/20" },
-    purple: { on: "bg-purple-600 border-purple-500 text-white", off: "bg-white/3 border-white/8 text-gray-400 hover:border-white/20" },
+    yellow: { on: "bg-yellow-600 border-yellow-500 text-white", off: "bg-white/3 border-white/8 text-gray-400 hover:border-white/20" },
     green:  { on: "bg-green-600 border-green-500 text-white",   off: "bg-white/3 border-white/8 text-gray-400 hover:border-white/20" },
   };
   return (

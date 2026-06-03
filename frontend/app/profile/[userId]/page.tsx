@@ -10,7 +10,7 @@ const TIER_COLORS: Record<string, { border: string; badge: string }> = {
   Rookie:       { border: "border-gray-600/40",   badge: "bg-gray-700 text-gray-300" },
   Hustler:      { border: "border-blue-500/30",   badge: "bg-blue-900/60 text-blue-300" },
   Grinder:      { border: "border-green-500/30",  badge: "bg-green-900/60 text-green-300" },
-  "High Roller":{ border: "border-purple-500/30", badge: "bg-purple-900/60 text-purple-300" },
+  "High Roller":{ border: "border-yellow-500/30", badge: "bg-yellow-900/60 text-yellow-300" },
   VIP:          { border: "border-gold-500/30",   badge: "bg-gold-900/60 text-gold-300" },
   Elite:        { border: "border-gold-400/40",   badge: "bg-gold-800/60 text-gold-200" },
   Diamond:      { border: "border-cyan-400/40",   badge: "bg-cyan-900/60 text-cyan-300" },

@@ -188,7 +188,7 @@ export default function ManageLeaderboardPage() {
                       {results.map((u) => (
                         <button key={u.id} type="button" onClick={() => { setSelected(u); setQuery(u.displayName); setResults([]); }}
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left">
-                          <div className="w-7 h-7 rounded-full bg-purple-600/40 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-yellow-600/40 flex items-center justify-center text-white text-xs font-bold shrink-0">
                             {u.displayName.charAt(0).toUpperCase()}
                           </div>
                           <div>

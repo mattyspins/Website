@@ -13,10 +13,10 @@ export default function AdminStore() {
   const router = useRouter();
 
   return (
-    <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-6">
+    <div className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
-          <ShoppingBag className="w-8 h-8 text-purple-400 mr-3" />
+          <ShoppingBag className="w-8 h-8 text-yellow-400 mr-3" />
           <div>
             <h2 className="text-2xl font-bold text-white">Store Management</h2>
             <p className="text-gray-400">Manage store items and inventory</p>
@@ -24,7 +24,7 @@ export default function AdminStore() {
         </div>
         <button
           onClick={() => router.push("/admin/store")}
-          className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105 flex items-center"
+          className="bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105 flex items-center"
         >
           <Package className="w-5 h-5 mr-2" />
           Manage Store
@@ -33,13 +33,13 @@ export default function AdminStore() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Quick Stats */}
-        <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4">
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Store Items</p>
               <p className="text-2xl font-bold text-white">-</p>
             </div>
-            <Package className="w-8 h-8 text-purple-400" />
+            <Package className="w-8 h-8 text-yellow-400" />
           </div>
         </div>
 
@@ -85,7 +85,7 @@ export default function AdminStore() {
 
           <button
             onClick={() => router.push("/store")}
-            className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold py-3 px-4 rounded-lg transition-all flex items-center justify-center"
+            className="bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-white font-semibold py-3 px-4 rounded-lg transition-all flex items-center justify-center"
           >
             <ShoppingBag className="w-5 h-5 mr-2" />
             View Store

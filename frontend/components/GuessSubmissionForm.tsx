@@ -71,7 +71,7 @@ export default function GuessSubmissionForm({
   if (loadingExisting) {
     return (
       <div className="bg-gray-800/50 rounded-lg p-6 flex items-center justify-center">
-        <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
+        <Loader2 className="w-6 h-6 text-yellow-400 animate-spin" />
       </div>
     );
   }

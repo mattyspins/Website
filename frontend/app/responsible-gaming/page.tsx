@@ -162,8 +162,8 @@ export default function ResponsibleGaming() {
                 </div>
               </div>
               <div className="space-y-4">
-                <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
-                  <h3 className="text-purple-300 font-semibold mb-2">
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                  <h3 className="text-yellow-300 font-semibold mb-2">
                     Never Chase Losses
                   </h3>
                   <p className="text-gray-300 text-sm">

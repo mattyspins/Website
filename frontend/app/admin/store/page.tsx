@@ -68,7 +68,7 @@ export default function AdminStorePage() {
   if (loading) {
     return (
       <div className="min-h-screen  flex items-center justify-center pt-20">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-500"></div>
       </div>
     );
   }
@@ -83,7 +83,7 @@ export default function AdminStorePage() {
           className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8"
         >
           <div className="flex items-center mb-4 sm:mb-0">
-            <ShoppingBag className="w-8 h-8 text-purple-400 mr-3" />
+            <ShoppingBag className="w-8 h-8 text-yellow-400 mr-3" />
             <div>
               <h1 className="text-3xl font-bold text-white">
                 Store Management
@@ -107,15 +107,15 @@ export default function AdminStorePage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-2 mb-6"
+          className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-2 mb-6"
         >
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab("items")}
               className={`flex-1 px-4 py-3 rounded-lg transition-all duration-300 font-semibold ${
                 activeTab === "items"
-                  ? "bg-purple-600 text-white"
-                  : "text-gray-400 hover:text-white hover:bg-purple-600/20"
+                  ? "bg-yellow-600 text-white"
+                  : "text-gray-400 hover:text-white hover:bg-yellow-600/20"
               }`}
             >
               ðŸ“¦ Store Items
@@ -124,8 +124,8 @@ export default function AdminStorePage() {
               onClick={() => setActiveTab("purchases")}
               className={`flex-1 px-4 py-3 rounded-lg transition-all duration-300 font-semibold ${
                 activeTab === "purchases"
-                  ? "bg-purple-600 text-white"
-                  : "text-gray-400 hover:text-white hover:bg-purple-600/20"
+                  ? "bg-yellow-600 text-white"
+                  : "text-gray-400 hover:text-white hover:bg-yellow-600/20"
               }`}
             >
               ðŸ›’ Purchases
@@ -154,7 +154,7 @@ export default function AdminStorePage() {
                 transition={{ delay: 0.2 }}
                 className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
               >
-                <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-xl p-4">
+                <div className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-xl p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-400 text-sm">Total Items</p>
@@ -162,7 +162,7 @@ export default function AdminStorePage() {
                         {statistics.totalItems}
                       </p>
                     </div>
-                    <Package className="w-8 h-8 text-purple-400" />
+                    <Package className="w-8 h-8 text-yellow-400" />
                   </div>
                 </div>
 
@@ -209,7 +209,7 @@ export default function AdminStorePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-4 sm:p-6 mb-8"
+              className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-4 sm:p-6 mb-8"
             >
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
@@ -219,7 +219,7 @@ export default function AdminStorePage() {
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   >
                     <option value="">All Categories</option>
                     {categories.map((category) => (
@@ -239,7 +239,7 @@ export default function AdminStorePage() {
               transition={{ delay: 0.4 }}
             >
               {filteredItems.length === 0 ? (
-                <div className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-8 sm:p-12 text-center">
+                <div className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-8 sm:p-12 text-center">
                   <div className="text-4xl sm:text-6xl mb-4 sm:mb-6">ðŸ“¦</div>
                   <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
                     No Items Found
@@ -277,7 +277,7 @@ export default function AdminStorePage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="bg-black/50 backdrop-blur-lg border border-purple-500/30 rounded-2xl p-4 sm:p-6 mt-8"
+                className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-4 sm:p-6 mt-8"
               >
                 <h3 className="text-xl font-bold text-white mb-4">
                   Top Selling Items
@@ -289,7 +289,7 @@ export default function AdminStorePage() {
                       className="flex items-center justify-between bg-gray-800/50 rounded-lg p-3"
                     >
                       <div className="flex items-center">
-                        <span className="text-2xl font-bold text-purple-400 mr-3">
+                        <span className="text-2xl font-bold text-yellow-400 mr-3">
                           #{index + 1}
                         </span>
                         <div>

@@ -61,7 +61,7 @@ export default function CompleteGameModal({
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-gradient-to-br from-gray-900 to-black border border-purple-500/30 rounded-2xl p-4 sm:p-6 w-full max-w-lg mt-2 sm:mt-4"
+          className="bg-gradient-to-br from-gray-900 to-black border border-yellow-500/30 rounded-2xl p-4 sm:p-6 w-full max-w-lg mt-2 sm:mt-4"
         >
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
@@ -81,7 +81,7 @@ export default function CompleteGameModal({
           </div>
 
           {/* Game Info */}
-          <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
             <h3 className="text-white font-semibold mb-2 text-sm sm:text-base">
               {game.title || `Game #${game.id.slice(0, 8)}`}
             </h3>
@@ -127,7 +127,7 @@ export default function CompleteGameModal({
                   step="0.01"
                   min="0"
                   placeholder="Enter final balance"
-                  className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   disabled={loading}
                   required
                 />
@@ -152,7 +152,7 @@ export default function CompleteGameModal({
                 onChange={(e) => setWinnerReward(e.target.value)}
                 min="0"
                 placeholder="Coins to award winner"
-                className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                 disabled={loading}
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -192,7 +192,7 @@ export default function CompleteGameModal({
               </button>
               <button
                 type="submit"
-                className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base"
+                className="flex-1 bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base"
                 disabled={loading}
               >
                 {loading ? (

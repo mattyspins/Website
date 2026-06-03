@@ -83,10 +83,10 @@ export default function AdminStoreItemCard({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.1 }}
-        className={`bg-black/50 backdrop-blur-lg border rounded-2xl p-4 sm:p-6 hover:border-purple-400/50 transition-all relative ${
+        className={`bg-black/50 backdrop-blur-lg border rounded-2xl p-4 sm:p-6 hover:border-yellow-400/50 transition-all relative ${
           !item.isActive
             ? "border-gray-600/30 opacity-75"
-            : "border-purple-500/30"
+            : "border-yellow-500/30"
         }`}
       >
         {/* Actions Menu */}
@@ -155,7 +155,7 @@ export default function AdminStoreItemCard({
           >
             {item.isActive ? "Active" : "Inactive"}
           </span>
-          <span className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded-full text-xs font-semibold">
+          <span className="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full text-xs font-semibold">
             {item.category}
           </span>
         </div>
@@ -169,7 +169,7 @@ export default function AdminStoreItemCard({
             {item.name}
           </h3>
           <div className="flex items-center justify-between">
-            <div className="text-2xl font-bold text-purple-400">
+            <div className="text-2xl font-bold text-yellow-400">
               {item.price.toLocaleString()}
             </div>
             <div className="text-xs text-gray-400">coins</div>
