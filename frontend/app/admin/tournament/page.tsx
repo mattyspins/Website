@@ -120,17 +120,18 @@ function DrawModal({
   const [loadingEntries, setLoadingEntries] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/tournaments/${tournament.id}/entries`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((d) => { if (d.entries) setEntries(d.entries); })
+  const fetchEntries = useCallback(() => {
+    tournamentApi.getEntries(tournament.id)
+      .then((data) => setEntries(data))
       .catch(() => {})
       .finally(() => setLoadingEntries(false));
   }, [tournament.id]);
+
+  useEffect(() => {
+    fetchEntries();
+    const interval = setInterval(fetchEntries, 5000);
+    return () => clearInterval(interval);
+  }, [fetchEntries]);
 
   const toggleGuaranteed = (userId: string) => {
     setGuaranteed((prev) => {
@@ -157,7 +158,7 @@ function DrawModal({
         {/* Header */}
         <div className="px-6 pt-5 pb-4 border-b border-white/8">
           <h3 className="text-lg font-semibold text-white mb-0.5">Draw Tournament Spots</h3>
-          <p className="text-sm text-white/40">{tournament.entryCount} people entered</p>
+          <p className="text-sm text-white/40">{entries.length || tournament.entryCount} people entered</p>
         </div>
 
         {/* Total spots */}

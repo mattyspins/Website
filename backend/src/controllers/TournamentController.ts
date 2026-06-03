@@ -90,12 +90,12 @@ export class TournamentController {
   });
 
   static enterRaffle = asyncHandler(async (req, res) => {
-    const result = await TournamentService.enterRaffle(req.params.id, req.user!.id);
+    const result = await TournamentService.enterRaffle(req.params.id, req.user!.id, _io);
     res.json({ success: true, ...result });
   });
 
   static leaveRaffle = asyncHandler(async (req, res) => {
-    const result = await TournamentService.leaveRaffle(req.params.id, req.user!.id);
+    const result = await TournamentService.leaveRaffle(req.params.id, req.user!.id, _io);
     res.json({ success: true, ...result });
   });
 

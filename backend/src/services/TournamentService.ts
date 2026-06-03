@@ -142,7 +142,7 @@ export class TournamentService {
 
   // ─── VIEWER: Enter raffle ──────────────────────────────────────────────────
 
-  static async enterRaffle(tournamentId: string, userId: string): Promise<{ message: string }> {
+  static async enterRaffle(tournamentId: string, userId: string, io?: SocketIOServer): Promise<{ message: string }> {
     const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!t) throw createError(404, 'Tournament not found');
     if (t.status !== TournamentStatus.REGISTRATION) throw createError(400, 'Registration is not open');
@@ -153,15 +153,25 @@ export class TournamentService {
     if (existing) throw createError(409, 'Already entered');
 
     await prisma.tournamentEntry.create({ data: { tournamentId, userId } });
+
+    const updated = await TournamentService.getTournamentWithRelations(tournamentId);
+    const response = await TournamentService.formatTournament(updated);
+    io?.to(`tournament:${tournamentId}`).emit('tournament:updated', response);
+
     return { message: 'Entered successfully' };
   }
 
-  static async leaveRaffle(tournamentId: string, userId: string): Promise<{ message: string }> {
+  static async leaveRaffle(tournamentId: string, userId: string, io?: SocketIOServer): Promise<{ message: string }> {
     const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!t) throw createError(404, 'Tournament not found');
     if (t.status !== TournamentStatus.REGISTRATION) throw createError(400, 'Registration is not open');
 
     await prisma.tournamentEntry.deleteMany({ where: { tournamentId, userId } });
+
+    const updated = await TournamentService.getTournamentWithRelations(tournamentId);
+    const response = await TournamentService.formatTournament(updated);
+    io?.to(`tournament:${tournamentId}`).emit('tournament:updated', response);
+
     return { message: 'Left successfully' };
   }
 
@@ -390,10 +400,10 @@ export class TournamentService {
         });
         await TournamentService.advanceWinner(round1Matches[i].id, pA.id);
       } else {
-        // Activate slot selection for this match
+        // Slots are locked from initial selection — go straight to ACTIVE
         await prisma.tournamentMatch.update({
           where: { id: round1Matches[i].id },
-          data: { status: 'SLOT_SELECTION' },
+          data: { status: 'ACTIVE' },
         });
       }
     }
@@ -653,11 +663,11 @@ export class TournamentService {
       },
     });
 
-    // If next match now has 2 participants → open slot selection
+    // If next match now has 2 participants → go straight to ACTIVE (slots locked from initial pick)
     if (nextMatchParticipants + 1 === 2) {
       await prisma.tournamentMatch.update({
         where: { id: match.nextMatchId },
-        data: { status: MatchStatus.SLOT_SELECTION },
+        data: { status: MatchStatus.ACTIVE },
       });
     }
   }

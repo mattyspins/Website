@@ -6,7 +6,6 @@ import TournamentBracket from "@/components/TournamentBracket";
 import {
   Tournament,
   TournamentStatus,
-  MatchStatus,
   TournamentMatch,
   MyEntryResponse,
 } from "@/types/tournament";
@@ -97,7 +96,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
           <div>
             <p className="text-white font-bold mb-3 text-xs uppercase tracking-widest">The Flow</p>
             <ol className="space-y-2.5">
-              {["Admin opens registration — click Enter Draw to join", "Admin draws participants randomly from everyone who entered", "Each selected participant names their slot call within the timer", "Participants are randomly shuffled into the bracket", "Each round, Matty plays everyone's slots live on stream", "The highest multiplier advances to the next round", "Every round is do-or-die — one huge hit can change everything 🔥", "Last player standing is crowned Tournament Champion 🏆"].map((s, i) => (
+              {["Admin opens registration — click Enter Draw to join", "Admin draws participants randomly from everyone who entered", "Each selected participant names their slot call within the timer — it's locked for the whole tournament", "Participants are randomly shuffled into the bracket", "Each round, Matty plays everyone's slots live on stream", "The highest multiplier advances to the next round", "Every round is do-or-die — one huge hit can change everything 🔥", "Last player standing is crowned Tournament Champion 🏆"].map((s, i) => (
                 <li key={i} className="flex gap-3"><span className="text-yellow-400 font-bold shrink-0 w-4">{i + 1}.</span><span>{s}</span></li>
               ))}
             </ol>
@@ -130,9 +129,9 @@ function InstructionsModal({ onClose }: { onClose: () => void }) {
         <div className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto text-sm text-white/70 leading-relaxed">
           {[
             { step: "Enter the Draw", body: <>When registration opens, click <span className="text-yellow-400 font-semibold">Enter Draw</span> to put your name in the raffle. The admin randomly selects participants.</> },
-            { step: "Name Your Slot", body: <>If selected, you have a limited time to <span className="text-yellow-400 font-semibold">name a slot call</span> — the game Matty plays for you. No two players can share the same slot.</> },
+            { step: "Name Your Slot", body: <>If selected, you have a limited time to <span className="text-yellow-400 font-semibold">name a slot call</span> — the game Matty plays for you every round. No two players can share the same slot.</> },
             { step: "Watch the Bracket", body: <>Participants are <span className="text-yellow-400 font-semibold">randomly shuffled</span> into the bracket. Matty plays each slot live — highest multiplier in each match advances.</> },
-            { step: "Each Round", body: <>Every round you can <span className="text-yellow-400 font-semibold">change your slot call</span> or keep it. Once confirmed it&apos;s locked. Highest multiplier wins the match.</> },
+            { step: "Locked In", body: <>Your slot is <span className="text-yellow-400 font-semibold">locked for the entire tournament</span> once confirmed. Pick wisely — it&apos;s your weapon every round until you&apos;re eliminated or crowned champion.</> },
             { step: "Win the Tournament", body: <>Keep advancing until only one player remains — they&apos;re crowned <span className="text-yellow-400 font-semibold">Tournament Champion 👑</span>.</> },
           ].map(({ step, body }, i) => (
             <div key={i}>
@@ -143,7 +142,7 @@ function InstructionsModal({ onClose }: { onClose: () => void }) {
           <div className="bg-yellow-400/8 border border-yellow-400/20 rounded-xl p-4">
             <p className="text-yellow-300 font-bold text-xs uppercase tracking-widest mb-2">💡 Tips</p>
             <ul className="space-y-1.5 text-white/60 text-xs">
-              {["Pick volatile slots with high max multipliers", "You can change your slot each round — adapt your strategy", "Once confirmed for a round, your slot is locked", "Watch the stream live for the best experience!"].map((t, i) => <li key={i}>• {t}</li>)}
+              {["Pick volatile slots with high max multipliers", "Your slot is locked for the whole tournament — choose wisely", "Once you confirm, there's no going back", "Watch the stream live for the best experience!"].map((t, i) => <li key={i}>• {t}</li>)}
             </ul>
           </div>
           <p className="text-white/40 text-xs border-t border-white/5 pt-4">Be in stream when it goes live 👊</p>
@@ -226,24 +225,8 @@ export default function TournamentPage() {
     catch (e: any) { setError(e.message); } finally { setActionLoading(false); }
   };
 
-  const handleSetMatchSlot = async (slotCall: string) => {
-    if (!activeMatch) return;
-    setActionLoading(true); setError(null);
-    try { await tournamentApi.setMatchSlot(activeMatch.id, slotCall); setSelected(await tournamentApi.getById(selected!.id)); }
-    catch (e: any) { setError(e.message); } finally { setActionLoading(false); }
-  };
-
-  const handleConfirmMatchSlot = async () => {
-    if (!activeMatch) return;
-    setActionLoading(true); setError(null);
-    try { await tournamentApi.confirmMatchSlot(activeMatch.id); setSelected(await tournamentApi.getById(selected!.id)); setActiveMatch(null); }
-    catch (e: any) { setError(e.message); } finally { setActionLoading(false); }
-  };
-
   const myParticipant = myEntry?.participant;
   const needsInitialSlot = selected?.status === TournamentStatus.SLOT_SELECTION && myEntry?.isParticipant && myParticipant && !myParticipant.slotConfirmed;
-  const myActiveMatchFull = selected?.matches.find((m) => m.status === MatchStatus.SLOT_SELECTION && m.participants.some((mp) => mp.participantId === myParticipant?.id));
-  const myMatchParticipation = myActiveMatchFull?.participants.find((mp) => mp.participantId === myParticipant?.id);
 
   const activeTournament = selected && [TournamentStatus.REGISTRATION, TournamentStatus.SLOT_SELECTION, TournamentStatus.IN_PROGRESS].includes(selected.status) ? selected : null;
   const pastTournaments = tournaments.filter((t) => t.status === TournamentStatus.COMPLETED || t.status === TournamentStatus.CANCELLED);
@@ -357,24 +340,10 @@ export default function TournamentPage() {
               </div>
             )}
 
-            {/* My match alert */}
-            {myActiveMatchFull && myMatchParticipation && !myMatchParticipation.slotConfirmed && (
-              <div className="mb-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl flex items-center justify-between gap-4">
-                <div>
-                  <p className="font-semibold text-green-300">Your match is ready!</p>
-                  <p className="text-sm text-white/50 mt-0.5">{myMatchParticipation.slotCall ? `Current slot: ${myMatchParticipation.slotCall} — change it or confirm.` : "Set your slot for this round."}</p>
-                </div>
-                <button onClick={() => setActiveMatch(myActiveMatchFull)}
-                  className="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-400 text-sm shrink-0 transition-colors">
-                  {myMatchParticipation.slotCall ? "Update / Confirm" : "Set Slot"}
-                </button>
-              </div>
-            )}
-
             {/* Bracket */}
             {[TournamentStatus.IN_PROGRESS, TournamentStatus.COMPLETED].includes(activeTournament.status) && (
               <div className="bg-white/3 border border-white/8 rounded-2xl p-6">
-                <TournamentBracket tournament={activeTournament} myParticipantId={myParticipant?.id} onMatchClick={setActiveMatch} />
+                <TournamentBracket tournament={activeTournament} myParticipantId={myParticipant?.id} />
               </div>
             )}
           </div>
@@ -415,11 +384,6 @@ export default function TournamentPage() {
       {activeMatch?.id === "initial" && (
         <SlotModal title="Name Your Slot" currentSlot={myParticipant?.currentSlot ?? null} deadline={myParticipant?.slotDeadline ?? null}
           onSubmit={handleSetInitialSlot} onClose={() => setActiveMatch(null)} canConfirm={false} isLoading={actionLoading} />
-      )}
-      {activeMatch && activeMatch.id !== "initial" && (
-        <SlotModal title={`Round ${activeMatch.round} — Set Slot`} currentSlot={myMatchParticipation?.slotCall ?? null} deadline={activeMatch.slotDeadline}
-          onSubmit={handleSetMatchSlot} onConfirm={handleConfirmMatchSlot} onClose={() => setActiveMatch(null)}
-          canConfirm={!!myMatchParticipation?.slotCall && !myMatchParticipation?.slotConfirmed} isLoading={actionLoading} />
       )}
     </div>
   );
