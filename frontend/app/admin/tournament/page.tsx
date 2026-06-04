@@ -67,7 +67,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
         </div>
 
         <label className="block text-sm text-white/60 mb-1">Slot Timer</label>
-        <div className="grid grid-cols-4 gap-2 mb-6">
+        <div className="grid grid-cols-4 gap-2 mb-2">
           {[{ label: "2 min", value: 120 }, { label: "3 min", value: 180 }, { label: "4 min", value: 240 }, { label: "5 min", value: 300 }].map(({ label, value }) => (
             <button
               key={value}
@@ -82,6 +82,28 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
               {label}
             </button>
           ))}
+        </div>
+        <div className="flex items-center gap-2 mb-6">
+          <span className="text-xs text-white/40 shrink-0">Custom:</span>
+          <div className="flex items-center gap-1.5 flex-1">
+            <input
+              type="number"
+              min="10"
+              max="3600"
+              placeholder="minutes"
+              onChange={(e) => {
+                const mins = parseFloat(e.target.value);
+                if (!isNaN(mins) && mins > 0) setForm({ ...form, slotTimerSeconds: Math.round(mins * 60) });
+              }}
+              className="w-24 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
+            />
+            <span className="text-xs text-white/40">min</span>
+            {![120, 180, 240, 300].includes(form.slotTimerSeconds) && (
+              <span className="text-xs text-yellow-400 font-medium ml-1">
+                = {Math.floor(form.slotTimerSeconds / 60)}m {form.slotTimerSeconds % 60 > 0 ? `${form.slotTimerSeconds % 60}s` : ""}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-2">
