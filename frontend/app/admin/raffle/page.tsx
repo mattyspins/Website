@@ -37,7 +37,7 @@ function authHeaders(): Record<string, string> {
 }
 
 // ─── Create Modal ──────────────────────────────────────────────────────────────
-function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (r: Raffle) => void }) {
+function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -82,7 +82,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (r:
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error?.message || "Failed to create raffle"); return; }
-      onCreate(data.data ?? data);
+      onCreate();
     } catch {
       setError("Failed to create raffle");
     } finally {
@@ -666,11 +666,10 @@ export default function AdminRafflePage() {
       {showCreate && (
         <CreateModal
           onClose={() => setShowCreate(false)}
-          onCreate={(r) => {
-            setRaffles((prev) => [r, ...prev]);
-            setSelected(r);
+          onCreate={async () => {
             setShowCreate(false);
             flash("Raffle created!");
+            await loadRaffles();
           }}
         />
       )}
