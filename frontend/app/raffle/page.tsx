@@ -46,12 +46,13 @@ export default function RafflePage() {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const d = await res.json();
-      if (d.raffles) {
-        setRaffles(d.raffles);
+      const list = d.data?.raffles ?? d.raffles ?? [];
+      if (list.length >= 0) {
+        setRaffles(list);
         const init: Record<string, number> = {};
-        for (const r of d.raffles) init[r.id] = 1;
+        for (const r of list) init[r.id] = 1;
         setQuantities(init);
-        if (token) loadMyTickets(token, d.raffles);
+        if (token) loadMyTickets(token, list);
       }
     } catch { /* ignore */ }
     finally { setLoading(false); }
