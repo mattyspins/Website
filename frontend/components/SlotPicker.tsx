@@ -104,7 +104,10 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
 
   const pickRandom = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const pool = results.length > 0 ? results : SLOT_GAMES;
+    // If search yielded no results, fall back to the provider-filtered full list (never cross providers)
+    const pool = results.length > 0
+      ? results
+      : provider ? SLOT_GAMES.filter((g) => g.provider === provider) : SLOT_GAMES;
     const pick = pool[Math.floor(Math.random() * pool.length)];
     handleSelect(pick.name);
   };
