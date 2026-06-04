@@ -893,7 +893,6 @@ export const SLOT_GAMES: SlotGame[] = [
   { name: "Pearl Harbor", provider: "Nolimit City", image: "https://cdn.casinoreviews.net/slot-images/pearl-harbor.jpg", volatility: "High" },
   { name: "The Border", provider: "Nolimit City", image: "https://cdn.casinoreviews.net/slot-images/the-border.jpg", volatility: "High" },
   { name: "Remember Gulag", provider: "Nolimit City", image: "https://cdn.casinoreviews.net/slot-images/remember-gulag.jpg", volatility: "Very High" },
-  { name: "Misery Mining", provider: "Nolimit City", image: "https://cdn.casinoreviews.net/slot-images/misery-mining.jpg", volatility: "High" },
   { name: "Legion X", provider: "Nolimit City", image: "https://cdn.casinoreviews.net/slot-images/legion-x.jpg", volatility: "Very High" },
   { name: "Evil Goblins xBomb", provider: "Nolimit City", image: "https://cdn.casinoreviews.net/slot-images/evil-goblins-xbomb.jpg", volatility: "Very High" },
   { name: "El Paso Gunfight xNudge", provider: "Nolimit City", image: "https://cdn.casinoreviews.net/slot-images/el-paso-gunfight-xnudge.jpg", volatility: "Very High" },

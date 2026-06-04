@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { SlotGame, Volatility, searchSlots } from "@/lib/slotGames";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { SlotGame, Volatility, searchSlots, SLOT_GAMES } from "@/lib/slotGames";
 
 interface Props {
   value: string;
@@ -11,7 +11,7 @@ interface Props {
 }
 
 function SlotImage({ src, name, size = 32 }: { src: string; name: string; size?: number }) {
-  const [error, setError] = useState(!src); // immediately fall back if no URL
+  const [error, setError] = useState(!src);
   if (error || !src) {
     return (
       <div
@@ -50,17 +50,25 @@ export function VolatilityBadge({ volatility }: { volatility: Volatility }) {
   );
 }
 
+// Provider filter chips — ordered by catalogue size
+const PROVIDERS = [
+  { label: "All", value: "" },
+  { label: "Pragmatic", value: "Pragmatic Play" },
+  { label: "Hacksaw", value: "Hacksaw Gaming" },
+  { label: "NoLimit", value: "Nolimit City" },
+  { label: "Push", value: "Push Gaming" },
+  { label: "BTG", value: "BTG" },
+  { label: "NetEnt", value: "NetEnt" },
+  { label: "Relax", value: "Relax Gaming" },
+];
+
 export default function SlotPicker({ value, onChange, placeholder = "Search for a slot…", disabled }: Props) {
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
-  const [results, setResults] = useState<SlotGame[]>([]);
+  const [provider, setProvider] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setResults(searchSlots(query));
-  }, [query]);
-
-  // Close on click outside
+  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
@@ -69,11 +77,26 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const selectedGame = results.find((s) => s.name === value) || searchSlots("").find((s) => s.name === value);
+  // Filtered results
+  const results = useMemo(() => {
+    let list = searchSlots(query);
+    if (provider) list = list.filter((g) => g.provider === provider);
+    return list;
+  }, [query, provider]);
 
-  const handleSelect = (game: SlotGame) => {
-    onChange(game.name);
-    setQuery(game.name);
+  const selectedGame = useMemo(
+    () => SLOT_GAMES.find((s) => s.name === value),
+    [value]
+  );
+
+  // Is the typed text a custom entry (not in list)?
+  const isCustom = query.trim() && !SLOT_GAMES.some(
+    (s) => s.name.toLowerCase() === query.trim().toLowerCase()
+  );
+
+  const handleSelect = (name: string) => {
+    onChange(name);
+    setQuery(name);
     setOpen(false);
   };
 
@@ -86,13 +109,11 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
         } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-text"}`}
         onClick={() => !disabled && setOpen(true)}
       >
-        {selectedGame && (
-          <SlotImage src={selectedGame.image} name={selectedGame.name} size={28} />
-        )}
+        {selectedGame && <SlotImage src={selectedGame.image} name={selectedGame.name} size={28} />}
         <input
           type="text"
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true); onChange(""); }}
           onFocus={() => setOpen(true)}
           placeholder={placeholder}
           disabled={disabled}
@@ -110,30 +131,67 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
-          {results.length === 0 ? (
-            <div className="px-4 py-3 text-white/30 text-sm text-center">No slots found</div>
-          ) : (
-            results.map((game) => (
-              <div
-                key={game.name}
-                onClick={() => handleSelect(game)}
-                className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors hover:bg-white/8 ${
-                  value === game.name ? "bg-yellow-400/10" : ""
+        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: 340 }}>
+
+          {/* Provider filter chips */}
+          <div className="flex gap-1.5 px-3 py-2.5 border-b border-white/8 overflow-x-auto no-scrollbar shrink-0">
+            {PROVIDERS.map((p) => (
+              <button
+                key={p.value}
+                onClick={(e) => { e.stopPropagation(); setProvider(p.value); }}
+                className={`shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full transition-colors ${
+                  provider === p.value
+                    ? "bg-yellow-400 text-black"
+                    : "bg-white/8 text-white/50 hover:bg-white/15 hover:text-white"
                 }`}
               >
-                <SlotImage src={game.image} name={game.name} size={36} />
-                <div className="min-w-0 flex-1">
-                  <p className={`text-sm font-medium truncate ${value === game.name ? "text-yellow-300" : "text-white"}`}>
-                    {game.name}
-                  </p>
-                  <p className="text-xs text-white/35 truncate">{game.provider}</p>
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Results list */}
+          <div className="overflow-y-auto flex-1">
+            {/* Custom slot entry */}
+            {isCustom && (
+              <div
+                onClick={() => handleSelect(query.trim())}
+                className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-white/8 border-b border-white/5"
+              >
+                <div className="w-9 h-9 rounded-lg bg-yellow-400/15 border border-yellow-400/30 flex items-center justify-center shrink-0 text-yellow-300 text-xs font-bold">
+                  +
                 </div>
-                <VolatilityBadge volatility={game.volatility} />
-                {value === game.name && <span className="text-yellow-400 shrink-0 text-sm">✓</span>}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-yellow-300 truncate">Use &quot;{query.trim()}&quot;</p>
+                  <p className="text-xs text-white/35">Custom slot — not in list</p>
+                </div>
               </div>
-            ))
-          )}
+            )}
+
+            {results.length === 0 && !isCustom ? (
+              <div className="px-4 py-3 text-white/30 text-sm text-center">No slots found</div>
+            ) : (
+              results.map((game) => (
+                <div
+                  key={`${game.provider}-${game.name}`}
+                  onClick={() => handleSelect(game.name)}
+                  className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors hover:bg-white/8 ${
+                    value === game.name ? "bg-yellow-400/10" : ""
+                  }`}
+                >
+                  <SlotImage src={game.image} name={game.name} size={36} />
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm font-medium truncate ${value === game.name ? "text-yellow-300" : "text-white"}`}>
+                      {game.name}
+                    </p>
+                    <p className="text-xs text-white/35 truncate">{game.provider}</p>
+                  </div>
+                  <VolatilityBadge volatility={game.volatility} />
+                  {value === game.name && <span className="text-yellow-400 shrink-0 text-sm">✓</span>}
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>
