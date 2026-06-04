@@ -48,7 +48,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (r:
     maxTickets: 100,
     numberOfWinners: 1,
     maxEntriesPerUser: -1,
-    durationDays: 7,
+    durationMs: 7 * 86400 * 1000, // stored in ms for uniform handling
     customEndDate: "",
     useCustomEnd: false,
   });
@@ -65,7 +65,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (r:
     try {
       const endDate = form.useCustomEnd && form.customEndDate
         ? new Date(form.customEndDate).toISOString()
-        : new Date(Date.now() + form.durationDays * 86400 * 1000).toISOString();
+        : new Date(Date.now() + form.durationMs).toISOString();
       const res = await fetch(API_ENDPOINTS.RAFFLES_CREATE, {
         method: "POST",
         headers: authHeaders(),
@@ -118,8 +118,23 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (r:
               value={form.prize}
               onChange={(e) => setForm({ ...form, prize: e.target.value })}
               placeholder="e.g. $50 Gift Card"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/25 text-sm focus:outline-none focus:border-yellow-400/50"
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/25 text-sm focus:outline-none focus:border-yellow-400/50 mb-2"
             />
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-xs text-white/40 shrink-0">Coins:</span>
+              {[100, 250, 500, 1000, 2500].map((v) => (
+                <button key={v} type="button"
+                  onClick={() => setForm({ ...form, prize: `${v} coins` })}
+                  className={`text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors ${
+                    form.prize === `${v} coins`
+                      ? "bg-yellow-400 text-black border-yellow-400"
+                      : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10"
+                  }`}
+                >
+                  {v.toLocaleString()}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Description */}
@@ -192,12 +207,19 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (r:
           {/* Duration */}
           <div>
             <label className="block text-sm text-white/60 mb-1">Duration</label>
-            <div className="grid grid-cols-4 gap-2 mb-2">
-              {[{ label: "1 Day", value: 1 }, { label: "3 Days", value: 3 }, { label: "7 Days", value: 7 }, { label: "14 Days", value: 14 }].map(({ label, value }) => (
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              {[
+                { label: "5 Min",   value: 5 * 60 * 1000 },
+                { label: "10 Min",  value: 10 * 60 * 1000 },
+                { label: "1 Day",   value: 1 * 86400 * 1000 },
+                { label: "3 Days",  value: 3 * 86400 * 1000 },
+                { label: "7 Days",  value: 7 * 86400 * 1000 },
+                { label: "14 Days", value: 14 * 86400 * 1000 },
+              ].map(({ label, value }) => (
                 <button key={value} type="button"
-                  onClick={() => setForm({ ...form, durationDays: value, useCustomEnd: false })}
+                  onClick={() => setForm({ ...form, durationMs: value, useCustomEnd: false })}
                   className={`py-2.5 rounded-lg text-sm font-semibold border transition-colors ${
-                    form.durationDays === value && !form.useCustomEnd
+                    form.durationMs === value && !form.useCustomEnd
                       ? "bg-yellow-400 text-black border-yellow-400"
                       : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
                   }`}
