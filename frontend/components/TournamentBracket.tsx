@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Tournament, TournamentMatch, MatchStatus, TournamentParticipant } from "@/types/tournament";
 import { findSlot } from "@/lib/slotGames";
 import { SlotImage } from "@/components/SlotPicker";
@@ -47,6 +48,28 @@ function MatchCard({
     (match.status === MatchStatus.ACTIVE || match.status === MatchStatus.SLOT_SELECTION) &&
     match.participants.length === 2;
   const canRevert = isAdmin && onRevertWinner && match.status === MatchStatus.COMPLETED;
+
+  // Multiplier result entry state (per participant)
+  const [costs, setCosts] = useState<Record<string, string>>({});
+  const [payouts, setPayouts] = useState<Record<string, string>>({});
+
+  const getMultiplier = (pid: string): number | null => {
+    const cost = parseFloat(costs[pid] ?? "");
+    const payout = parseFloat(payouts[pid] ?? "");
+    if (!cost || cost <= 0 || isNaN(cost) || isNaN(payout) || payout < 0) return null;
+    return payout / cost;
+  };
+
+  const allResultsEntered = canDeclare &&
+    match.participants.every((mp) => getMultiplier(mp.participantId) !== null);
+
+  const handleConfirmWinner = () => {
+    if (!allResultsEntered || !onDeclareWinner) return;
+    const ranked = match.participants
+      .map((mp) => ({ id: mp.participantId, mult: getMultiplier(mp.participantId)! }))
+      .sort((a, b) => b.mult - a.mult);
+    onDeclareWinner(match.id, ranked[0].id);
+  };
 
   return (
     <div className={`
@@ -96,21 +119,13 @@ function MatchCard({
                   {mp.slotCall}
                 </div>
               )}
+              {/* Show recorded multiplier after match is completed */}
+              {isWinner && match.status === MatchStatus.COMPLETED && (
+                <div className="text-[10px] text-yellow-400/60 mt-0.5 font-mono">winner</div>
+              )}
             </div>
 
-            {/* Admin: crown button — always visible on active matches */}
-            {canDeclare && p && (
-              <button
-                onClick={() => onDeclareWinner!(match.id, mp.participantId)}
-                disabled={actionLoading}
-                title={`${p.displayName} wins`}
-                className="shrink-0 px-2 py-1 flex items-center gap-1 rounded-lg bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-400/30 text-yellow-300 text-[11px] font-semibold transition-all disabled:opacity-30 whitespace-nowrap"
-              >
-                👑 Win
-              </button>
-            )}
-
-            {/* Admin: reroll — visible on hover via group */}
+            {/* Admin: reroll */}
             {isAdmin && onRerollParticipant && p && !p.slotConfirmed && match.status !== MatchStatus.COMPLETED && (
               <button
                 onClick={() => onRerollParticipant(mp.participantId)}
@@ -133,6 +148,58 @@ function MatchCard({
           <span className="text-sm text-white/20 italic">TBD</span>
         </div>
       ))}
+
+      {/* Admin: multiplier result entry */}
+      {canDeclare && (
+        <div className="border-t border-white/8 px-3 pt-2.5 pb-3 space-y-2">
+          <p className="text-[10px] uppercase tracking-widest text-white/25 font-bold">Enter Results</p>
+          {match.participants.map((mp) => {
+            const p = participantMap[mp.participantId];
+            const mult = getMultiplier(mp.participantId);
+            const otherMult = match.participants
+              .filter((x) => x.participantId !== mp.participantId)
+              .map((x) => getMultiplier(x.participantId))[0] ?? null;
+            const isLeader = mult !== null && (otherMult === null || mult >= otherMult);
+            return (
+              <div key={mp.id} className="flex items-center gap-1.5">
+                <span className="text-[11px] text-white/50 w-16 truncate shrink-0 font-medium">
+                  {p?.displayName ?? "?"}
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="Cost"
+                  value={costs[mp.participantId] ?? ""}
+                  onChange={(e) => setCosts((prev) => ({ ...prev, [mp.participantId]: e.target.value }))}
+                  className="w-16 bg-white/5 border border-white/10 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
+                />
+                <span className="text-white/20 text-xs shrink-0">÷</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="Payout"
+                  value={payouts[mp.participantId] ?? ""}
+                  onChange={(e) => setPayouts((prev) => ({ ...prev, [mp.participantId]: e.target.value }))}
+                  className="w-16 bg-white/5 border border-white/10 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
+                />
+                <span className={`text-xs font-bold ml-0.5 w-12 shrink-0 ${isLeader && mult !== null ? "text-yellow-300" : "text-white/25"}`}>
+                  {mult !== null ? `${mult.toFixed(2)}x` : "—"}
+                  {isLeader && mult !== null && " ↑"}
+                </span>
+              </div>
+            );
+          })}
+          <button
+            onClick={handleConfirmWinner}
+            disabled={!allResultsEntered || actionLoading}
+            className="w-full mt-1 py-1.5 text-xs font-bold rounded-lg bg-yellow-400 text-black hover:bg-yellow-300 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+          >
+            Confirm Winner
+          </button>
+        </div>
+      )}
 
       {/* Admin: revert result on completed match */}
       {canRevert && (
@@ -167,7 +234,8 @@ export default function TournamentBracket({
     matchesByRound[r] = matches.filter((m) => m.round === r).sort((a, b) => a.matchNumber - b.matchNumber);
   }
 
-  const MATCH_HEIGHT = 130;
+  // Admin cards are taller (result entry inputs add ~110px)
+  const MATCH_HEIGHT = isAdmin ? 240 : 130;
   const ROUND_WIDTH = 310;
   const TOP_OFFSET = 52;
   const maxMatchesR1 = matchesByRound[1]?.length ?? 1;
