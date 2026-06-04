@@ -6,6 +6,7 @@ import TournamentBracket from "@/components/TournamentBracket";
 import {
   Tournament,
   TournamentStatus,
+  MatchStatus,
   TournamentMatch,
   MyEntryResponse,
 } from "@/types/tournament";
@@ -282,7 +283,7 @@ export default function TournamentPage() {
             <p className="text-white/50 text-base">Check back soon — the next slot bracket will appear here when it kicks off.</p>
           </div>
         ) : (
-          <div className="mb-14">
+          <div className="mb-14 bg-white/3 border border-yellow-400/20 rounded-2xl p-6">
             {/* Tournament info bar */}
             <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
               <div className="flex items-center gap-3">
@@ -335,14 +336,14 @@ export default function TournamentPage() {
                 </div>
                 <button onClick={() => setActiveMatch({ id: "initial", round: 0, matchNumber: 0, status: MatchStatus.SLOT_SELECTION, winnerId: null, nextMatchId: null, slotDeadline: myParticipant?.slotDeadline ?? null, participants: [] })}
                   className="px-4 py-2 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-300 text-sm shrink-0 transition-colors">
-                  Set Slot
+                  Select Slot
                 </button>
               </div>
             )}
 
             {/* Bracket */}
             {[TournamentStatus.IN_PROGRESS, TournamentStatus.COMPLETED].includes(activeTournament.status) && (
-              <div className="bg-white/3 border border-white/8 rounded-2xl p-6">
+              <div className="mt-2">
                 <TournamentBracket tournament={activeTournament} myParticipantId={myParticipant?.id} />
               </div>
             )}

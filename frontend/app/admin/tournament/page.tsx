@@ -118,12 +118,13 @@ function DrawModal({
   const [guaranteed, setGuaranteed] = useState<Set<string>>(new Set());
   const [count, setCount] = useState(Math.min(tournament.maxPlayers, Math.max(tournament.entryCount, 1)));
   const [loadingEntries, setLoadingEntries] = useState(true);
+  const [entriesError, setEntriesError] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchEntries = useCallback(() => {
     tournamentApi.getEntries(tournament.id)
-      .then((data) => setEntries(data))
-      .catch(() => {})
+      .then((data) => { setEntries(Array.isArray(data) ? data : []); setEntriesError(false); })
+      .catch(() => setEntriesError(true))
       .finally(() => setLoadingEntries(false));
   }, [tournament.id]);
 
@@ -188,6 +189,11 @@ function DrawModal({
           {loadingEntries ? (
             <div className="flex justify-center py-6">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400" />
+            </div>
+          ) : entriesError ? (
+            <div className="text-center py-4">
+              <p className="text-red-400 text-sm mb-2">Failed to load entries</p>
+              <button onClick={fetchEntries} className="text-xs text-yellow-400 hover:text-yellow-300 underline">Retry</button>
             </div>
           ) : entries.length === 0 ? (
             <p className="text-white/30 text-sm text-center py-4">No entries yet</p>
@@ -538,102 +544,19 @@ export default function AdminTournamentPage() {
               )}
             </div>
 
-            {/* Match management (IN_PROGRESS) */}
-            {selected.status === TournamentStatus.IN_PROGRESS && (
-              <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-                <h3 className="text-base font-semibold text-white mb-4">Active Matches</h3>
-                <div className="space-y-3">
-                  {selected.matches
-                    .filter((m) => m.status !== MatchStatus.PENDING)
-                    .map((match) => {
-                      const p1 = match.participants[0];
-                      const p2 = match.participants[1];
-                      const getParticipant = (id: string) => selected.participants.find((p) => p.id === id);
-                      const player1 = p1 ? getParticipant(p1.participantId) : null;
-                      const player2 = p2 ? getParticipant(p2.participantId) : null;
-
-                      return (
-                        <div key={match.id} className="p-4 bg-white/5 rounded-lg border border-white/5">
-                          <div className="flex items-center justify-between gap-4 flex-wrap">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs text-white/40 mb-2">Round {match.round} · Match {match.matchNumber}
-                                <span className={`ml-2 font-semibold ${match.status === MatchStatus.ACTIVE ? "text-green-400" : "text-yellow-400"}`}>
-                                  {match.status === MatchStatus.ACTIVE ? "● Active" : "⏳ Awaiting slots"}
-                                </span>
-                              </p>
-
-                              {/* Player 1 */}
-                              <div className="flex items-center gap-2 mb-1.5">
-                                {player1?.avatarUrl && <img src={player1.avatarUrl} alt="" className="w-5 h-5 rounded-full shrink-0" />}
-                                <span className="text-white font-medium text-sm">{player1?.displayName ?? "TBD"}</span>
-                                {p1?.slotCall && (
-                                  <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${p1.slotConfirmed ? "bg-green-500/20 text-green-300 border border-green-500/30" : "bg-white/5 text-white/50 border border-white/10"}`}>
-                                    {p1.slotCall}
-                                  </span>
-                                )}
-                                {!p1?.slotCall && <span className="text-white/25 text-xs italic">no slot yet</span>}
-                              </div>
-
-                              {/* VS divider */}
-                              <div className="text-white/15 text-xs ml-7 mb-1.5">vs</div>
-
-                              {/* Player 2 */}
-                              <div className="flex items-center gap-2">
-                                {player2?.avatarUrl && <img src={player2.avatarUrl} alt="" className="w-5 h-5 rounded-full shrink-0" />}
-                                <span className="text-white font-medium text-sm">{player2?.displayName ?? "TBD"}</span>
-                                {p2?.slotCall && (
-                                  <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${p2.slotConfirmed ? "bg-green-500/20 text-green-300 border border-green-500/30" : "bg-white/5 text-white/50 border border-white/10"}`}>
-                                    {p2.slotCall}
-                                  </span>
-                                )}
-                                {!p2?.slotCall && <span className="text-white/25 text-xs italic">no slot yet</span>}
-                              </div>
-                            </div>
-
-                            {(match.status === MatchStatus.ACTIVE || match.status === MatchStatus.SLOT_SELECTION) && p1 && p2 && (
-                              <div className="flex flex-col gap-2 shrink-0">
-                                <button
-                                  onClick={() => handleDeclareWinner(match.id, p1.participantId)}
-                                  disabled={actionLoading}
-                                  className="px-3 py-2 bg-yellow-400/15 text-yellow-300 border border-yellow-400/30 rounded-lg hover:bg-yellow-400/25 disabled:opacity-40 text-xs font-semibold transition-colors"
-                                >
-                                  👑 {player1?.displayName} wins
-                                </button>
-                                <button
-                                  onClick={() => handleDeclareWinner(match.id, p2.participantId)}
-                                  disabled={actionLoading}
-                                  className="px-3 py-2 bg-yellow-400/15 text-yellow-300 border border-yellow-400/30 rounded-lg hover:bg-yellow-400/25 disabled:opacity-40 text-xs font-semibold transition-colors"
-                                >
-                                  👑 {player2?.displayName} wins
-                                </button>
-                              </div>
-                            )}
-
-                            {match.status === MatchStatus.COMPLETED && (
-                              <div className="shrink-0">
-                                <button
-                                  onClick={() => handleRevertWinner(match.id)}
-                                  disabled={actionLoading}
-                                  className="px-3 py-2 border border-orange-500/30 text-orange-400 rounded-lg hover:bg-orange-500/10 disabled:opacity-40 text-xs font-semibold transition-colors"
-                                >
-                                  ↩ Revert
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            )}
-
-            {/* Bracket view */}
+            {/* Bracket (admin — with inline winner + revert controls) */}
             {(selected.status === TournamentStatus.IN_PROGRESS ||
               selected.status === TournamentStatus.COMPLETED) && (
               <div className="bg-white/5 border border-white/10 rounded-xl p-6">
                 <h3 className="text-base font-semibold text-white mb-6">Bracket</h3>
-                <TournamentBracket tournament={selected} />
+                <TournamentBracket
+                  tournament={selected}
+                  isAdmin
+                  onDeclareWinner={handleDeclareWinner}
+                  onRevertWinner={handleRevertWinner}
+                  onRerollParticipant={handleReroll}
+                  actionLoading={actionLoading}
+                />
               </div>
             )}
 
