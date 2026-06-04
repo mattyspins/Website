@@ -66,7 +66,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (r:
       const endDate = form.useCustomEnd && form.customEndDate
         ? new Date(form.customEndDate).toISOString()
         : new Date(Date.now() + form.durationMs).toISOString();
-      const res = await fetch(API_ENDPOINTS.RAFFLES_CREATE, {
+      const res = await fetch(API_ENDPOINTS.RAFFLES, {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({
