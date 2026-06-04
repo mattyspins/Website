@@ -123,6 +123,8 @@ export const SLOT_GAMES: SlotGame[] = [
   { name: "Muertos Multiplier Megaways", provider: "Pragmatic Play", image: PP("vswaysmuertos"), volatility: "Very High" },
   { name: "Sanatorium Secrets", provider: "Pragmatic Play", image: PP("vs20sanatorium"), volatility: "Very High" },
   { name: "Joker's Revenge", provider: "Pragmatic Play", image: PP("vs20jokerrev"), volatility: "High" },
+  { name: "Sweet Rush Bonanza", provider: "Pragmatic Play", image: PP("vs20sweetrushbon"), volatility: "High" },
+  { name: "Sticky Bees", provider: "Pragmatic Play", image: PP("vs20stickybees"), volatility: "High" },
 
   // ─── Push Gaming ─────────────────────────────────────────────────────────
   { name: "Jammin Jars", provider: "Push Gaming", image: "https://cdn.casinoreviews.net/slot-images/jammin-jars.jpg", volatility: "High" },
