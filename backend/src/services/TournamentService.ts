@@ -180,14 +180,20 @@ export class TournamentService {
   static async getEntries(tournamentId: string) {
     const entries = await prisma.tournamentEntry.findMany({
       where: { tournamentId },
-      include: { user: { select: { id: true, displayName: true, avatarUrl: true } } },
       orderBy: { enteredAt: 'asc' },
     });
+
+    const users = await prisma.user.findMany({
+      where: { id: { in: entries.map((e) => e.userId) } },
+      select: { id: true, displayName: true, avatarUrl: true },
+    });
+    const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+
     return entries.map((e) => ({
       id: e.id,
       userId: e.userId,
-      displayName: e.user.displayName,
-      avatarUrl: e.user.avatarUrl,
+      displayName: userMap[e.userId]?.displayName ?? e.userId,
+      avatarUrl: userMap[e.userId]?.avatarUrl ?? null,
       enteredAt: e.enteredAt.toISOString(),
     }));
   }
