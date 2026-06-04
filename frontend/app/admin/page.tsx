@@ -165,6 +165,13 @@ export default function AdminDashboard() {
                     desc: "Create tournaments, draw participants, manage bracket & declare winners",
                   },
                   {
+                    href: "/admin/raffle",
+                    icon: <Ticket className="w-5 h-5 text-purple-400" />,
+                    bg: "bg-purple-500/10",
+                    title: "Raffles",
+                    desc: "Create raffles, manage tickets, draw winners",
+                  },
+                  {
                     href: "/admin/audit-logs",
                     icon: <FileText className="w-5 h-5 text-blue-400" />,
                     bg: "bg-blue-500/10",
