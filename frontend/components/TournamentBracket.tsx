@@ -43,7 +43,9 @@ function MatchCard({
   actionLoading?: boolean;
 }) {
   const participantMap = Object.fromEntries(participants.map((p) => [p.id, p]));
-  const canDeclare = isAdmin && onDeclareWinner && match.status === MatchStatus.ACTIVE && match.participants.length === 2;
+  const canDeclare = isAdmin && onDeclareWinner &&
+    (match.status === MatchStatus.ACTIVE || match.status === MatchStatus.SLOT_SELECTION) &&
+    match.participants.length === 2;
   const canRevert = isAdmin && onRevertWinner && match.status === MatchStatus.COMPLETED;
 
   return (
