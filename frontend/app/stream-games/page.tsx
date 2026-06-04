@@ -124,11 +124,11 @@ const GAMES: Game[] = [
     id: "raffles", name: "Raffles",
     tagline: "Spend coins on tickets for a chance to win prizes",
     icon: <Ticket className="w-6 h-6" />, color: "text-gold-400", iconBg: "bg-gold-500/15", border: "border-gold-500/20",
-    isRaffle: true,
     description: "Use the coins you earn from the community to enter raffles for real prizes. More tickets = better odds. Winners are announced in Discord.",
     howItWorks: ["Earn coins through stream activity, check-ins, and community games", "Spend coins on raffle tickets — each ticket is one entry", "When the raffle ends, a winner is drawn at random", "Winners are announced in Discord — open a ticket to claim 🏆"],
     rewards: ["Cash prizes", "Community rewards", "Special event prizes"],
     note: "Active raffles are shown below 👊",
+    link: "/raffle", linkLabel: "View Active Raffles",
   },
 ];
 
