@@ -385,7 +385,7 @@ export default function StreamGamesPage() {
         </motion.div>
 
         {/* Game tiles */}
-        <div className="flex flex-wrap justify-center gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {GAMES.map((game, i) => {
             const isLive  = liveGameNames.has(game.name);
             const isToday = !isLive && todayGameNames.has(game.name);
@@ -397,7 +397,7 @@ export default function StreamGamesPage() {
                 transition={{ delay: i * 0.04 }}
                 onClick={() => game.link ? router.push(game.link) : setSelected(game)}
                 className={`relative border rounded-2xl p-5 flex flex-col items-center text-center gap-3 transition-all group
-                  w-[calc(50%-6px)] sm:w-[calc(33.333%-8px)] lg:w-[calc(25%-9px)]
+                  w-full
                   ${isLive
                     ? "bg-red-500/8 border-red-500/40 ring-1 ring-red-500/30 hover:bg-red-500/12"
                     : isToday

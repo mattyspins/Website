@@ -64,7 +64,7 @@ function MatchCard({
 
         return (
           <div key={mp.id} className={`
-            group/row flex items-start gap-2.5 px-3 py-3
+            flex items-center gap-2.5 px-3 py-2.5
             ${i === 0 ? "border-b border-white/8" : ""}
             ${isWinner ? "bg-gradient-to-r from-yellow-500/15 to-transparent" : ""}
             ${isLoser ? "opacity-35" : ""}
@@ -96,25 +96,25 @@ function MatchCard({
               )}
             </div>
 
-            {/* Admin: crown button on hover → declare winner */}
+            {/* Admin: crown button — always visible on active matches */}
             {canDeclare && p && (
               <button
                 onClick={() => onDeclareWinner!(match.id, mp.participantId)}
                 disabled={actionLoading}
                 title={`${p.displayName} wins`}
-                className="opacity-0 group-hover/row:opacity-100 shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-yellow-400/20 hover:bg-yellow-400/40 text-yellow-300 transition-all disabled:opacity-30 text-sm"
+                className="shrink-0 px-2 py-1 flex items-center gap-1 rounded-lg bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-400/30 text-yellow-300 text-[11px] font-semibold transition-all disabled:opacity-30 whitespace-nowrap"
               >
-                👑
+                👑 Win
               </button>
             )}
 
-            {/* Admin: reroll on hover → only for unconfirmed slot participants */}
+            {/* Admin: reroll — visible on hover via group */}
             {isAdmin && onRerollParticipant && p && !p.slotConfirmed && match.status !== MatchStatus.COMPLETED && (
               <button
                 onClick={() => onRerollParticipant(mp.participantId)}
                 disabled={actionLoading}
                 title="Reroll participant"
-                className="opacity-0 group-hover/row:opacity-100 shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-orange-500/20 hover:bg-orange-500/40 text-orange-300 transition-all disabled:opacity-30 text-xs"
+                className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-orange-500/20 hover:bg-orange-500/40 text-orange-300 transition-all disabled:opacity-30 text-xs"
               >
                 🔄
               </button>
@@ -165,7 +165,7 @@ export default function TournamentBracket({
     matchesByRound[r] = matches.filter((m) => m.round === r).sort((a, b) => a.matchNumber - b.matchNumber);
   }
 
-  const MATCH_HEIGHT = 120;
+  const MATCH_HEIGHT = 130;
   const ROUND_WIDTH = 310;
   const TOP_OFFSET = 52;
   const maxMatchesR1 = matchesByRound[1]?.length ?? 1;

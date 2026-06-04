@@ -111,7 +111,7 @@ export default function PublicProfilePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-3">
             <div className="bg-navy-900/60 border border-white/6 rounded-xl p-4 text-center">
               <p className="text-gray-500 text-xs font-semibold tracking-widest uppercase mb-1.5">Wagered</p>
               <p className="text-gold-400 font-gaming font-bold text-2xl leading-none">
@@ -134,7 +134,7 @@ export default function PublicProfilePage() {
           <h2 className="text-white font-semibold text-sm uppercase tracking-wider mb-3 flex items-center gap-2">
             <Trophy className="w-4 h-4 text-gold-400" /> Milestone Progress
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {profile.tiers.map((tier) => {
               const colors = TIER_COLORS[tier.name] ?? TIER_COLORS["Rookie"];
               return (
