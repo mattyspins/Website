@@ -110,6 +110,19 @@ export default function AdminDashboard() {
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const active = activeTab === tab.id;
+              if (tab.id === "raffles") {
+                return (
+                  <a
+                    key={tab.id}
+                    href="/admin/raffle"
+                    className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold tracking-wide uppercase transition-all rounded-t-lg border-b-2 whitespace-nowrap shrink-0 text-gray-500 border-transparent hover:text-gray-300 hover:bg-white/3"
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.label.split(" ")[0]}</span>
+                  </a>
+                );
+              }
               return (
                 <button
                   key={tab.id}
