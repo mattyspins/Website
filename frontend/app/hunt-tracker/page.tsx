@@ -453,9 +453,17 @@ export default function HuntTrackerPage() {
                     >
                       {/* Title */}
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className={`w-2 h-2 rounded-full shrink-0 ${hunt.isStarted ? "bg-emerald-400" : "bg-gold-500"}`} />
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${hunt.isCompleted ? "bg-emerald-400" : hunt.isStarted ? "bg-gold-400 animate-pulse" : "bg-gray-600"}`} />
                         <div className="min-w-0">
-                          <p className="text-white font-semibold text-sm truncate group-hover:text-gold-300 transition-colors">{hunt.name}</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-white font-semibold text-sm truncate group-hover:text-gold-300 transition-colors">{hunt.name}</p>
+                            {hunt.isCompleted && (
+                              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">DONE</span>
+                            )}
+                            {hunt.isStarted && !hunt.isCompleted && (
+                              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-gold-500/15 text-gold-400 border border-gold-500/30">OPENING</span>
+                            )}
+                          </div>
                           <p className="text-gray-600 text-xs">{fmtDate(hunt.date)}</p>
                         </div>
                       </div>

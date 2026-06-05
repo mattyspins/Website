@@ -27,6 +27,7 @@ export interface Hunt {
   bonuses: HuntBonus[];
   createdAt: string;
   isStarted: boolean;
+  isCompleted?: boolean;
 }
 
 const STORAGE_KEY = "mattyspins_hunts";

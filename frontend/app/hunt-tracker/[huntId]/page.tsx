@@ -388,6 +388,7 @@ export default function HuntDetailPage() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [payoutInput, setPayoutInput] = useState("");
   const [noteInput, setNoteInput] = useState("");
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
 
   const reload = useCallback(() => {
     const h = getHunt(huntId);
@@ -476,6 +477,24 @@ export default function HuntDetailPage() {
     setPayoutInput(b?.payout != null ? b.payout.toString() : "");
     setNoteInput(b?.note ?? "");
     setOpeningMode(true);
+  }
+
+  async function handleEndHunt() {
+    if (!hunt) return;
+    mutateHunt((h) => ({ ...h, isCompleted: true }));
+    setShowEndConfirm(false);
+    setOpeningMode(false);
+    // Take down live if needed
+    if (isLive) {
+      const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+      if (token) {
+        await fetch(API_ENDPOINTS.LIVE_HUNT, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => {});
+        setIsLive(false);
+      }
+    }
   }
 
   function enterOpeningMode() {
@@ -939,15 +958,30 @@ export default function HuntDetailPage() {
           >
             <Shuffle className="w-3.5 h-3.5" /> Shuffle
           </button>
-          <button
-            disabled={hunt.isStarted}
-            onClick={handleStart}
-            className="flex items-center gap-2 bg-gold-600 hover:bg-gold-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-sm"
-          >
-            <Play className="w-4 h-4" fill="white" />
-            {hunt.isStarted ? "Started" : "Start"}
-            {!hunt.isStarted && <kbd className="bg-gold-600 text-[#0a0810] text-[10px] px-1.5 py-0.5 rounded font-mono">S</kbd>}
-          </button>
+          {!hunt.isCompleted && (
+            <button
+              disabled={hunt.isStarted && hunt.isCompleted}
+              onClick={hunt.isStarted ? enterOpeningMode : handleStart}
+              className="flex items-center gap-2 bg-gold-500 hover:bg-gold-400 disabled:opacity-50 disabled:cursor-not-allowed text-[#0a0810] font-bold px-4 py-2.5 rounded-xl transition-colors text-sm"
+            >
+              <Play className="w-4 h-4" fill="#0a0810" />
+              {hunt.isStarted ? "Resume" : "Start"}
+              {!hunt.isStarted && <kbd className="bg-gold-600 text-[#0a0810] text-[10px] px-1.5 py-0.5 rounded font-mono">S</kbd>}
+            </button>
+          )}
+          {hunt.isStarted && !hunt.isCompleted && (
+            <button
+              onClick={() => setShowEndConfirm(true)}
+              className="flex items-center gap-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 font-semibold px-4 py-2.5 rounded-xl transition-colors text-sm"
+            >
+              End Hunt
+            </button>
+          )}
+          {hunt.isCompleted && (
+            <span className="flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold px-3 py-2 rounded-xl">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> COMPLETED
+            </span>
+          )}
         </div>
 
         {/* ── Add Bonus area ──────────────────────────────────── */}
@@ -1096,6 +1130,27 @@ export default function HuntDetailPage() {
               <div className="flex gap-3">
                 <button onClick={() => setDeleteBonus(null)} className="flex-1 bg-[#1a1535] hover:bg-[#211a45] border border-white/10 text-gray-300 font-semibold py-2.5 rounded-xl transition-colors text-sm">Cancel</button>
                 <button onClick={() => handleDeleteBonus(deleteBonus.id)} className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl transition-colors text-sm">Remove</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+        {showEndConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowEndConfirm(false)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+              className="relative bg-[#0f0c1e] border border-white/10 rounded-2xl w-full max-w-sm p-7 z-10 text-center"
+            >
+              <div className="w-12 h-12 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center mx-auto mb-4">
+                <Play className="w-5 h-5 text-red-400" />
+              </div>
+              <h3 className="text-white font-bold text-lg mb-2">End Hunt?</h3>
+              <p className="text-gray-400 text-sm mb-6">
+                This will mark the hunt as <span className="text-white font-semibold">completed</span> and take it down from the live viewer. This cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button onClick={() => setShowEndConfirm(false)} className="flex-1 bg-[#1a1535] hover:bg-[#211a45] border border-white/10 text-gray-300 font-semibold py-2.5 rounded-xl transition-colors text-sm">Cancel</button>
+                <button onClick={handleEndHunt} className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl transition-colors text-sm">End Hunt</button>
               </div>
             </motion.div>
           </div>
