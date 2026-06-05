@@ -383,6 +383,11 @@ export default function HuntDetailPage() {
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [showPace, setShowPace] = useState(false);
+  // Opening mode
+  const [openingMode, setOpeningMode] = useState(false);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [payoutInput, setPayoutInput] = useState("");
+  const [noteInput, setNoteInput] = useState("");
 
   const reload = useCallback(() => {
     const h = getHunt(huntId);
@@ -462,7 +467,50 @@ export default function HuntDetailPage() {
   }
 
   function handleStart() {
+    if (!hunt) return;
     mutateHunt((h) => ({ ...h, isStarted: true }));
+    const firstIdx = hunt.bonuses.findIndex((b) => b.payout === null);
+    const idx = firstIdx >= 0 ? firstIdx : 0;
+    setCurrentIdx(idx);
+    const b = hunt.bonuses[idx];
+    setPayoutInput(b?.payout != null ? b.payout.toString() : "");
+    setNoteInput(b?.note ?? "");
+    setOpeningMode(true);
+  }
+
+  function enterOpeningMode() {
+    if (!hunt || hunt.bonuses.length === 0) return;
+    const firstIdx = hunt.bonuses.findIndex((b) => b.payout === null);
+    const idx = firstIdx >= 0 ? firstIdx : 0;
+    setCurrentIdx(idx);
+    const b = hunt.bonuses[idx];
+    setPayoutInput(b?.payout != null ? b.payout.toString() : "");
+    setNoteInput(b?.note ?? "");
+    setOpeningMode(true);
+  }
+
+  function handleContinue() {
+    if (!hunt) return;
+    const bonus = hunt.bonuses[currentIdx];
+    if (!bonus) return;
+    const payout = parseFloat(payoutInput);
+    if (!isNaN(payout) && payout >= 0) {
+      mutateHunt((h) => ({
+        ...h,
+        bonuses: h.bonuses.map((b) =>
+          b.id === bonus.id ? { ...b, payout, note: noteInput.trim() || b.note } : b
+        ),
+      }));
+    }
+    const next = currentIdx + 1;
+    if (next >= hunt.bonuses.length) {
+      setOpeningMode(false);
+    } else {
+      const nb = hunt.bonuses[next];
+      setCurrentIdx(next);
+      setPayoutInput(nb?.payout != null ? nb.payout.toString() : "");
+      setNoteInput(nb?.note ?? "");
+    }
   }
 
   function handleSaveBonus(bonus: HuntBonus) {
@@ -543,6 +591,218 @@ export default function HuntDetailPage() {
         {label}
         {active ? (sortDir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : null}
       </button>
+    );
+  }
+
+  /* ── Opening mode ────────────────────────────────────────── */
+  if (openingMode && hunt.isStarted) {
+    const bonus = hunt.bonuses[currentIdx] ?? null;
+    const openedBonuses = hunt.bonuses.filter((b) => b.payout !== null);
+    const openedCount = openedBonuses.length;
+    const winnings = openedBonuses.reduce((s, b) => s + (b.payout ?? 0), 0);
+    const pnl = winnings - hunt.startCost;
+    const remaining = hunt.bonuses.length - openedCount;
+    const avgBet = hunt.bonuses.length > 0
+      ? hunt.bonuses.reduce((s, b) => s + b.betSize, 0) / hunt.bonuses.length : 0;
+    const openedAvgBet = openedCount > 0
+      ? openedBonuses.reduce((s, b) => s + b.betSize, 0) / openedCount : avgBet;
+    const runAvg = openedCount > 0 && openedAvgBet > 0 ? (winnings / openedCount) / openedAvgBet : 0;
+    const reqAvg = avgBet > 0 ? hunt.startCost / (hunt.bonuses.length * avgBet) : 0;
+    const cumX = hunt.startCost > 0 ? winnings / hunt.startCost : 0;
+    const breakEven = Math.max(0, hunt.startCost - winnings);
+    const liveMulti = payoutInput && parseFloat(payoutInput) >= 0 && bonus && bonus.betSize > 0
+      ? parseFloat(payoutInput) / bonus.betSize : null;
+
+    return (
+      <div className="min-h-screen pt-20 pb-16 px-4">
+        <div className="max-w-4xl mx-auto">
+
+          {/* Title */}
+          <h1 className="text-white font-bold text-xl mb-5">
+            {hunt.name} – {fmtDate(hunt.date)}
+          </h1>
+
+          {/* Stats row 1 */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-3">
+            {[
+              { label: "Progress",   value: `${currentIdx + 1}/${hunt.bonuses.length}` },
+              { label: "Start Cost", value: `${sym}${hunt.startCost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+              { label: "Winnings",   value: `${sym}${winnings.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+              { label: "P&L",        value: `${pnl >= 0 ? "+" : ""}${sym}${Math.abs(pnl).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: pnl >= 0 ? "text-emerald-400" : "text-red-400" },
+              { label: "Remaining",  value: remaining.toString() },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="bg-[#14102a]/80 border border-white/8 rounded-2xl p-4 text-center">
+                <p className="text-gray-500 text-xs mb-1">{label}</p>
+                <p className={`font-bold text-lg leading-tight ${color ?? "text-white"}`}>{value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Stats row 2 */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+            {[
+              { label: "Run Avg",    value: `${runAvg.toFixed(2)}x` },
+              { label: "Req Avg",    value: `${reqAvg.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}x` },
+              { label: "Cum. X",     value: `${cumX.toFixed(2)}x` },
+              { label: "Break Even", value: `${sym}${breakEven.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+              { label: "Opened",     value: `${openedCount}/${hunt.bonuses.length}` },
+            ].map(({ label, value }) => (
+              <div key={label} className="bg-[#14102a]/80 border border-white/8 rounded-2xl p-4 text-center">
+                <p className="text-gray-500 text-xs mb-1">{label}</p>
+                <p className="text-white font-bold text-lg leading-tight">{value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Back to Hunt / nav row */}
+          <div className="flex items-center justify-between mb-5">
+            <button
+              onClick={() => setOpeningMode(false)}
+              className="flex items-center gap-1.5 text-gray-500 hover:text-white transition-colors text-sm"
+            >
+              <ChevronDown className="w-4 h-4 rotate-90" /> Back to Hunt
+            </button>
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              {currentIdx > 0 && (
+                <button
+                  onClick={() => {
+                    const prev = currentIdx - 1;
+                    const pb = hunt.bonuses[prev];
+                    setCurrentIdx(prev);
+                    setPayoutInput(pb?.payout != null ? pb.payout.toString() : "");
+                    setNoteInput(pb?.note ?? "");
+                  }}
+                  className="text-gray-500 hover:text-white text-xs px-3 py-1.5 rounded-lg bg-white/5 transition-colors"
+                >
+                  ← Prev
+                </button>
+              )}
+              {currentIdx < hunt.bonuses.length - 1 && (
+                <button
+                  onClick={() => {
+                    const next = currentIdx + 1;
+                    const nb = hunt.bonuses[next];
+                    setCurrentIdx(next);
+                    setPayoutInput(nb?.payout != null ? nb.payout.toString() : "");
+                    setNoteInput(nb?.note ?? "");
+                  }}
+                  className="text-gray-500 hover:text-white text-xs px-3 py-1.5 rounded-lg bg-white/5 transition-colors"
+                >
+                  Skip →
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Current bonus card */}
+          {bonus ? (
+            <motion.div
+              key={bonus.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-[#0f0c1e]/90 border border-white/10 rounded-2xl p-6"
+            >
+              {/* Bonus header */}
+              <div className="flex items-center gap-4 mb-6">
+                <SlotImg src={bonus.image} alt={bonus.slotName} size={14} />
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-white font-bold text-lg">{bonus.slotName}</span>
+                    <BadgePill badge={bonus.badge} custom={bonus.customBadge} />
+                  </div>
+                  <p className="text-gray-500 text-sm">Game {currentIdx + 1}/{hunt.bonuses.length}</p>
+                </div>
+              </div>
+
+              {/* Three fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+                {/* Bet Size (read-only) */}
+                <div>
+                  <label className="text-gray-500 text-xs mb-2 block">Bet Size</label>
+                  <div className="flex items-center gap-2 bg-[#1a1535] border border-white/8 rounded-xl px-4 py-3">
+                    <span className="text-gray-500">{sym}</span>
+                    <span className="text-gray-300 font-semibold">{bonus.betSize.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* Payout (editable) */}
+                <div>
+                  <label className="text-gray-500 text-xs mb-2 block">Payout</label>
+                  <div className="flex items-center gap-2 bg-[#1a1535] border border-violet-500/50 rounded-xl px-4 py-3 focus-within:border-violet-400 transition-colors">
+                    <span className="text-gray-500">{sym}</span>
+                    <input
+                      autoFocus
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={payoutInput}
+                      onChange={(e) => setPayoutInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleContinue(); }}
+                      placeholder="0.00"
+                      className="flex-1 bg-transparent text-white placeholder-gray-600 focus:outline-none font-semibold"
+                    />
+                  </div>
+                </div>
+
+                {/* Multiplier (auto-calculated) */}
+                <div>
+                  <label className="text-gray-500 text-xs mb-2 block">Multiplier</label>
+                  <div className="flex items-center gap-2 bg-[#1a1535] border border-white/8 rounded-xl px-4 py-3">
+                    <X className="w-4 h-4 text-gray-600" />
+                    <span className={`font-bold ${liveMulti !== null ? (liveMulti >= reqAvg ? "text-emerald-400" : "text-red-400") : "text-gray-600"}`}>
+                      {liveMulti !== null ? `${liveMulti.toFixed(2)}x` : "0x"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="mb-6">
+                <label className="text-gray-500 text-xs mb-2 block">Notes</label>
+                <textarea
+                  value={noteInput}
+                  onChange={(e) => setNoteInput(e.target.value)}
+                  placeholder="Type a note..."
+                  rows={2}
+                  className="w-full bg-[#1a1535] border border-white/8 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-violet-500 transition-colors resize-none"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setOpeningMode(false)}
+                  className="bg-[#1a1535] hover:bg-[#211a45] border border-white/10 text-gray-300 font-semibold px-6 py-2.5 rounded-xl transition-colors text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleContinue}
+                  className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-bold px-8 py-2.5 rounded-xl transition-colors text-sm"
+                >
+                  {currentIdx < hunt.bonuses.length - 1 ? "Continue" : "Finish"}
+                  <ArrowLeft className="w-4 h-4 rotate-180" />
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <div className="bg-[#0f0c1e]/90 border border-white/10 rounded-2xl p-12 text-center">
+              <p className="text-emerald-400 font-bold text-lg mb-2">All bonuses opened!</p>
+              <p className="text-gray-500 text-sm mb-6">
+                Final P&L: <span className={pnl >= 0 ? "text-emerald-400 font-bold" : "text-red-400 font-bold"}>
+                  {pnl >= 0 ? "+" : ""}{sym}{Math.abs(pnl).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </p>
+              <button
+                onClick={() => setOpeningMode(false)}
+                className="bg-violet-600 hover:bg-violet-500 text-white font-bold px-6 py-2.5 rounded-xl transition-colors text-sm"
+              >
+                Back to Hunt
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     );
   }
 
