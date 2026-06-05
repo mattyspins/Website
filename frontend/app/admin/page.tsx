@@ -24,6 +24,7 @@ import {
   ClipboardList,
   Ticket,
   FileText,
+  Zap,
 } from "lucide-react";
 
 type TabId =
@@ -33,7 +34,8 @@ type TabId =
   | "raffles"
   | "store"
   | "schedule"
-  | "milestones";
+  | "milestones"
+  | "bonus-hunt";
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "overview",  label: "Overview",    icon: LayoutDashboard },
@@ -43,6 +45,7 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "store",     label: "Store",       icon: ShoppingBag },
   { id: "milestones",label: "Milestones",  icon: Medal },
   { id: "schedule",  label: "Schedule",    icon: Calendar },
+  { id: "bonus-hunt",label: "Bonus Hunt",  icon: Zap },
 ];
 
 export default function AdminDashboard() {
@@ -110,11 +113,12 @@ export default function AdminDashboard() {
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const active = activeTab === tab.id;
-              if (tab.id === "raffles") {
+              if (tab.id === "raffles" || tab.id === "bonus-hunt") {
+                const href = tab.id === "raffles" ? "/admin/raffle" : "/hunt-tracker";
                 return (
                   <a
                     key={tab.id}
-                    href="/admin/raffle"
+                    href={href}
                     className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold tracking-wide uppercase transition-all rounded-t-lg border-b-2 whitespace-nowrap shrink-0 text-gray-500 border-transparent hover:text-gray-300 hover:bg-white/3"
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -183,6 +187,13 @@ export default function AdminDashboard() {
                     bg: "bg-purple-500/10",
                     title: "Raffles",
                     desc: "Create raffles, manage tickets, draw winners",
+                  },
+                  {
+                    href: "/hunt-tracker",
+                    icon: <Zap className="w-5 h-5 text-violet-400" />,
+                    bg: "bg-violet-500/10",
+                    title: "Bonus Hunt",
+                    desc: "Create hunts, add slots, go live for viewers to watch the reveal",
                   },
                   {
                     href: "/admin/audit-logs",

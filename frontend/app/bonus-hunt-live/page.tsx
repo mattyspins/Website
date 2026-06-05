@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ImageOff, Zap } from "lucide-react";
+import { ArrowLeft, ImageOff, Zap, BookOpen, HelpCircle, X } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/api";
 import { CURRENCY_SYMBOLS, type BadgeType } from "@/lib/huntTracker";
 
@@ -84,6 +84,154 @@ function StatusBadge({ hunt }: { hunt: LiveHunt }) {
   );
 }
 
+/* ── How to Play modal ───────────────────────────────────── */
+function HowToPlayModal({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+
+  const steps = [
+    {
+      step: "Tune In on Friday",
+      body: "Bonus Hunt streams happen every Friday. Make sure you're watching live on Kick so you can see the bonuses being collected and opened in real time.",
+    },
+    {
+      step: "Slots Are Collected",
+      body: "Throughout the stream, bonuses are bought and saved. Each slot appears in this list with its bet size. Payouts show as "–" until that bonus is opened.",
+    },
+    {
+      step: "The Reveal Begins",
+      body: "Once collection is done, Matty opens every saved bonus one by one. Watch the payouts and multipliers fill in live — green means profit, red means a dead bonus.",
+    },
+    {
+      step: "Watch the Stats Update",
+      body: "The Profit card at the top updates as each bonus is opened. A green number means the hunt is in profit; red means it's still chasing the start cost.",
+    },
+    {
+      step: "Community Reactions",
+      body: "Join the stream chat on Kick and react live as each bonus opens. Big multipliers mean big moments for the whole community!",
+    },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-[#0f0c1e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">🎮</span>
+            <h2 className="text-base font-bold text-white">How to Play</h2>
+          </div>
+          <button onClick={onClose} className="text-gray-600 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto text-sm text-white/70 leading-relaxed">
+          {steps.map(({ step, body }, i) => (
+            <div key={i}>
+              <p className="text-yellow-400 font-bold mb-1.5 text-xs uppercase tracking-widest">
+                Step {i + 1} — {step}
+              </p>
+              <p>{body}</p>
+            </div>
+          ))}
+          <div className="bg-yellow-400/8 border border-yellow-400/20 rounded-xl p-4">
+            <p className="text-yellow-300 font-bold text-xs uppercase tracking-widest mb-2">💡 Tips</p>
+            <ul className="space-y-1.5 text-white/60 text-xs">
+              {[
+                "This page auto-refreshes every 8 seconds — no need to reload",
+                "Green payout = profit on that bonus · Red = loss",
+                "The highlighted row shows the next bonus to be opened",
+                "Watch the stream live for the full experience!",
+              ].map((t, i) => <li key={i}>• {t}</li>)}
+            </ul>
+          </div>
+          <p className="text-white/40 text-xs border-t border-white/5 pt-4">
+            Bonus Hunt streams take place every Friday 🏆
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Rules modal ─────────────────────────────────────────── */
+function RulesModal({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-[#0f0c1e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">📋</span>
+            <h2 className="text-base font-bold text-white">Rules</h2>
+          </div>
+          <button onClick={onClose} className="text-gray-600 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto text-sm text-white/70 leading-relaxed">
+          <p className="text-white/90">
+            The Bonus Hunt is a community event where bonuses are collected throughout the stream and opened during the reveal. Here&apos;s how it works:
+          </p>
+
+          <div>
+            <p className="text-white font-bold mb-3 text-xs uppercase tracking-widest">The Flow</p>
+            <ol className="space-y-2.5">
+              {[
+                "Bonuses are bought and saved throughout the stream",
+                "Once collection ends, the reveal begins — bonuses are opened one by one",
+                "Each bonus pays out based on its multiplier × bet size",
+                "The hunt is profitable if total winnings exceed the start cost",
+                "Every bonus counts — even a single huge multiplier can flip the hunt",
+              ].map((s, i) => (
+                <li key={i} className="flex gap-3">
+                  <span className="text-violet-400 font-bold shrink-0 w-4">{i + 1}.</span>
+                  <span>{s}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <div>
+            <p className="text-white font-bold mb-3 text-xs uppercase tracking-widest">Understanding the Stats</p>
+            <ul className="space-y-2">
+              {[
+                { label: "Start Cost", desc: "Total amount spent buying all the bonuses" },
+                { label: "Profit", desc: "Total winnings minus the start cost — green = in profit, red = loss" },
+                { label: "Multi", desc: "Payout ÷ bet size for each individual bonus" },
+                { label: "OPENING status", desc: "The hunt reveal is in progress — payouts are being entered live" },
+              ].map(({ label, desc }) => (
+                <li key={label} className="flex gap-2">
+                  <span className="text-violet-400 font-semibold shrink-0">•</span>
+                  <span><span className="text-white font-semibold">{label}:</span> {desc}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="bg-white/5 border border-white/8 rounded-xl p-4">
+            <p className="text-white font-bold mb-2.5 text-xs uppercase tracking-widest">🎁 Community Rewards</p>
+            <div className="flex flex-wrap gap-2">
+              {["Website points", "Giveaway entries", "Community rewards", "Special events"].map((r) => (
+                <span key={r} className="bg-white/5 border border-white/10 text-white/60 text-xs px-3 py-1 rounded-lg">{r}</span>
+              ))}
+            </div>
+          </div>
+
+          <p className="text-white/40 text-xs border-t border-white/5 pt-4">
+            Tune in every Friday for the weekly Bonus Hunt 👊
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Page ────────────────────────────────────────────────── */
 const POLL_INTERVAL = 8000;
 
@@ -91,6 +239,8 @@ export default function BonusHuntLivePage() {
   const [hunt, setHunt] = useState<LiveHunt | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [showHowTo, setShowHowTo] = useState(false);
+  const [showRules, setShowRules] = useState(false);
 
   async function fetchHunt() {
     try {
@@ -157,13 +307,27 @@ export default function BonusHuntLivePage() {
     <div className="min-h-screen pt-20 pb-16 px-4">
       <div className="max-w-3xl mx-auto">
 
-        {/* Back button */}
-        <Link
-          href="/stream-games"
-          className="inline-flex items-center gap-2 bg-white/8 hover:bg-white/12 border border-white/10 text-gray-400 hover:text-white font-semibold px-4 py-2 rounded-xl transition-all text-sm mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" /> Stream Games
-        </Link>
+        {/* Nav row */}
+        <div className="flex items-center gap-2 mb-6 flex-wrap">
+          <Link
+            href="/stream-games"
+            className="inline-flex items-center gap-2 bg-white/8 hover:bg-white/12 border border-white/10 text-gray-400 hover:text-white font-semibold px-4 py-2 rounded-xl transition-all text-sm"
+          >
+            <ArrowLeft className="w-4 h-4" /> Stream Games
+          </Link>
+          <button
+            onClick={() => setShowHowTo(true)}
+            className="inline-flex items-center gap-2 bg-white/8 hover:bg-white/12 border border-white/10 text-gray-400 hover:text-white font-semibold px-4 py-2 rounded-xl transition-all text-sm"
+          >
+            <HelpCircle className="w-4 h-4" /> How to Play
+          </button>
+          <button
+            onClick={() => setShowRules(true)}
+            className="inline-flex items-center gap-2 bg-white/8 hover:bg-white/12 border border-white/10 text-gray-400 hover:text-white font-semibold px-4 py-2 rounded-xl transition-all text-sm"
+          >
+            <BookOpen className="w-4 h-4" /> Rules
+          </button>
+        </div>
 
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
 
@@ -274,6 +438,11 @@ export default function BonusHuntLivePage() {
           )}
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {showHowTo && <HowToPlayModal onClose={() => setShowHowTo(false)} />}
+        {showRules && <RulesModal onClose={() => setShowRules(false)} />}
+      </AnimatePresence>
     </div>
   );
 }
