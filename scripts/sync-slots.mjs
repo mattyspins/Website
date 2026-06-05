@@ -51,14 +51,9 @@ async function main() {
   const apiSlots = body.results ?? body;
   console.log(`✅ Got ${apiSlots.length} slots`);
 
-  const src = readFileSync(SLOT_GAMES_PATH, 'utf-8');
-  const imageMap = parseExistingImages(src);
-  console.log(`📂 Parsed ${imageMap.size} existing image entries`);
-
-  // Build merged list
+  // Build merged list — all images from casinoreviews.net CDN via slug
   const seen = new Set();
   const merged = [];
-  let preserved = 0, added = 0;
 
   for (const slot of apiSlots) {
     const key = slot.name.toLowerCase();
@@ -66,22 +61,12 @@ async function main() {
     seen.add(key);
 
     const vol = mapVol(slot.volatility);
-    let imageExpr;
-
-    if (imageMap.has(key)) {
-      imageExpr = imageMap.get(key); // keep curated image
-      preserved++;
-    } else {
-      // Auto-generate from casinoreviews CDN using slug
-      const url = `https://cdn.casinoreviews.net/slot-images/${slot.slug}.jpg`;
-      imageExpr = `"${url}"`;
-      added++;
-    }
+    const url = `https://cdn.casinoreviews.net/slot-images/${slot.slug}.jpg`;
 
     merged.push({
       name: slot.name,
       provider: slot.provider,
-      imageExpr,
+      imageExpr: `"${url}"`,
       volatility: vol,
     });
   }
@@ -102,10 +87,6 @@ async function main() {
   lines.push('  image: string;');
   lines.push('  volatility: Volatility;');
   lines.push('}');
-  lines.push('');
-  lines.push('// Pragmatic Play CDN base');
-  lines.push('const PP = (code: string) =>');
-  lines.push('  `https://pp-slot-cdn.pragmaticplay.net/game-icons/gs2c/square/${code}.png`;');
   lines.push('');
   lines.push('export const SLOT_GAMES: SlotGame[] = [');
 
@@ -143,9 +124,8 @@ async function main() {
 
   console.log('');
   console.log('✅ slotGames.ts updated!');
-  console.log(`   Total slots  : ${merged.length}`);
-  console.log(`   Images kept  : ${preserved} (from existing curated list)`);
-  console.log(`   Images added : ${added} (auto-CDN from slug)`);
+  console.log(`   Total slots : ${merged.length}`);
+  console.log(`   All images  : casinoreviews.net CDN via slug`);
 }
 
 main().catch((err) => { console.error('❌', err); process.exit(1); });
