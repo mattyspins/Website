@@ -61,7 +61,7 @@ async function main() {
     seen.add(key);
 
     const vol = mapVol(slot.volatility);
-    const url = `https://cdn.casinoreviews.net/slot-images/${slot.slug}.jpg`;
+    const url = `https://slot.report/images/slots/${slot.slug}-start.webp`;
 
     merged.push({
       name: slot.name,
@@ -125,7 +125,7 @@ async function main() {
   console.log('');
   console.log('✅ slotGames.ts updated!');
   console.log(`   Total slots : ${merged.length}`);
-  console.log(`   All images  : casinoreviews.net CDN via slug`);
+  console.log(`   All images  : slot.report CDN ({slug}-start.webp)`);
 }
 
 main().catch((err) => { console.error('❌', err); process.exit(1); });

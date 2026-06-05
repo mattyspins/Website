@@ -166,6 +166,7 @@ export default function TournamentPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAllPast, setShowAllPast] = useState(false);
+  const [viewingPastId, setViewingPastId] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -193,7 +194,7 @@ export default function TournamentPage() {
   }, [user]);
 
   useEffect(() => { loadTournaments(); }, [loadTournaments]);
-  useEffect(() => { if (selected) loadMyEntry(selected.id); }, [selected?.id, loadMyEntry]);
+  useEffect(() => { if (selected) loadMyEntry(selected.id); }, [selected?.id, selected?.status, loadMyEntry]);
 
   useEffect(() => {
     if (!selected) return;
@@ -274,6 +275,24 @@ export default function TournamentPage() {
 
         {error && (
           <div className="mb-6 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-300 text-sm">{error}</div>
+        )}
+
+        {/* ── Back button when viewing a past tournament ─────────── */}
+        {viewingPastId && (
+          <div className="mb-5">
+            <button
+              onClick={() => {
+                setViewingPastId(null);
+                const live = tournaments.find((t) =>
+                  [TournamentStatus.IN_PROGRESS, TournamentStatus.REGISTRATION, TournamentStatus.SLOT_SELECTION].includes(t.status)
+                );
+                setSelected(live ?? null);
+              }}
+              className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors"
+            >
+              ← Back to Tournaments
+            </button>
+          </div>
         )}
 
         {/* ── Active tournament ──────────────────────────────────── */}
@@ -364,7 +383,7 @@ export default function TournamentPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {visiblePast.map((t) => (
-                <div key={t.id} onClick={() => setSelected(t)}
+                <div key={t.id} onClick={() => { setSelected(t); setViewingPastId(t.id); }}
                   className="bg-white/3 border border-white/8 rounded-xl p-5 cursor-pointer hover:bg-white/5 hover:border-white/15 transition-all group">
                   <p className="text-white/35 text-xs mb-2 font-medium">
                     {new Date(t.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase()}
