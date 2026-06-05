@@ -16,6 +16,7 @@ import { getSocket } from "@/lib/socket";
 // ─── Create Modal ─────────────────────────────────────────────────────────────
 function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t: Tournament) => void }) {
   const [form, setForm] = useState({ title: "", maxPlayers: 8, slotTimerSeconds: 180 });
+  const [customMins, setCustomMins] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,20 +86,41 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
         </div>
         <div className="flex items-center gap-2 mb-6">
           <span className="text-xs text-white/40 shrink-0">Custom:</span>
-          <div className="flex items-center gap-1.5 flex-1">
+          <div className="flex items-center gap-1">
+            <button type="button"
+              onClick={() => {
+                const cur = parseFloat(customMins) || 0;
+                const next = Math.max(0.5, parseFloat((cur - 0.5).toFixed(1)));
+                setCustomMins(String(next));
+                setForm({ ...form, slotTimerSeconds: Math.round(next * 60) });
+              }}
+              className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
+            >−</button>
             <input
               type="number"
-              min="10"
-              max="3600"
-              placeholder="minutes"
+              min="0.5"
+              max="60"
+              step="0.5"
+              placeholder="min"
+              value={customMins}
               onChange={(e) => {
+                setCustomMins(e.target.value);
                 const mins = parseFloat(e.target.value);
                 if (!isNaN(mins) && mins > 0) setForm({ ...form, slotTimerSeconds: Math.round(mins * 60) });
               }}
-              className="w-24 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
+              className="w-20 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm text-center focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
             />
-            <span className="text-xs text-white/40">min</span>
-            {![120, 180, 240, 300].includes(form.slotTimerSeconds) && (
+            <button type="button"
+              onClick={() => {
+                const cur = parseFloat(customMins) || 0;
+                const next = parseFloat((cur + 0.5).toFixed(1));
+                setCustomMins(String(next));
+                setForm({ ...form, slotTimerSeconds: Math.round(next * 60) });
+              }}
+              className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
+            >+</button>
+            <span className="text-xs text-white/40 ml-1">min</span>
+            {![120, 180, 240, 300].includes(form.slotTimerSeconds) && customMins && (
               <span className="text-xs text-yellow-400 font-medium ml-1">
                 = {Math.floor(form.slotTimerSeconds / 60)}m {form.slotTimerSeconds % 60 > 0 ? `${form.slotTimerSeconds % 60}s` : ""}
               </span>

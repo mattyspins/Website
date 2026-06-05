@@ -167,12 +167,22 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: () 
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-white/40 shrink-0">Custom:</span>
-              <input
-                type="number" min="1" placeholder="coins"
-                value={customTicketPrice}
-                onChange={(e) => { setCustomTicketPrice(e.target.value); if (e.target.value) setForm({ ...form, ticketPrice: parseInt(e.target.value) || 100 }); }}
-                className="w-24 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
-              />
+              <div className="flex items-center gap-1">
+                <button type="button"
+                  onClick={() => { const next = Math.max(1, (parseInt(customTicketPrice) || 0) - 10); setCustomTicketPrice(String(next)); setForm({ ...form, ticketPrice: next }); }}
+                  className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
+                >−</button>
+                <input
+                  type="number" min="1" placeholder="coins"
+                  value={customTicketPrice}
+                  onChange={(e) => { setCustomTicketPrice(e.target.value); if (e.target.value) setForm({ ...form, ticketPrice: parseInt(e.target.value) || 100 }); }}
+                  className="w-20 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm text-center focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
+                />
+                <button type="button"
+                  onClick={() => { const next = (parseInt(customTicketPrice) || 0) + 10; setCustomTicketPrice(String(next)); setForm({ ...form, ticketPrice: next }); }}
+                  className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
+                >+</button>
+              </div>
             </div>
           </div>
 
@@ -195,12 +205,22 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: () 
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-white/40 shrink-0">Custom:</span>
-              <input
-                type="number" min="1" placeholder="tickets"
-                value={customMaxTickets}
-                onChange={(e) => { setCustomMaxTickets(e.target.value); if (e.target.value) setForm({ ...form, maxTickets: parseInt(e.target.value) || 100 }); }}
-                className="w-24 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
-              />
+              <div className="flex items-center gap-1">
+                <button type="button"
+                  onClick={() => { const next = Math.max(1, (parseInt(customMaxTickets) || 0) - 10); setCustomMaxTickets(String(next)); setForm({ ...form, maxTickets: next }); }}
+                  className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
+                >−</button>
+                <input
+                  type="number" min="1" placeholder="tickets"
+                  value={customMaxTickets}
+                  onChange={(e) => { setCustomMaxTickets(e.target.value); if (e.target.value) setForm({ ...form, maxTickets: parseInt(e.target.value) || 100 }); }}
+                  className="w-20 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm text-center focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
+                />
+                <button type="button"
+                  onClick={() => { const next = (parseInt(customMaxTickets) || 0) + 10; setCustomMaxTickets(String(next)); setForm({ ...form, maxTickets: next }); }}
+                  className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
+                >+</button>
+              </div>
             </div>
           </div>
 
@@ -259,12 +279,22 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: () 
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-white/40 shrink-0">Custom:</span>
-              <input
-                type="number" min="1" placeholder="winners"
-                value={customWinners}
-                onChange={(e) => { setCustomWinners(e.target.value); if (e.target.value) setForm({ ...form, numberOfWinners: parseInt(e.target.value) || 1 }); }}
-                className="w-24 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
-              />
+              <div className="flex items-center gap-1">
+                <button type="button"
+                  onClick={() => { const next = Math.max(1, (parseInt(customWinners) || 0) - 1); setCustomWinners(String(next)); setForm({ ...form, numberOfWinners: next }); }}
+                  className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
+                >−</button>
+                <input
+                  type="number" min="1" placeholder="winners"
+                  value={customWinners}
+                  onChange={(e) => { setCustomWinners(e.target.value); if (e.target.value) setForm({ ...form, numberOfWinners: parseInt(e.target.value) || 1 }); }}
+                  className="w-20 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm text-center focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
+                />
+                <button type="button"
+                  onClick={() => { const next = (parseInt(customWinners) || 0) + 1; setCustomWinners(String(next)); setForm({ ...form, numberOfWinners: next }); }}
+                  className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
+                >+</button>
+              </div>
             </div>
           </div>
 
@@ -287,12 +317,22 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: () 
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-white/40 shrink-0">Custom:</span>
-              <input
-                type="number" min="1" placeholder="max per user"
-                value={customMaxEntries}
-                onChange={(e) => { setCustomMaxEntries(e.target.value); if (e.target.value) setForm({ ...form, maxEntriesPerUser: parseInt(e.target.value) || 1 }); }}
-                className="w-24 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
-              />
+              <div className="flex items-center gap-1">
+                <button type="button"
+                  onClick={() => { const next = Math.max(1, (parseInt(customMaxEntries) || 0) - 1); setCustomMaxEntries(String(next)); setForm({ ...form, maxEntriesPerUser: next }); }}
+                  className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
+                >−</button>
+                <input
+                  type="number" min="1" placeholder="max per user"
+                  value={customMaxEntries}
+                  onChange={(e) => { setCustomMaxEntries(e.target.value); if (e.target.value) setForm({ ...form, maxEntriesPerUser: parseInt(e.target.value) || 1 }); }}
+                  className="w-20 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm text-center focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
+                />
+                <button type="button"
+                  onClick={() => { const next = (parseInt(customMaxEntries) || 0) + 1; setCustomMaxEntries(String(next)); setForm({ ...form, maxEntriesPerUser: next }); }}
+                  className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
+                >+</button>
+              </div>
             </div>
           </div>
         </div>
