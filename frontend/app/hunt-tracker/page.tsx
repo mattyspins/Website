@@ -286,7 +286,7 @@ export default function HuntTrackerPage() {
   useEffect(() => {
     fetch(API_ENDPOINTS.LIVE_HUNT)
       .then((r) => r.ok ? r.json() : null)
-      .then((data) => { if (data?.name) setLiveHuntName(data.name); })
+      .then((data) => { if (data?.hunt?.name) setLiveHuntName(data.hunt.name); })
       .catch(() => {});
   }, []);
 
