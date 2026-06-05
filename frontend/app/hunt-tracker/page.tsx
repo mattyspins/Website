@@ -122,7 +122,7 @@ function CreateHuntModal({
         {/* Header */}
         <div className="flex items-center justify-between mb-7">
           <div className="flex items-center gap-3">
-            <Plus className="w-5 h-5 text-violet-400" />
+            <Plus className="w-5 h-5 text-gold-400" />
             <h2 className="text-white font-bold text-xl">
               {initial ? "Edit Hunt" : "Create New Hunt"}
             </h2>
@@ -147,7 +147,7 @@ function CreateHuntModal({
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               placeholder="Enter hunt name"
-              className={`w-full bg-[#1a1535] border rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors ${errors.name ? "border-red-500" : "border-white/10"}`}
+              className={`w-full bg-[#1a1535] border rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-gold-500 transition-colors ${errors.name ? "border-red-500" : "border-white/10"}`}
             />
             {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
           </div>
@@ -155,7 +155,7 @@ function CreateHuntModal({
           {/* Start Cost */}
           <div>
             <label className="text-sm text-gray-400 mb-2 block">Start Cost</label>
-            <div className={`flex items-center bg-[#1a1535] border rounded-xl px-4 py-3 gap-2 focus-within:border-violet-500 transition-colors ${errors.startCost ? "border-red-500" : "border-white/10"}`}>
+            <div className={`flex items-center bg-[#1a1535] border rounded-xl px-4 py-3 gap-2 focus-within:border-gold-500 transition-colors ${errors.startCost ? "border-red-500" : "border-white/10"}`}>
               <span className="text-gray-500 font-semibold">{CURRENCY_SYMBOLS[currency]}</span>
               <input
                 type="number"
@@ -177,7 +177,7 @@ function CreateHuntModal({
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value as Currency)}
-                className="w-full bg-[#1a1535] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors appearance-none cursor-pointer"
+                className="w-full bg-[#1a1535] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold-500 transition-colors appearance-none cursor-pointer"
               >
                 {CURRENCIES.map((c) => (
                   <option key={c} value={c} className="bg-[#1a1535]">
@@ -196,7 +196,7 @@ function CreateHuntModal({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full bg-[#1a1535] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors [color-scheme:dark]"
+              className="w-full bg-[#1a1535] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold-500 transition-colors [color-scheme:dark]"
             />
           </div>
         </div>
@@ -212,10 +212,10 @@ function CreateHuntModal({
           </button>
           <button
             onClick={handleSubmit}
-            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-bold px-6 py-2.5 rounded-xl transition-colors text-sm"
+            className="flex items-center gap-2 bg-gold-500 hover:bg-gold-400 text-[#0a0810] font-bold px-6 py-2.5 rounded-xl transition-colors text-sm"
           >
             {initial ? "Save Changes" : "Create Hunt"}
-            <kbd className="bg-violet-700 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">↵</kbd>
+            <kbd className="bg-gold-600 text-[#0a0810] text-[10px] px-1.5 py-0.5 rounded font-mono">↵</kbd>
           </button>
         </div>
       </motion.div>
@@ -335,9 +335,9 @@ export default function HuntTrackerPage() {
         {/* Page title */}
         <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex items-center gap-3 mb-1">
-            <Target className="w-6 h-6 text-violet-400" />
+            <Target className="w-6 h-6 text-gold-400" />
             <h1 className="text-2xl font-bold font-gaming text-white tracking-wide">
-              BONUS <span className="text-violet-400">HUNT TRACKER</span>
+              BONUS <span className="text-gold-400">HUNT TRACKER</span>
             </h1>
           </div>
           <p className="text-gray-500 text-sm ml-9">Track your bonus hunts, stats and results.</p>
@@ -367,7 +367,7 @@ export default function HuntTrackerPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-white font-bold text-lg">Statistics</h2>
             <div className="flex items-center gap-2">
-              <button className="flex items-center gap-2 bg-[#1a1535] border border-white/10 text-gray-300 text-sm px-4 py-2 rounded-xl hover:border-violet-500/50 transition-colors">
+              <button className="flex items-center gap-2 bg-[#1a1535] border border-white/10 text-gray-300 text-sm px-4 py-2 rounded-xl hover:border-gold-500/50 transition-colors">
                 All Time <ChevronDown className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -404,16 +404,16 @@ export default function HuntTrackerPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search hunts…"
-                  className="bg-[#1a1535] border border-white/10 rounded-xl pl-9 pr-4 py-2 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-violet-500 transition-colors w-44"
+                  className="bg-[#1a1535] border border-white/10 rounded-xl pl-9 pr-4 py-2 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-gold-500 transition-colors w-44"
                 />
               </div>
               <button
                 onClick={() => setShowCreate(true)}
-                className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-bold px-4 py-2 rounded-xl transition-colors text-sm"
+                className="flex items-center gap-2 bg-gold-500 hover:bg-gold-400 text-[#0a0810] font-bold px-4 py-2 rounded-xl transition-colors text-sm"
               >
                 <Plus className="w-4 h-4" />
                 Create Hunt
-                <kbd className="bg-violet-700 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">C</kbd>
+                <kbd className="bg-gold-600 text-[#0a0810] text-[10px] px-1.5 py-0.5 rounded font-mono">C</kbd>
               </button>
             </div>
           </div>
@@ -453,9 +453,9 @@ export default function HuntTrackerPage() {
                     >
                       {/* Title */}
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className={`w-2 h-2 rounded-full shrink-0 ${hunt.isStarted ? "bg-emerald-400" : "bg-violet-500"}`} />
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${hunt.isStarted ? "bg-emerald-400" : "bg-gold-500"}`} />
                         <div className="min-w-0">
-                          <p className="text-white font-semibold text-sm truncate group-hover:text-violet-300 transition-colors">{hunt.name}</p>
+                          <p className="text-white font-semibold text-sm truncate group-hover:text-gold-300 transition-colors">{hunt.name}</p>
                           <p className="text-gray-600 text-xs">{fmtDate(hunt.date)}</p>
                         </div>
                       </div>
@@ -484,7 +484,7 @@ export default function HuntTrackerPage() {
                         </button>
                         <button
                           onClick={() => setEditHunt(hunt)}
-                          className="p-1.5 text-gray-600 hover:text-violet-400 rounded-lg hover:bg-white/5 transition-colors"
+                          className="p-1.5 text-gray-600 hover:text-gold-400 rounded-lg hover:bg-white/5 transition-colors"
                           title="Edit"
                         >
                           <Pencil className="w-4 h-4" />

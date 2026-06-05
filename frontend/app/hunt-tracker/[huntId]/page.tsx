@@ -26,7 +26,7 @@ const BADGE_CONFIG: Record<BadgeType, { label: string; cls: string }> = {
   none:         { label: "",            cls: "" },
   super_bonus:  { label: "SUPER",       cls: "bg-amber-500/20 text-amber-400 border border-amber-500/40" },
   five_scatter: { label: "5 SCATTER",   cls: "bg-blue-500/20 text-blue-400 border border-blue-500/40" },
-  custom:       { label: "CUSTOM",      cls: "bg-violet-500/20 text-violet-400 border border-violet-500/40" },
+  custom:       { label: "CUSTOM",      cls: "bg-gold-500/20 text-gold-400 border border-gold-500/40" },
 };
 
 function BadgePill({ badge, custom }: { badge: BadgeType; custom?: string }) {
@@ -129,7 +129,7 @@ function AddBonusModal({
       >
         <div className="flex items-center justify-between mb-7">
           <div className="flex items-center gap-3">
-            <Plus className="w-5 h-5 text-violet-400" />
+            <Plus className="w-5 h-5 text-gold-400" />
             <h2 className="text-white font-bold text-xl">{initial ? "Edit Bonus" : "Add Bonus to Hunt"}</h2>
           </div>
           <button onClick={onClose} className="text-gray-600 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
@@ -148,7 +148,7 @@ function AddBonusModal({
                 </div>
                 <button
                   onClick={() => { setSelected(null); setQuery(""); setTimeout(() => searchRef.current?.focus(), 50); }}
-                  className="text-violet-400 hover:text-violet-300 text-xs font-semibold transition-colors"
+                  className="text-gold-400 hover:text-gold-300 text-xs font-semibold transition-colors"
                 >
                   Change
                 </button>
@@ -159,7 +159,7 @@ function AddBonusModal({
               <label className="text-sm text-gray-400 mb-2 block">
                 Search for Slot <span className="text-gray-600">(Type to search)</span>
               </label>
-              <div className={`relative bg-[#1a1535] border rounded-xl focus-within:border-violet-500 transition-colors ${errors.slot ? "border-red-500" : "border-white/10"}`}>
+              <div className={`relative bg-[#1a1535] border rounded-xl focus-within:border-gold-500 transition-colors ${errors.slot ? "border-red-500" : "border-white/10"}`}>
                 <Search className="absolute left-4 top-3.5 w-4 h-4 text-gray-600" />
                 <input
                   ref={searchRef}
@@ -194,7 +194,7 @@ function AddBonusModal({
           {/* Bet Size */}
           <div>
             <label className="text-sm text-gray-400 mb-2 block">Bet Size <span className="text-red-400">*</span></label>
-            <div className={`flex items-center bg-[#1a1535] border rounded-xl px-4 py-3 gap-2 focus-within:border-violet-500 transition-colors ${errors.betSize ? "border-red-500" : "border-white/10"}`}>
+            <div className={`flex items-center bg-[#1a1535] border rounded-xl px-4 py-3 gap-2 focus-within:border-gold-500 transition-colors ${errors.betSize ? "border-red-500" : "border-white/10"}`}>
               <span className="text-gray-500 font-semibold">{sym}</span>
               <input
                 type="number" min="0.01" step="0.01"
@@ -214,7 +214,7 @@ function AddBonusModal({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Add any notes about this bonus…"
-              className="w-full bg-[#1a1535] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
+              className="w-full bg-[#1a1535] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-gold-500 transition-colors"
             />
           </div>
 
@@ -230,7 +230,7 @@ function AddBonusModal({
                     badge === b.value
                       ? b.value === "super_bonus" ? "bg-amber-500/20 text-amber-400 border-amber-500/50"
                         : b.value === "five_scatter" ? "bg-blue-500/20 text-blue-400 border-blue-500/50"
-                        : b.value === "custom" ? "bg-violet-500/20 text-violet-400 border-violet-500/50"
+                        : b.value === "custom" ? "bg-gold-500/20 text-gold-400 border-gold-500/50"
                         : "bg-white/10 text-white border-white/30"
                       : "bg-[#1a1535] text-gray-400 border-white/10 hover:border-white/20"
                   }`}
@@ -245,7 +245,7 @@ function AddBonusModal({
                 onChange={(e) => setCustomBadge(e.target.value)}
                 placeholder="Enter badge text…"
                 maxLength={16}
-                className="mt-2 w-full bg-[#1a1535] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-violet-500 transition-colors"
+                className="mt-2 w-full bg-[#1a1535] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-gold-500 transition-colors"
               />
             )}
           </div>
@@ -261,10 +261,10 @@ function AddBonusModal({
           </button>
           <button
             onClick={handleSubmit}
-            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-bold px-6 py-2.5 rounded-xl transition-colors text-sm"
+            className="flex items-center gap-2 bg-gold-500 hover:bg-gold-400 text-[#0a0810] font-bold px-6 py-2.5 rounded-xl transition-colors text-sm"
           >
             {initial ? "Save Changes" : "Add Bonus"}
-            <kbd className="bg-violet-700 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">↵</kbd>
+            <kbd className="bg-gold-600 text-[#0a0810] text-[10px] px-1.5 py-0.5 rounded font-mono">↵</kbd>
           </button>
         </div>
       </motion.div>
@@ -322,7 +322,7 @@ function OpenBonusModal({
 
         <div className="mb-5">
           <label className="text-sm text-gray-400 mb-2 block">Payout Amount</label>
-          <div className={`flex items-center bg-[#1a1535] border rounded-xl px-4 py-3 gap-2 focus-within:border-violet-500 transition-colors ${error ? "border-red-500" : "border-white/10"}`}>
+          <div className={`flex items-center bg-[#1a1535] border rounded-xl px-4 py-3 gap-2 focus-within:border-gold-500 transition-colors ${error ? "border-red-500" : "border-white/10"}`}>
             <span className="text-gray-500 font-semibold">{sym}</span>
             <input
               autoFocus
@@ -337,14 +337,14 @@ function OpenBonusModal({
           {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
           {multi && (
             <p className="text-gray-500 text-xs mt-2">
-              Multiplier: <span className="text-violet-400 font-bold">{multi}x</span>
+              Multiplier: <span className="text-gold-400 font-bold">{multi}x</span>
             </p>
           )}
         </div>
 
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 bg-[#1a1535] hover:bg-[#211a45] border border-white/10 text-gray-300 font-semibold py-2.5 rounded-xl transition-colors text-sm">Cancel</button>
-          <button onClick={handleSubmit} className="flex-1 bg-violet-600 hover:bg-violet-500 text-white font-bold py-2.5 rounded-xl transition-colors text-sm">Save Payout</button>
+          <button onClick={handleSubmit} className="flex-1 bg-gold-500 hover:bg-gold-400 text-[#0a0810] font-bold py-2.5 rounded-xl transition-colors text-sm">Save Payout</button>
         </div>
       </motion.div>
     </div>
@@ -555,7 +555,7 @@ export default function HuntDetailPage() {
       <div className="min-h-screen pt-20 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-500 text-sm mb-4">Hunt not found.</p>
-          <button onClick={() => router.push("/hunt-tracker")} className="text-violet-400 hover:text-violet-300 text-sm transition-colors">
+          <button onClick={() => router.push("/hunt-tracker")} className="text-gold-400 hover:text-gold-300 text-sm transition-colors">
             ← Back to tracker
           </button>
         </div>
@@ -586,7 +586,7 @@ export default function HuntDetailPage() {
     return (
       <button
         onClick={() => toggleSort(k)}
-        className={`flex items-center gap-1 text-xs uppercase tracking-widest font-semibold transition-colors ${active ? "text-violet-400" : "text-gray-600 hover:text-gray-400"}`}
+        className={`flex items-center gap-1 text-xs uppercase tracking-widest font-semibold transition-colors ${active ? "text-gold-400" : "text-gray-600 hover:text-gray-400"}`}
       >
         {label}
         {active ? (sortDir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : null}
@@ -728,7 +728,7 @@ export default function HuntDetailPage() {
                 {/* Payout (editable) */}
                 <div>
                   <label className="text-gray-500 text-xs mb-2 block">Payout</label>
-                  <div className="flex items-center gap-2 bg-[#1a1535] border border-violet-500/50 rounded-xl px-4 py-3 focus-within:border-violet-400 transition-colors">
+                  <div className="flex items-center gap-2 bg-[#1a1535] border border-gold-500/50 rounded-xl px-4 py-3 focus-within:border-gold-400 transition-colors">
                     <span className="text-gray-500">{sym}</span>
                     <input
                       autoFocus
@@ -764,7 +764,7 @@ export default function HuntDetailPage() {
                   onChange={(e) => setNoteInput(e.target.value)}
                   placeholder="Type a note..."
                   rows={2}
-                  className="w-full bg-[#1a1535] border border-white/8 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-violet-500 transition-colors resize-none"
+                  className="w-full bg-[#1a1535] border border-white/8 rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-gold-500 transition-colors resize-none"
                 />
               </div>
 
@@ -778,7 +778,7 @@ export default function HuntDetailPage() {
                 </button>
                 <button
                   onClick={handleContinue}
-                  className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-bold px-8 py-2.5 rounded-xl transition-colors text-sm"
+                  className="flex items-center gap-2 bg-gold-500 hover:bg-gold-400 text-[#0a0810] font-bold px-8 py-2.5 rounded-xl transition-colors text-sm"
                 >
                   {currentIdx < hunt.bonuses.length - 1 ? "Continue" : "Finish"}
                   <ArrowLeft className="w-4 h-4 rotate-180" />
@@ -795,7 +795,7 @@ export default function HuntDetailPage() {
               </p>
               <button
                 onClick={() => setOpeningMode(false)}
-                className="bg-violet-600 hover:bg-violet-500 text-white font-bold px-6 py-2.5 rounded-xl transition-colors text-sm"
+                className="bg-gold-500 hover:bg-gold-400 text-[#0a0810] font-bold px-6 py-2.5 rounded-xl transition-colors text-sm"
               >
                 Back to Hunt
               </button>
@@ -918,7 +918,7 @@ export default function HuntDetailPage() {
               value={searchGame}
               onChange={(e) => setSearchGame(e.target.value)}
               placeholder="Search for a game…"
-              className="w-full bg-[#14102a] border border-white/8 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-violet-500 transition-colors"
+              className="w-full bg-[#14102a] border border-white/8 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-gold-500 transition-colors"
             />
           </div>
           <button
@@ -942,18 +942,18 @@ export default function HuntDetailPage() {
           <button
             disabled={hunt.isStarted}
             onClick={handleStart}
-            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-sm"
+            className="flex items-center gap-2 bg-gold-600 hover:bg-gold-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-sm"
           >
             <Play className="w-4 h-4" fill="white" />
             {hunt.isStarted ? "Started" : "Start"}
-            {!hunt.isStarted && <kbd className="bg-violet-700 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">S</kbd>}
+            {!hunt.isStarted && <kbd className="bg-gold-600 text-[#0a0810] text-[10px] px-1.5 py-0.5 rounded font-mono">S</kbd>}
           </button>
         </div>
 
         {/* ── Add Bonus area ──────────────────────────────────── */}
         <button
           onClick={() => setShowAddBonus(true)}
-          className="w-full border-2 border-dashed border-white/10 hover:border-violet-500/50 rounded-2xl py-6 text-gray-600 hover:text-violet-400 transition-colors flex items-center justify-center gap-2 text-sm font-semibold mb-4"
+          className="w-full border-2 border-dashed border-white/10 hover:border-gold-500/50 rounded-2xl py-6 text-gray-600 hover:text-gold-400 transition-colors flex items-center justify-center gap-2 text-sm font-semibold mb-4"
         >
           <Plus className="w-5 h-5" /> Add Bonus
           <kbd className="bg-[#1a1535] text-gray-500 text-[10px] px-1.5 py-0.5 rounded font-mono">B</kbd>
@@ -968,17 +968,17 @@ export default function HuntDetailPage() {
             </span>
             <span className="text-gray-600 text-xs uppercase tracking-widest font-semibold">Provider</span>
             <button className="text-left" onClick={() => toggleSort("betSize")}>
-              <span className={`text-xs uppercase tracking-widest font-semibold flex items-center gap-1 ${sortKey === "betSize" ? "text-violet-400" : "text-gray-600"}`}>
+              <span className={`text-xs uppercase tracking-widest font-semibold flex items-center gap-1 ${sortKey === "betSize" ? "text-gold-400" : "text-gray-600"}`}>
                 Bet Size {sortKey === "betSize" ? (sortDir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : null}
               </span>
             </button>
             <button className="text-left" onClick={() => toggleSort("payout")}>
-              <span className={`text-xs uppercase tracking-widest font-semibold flex items-center gap-1 ${sortKey === "payout" ? "text-violet-400" : "text-gray-600"}`}>
+              <span className={`text-xs uppercase tracking-widest font-semibold flex items-center gap-1 ${sortKey === "payout" ? "text-gold-400" : "text-gray-600"}`}>
                 Payout {sortKey === "payout" ? (sortDir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : null}
               </span>
             </button>
             <button className="text-left" onClick={() => toggleSort("multi")}>
-              <span className={`text-xs uppercase tracking-widest font-semibold flex items-center gap-1 ${sortKey === "multi" ? "text-violet-400" : "text-gray-600"}`}>
+              <span className={`text-xs uppercase tracking-widest font-semibold flex items-center gap-1 ${sortKey === "multi" ? "text-gold-400" : "text-gray-600"}`}>
                 Multi {sortKey === "multi" ? (sortDir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : null}
               </span>
             </button>
@@ -1044,7 +1044,7 @@ export default function HuntDetailPage() {
                     </button>
                     <button
                       onClick={() => setEditBonus(bonus)}
-                      className="p-1.5 text-gray-600 hover:text-violet-400 rounded-lg hover:bg-white/5 transition-colors"
+                      className="p-1.5 text-gray-600 hover:text-gold-400 rounded-lg hover:bg-white/5 transition-colors"
                       title="Edit"
                     >
                       <Pencil className="w-4 h-4" />

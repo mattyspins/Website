@@ -36,7 +36,7 @@ const BADGE_CFG: Record<BadgeType, { label: string; cls: string }> = {
   none:         { label: "",          cls: "" },
   super_bonus:  { label: "SUPER",     cls: "bg-amber-500/20 text-amber-400 border border-amber-500/40" },
   five_scatter: { label: "5 SCATTER", cls: "bg-blue-500/20 text-blue-400 border border-blue-500/40" },
-  custom:       { label: "CUSTOM",    cls: "bg-violet-500/20 text-violet-400 border border-violet-500/40" },
+  custom:       { label: "CUSTOM",    cls: "bg-gold-500/20 text-gold-400 border border-gold-500/40" },
 };
 
 function BadgePill({ badge, custom }: { badge: BadgeType; custom?: string }) {
@@ -65,8 +65,8 @@ function StatusBadge({ hunt }: { hunt: LiveHunt }) {
 
   if (!hunt.isStarted) {
     return (
-      <span className="flex items-center gap-1.5 text-xs font-bold text-violet-400 bg-violet-500/15 border border-violet-500/30 px-3 py-1 rounded-full">
-        <span className="w-1.5 h-1.5 rounded-full bg-violet-400" /> COLLECTING
+      <span className="flex items-center gap-1.5 text-xs font-bold text-gold-400 bg-gold-500/15 border border-gold-500/30 px-3 py-1 rounded-full">
+        <span className="w-1.5 h-1.5 rounded-full bg-gold-400" /> COLLECTING
       </span>
     );
   }
@@ -190,7 +190,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                 "Every bonus counts — even a single huge multiplier can flip the hunt",
               ].map((s, i) => (
                 <li key={i} className="flex gap-3">
-                  <span className="text-violet-400 font-bold shrink-0 w-4">{i + 1}.</span>
+                  <span className="text-gold-400 font-bold shrink-0 w-4">{i + 1}.</span>
                   <span>{s}</span>
                 </li>
               ))}
@@ -207,7 +207,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
                 { label: "OPENING status", desc: "The hunt reveal is in progress — payouts are being entered live" },
               ].map(({ label, desc }) => (
                 <li key={label} className="flex gap-2">
-                  <span className="text-violet-400 font-semibold shrink-0">•</span>
+                  <span className="text-gold-400 font-semibold shrink-0">•</span>
                   <span><span className="text-white font-semibold">{label}:</span> {desc}</span>
                 </li>
               ))}
@@ -274,8 +274,8 @@ export default function BonusHuntLivePage() {
     return (
       <div className="min-h-screen pt-20 pb-16 px-4 flex flex-col items-center justify-center">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-          <div className="w-20 h-20 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-6">
-            <Zap className="w-9 h-9 text-violet-400" />
+          <div className="w-20 h-20 rounded-2xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center mx-auto mb-6">
+            <Zap className="w-9 h-9 text-gold-400" />
           </div>
           <h2 className="text-white font-bold text-2xl mb-2">No Active Hunt</h2>
           <p className="text-gray-500 text-sm mb-8 max-w-xs mx-auto">
@@ -296,7 +296,7 @@ export default function BonusHuntLivePage() {
     return (
       <div className="min-h-screen pt-20 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-violet-500/40 border-t-violet-400 rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-gold-500/40 border-t-gold-400 rounded-full animate-spin" />
           <p className="text-gray-500 text-sm">Loading hunt…</p>
         </div>
       </div>
@@ -344,7 +344,7 @@ export default function BonusHuntLivePage() {
               <p className="text-gray-500 text-xs mt-1">Bonuses</p>
             </div>
             <div className="bg-[#14102a]/80 border border-white/8 rounded-2xl p-4 text-center">
-              <p className="text-violet-400 font-bold text-2xl">
+              <p className="text-gold-400 font-bold text-2xl">
                 {sym}{hunt!.startCost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <p className="text-gray-500 text-xs mt-1">Start</p>
@@ -381,7 +381,7 @@ export default function BonusHuntLivePage() {
                     transition={{ delay: i * 0.02 }}
                     className={`grid grid-cols-[1fr_80px_100px_80px] items-center px-5 py-3.5 border-b border-white/5 last:border-0 transition-colors ${
                       bonus.payout === null && hunt!.isStarted
-                        ? "bg-violet-500/5"
+                        ? "bg-gold-500/5"
                         : "hover:bg-white/[0.015]"
                     }`}
                   >
