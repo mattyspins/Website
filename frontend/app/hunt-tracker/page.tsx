@@ -13,6 +13,7 @@ import {
   calcGlobalStats, fmt,
   type GlobalStats,
 } from "@/lib/huntTracker";
+import { API_ENDPOINTS } from "@/lib/api";
 
 /* ── helpers ─────────────────────────────────────────────── */
 function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
@@ -260,6 +261,8 @@ export default function HuntTrackerPage() {
   const [editHunt, setEditHunt] = useState<Hunt | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Hunt | null>(null);
   const [search, setSearch] = useState("");
+  const [liveHuntName, setLiveHuntName] = useState<string | null>(null);
+  const [clearingLive, setClearingLive] = useState(false);
 
   const reload = useCallback(() => {
     const h = loadHunts();
@@ -279,6 +282,28 @@ export default function HuntTrackerPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [showCreate, editHunt, deleteTarget]);
+
+  useEffect(() => {
+    fetch(API_ENDPOINTS.LIVE_HUNT)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.name) setLiveHuntName(data.name); })
+      .catch(() => {});
+  }, []);
+
+  async function handleClearLive() {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    setClearingLive(true);
+    try {
+      await fetch(API_ENDPOINTS.LIVE_HUNT, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setLiveHuntName(null);
+    } finally {
+      setClearingLive(false);
+    }
+  }
 
   function handleSaveHunt(hunt: Hunt) {
     upsertHunt(hunt);
@@ -317,6 +342,25 @@ export default function HuntTrackerPage() {
           </div>
           <p className="text-gray-500 text-sm ml-9">Track your bonus hunts, stats and results.</p>
         </motion.div>
+
+        {/* ── Live hunt warning ───────────────────────────────── */}
+        {liveHuntName && (
+          <div className="mb-6 flex items-center justify-between gap-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl px-5 py-4">
+            <div className="flex items-center gap-3">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+              <p className="text-amber-300 text-sm font-medium">
+                <span className="font-bold">{liveHuntName}</span> is currently live on the viewer page.
+              </p>
+            </div>
+            <button
+              onClick={handleClearLive}
+              disabled={clearingLive}
+              className="shrink-0 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
+            >
+              {clearingLive ? "Clearing…" : "Take Down"}
+            </button>
+          </div>
+        )}
 
         {/* ── Statistics ──────────────────────────────────────── */}
         <section className="mb-6">
