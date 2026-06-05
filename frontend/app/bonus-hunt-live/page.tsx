@@ -99,7 +99,7 @@ function HowToPlayModal({ onClose }: { onClose: () => void }) {
     },
     {
       step: "Slots Are Collected",
-      body: "Throughout the stream, bonuses are bought and saved. Each slot appears in this list with its bet size. Payouts show as "–" until that bonus is opened.",
+      body: "Throughout the stream, bonuses are bought and saved. Each slot appears in this list with its bet size. Payouts show as \"-\" until that bonus is opened.",
     },
     {
       step: "The Reveal Begins",
