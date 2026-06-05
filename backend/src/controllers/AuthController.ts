@@ -387,6 +387,8 @@ export class AuthController {
             totalSpent: userSession.totalSpent || 0,
             isAdmin: userSession.isAdmin,
             isModerator: userSession.isModerator,
+            isVip: userSession.isVip,
+            isDepositor: userSession.isDepositor,
             kickUsername: userSession.kickUsername,
             kickVerified: userSession.kickVerified || false,
             rainbetUsername: userSession.rainbetUsername,

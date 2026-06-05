@@ -42,6 +42,8 @@ export interface UserSession {
   totalSpent?: number;
   isAdmin: boolean;
   isModerator: boolean;
+  isVip: boolean;
+  isDepositor: boolean;
   kickUsername?: string;
   kickVerified?: boolean;
   rainbetUsername?: string;
@@ -150,6 +152,8 @@ export class AuthService {
         totalSpent: user.totalSpent,
         isAdmin: user.isAdmin,
         isModerator: user.isModerator,
+        isVip: user.isVip,
+        isDepositor: user.isDepositor,
         kickUsername: user.kickUsername || undefined,
         kickVerified: user.kickVerified,
         rainbetUsername: user.rainbetUsername || undefined,
@@ -397,6 +401,8 @@ export class AuthService {
         totalSpent: user.totalSpent,
         isAdmin: user.isAdmin,
         isModerator: user.isModerator,
+        isVip: user.isVip,
+        isDepositor: user.isDepositor,
         kickUsername: user.kickUsername || undefined,
         kickVerified: user.kickVerified,
         rainbetUsername: user.rainbetUsername || undefined,
