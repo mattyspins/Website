@@ -67,6 +67,7 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
   const [open, setOpen] = useState(false);
   const [provider, setProvider] = useState("");
   const [sortAZ, setSortAZ] = useState(false);
+  const [volFilter, setVolFilter] = useState<"" | "Low" | "Medium" | "High" | "Very High">("");
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Close on outside click
@@ -82,9 +83,10 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
   const results = useMemo(() => {
     let list = searchSlots(query);
     if (provider) list = list.filter((g) => g.provider === provider);
+    if (volFilter) list = list.filter((g) => g.volatility === volFilter);
     if (sortAZ) list = [...list].sort((a, b) => a.name.localeCompare(b.name));
     return list;
-  }, [query, provider, sortAZ]);
+  }, [query, provider, volFilter, sortAZ]);
 
   const selectedGame = useMemo(
     () => SLOT_GAMES.find((s) => s.name === value),
@@ -161,6 +163,27 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
                 }`}
               >
                 {p.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Volatility filter row */}
+          <div className="flex gap-1.5 px-3 pb-1.5 shrink-0">
+            {(["", "Low", "Medium", "High", "Very High"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={(e) => { e.stopPropagation(); setVolFilter(v); }}
+                className={`shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full transition-colors border ${
+                  volFilter === v
+                    ? v === ""     ? "bg-white/20 text-white border-white/30"
+                    : v === "Low"     ? "bg-green-500/30 text-green-300 border-green-500/50"
+                    : v === "Medium"  ? "bg-blue-500/30 text-blue-300 border-blue-500/50"
+                    : v === "High"    ? "bg-orange-500/30 text-orange-300 border-orange-500/50"
+                    :                   "bg-red-500/30 text-red-300 border-red-500/50"
+                    : "bg-white/5 text-white/40 border-white/10 hover:bg-white/10 hover:text-white/70"
+                }`}
+              >
+                {v === "" ? "All Vol." : v}
               </button>
             ))}
           </div>

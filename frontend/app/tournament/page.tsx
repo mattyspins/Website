@@ -354,7 +354,11 @@ export default function TournamentPage() {
               <div className="mb-4 p-4 bg-yellow-400/10 border border-yellow-400/30 rounded-xl flex items-center justify-between gap-4">
                 <div>
                   <p className="font-semibold text-yellow-300">You&apos;ve been selected! 🎉</p>
-                  <p className="text-sm text-white/50 mt-0.5">Name your slot call before the timer runs out.</p>
+                  <p className="text-sm text-white/50 mt-0.5">
+                    {myParticipant?.slotDeadline && new Date() > new Date(myParticipant.slotDeadline)
+                      ? "Timer expired — pick your slot now before the admin rerolls you."
+                      : "Name your slot call before the timer runs out."}
+                  </p>
                 </div>
                 <button onClick={() => setActiveMatch({ id: "initial", round: 0, matchNumber: 0, status: MatchStatus.SLOT_SELECTION, winnerId: null, nextMatchId: null, slotDeadline: myParticipant?.slotDeadline ?? null, participants: [] })}
                   className="px-4 py-2 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-300 text-sm shrink-0 transition-colors">

@@ -19,7 +19,7 @@ export class TournamentService {
     return {
       id: p.id,
       userId: p.userId,
-      displayName: p.user?.displayName ?? '',
+      displayName: p.user?.kickUsername ?? p.user?.displayName ?? '',
       avatarUrl: p.user?.avatarUrl ?? null,
       seed: p.seed,
       currentSlot: p.currentSlot,
@@ -43,7 +43,7 @@ export class TournamentService {
         id: mp.id,
         participantId: mp.participantId,
         userId: mp.participant?.userId ?? '',
-        displayName: mp.participant?.user?.displayName ?? '',
+        displayName: mp.participant?.user?.kickUsername ?? mp.participant?.user?.displayName ?? '',
         avatarUrl: mp.participant?.user?.avatarUrl ?? null,
         slotCall: mp.slotCall,
         slotConfirmed: mp.slotConfirmed,
@@ -185,14 +185,14 @@ export class TournamentService {
 
     const users = await prisma.user.findMany({
       where: { id: { in: entries.map((e) => e.userId) } },
-      select: { id: true, displayName: true, avatarUrl: true },
+      select: { id: true, displayName: true, kickUsername: true, avatarUrl: true },
     });
     const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
 
     return entries.map((e) => ({
       id: e.id,
       userId: e.userId,
-      displayName: userMap[e.userId]?.displayName ?? e.userId,
+      displayName: userMap[e.userId]?.kickUsername ?? userMap[e.userId]?.displayName ?? e.userId,
       avatarUrl: userMap[e.userId]?.avatarUrl ?? null,
       enteredAt: e.enteredAt.toISOString(),
     }));
@@ -253,16 +253,15 @@ export class TournamentService {
   static async setInitialSlot(tournamentId: string, userId: string, slotCall: string, io?: SocketIOServer): Promise<TournamentResponse> {
     const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!t) throw createError(404, 'Tournament not found');
-    if (t.status !== TournamentStatus.SLOT_SELECTION) throw createError(400, 'Not in slot selection phase');
+    if (t.status !== TournamentStatus.SLOT_SELECTION && t.status !== TournamentStatus.IN_PROGRESS) {
+      throw createError(400, 'Not in slot selection phase');
+    }
 
     const participant = await prisma.tournamentParticipant.findUnique({
       where: { tournamentId_userId: { tournamentId, userId } },
     });
     if (!participant) throw createError(403, 'You are not a participant');
     if (participant.slotConfirmed) throw createError(400, 'Slot already confirmed');
-    if (participant.slotDeadline && new Date() > participant.slotDeadline) {
-      throw createError(400, 'Slot timer has expired');
-    }
 
     // Check uniqueness within tournament
     const conflict = await prisma.tournamentParticipant.findFirst({
