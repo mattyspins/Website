@@ -146,7 +146,10 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
         <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: 340 }}>
 
           {/* Provider filter chips */}
-          <div className="flex gap-1.5 px-3 pt-2.5 pb-1.5 overflow-x-auto no-scrollbar shrink-0">
+          <div
+            className="flex gap-1.5 px-3 pt-2.5 pb-2 overflow-x-auto shrink-0 [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-track]:bg-transparent"
+            style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.2) transparent" }}
+          >
             {PROVIDERS.map((p) => (
               <button
                 key={p.value}

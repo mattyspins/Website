@@ -8,6 +8,7 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 import { GameCardSkeleton } from "@/components/ui/Skeleton";
 import { LoadingError } from "@/components/ui/ErrorState";
 import { guessTheBalanceApi } from "@/lib/api/guessTheBalance";
+import { API_ENDPOINTS } from "@/lib/api";
 import type { GuessTheBalanceGame } from "@/types/guessTheBalance";
 import GuessTheBalanceCard from "@/components/GuessTheBalanceCard";
 import CompletedGameCard from "@/components/CompletedGameCard";
@@ -21,6 +22,7 @@ export default function BonusHuntPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [kickVerified, setKickVerified] = useState<boolean | null>(null);
 
   const breadcrumbItems = [{ label: "Bonus Hunt", icon: Target }];
 
@@ -29,9 +31,18 @@ export default function BonusHuntPage() {
     loadGames();
   }, []);
 
-  const checkAuth = () => {
+  const checkAuth = async () => {
     const token = localStorage.getItem("access_token");
     setIsAuthenticated(!!token);
+    if (token) {
+      try {
+        const res = await fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } });
+        const d = await res.json();
+        setKickVerified(!!(d.user?.kickVerified && d.user?.kickUsername));
+      } catch {
+        setKickVerified(false);
+      }
+    }
   };
 
   const loadGames = async () => {
@@ -135,6 +146,28 @@ export default function BonusHuntPage() {
               </button>{" "}
               to submit your guesses and participate!
             </p>
+          </motion.div>
+        )}
+
+        {isAuthenticated && kickVerified === false && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[#53FC18]/10 border border-[#53FC18]/40 rounded-xl p-4 mb-8 flex items-center justify-between gap-4 flex-wrap"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🎮</span>
+              <div>
+                <p className="text-white font-semibold text-sm">Kick account required</p>
+                <p className="text-gray-400 text-xs mt-0.5">You need to link and verify your Kick account to participate in Guess the Balance.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => router.push("/profile")}
+              className="bg-[#53FC18] hover:bg-[#45D615] text-black font-bold px-4 py-2 rounded-lg text-xs tracking-widest uppercase transition-all shrink-0"
+            >
+              Link Kick Account →
+            </button>
           </motion.div>
         )}
 

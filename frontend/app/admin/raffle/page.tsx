@@ -173,7 +173,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: () 
                   className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
                 >−</button>
                 <input
-                  type="number" min="1" placeholder="coins"
+                  type="text" inputMode="numeric" placeholder="coins"
                   value={customTicketPrice}
                   onChange={(e) => { setCustomTicketPrice(e.target.value); if (e.target.value) setForm({ ...form, ticketPrice: parseInt(e.target.value) || 100 }); }}
                   className="w-20 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm text-center focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
@@ -211,7 +211,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: () 
                   className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
                 >−</button>
                 <input
-                  type="number" min="1" placeholder="tickets"
+                  type="text" inputMode="numeric" placeholder="tickets"
                   value={customMaxTickets}
                   onChange={(e) => { setCustomMaxTickets(e.target.value); if (e.target.value) setForm({ ...form, maxTickets: parseInt(e.target.value) || 100 }); }}
                   className="w-20 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm text-center focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
@@ -285,7 +285,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: () 
                   className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
                 >−</button>
                 <input
-                  type="number" min="1" placeholder="winners"
+                  type="text" inputMode="numeric" placeholder="winners"
                   value={customWinners}
                   onChange={(e) => { setCustomWinners(e.target.value); if (e.target.value) setForm({ ...form, numberOfWinners: parseInt(e.target.value) || 1 }); }}
                   className="w-20 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm text-center focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
@@ -323,7 +323,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: () 
                   className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
                 >−</button>
                 <input
-                  type="number" min="1" placeholder="max per user"
+                  type="text" inputMode="numeric" placeholder="max per user"
                   value={customMaxEntries}
                   onChange={(e) => { setCustomMaxEntries(e.target.value); if (e.target.value) setForm({ ...form, maxEntriesPerUser: parseInt(e.target.value) || 1 }); }}
                   className="w-20 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm text-center focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"

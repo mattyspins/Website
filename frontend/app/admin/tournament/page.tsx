@@ -97,10 +97,8 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
               className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
             >−</button>
             <input
-              type="number"
-              min="0.5"
-              max="60"
-              step="0.5"
+              type="text"
+              inputMode="decimal"
               placeholder="min"
               value={customMins}
               onChange={(e) => {
@@ -108,7 +106,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
                 const mins = parseFloat(e.target.value);
                 if (!isNaN(mins) && mins > 0) setForm({ ...form, slotTimerSeconds: Math.round(mins * 60) });
               }}
-              className="w-20 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm text-center focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
+              className="w-20 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm text-center focus:outline-none focus:border-yellow-400/50"
             />
             <button type="button"
               onClick={() => {

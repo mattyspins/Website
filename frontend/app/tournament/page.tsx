@@ -228,7 +228,10 @@ export default function TournamentPage() {
   };
 
   const myParticipant = myEntry?.participant;
-  const needsInitialSlot = selected?.status === TournamentStatus.SLOT_SELECTION && myEntry?.isParticipant && myParticipant && !myParticipant.slotConfirmed;
+  const needsInitialSlot = (
+    selected?.status === TournamentStatus.SLOT_SELECTION ||
+    selected?.status === TournamentStatus.IN_PROGRESS
+  ) && myEntry?.isParticipant && myParticipant && !myParticipant.slotConfirmed;
 
   const activeTournament = selected && [TournamentStatus.REGISTRATION, TournamentStatus.SLOT_SELECTION, TournamentStatus.IN_PROGRESS, TournamentStatus.COMPLETED].includes(selected.status) ? selected : null;
   const pastTournaments = tournaments.filter((t) => t.status === TournamentStatus.COMPLETED || t.status === TournamentStatus.CANCELLED);
