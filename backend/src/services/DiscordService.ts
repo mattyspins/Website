@@ -336,6 +336,43 @@ export class DiscordService {
     }
   }
 
+  // Assign a role to a guild member (requires bot with Manage Roles)
+  static async assignRole(guildId: string, userId: string, roleId: string): Promise<boolean> {
+    try {
+      await axios.put(
+        `${this.DISCORD_API_BASE}/guilds/${guildId}/members/${userId}/roles/${roleId}`,
+        {},
+        {
+          headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}` },
+          timeout: 10000,
+        }
+      );
+      logger.info(`Discord role ${roleId} assigned to user ${userId}`);
+      return true;
+    } catch (error) {
+      logger.error(`Failed to assign Discord role ${roleId} to user ${userId}:`, error);
+      return false;
+    }
+  }
+
+  // Remove a role from a guild member (requires bot with Manage Roles)
+  static async removeRole(guildId: string, userId: string, roleId: string): Promise<boolean> {
+    try {
+      await axios.delete(
+        `${this.DISCORD_API_BASE}/guilds/${guildId}/members/${userId}/roles/${roleId}`,
+        {
+          headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}` },
+          timeout: 10000,
+        }
+      );
+      logger.info(`Discord role ${roleId} removed from user ${userId}`);
+      return true;
+    } catch (error) {
+      logger.error(`Failed to remove Discord role ${roleId} from user ${userId}:`, error);
+      return false;
+    }
+  }
+
   // Get user's roles in a specific server (requires bot)
   static async getUserServerRoles(
     guildId: string,

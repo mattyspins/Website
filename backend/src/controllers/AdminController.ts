@@ -7,6 +7,8 @@ import { StoreService } from '@/services/StoreService';
 import { asyncHandler, createError } from '@/middleware/errorHandler';
 import { AuthenticatedRequest } from '@/middleware/auth';
 import { logger } from '@/utils/logger';
+import { DiscordService } from '@/services/DiscordService';
+import { validateEnv } from '@/config/env';
 
 export class AdminController {
   // Dashboard Statistics
@@ -558,8 +560,21 @@ export class AdminController {
       const { userId } = req.params;
       const { isVip } = req.body;
       if (typeof isVip !== 'boolean') throw createError.badRequest('isVip must be a boolean');
-      await prisma.user.update({ where: { id: userId }, data: { isVip } });
+      const user = await prisma.user.update({ where: { id: userId }, data: { isVip }, select: { discordId: true } });
       logger.info(`Admin ${req.user.id} set VIP=${isVip} for user ${userId}`);
+
+      // Sync Discord role if configured
+      const env = validateEnv();
+      if (env.DISCORD_BOT_TOKEN && env.DISCORD_GUILD_ID && env.DISCORD_VIP_ROLE_ID && user.discordId) {
+        if (isVip) {
+          await DiscordService.assignRole(env.DISCORD_GUILD_ID, user.discordId, env.DISCORD_VIP_ROLE_ID);
+        } else {
+          await DiscordService.removeRole(env.DISCORD_GUILD_ID, user.discordId, env.DISCORD_VIP_ROLE_ID);
+        }
+      } else {
+        logger.warn('Discord role sync skipped — DISCORD_GUILD_ID or DISCORD_VIP_ROLE_ID not configured');
+      }
+
       res.json({ success: true, userId, isVip });
     }
   );
@@ -570,8 +585,21 @@ export class AdminController {
       const { userId } = req.params;
       const { isDepositor } = req.body;
       if (typeof isDepositor !== 'boolean') throw createError.badRequest('isDepositor must be a boolean');
-      await prisma.user.update({ where: { id: userId }, data: { isDepositor } });
+      const user = await prisma.user.update({ where: { id: userId }, data: { isDepositor }, select: { discordId: true } });
       logger.info(`Admin ${req.user.id} set Depositor=${isDepositor} for user ${userId}`);
+
+      // Sync Discord role if configured
+      const env = validateEnv();
+      if (env.DISCORD_BOT_TOKEN && env.DISCORD_GUILD_ID && env.DISCORD_DEPOSITOR_ROLE_ID && user.discordId) {
+        if (isDepositor) {
+          await DiscordService.assignRole(env.DISCORD_GUILD_ID, user.discordId, env.DISCORD_DEPOSITOR_ROLE_ID);
+        } else {
+          await DiscordService.removeRole(env.DISCORD_GUILD_ID, user.discordId, env.DISCORD_DEPOSITOR_ROLE_ID);
+        }
+      } else {
+        logger.warn('Discord role sync skipped — DISCORD_GUILD_ID or DISCORD_DEPOSITOR_ROLE_ID not configured');
+      }
+
       res.json({ success: true, userId, isDepositor });
     }
   );

@@ -68,6 +68,41 @@ function SlotModal({
   );
 }
 
+// ─── Slot Timer Countdown ──────────────────────────────────────────────────────
+function SlotTimerCountdown({ deadline }: { deadline: string | null }) {
+  const [secs, setSecs] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!deadline) return;
+    const tick = () => setSecs(Math.max(0, Math.floor((new Date(deadline).getTime() - Date.now()) / 1000)));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [deadline]);
+
+  if (secs === null || !deadline) return null;
+  const mins = Math.floor(secs / 60);
+  const s = secs % 60;
+  const expired = secs === 0;
+
+  return (
+    <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-mono font-bold ${
+      expired
+        ? "bg-red-500/10 border-red-500/30 text-red-400"
+        : secs < 30
+        ? "bg-red-500/15 border-red-500/40 text-red-300 animate-pulse"
+        : secs < 60
+        ? "bg-orange-500/15 border-orange-500/30 text-orange-300"
+        : "bg-yellow-400/10 border-yellow-400/20 text-yellow-300"
+    }`}>
+      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+      </svg>
+      {expired ? "Slot timer expired" : `Slot selection: ${mins}:${String(s).padStart(2, "0")}`}
+    </div>
+  );
+}
+
 // ─── Status Badge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: TournamentStatus }) {
   const map: Record<TournamentStatus, { label: string; cls: string }> = {
@@ -335,7 +370,10 @@ export default function TournamentPage() {
             {/* Slot selection participants */}
             {activeTournament.status === TournamentStatus.SLOT_SELECTION && (
               <div className="bg-white/3 border border-white/8 rounded-xl p-5 mb-4">
-                <p className="text-xs text-white/40 uppercase tracking-widest font-bold mb-3">Participants — naming slots</p>
+                <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+                  <p className="text-xs text-white/40 uppercase tracking-widest font-bold">Participants — naming slots</p>
+                  <SlotTimerCountdown deadline={activeTournament.participants[0]?.slotDeadline ?? null} />
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {activeTournament.participants.map((p) => (
                     <div key={p.id} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border ${p.slotConfirmed ? "bg-green-500/10 border-green-500/20 text-green-300" : "bg-white/5 border-white/10 text-white/70"}`}>
