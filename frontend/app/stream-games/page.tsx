@@ -62,6 +62,7 @@ const GAMES: Game[] = [
     howItWorks: ["Viewers use !sr to request slots for the hunt", "Bonuses are collected throughout the stream", "All saved bonuses are opened later during the reveal 🔥", "Big multipliers and community rewards throughout"],
     rewards: ["Website points", "Giveaway entries", "Community rewards / events"],
     note: "Bonus Hunt streams take place every Friday 🏆 — get your slot calls in from the start 👊",
+    link: "/bonus-hunt-live", linkLabel: "View Live Hunt",
   },
   {
     id: "slot-tournament", name: "Slot Tournament",

@@ -196,6 +196,9 @@ export const API_ENDPOINTS = {
   STREAM_EVENTS_ALL: `${API_URL}/api/stream-events/all`,
   STREAM_EVENT: (id: string) => `${API_URL}/api/stream-events/${id}`,
 
+  // Live Bonus Hunt (viewer page)
+  LIVE_HUNT: `${API_URL}/api/live-hunt`,
+
   // Daily Check-in
   CHECKIN_STATUS: `${API_URL}/api/checkin/status`,
   CHECKIN_CLAIM: `${API_URL}/api/checkin/claim`,

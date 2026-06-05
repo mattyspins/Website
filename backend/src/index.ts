@@ -145,6 +145,7 @@ import viewingRoutes from '@/routes/viewing';
 import tournamentRoutes from '@/routes/tournament';
 import { setTournamentIO } from '@/controllers/TournamentController';
 // import bonusHuntRoutes from '@/routes/bonusHunt';
+import liveHuntRoutes from '@/routes/liveHunt';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
@@ -163,6 +164,7 @@ app.use('/api/raffles', raffleRoutes);
 app.use('/api/viewing', viewingRoutes);
 app.use('/api/tournaments', tournamentRoutes);
 // app.use('/api/bonus-hunt', bonusHuntRoutes);
+app.use('/api/live-hunt', liveHuntRoutes);
 
 // Wire up tournament real-time events
 setTournamentIO(io);

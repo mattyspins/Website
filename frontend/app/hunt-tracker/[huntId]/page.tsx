@@ -1,0 +1,846 @@
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowLeft, Plus, X, Search, Shuffle, Play, ChevronDown,
+  Pencil, Trash2, ImageOff, ChevronUp, SlidersHorizontal, Radio, EyeOff,
+} from "lucide-react";
+import {
+  Hunt, HuntBonus, BadgeType, CURRENCY_SYMBOLS,
+  getHunt, upsertHunt, calcHuntStats, fmt, fmtMulti,
+} from "@/lib/huntTracker";
+import { SLOT_GAMES, type SlotGame } from "@/lib/slotGames";
+import { API_ENDPOINTS } from "@/lib/api";
+
+/* ── helpers ─────────────────────────────────────────────── */
+function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+}
+
+/* ── Badge pill ──────────────────────────────────────────── */
+const BADGE_CONFIG: Record<BadgeType, { label: string; cls: string }> = {
+  none:         { label: "",            cls: "" },
+  super_bonus:  { label: "SUPER",       cls: "bg-amber-500/20 text-amber-400 border border-amber-500/40" },
+  five_scatter: { label: "5 SCATTER",   cls: "bg-blue-500/20 text-blue-400 border border-blue-500/40" },
+  custom:       { label: "CUSTOM",      cls: "bg-violet-500/20 text-violet-400 border border-violet-500/40" },
+};
+
+function BadgePill({ badge, custom }: { badge: BadgeType; custom?: string }) {
+  const cfg = BADGE_CONFIG[badge];
+  if (badge === "none") return null;
+  const label = badge === "custom" && custom ? custom.toUpperCase() : cfg.label;
+  return <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${cfg.cls}`}>{label}</span>;
+}
+
+/* ── Slot image ──────────────────────────────────────────── */
+function SlotImg({ src, alt, size = 10 }: { src: string; alt: string; size?: number }) {
+  const [err, setErr] = useState(false);
+  return err || !src ? (
+    <div className={`w-${size} h-${size} rounded-lg bg-[#1a1535] border border-white/8 flex items-center justify-center shrink-0`}>
+      <ImageOff className="w-4 h-4 text-gray-700" />
+    </div>
+  ) : (
+    <img
+      src={src} alt={alt}
+      onError={() => setErr(true)}
+      className={`w-${size} h-${size} rounded-lg object-cover shrink-0`}
+    />
+  );
+}
+
+/* ── Add Bonus Modal ─────────────────────────────────────── */
+const BADGES: { value: BadgeType; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "super_bonus", label: "Super Bonus" },
+  { value: "five_scatter", label: "5 Scatter" },
+  { value: "custom", label: "Custom" },
+];
+
+function AddBonusModal({
+  initial,
+  currency,
+  onClose,
+  onSave,
+}: {
+  initial?: HuntBonus | null;
+  currency: string;
+  onClose: () => void;
+  onSave: (b: HuntBonus) => void;
+}) {
+  const sym = CURRENCY_SYMBOLS[currency as keyof typeof CURRENCY_SYMBOLS] ?? "$";
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<SlotGame | null>(
+    initial ? { name: initial.slotName, provider: initial.provider, image: initial.image, volatility: "High" } : null
+  );
+  const [betSize, setBetSize] = useState(initial?.betSize?.toString() ?? "");
+  const [note, setNote] = useState(initial?.note ?? "");
+  const [badge, setBadge] = useState<BadgeType>(initial?.badge ?? "none");
+  const [customBadge, setCustomBadge] = useState(initial?.customBadge ?? "");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const results = query.length >= 1
+    ? SLOT_GAMES.filter((s) =>
+        s.name.toLowerCase().includes(query.toLowerCase()) ||
+        s.provider.toLowerCase().includes(query.toLowerCase())
+      ).slice(0, 12)
+    : [];
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+
+  function handleSubmit() {
+    const errs: Record<string, string> = {};
+    if (!selected) errs.slot = "Select a slot";
+    if (!betSize || isNaN(Number(betSize)) || Number(betSize) <= 0) errs.betSize = "Enter a valid bet size";
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+
+    const bonus: HuntBonus = {
+      id: initial?.id ?? uid(),
+      slotName: selected!.name,
+      provider: selected!.provider,
+      image: selected!.image,
+      betSize: parseFloat(betSize),
+      payout: initial?.payout ?? null,
+      badge,
+      customBadge: badge === "custom" ? customBadge : undefined,
+      note: note.trim() || undefined,
+      addedAt: initial?.addedAt ?? new Date().toISOString(),
+    };
+    onSave(bonus);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 12 }}
+        transition={{ type: "spring", damping: 28, stiffness: 320 }}
+        className="relative bg-[#0f0c1e] border border-white/10 rounded-2xl w-full max-w-lg p-7 z-10 max-h-[90vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between mb-7">
+          <div className="flex items-center gap-3">
+            <Plus className="w-5 h-5 text-violet-400" />
+            <h2 className="text-white font-bold text-xl">{initial ? "Edit Bonus" : "Add Bonus to Hunt"}</h2>
+          </div>
+          <button onClick={onClose} className="text-gray-600 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="space-y-5">
+          {/* Slot search / selected */}
+          {selected ? (
+            <div>
+              <label className="text-sm text-gray-400 mb-2 block">Selected Slot</label>
+              <div className="flex items-center gap-3 bg-[#1a1535] border border-white/10 rounded-xl px-4 py-3">
+                <SlotImg src={selected.image} alt={selected.name} size={10} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-semibold text-sm truncate">{selected.name}</p>
+                  <p className="text-gray-500 text-xs">{selected.provider}</p>
+                </div>
+                <button
+                  onClick={() => { setSelected(null); setQuery(""); setTimeout(() => searchRef.current?.focus(), 50); }}
+                  className="text-violet-400 hover:text-violet-300 text-xs font-semibold transition-colors"
+                >
+                  Change
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label className="text-sm text-gray-400 mb-2 block">
+                Search for Slot <span className="text-gray-600">(Type to search)</span>
+              </label>
+              <div className={`relative bg-[#1a1535] border rounded-xl focus-within:border-violet-500 transition-colors ${errors.slot ? "border-red-500" : "border-white/10"}`}>
+                <Search className="absolute left-4 top-3.5 w-4 h-4 text-gray-600" />
+                <input
+                  ref={searchRef}
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search for a slot game…"
+                  className="w-full bg-transparent pl-11 pr-4 py-3 text-white placeholder-gray-600 focus:outline-none"
+                />
+              </div>
+              {errors.slot && <p className="text-red-400 text-xs mt-1">{errors.slot}</p>}
+              {results.length > 0 && (
+                <div className="mt-1 bg-[#1a1535] border border-white/10 rounded-xl overflow-hidden max-h-52 overflow-y-auto">
+                  {results.map((slot) => (
+                    <button
+                      key={`${slot.provider}-${slot.name}`}
+                      onClick={() => { setSelected(slot); setQuery(""); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors text-left"
+                    >
+                      <SlotImg src={slot.image} alt={slot.name} size={8} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium truncate">{slot.name}</p>
+                        <p className="text-gray-500 text-xs">{slot.provider}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Bet Size */}
+          <div>
+            <label className="text-sm text-gray-400 mb-2 block">Bet Size <span className="text-red-400">*</span></label>
+            <div className={`flex items-center bg-[#1a1535] border rounded-xl px-4 py-3 gap-2 focus-within:border-violet-500 transition-colors ${errors.betSize ? "border-red-500" : "border-white/10"}`}>
+              <span className="text-gray-500 font-semibold">{sym}</span>
+              <input
+                type="number" min="0.01" step="0.01"
+                value={betSize}
+                onChange={(e) => setBetSize(e.target.value)}
+                placeholder="0.00"
+                className="flex-1 bg-transparent text-white placeholder-gray-600 focus:outline-none"
+              />
+            </div>
+            {errors.betSize && <p className="text-red-400 text-xs mt-1">{errors.betSize}</p>}
+          </div>
+
+          {/* Note */}
+          <div>
+            <label className="text-sm text-gray-400 mb-2 block">Note <span className="text-gray-600">(optional)</span></label>
+            <input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Add any notes about this bonus…"
+              className="w-full bg-[#1a1535] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
+            />
+          </div>
+
+          {/* Badge */}
+          <div>
+            <label className="text-sm text-gray-400 mb-2 block">Badge <span className="text-gray-600">(optional)</span></label>
+            <div className="flex gap-2 flex-wrap">
+              {BADGES.map((b) => (
+                <button
+                  key={b.value}
+                  onClick={() => setBadge(b.value)}
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
+                    badge === b.value
+                      ? b.value === "super_bonus" ? "bg-amber-500/20 text-amber-400 border-amber-500/50"
+                        : b.value === "five_scatter" ? "bg-blue-500/20 text-blue-400 border-blue-500/50"
+                        : b.value === "custom" ? "bg-violet-500/20 text-violet-400 border-violet-500/50"
+                        : "bg-white/10 text-white border-white/30"
+                      : "bg-[#1a1535] text-gray-400 border-white/10 hover:border-white/20"
+                  }`}
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
+            {badge === "custom" && (
+              <input
+                value={customBadge}
+                onChange={(e) => setCustomBadge(e.target.value)}
+                placeholder="Enter badge text…"
+                maxLength={16}
+                className="mt-2 w-full bg-[#1a1535] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-violet-500 transition-colors"
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 mt-8">
+          <button
+            onClick={onClose}
+            className="flex items-center gap-2 bg-[#1a1535] hover:bg-[#211a45] border border-white/10 text-gray-300 font-semibold px-5 py-2.5 rounded-xl transition-colors text-sm"
+          >
+            Cancel
+            <kbd className="bg-[#2a2550] text-gray-400 text-[10px] px-1.5 py-0.5 rounded font-mono">Esc</kbd>
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-bold px-6 py-2.5 rounded-xl transition-colors text-sm"
+          >
+            {initial ? "Save Changes" : "Add Bonus"}
+            <kbd className="bg-violet-700 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">↵</kbd>
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ── Open Bonus Modal ────────────────────────────────────── */
+function OpenBonusModal({
+  bonus, currency, onClose, onSave,
+}: {
+  bonus: HuntBonus;
+  currency: string;
+  onClose: () => void;
+  onSave: (payout: number) => void;
+}) {
+  const sym = CURRENCY_SYMBOLS[currency as keyof typeof CURRENCY_SYMBOLS] ?? "$";
+  const [payout, setPayout] = useState(bonus.payout?.toString() ?? "");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+
+  function handleSubmit() {
+    if (!payout || isNaN(Number(payout)) || Number(payout) < 0) {
+      setError("Enter a valid payout amount");
+      return;
+    }
+    onSave(parseFloat(payout));
+  }
+
+  const multi = payout && Number(payout) >= 0 && bonus.betSize > 0
+    ? (Number(payout) / bonus.betSize).toFixed(2) : null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 12 }}
+        transition={{ type: "spring", damping: 28, stiffness: 320 }}
+        className="relative bg-[#0f0c1e] border border-white/10 rounded-2xl w-full max-w-sm p-7 z-10"
+      >
+        <div className="flex items-center gap-3 mb-6">
+          <SlotImg src={bonus.image} alt={bonus.slotName} size={12} />
+          <div>
+            <p className="text-white font-bold">{bonus.slotName}</p>
+            <p className="text-gray-500 text-xs">{bonus.provider} · Bet: {sym}{bonus.betSize.toFixed(2)}</p>
+          </div>
+        </div>
+
+        <div className="mb-5">
+          <label className="text-sm text-gray-400 mb-2 block">Payout Amount</label>
+          <div className={`flex items-center bg-[#1a1535] border rounded-xl px-4 py-3 gap-2 focus-within:border-violet-500 transition-colors ${error ? "border-red-500" : "border-white/10"}`}>
+            <span className="text-gray-500 font-semibold">{sym}</span>
+            <input
+              autoFocus
+              type="number" min="0" step="0.01"
+              value={payout}
+              onChange={(e) => { setPayout(e.target.value); setError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              placeholder="0.00"
+              className="flex-1 bg-transparent text-white placeholder-gray-600 focus:outline-none"
+            />
+          </div>
+          {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
+          {multi && (
+            <p className="text-gray-500 text-xs mt-2">
+              Multiplier: <span className="text-violet-400 font-bold">{multi}x</span>
+            </p>
+          )}
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 bg-[#1a1535] hover:bg-[#211a45] border border-white/10 text-gray-300 font-semibold py-2.5 rounded-xl transition-colors text-sm">Cancel</button>
+          <button onClick={handleSubmit} className="flex-1 bg-violet-600 hover:bg-violet-500 text-white font-bold py-2.5 rounded-xl transition-colors text-sm">Save Payout</button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ── Small stat box ──────────────────────────────────────── */
+function StatBox({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="bg-[#14102a]/80 border border-white/8 rounded-2xl p-4 flex flex-col gap-1 text-center">
+      <span className="text-gray-500 text-xs">{label}</span>
+      <span className="text-white font-bold text-lg leading-tight">{value}</span>
+      {sub && <span className="text-gray-600 text-[10px]">{sub}</span>}
+    </div>
+  );
+}
+
+/* ── Sort types ──────────────────────────────────────────── */
+type SortKey = "date" | "betSize" | "payout" | "multi";
+type SortDir = "asc" | "desc";
+
+/* ── Page ────────────────────────────────────────────────── */
+export default function HuntDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const huntId = params.huntId as string;
+
+  const [hunt, setHunt] = useState<Hunt | null>(null);
+  const [isLive, setIsLive] = useState(false);
+  const [liveLoading, setLiveLoading] = useState(false);
+  const [showAddBonus, setShowAddBonus] = useState(false);
+  const [editBonus, setEditBonus] = useState<HuntBonus | null>(null);
+  const [openBonus, setOpenBonus] = useState<HuntBonus | null>(null);
+  const [deleteBonus, setDeleteBonus] = useState<HuntBonus | null>(null);
+  const [searchGame, setSearchGame] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [showPace, setShowPace] = useState(false);
+
+  const reload = useCallback(() => {
+    const h = getHunt(huntId);
+    setHunt(h);
+  }, [huntId]);
+
+  useEffect(() => { reload(); }, [reload]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    fetch(API_ENDPOINTS.LIVE_HUNT)
+      .then((r) => r.json())
+      .then((d) => { if (d.hunt?.id === huntId) setIsLive(true); })
+      .catch(() => {});
+  }, [huntId]);
+
+  async function handleGoLive() {
+    if (!hunt) return;
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    setLiveLoading(true);
+    try {
+      const res = await fetch(API_ENDPOINTS.LIVE_HUNT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(hunt),
+      });
+      if (res.ok) setIsLive(true);
+    } catch { /* ignore */ } finally { setLiveLoading(false); }
+  }
+
+  async function handleTakeDown() {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    setLiveLoading(true);
+    try {
+      const res = await fetch(API_ENDPOINTS.LIVE_HUNT, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setIsLive(false);
+    } catch { /* ignore */ } finally { setLiveLoading(false); }
+  }
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if ((e.key === "b" || e.key === "B") && !showAddBonus && !editBonus && !openBonus && !deleteBonus
+        && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        setShowAddBonus(true);
+      }
+      if ((e.key === "s" || e.key === "S") && hunt && !hunt.isStarted && !showAddBonus && !editBonus && !openBonus
+        && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        handleStart();
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  });
+
+  function mutateHunt(updater: (h: Hunt) => Hunt) {
+    if (!hunt) return;
+    const updated = updater(hunt);
+    upsertHunt(updated);
+    setHunt(updated);
+    // If this hunt is currently live, push the update automatically
+    if (isLive) {
+      const token = localStorage.getItem("access_token");
+      if (token) {
+        fetch(API_ENDPOINTS.LIVE_HUNT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(updated),
+        }).catch(() => {});
+      }
+    }
+  }
+
+  function handleStart() {
+    mutateHunt((h) => ({ ...h, isStarted: true }));
+  }
+
+  function handleSaveBonus(bonus: HuntBonus) {
+    mutateHunt((h) => {
+      const idx = h.bonuses.findIndex((b) => b.id === bonus.id);
+      const bonuses = idx >= 0
+        ? h.bonuses.map((b) => b.id === bonus.id ? bonus : b)
+        : [...h.bonuses, bonus];
+      return { ...h, bonuses };
+    });
+    setShowAddBonus(false);
+    setEditBonus(null);
+  }
+
+  function handleOpenBonus(bonus: HuntBonus, payout: number) {
+    mutateHunt((h) => ({
+      ...h,
+      bonuses: h.bonuses.map((b) => b.id === bonus.id ? { ...b, payout } : b),
+    }));
+    setOpenBonus(null);
+  }
+
+  function handleDeleteBonus(id: string) {
+    mutateHunt((h) => ({ ...h, bonuses: h.bonuses.filter((b) => b.id !== id) }));
+    setDeleteBonus(null);
+  }
+
+  function handleShuffle() {
+    mutateHunt((h) => {
+      const shuffled = [...h.bonuses].sort(() => Math.random() - 0.5);
+      return { ...h, bonuses: shuffled };
+    });
+  }
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) setSortDir((d) => d === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  }
+
+  if (!hunt) {
+    return (
+      <div className="min-h-screen pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-500 text-sm mb-4">Hunt not found.</p>
+          <button onClick={() => router.push("/hunt-tracker")} className="text-violet-400 hover:text-violet-300 text-sm transition-colors">
+            ← Back to tracker
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const sym = CURRENCY_SYMBOLS[hunt.currency] ?? "$";
+  const stats = calcHuntStats(hunt);
+
+  /* filtered + sorted bonuses */
+  const visibleBonuses = hunt.bonuses
+    .filter((b) => b.slotName.toLowerCase().includes(searchGame.toLowerCase()) || b.provider.toLowerCase().includes(searchGame.toLowerCase()))
+    .sort((a, b) => {
+      let va = 0, vb = 0;
+      if (sortKey === "date") { va = new Date(a.addedAt).getTime(); vb = new Date(b.addedAt).getTime(); }
+      else if (sortKey === "betSize") { va = a.betSize; vb = b.betSize; }
+      else if (sortKey === "payout") { va = a.payout ?? -1; vb = b.payout ?? -1; }
+      else if (sortKey === "multi") {
+        va = a.payout !== null && a.betSize > 0 ? a.payout / a.betSize : -1;
+        vb = b.payout !== null && b.betSize > 0 ? b.payout / b.betSize : -1;
+      }
+      return sortDir === "asc" ? va - vb : vb - va;
+    });
+
+  function SortBtn({ label, k }: { label: string; k: SortKey }) {
+    const active = sortKey === k;
+    return (
+      <button
+        onClick={() => toggleSort(k)}
+        className={`flex items-center gap-1 text-xs uppercase tracking-widest font-semibold transition-colors ${active ? "text-violet-400" : "text-gray-600 hover:text-gray-400"}`}
+      >
+        {label}
+        {active ? (sortDir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : null}
+      </button>
+    );
+  }
+
+  return (
+    <div className="min-h-screen pt-20 pb-16 px-4">
+      <div className="max-w-6xl mx-auto">
+
+        {/* ── Header ──────────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+          <div className="flex items-center gap-3 mb-4 flex-wrap">
+            <button
+              onClick={() => router.push("/hunt-tracker")}
+              className="flex items-center gap-2 bg-[#1a1535] hover:bg-[#211a45] border border-white/10 text-gray-300 font-semibold px-4 py-2 rounded-xl transition-colors text-sm"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back
+            </button>
+            <h1 className="text-white font-bold text-xl flex-1">
+              {hunt.name} – {fmtDate(hunt.date)}
+            </h1>
+            {isLive ? (
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> LIVE
+                </span>
+                <button
+                  onClick={handleTakeDown}
+                  disabled={liveLoading}
+                  className="flex items-center gap-1.5 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 font-semibold px-3 py-1.5 rounded-xl transition-colors text-xs disabled:opacity-50"
+                >
+                  <EyeOff className="w-3.5 h-3.5" /> Take Down
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleGoLive}
+                disabled={liveLoading}
+                className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl transition-colors text-sm disabled:opacity-50"
+              >
+                <Radio className="w-4 h-4" /> {liveLoading ? "Publishing…" : "Go Live"}
+              </button>
+            )}
+          </div>
+        </motion.div>
+
+        {/* ── Stats row 1 ─────────────────────────────────────── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+          <StatBox label="Bonuses" value={stats.bonusCount.toString()} />
+          <StatBox label="Start Cost" value={`${sym}${stats.startCost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+          <StatBox label="Winnings" value={`${sym}${stats.winnings.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+          <StatBox
+            label="Profit/Loss"
+            value={`${stats.profitLoss >= 0 ? "+" : ""}${sym}${Math.abs(stats.profitLoss).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          />
+        </div>
+
+        {/* ── Stats row 2 ─────────────────────────────────────── */}
+        <div className="grid grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
+          <StatBox label="Avg Req" value={`${sym}${stats.avgReq.toFixed(2)}`} />
+          <StatBox label="Cur Avg" value={`${sym}${stats.curAvg.toFixed(2)}`} />
+          <StatBox label="Total X" value={fmtMulti(stats.totalX)} />
+          <StatBox label="Req X" value={fmtMulti(stats.reqX)} />
+          <StatBox label="Cur Avg X" value={fmtMulti(stats.curAvgX)} />
+        </div>
+
+        {/* ── Pace Analysis accordion ─────────────────────────── */}
+        <div className="bg-[#14102a]/80 border border-white/8 rounded-2xl mb-6 overflow-hidden">
+          <button
+            onClick={() => setShowPace((v) => !v)}
+            className="w-full flex items-center justify-between px-5 py-4 text-gray-500 hover:text-gray-300 transition-colors text-xs uppercase tracking-widest font-semibold"
+          >
+            Pace Analysis
+            {showPace ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+          <AnimatePresence>
+            {showPace && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="px-5 pb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {(() => {
+                    const opened = hunt.bonuses.filter((b) => b.payout !== null);
+                    const remaining = hunt.bonuses.length - opened.length;
+                    const currentWinnings = opened.reduce((s, b) => s + (b.payout ?? 0), 0);
+                    const neededPerBonus = remaining > 0 ? Math.max(0, hunt.startCost - currentWinnings) / remaining : 0;
+                    const openedPct = hunt.bonuses.length > 0 ? (opened.length / hunt.bonuses.length) * 100 : 0;
+                    return [
+                      { label: "Opened", value: `${opened.length} / ${hunt.bonuses.length}` },
+                      { label: "Remaining", value: remaining.toString() },
+                      { label: "Progress", value: `${openedPct.toFixed(0)}%` },
+                      { label: "Needed / Bonus", value: `${sym}${neededPerBonus.toFixed(2)}` },
+                    ];
+                  })().map((item) => (
+                    <div key={item.label} className="bg-[#1a1535] border border-white/8 rounded-xl p-3 text-center">
+                      <p className="text-gray-500 text-xs mb-1">{item.label}</p>
+                      <p className="text-white font-bold text-sm">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* ── Controls ────────────────────────────────────────── */}
+        <div className="flex items-center gap-2 flex-wrap mb-4">
+          <div className="relative flex-1 min-w-[180px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+            <input
+              value={searchGame}
+              onChange={(e) => setSearchGame(e.target.value)}
+              placeholder="Search for a game…"
+              className="w-full bg-[#14102a] border border-white/8 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-violet-500 transition-colors"
+            />
+          </div>
+          <button
+            onClick={() => toggleSort("betSize")}
+            className="flex items-center gap-1.5 bg-[#1a1535] hover:bg-[#211a45] border border-white/10 text-gray-400 text-sm px-3 py-2.5 rounded-xl transition-colors"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" /> Bet Size
+          </button>
+          <button
+            onClick={() => toggleSort("date")}
+            className="flex items-center gap-1.5 bg-[#1a1535] hover:bg-[#211a45] border border-white/10 text-gray-400 text-sm px-3 py-2.5 rounded-xl transition-colors"
+          >
+            Date
+          </button>
+          <button
+            onClick={handleShuffle}
+            className="flex items-center gap-1.5 bg-[#1a1535] hover:bg-[#211a45] border border-white/10 text-gray-400 text-sm px-3 py-2.5 rounded-xl transition-colors"
+          >
+            <Shuffle className="w-3.5 h-3.5" /> Shuffle
+          </button>
+          <button
+            disabled={hunt.isStarted}
+            onClick={handleStart}
+            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-sm"
+          >
+            <Play className="w-4 h-4" fill="white" />
+            {hunt.isStarted ? "Started" : "Start"}
+            {!hunt.isStarted && <kbd className="bg-violet-700 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">S</kbd>}
+          </button>
+        </div>
+
+        {/* ── Add Bonus area ──────────────────────────────────── */}
+        <button
+          onClick={() => setShowAddBonus(true)}
+          className="w-full border-2 border-dashed border-white/10 hover:border-violet-500/50 rounded-2xl py-6 text-gray-600 hover:text-violet-400 transition-colors flex items-center justify-center gap-2 text-sm font-semibold mb-4"
+        >
+          <Plus className="w-5 h-5" /> Add Bonus
+          <kbd className="bg-[#1a1535] text-gray-500 text-[10px] px-1.5 py-0.5 rounded font-mono">B</kbd>
+        </button>
+
+        {/* ── Bonuses table ───────────────────────────────────── */}
+        <div className="bg-[#0f0c1e]/80 border border-white/8 rounded-2xl overflow-hidden">
+          {/* Table header */}
+          <div className="hidden sm:grid grid-cols-[1fr_140px_100px_100px_90px_80px] px-5 py-3 border-b border-white/6">
+            <span className="text-gray-600 text-xs uppercase tracking-widest font-semibold flex items-center gap-1">
+              Game
+            </span>
+            <span className="text-gray-600 text-xs uppercase tracking-widest font-semibold">Provider</span>
+            <button className="text-left" onClick={() => toggleSort("betSize")}>
+              <span className={`text-xs uppercase tracking-widest font-semibold flex items-center gap-1 ${sortKey === "betSize" ? "text-violet-400" : "text-gray-600"}`}>
+                Bet Size {sortKey === "betSize" ? (sortDir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : null}
+              </span>
+            </button>
+            <button className="text-left" onClick={() => toggleSort("payout")}>
+              <span className={`text-xs uppercase tracking-widest font-semibold flex items-center gap-1 ${sortKey === "payout" ? "text-violet-400" : "text-gray-600"}`}>
+                Payout {sortKey === "payout" ? (sortDir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : null}
+              </span>
+            </button>
+            <button className="text-left" onClick={() => toggleSort("multi")}>
+              <span className={`text-xs uppercase tracking-widest font-semibold flex items-center gap-1 ${sortKey === "multi" ? "text-violet-400" : "text-gray-600"}`}>
+                Multi {sortKey === "multi" ? (sortDir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : null}
+              </span>
+            </button>
+            <span className="text-gray-600 text-xs uppercase tracking-widest font-semibold text-right">Actions</span>
+          </div>
+
+          {visibleBonuses.length === 0 ? (
+            <div className="py-16 text-center">
+              <ImageOff className="w-10 h-10 text-gray-700 mx-auto mb-3" />
+              <p className="text-gray-600 text-sm">
+                {searchGame ? "No bonuses match your search." : "No bonuses yet. Add your first one!"}
+              </p>
+            </div>
+          ) : (
+            visibleBonuses.map((bonus, i) => {
+              const multi = bonus.payout !== null && bonus.betSize > 0
+                ? bonus.payout / bonus.betSize : null;
+
+              return (
+                <motion.div
+                  key={bonus.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.02 }}
+                  className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_140px_100px_100px_90px_80px] items-center px-5 py-3 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors"
+                >
+                  {/* Game */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <SlotImg src={bonus.image} alt={bonus.slotName} size={10} />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-white font-semibold text-sm truncate">{bonus.slotName}</span>
+                        <BadgePill badge={bonus.badge} custom={bonus.customBadge} />
+                      </div>
+                      {bonus.note && <p className="text-gray-600 text-xs truncate mt-0.5">{bonus.note}</p>}
+                    </div>
+                  </div>
+
+                  {/* Provider */}
+                  <span className="hidden sm:block text-gray-400 text-sm truncate">{bonus.provider}</span>
+
+                  {/* Bet */}
+                  <span className="hidden sm:block text-gray-300 text-sm">{sym}{bonus.betSize.toFixed(2)}</span>
+
+                  {/* Payout */}
+                  <span className={`hidden sm:block text-sm font-semibold ${bonus.payout !== null ? "text-white" : "text-gray-600"}`}>
+                    {bonus.payout !== null ? `${sym}${bonus.payout.toFixed(2)}` : "–"}
+                  </span>
+
+                  {/* Multi */}
+                  <span className={`hidden sm:block text-sm font-bold ${multi !== null ? (multi >= stats.reqX ? "text-emerald-400" : "text-red-400") : "text-gray-600"}`}>
+                    {multi !== null ? `${multi.toFixed(2)}x` : "0.00x"}
+                  </span>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 justify-end">
+                    <button
+                      onClick={() => setDeleteBonus(bonus)}
+                      className="p-1.5 text-gray-600 hover:text-red-400 rounded-lg hover:bg-white/5 transition-colors"
+                      title="Remove"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setEditBonus(bonus)}
+                      className="p-1.5 text-gray-600 hover:text-violet-400 rounded-lg hover:bg-white/5 transition-colors"
+                      title="Edit"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setOpenBonus(bonus)}
+                      disabled={bonus.payout !== null && !hunt.isStarted}
+                      className="p-1.5 text-gray-600 hover:text-emerald-400 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      title="Open bonus (enter payout)"
+                    >
+                      <Play className="w-4 h-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Modals */}
+      <AnimatePresence>
+        {(showAddBonus || editBonus) && (
+          <AddBonusModal
+            initial={editBonus}
+            currency={hunt.currency}
+            onClose={() => { setShowAddBonus(false); setEditBonus(null); }}
+            onSave={handleSaveBonus}
+          />
+        )}
+        {openBonus && (
+          <OpenBonusModal
+            bonus={openBonus}
+            currency={hunt.currency}
+            onClose={() => setOpenBonus(null)}
+            onSave={(p) => handleOpenBonus(openBonus, p)}
+          />
+        )}
+        {deleteBonus && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setDeleteBonus(null)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+              className="relative bg-[#0f0c1e] border border-white/10 rounded-2xl w-full max-w-sm p-7 z-10 text-center"
+            >
+              <Trash2 className="w-10 h-10 text-red-400 mx-auto mb-4" />
+              <h3 className="text-white font-bold text-lg mb-2">Remove Bonus</h3>
+              <p className="text-gray-400 text-sm mb-6">Remove <span className="text-white font-semibold">{deleteBonus.slotName}</span> from this hunt?</p>
+              <div className="flex gap-3">
+                <button onClick={() => setDeleteBonus(null)} className="flex-1 bg-[#1a1535] hover:bg-[#211a45] border border-white/10 text-gray-300 font-semibold py-2.5 rounded-xl transition-colors text-sm">Cancel</button>
+                <button onClick={() => handleDeleteBonus(deleteBonus.id)} className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl transition-colors text-sm">Remove</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

@@ -13,6 +13,8 @@ import {
 import { getSocket } from "@/lib/socket";
 import { API_ENDPOINTS } from "@/lib/api";
 import SlotPicker from "@/components/SlotPicker";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 // ─── Slot Modal ────────────────────────────────────────────────────────────────
 function SlotModal({
@@ -281,6 +283,17 @@ export default function TournamentPage() {
   return (
     <div className="min-h-screen text-white">
       <div className="max-w-6xl mx-auto px-4 pt-24 pb-20">
+
+        {/* ── Back button ────────────────────────────────────────── */}
+        <div className="mb-8">
+          <Link
+            href="/stream-games"
+            className="inline-flex items-center gap-2 bg-white/8 hover:bg-white/12 border border-white/10 hover:border-white/20 text-gray-300 hover:text-white font-semibold px-4 py-2 rounded-xl transition-all text-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Stream Games
+          </Link>
+        </div>
 
         {/* ── Hero title ─────────────────────────────────────────── */}
         <div className="text-center mb-12">
