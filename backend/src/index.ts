@@ -260,7 +260,8 @@ server.listen(PORT, HOST, () => {
   LeaderboardExpirationJob.start();
   logger.info('✅ Background jobs started');
 
-  // Start Kick chat listener (verification + chat points)
+  // Start Kick chat listener (verification + chat points + !join)
+  KickChatService.setIO(io);
   KickChatService.start().catch((err) =>
     logger.error('KickChatService failed to start', { error: (err as Error).message })
   );

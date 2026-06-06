@@ -1,8 +1,11 @@
 import WebSocket from 'ws';
+import { Server as SocketIOServer } from 'socket.io';
 import { RedisService } from '@/config/redis';
 import { prisma } from '@/config/database';
 import { logger } from '@/utils/logger';
 import { PointsService } from '@/services/PointsService';
+import { BingoBoardService } from '@/services/BingoBoardService';
+import { BingoStatus } from '@prisma/client';
 
 const KICK_CHANNEL_NAME = process.env['KICK_CHANNEL_NAME'] || 'mattyspins';
 // Set KICK_CHATROOM_ID in .env — find it by opening kick.com/mattyspins and checking the chatroom ID in network tab
@@ -19,6 +22,11 @@ export class KickChatService {
   private static reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private static pingTimer: ReturnType<typeof setInterval> | null = null;
   private static running = false;
+  private static io: SocketIOServer | null = null;
+
+  static setIO(io: SocketIOServer): void {
+    this.io = io;
+  }
 
   static async start(): Promise<void> {
     if (!KICK_CHATROOM_ID) {
@@ -127,8 +135,41 @@ export class KickChatService {
       await this.processVerification(kickUsername, match[1].toUpperCase());
     }
 
+    // Check for bingo join command: !join
+    if (content.trim().toLowerCase() === '!join') {
+      await this.processBingoJoin(kickUsername);
+    }
+
     // Award points for chatting (verified users only)
     await this.awardChatPoints(kickUsername);
+  }
+
+  private static async processBingoJoin(kickUsername: string): Promise<void> {
+    // Find the verified user by Kick username
+    const user = await prisma.user.findFirst({
+      where: { kickUsername: { equals: kickUsername, mode: 'insensitive' }, kickVerified: true },
+      select: { id: true },
+    });
+    if (!user) return;
+
+    // Find the bingo game open for registration
+    const game = await prisma.bonusBingo.findFirst({
+      where: { status: BingoStatus.REGISTRATION },
+    });
+    if (!game) return;
+
+    // Check not already joined
+    const existing = await prisma.bingoParticipant.findUnique({
+      where: { gameId_userId: { gameId: game.id, userId: user.id } },
+    });
+    if (existing) return;
+
+    try {
+      await BingoBoardService.join(game.id, user.id, this.io ?? undefined);
+      logger.info(`KickChatService: ${kickUsername} joined bingo ${game.id} via !join`);
+    } catch (err) {
+      logger.warn(`KickChatService: !join failed for ${kickUsername}`, { error: (err as Error).message });
+    }
   }
 
   static async processVerification(kickUsername: string, code: string): Promise<void> {
