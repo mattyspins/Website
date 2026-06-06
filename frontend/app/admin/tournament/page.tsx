@@ -503,7 +503,19 @@ export default function AdminTournamentPage() {
                 </div>
 
                 {/* Status-based action buttons */}
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2 flex-wrap items-center">
+                  <a
+                    href="/tournament-widget"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Open OBS widget"
+                    className="px-3 py-2 border border-purple-500/40 text-purple-300 rounded-lg hover:bg-purple-500/10 transition-colors text-sm flex items-center gap-1.5"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                    </svg>
+                    OBS Widget
+                  </a>
                   {selected.status === TournamentStatus.DRAFT && (
                     <button
                       onClick={handleOpenRegistration}

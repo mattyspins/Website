@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { getSocket } from "@/lib/socket";
 import { Tournament, TournamentStatus, MatchStatus, TournamentMatch } from "@/types/tournament";
+import { BingoGame } from "@/lib/api/bonusBingo";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -48,6 +49,71 @@ function MatchCard({ match, tournament }: { match: TournamentMatch; tournament: 
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function RecentBingo() {
+  const [game, setGame] = useState<BingoGame | null>(null);
+
+  const fetchBingo = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/bonus-bingo`, { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      const games: BingoGame[] = data.games ?? [];
+      const active = games.find(g => g.status === "ACTIVE" || g.status === "REGISTRATION")
+        ?? games.find(g => g.status === "COMPLETED") ?? null;
+      setGame(active);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    fetchBingo();
+    const id = setInterval(fetchBingo, 30_000);
+    return () => clearInterval(id);
+  }, [fetchBingo]);
+
+  useEffect(() => {
+    if (!game) return;
+    const socket = getSocket();
+    socket.emit("joinBingo", game.id);
+    const handle = (updated: BingoGame) => { if (updated.id === game.id) setGame(updated); };
+    socket.on("bingo:updated", handle);
+    return () => { socket.emit("leaveBingo", game.id); socket.off("bingo:updated", handle); };
+  }, [game?.id]);
+
+  if (!game) return null;
+
+  const greenCells = game.cells.filter(c => c.status === "GREEN");
+  const total = game.cells.length;
+  const statusDot = game.status === "ACTIVE" ? "bg-green-400 animate-pulse" : game.status === "REGISTRATION" ? "bg-blue-400" : "bg-white/20";
+  const statusLabel = game.status === "ACTIVE" ? "Live" : game.status === "REGISTRATION" ? "Registering" : "Completed";
+  const recentWin = game.lineWins.length > 0 ? game.lineWins[game.lineWins.length - 1] : null;
+
+  return (
+    <div className="bg-black/70 border border-white/10 rounded-lg px-2 py-1.5">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1 min-w-0">
+          <span className="text-[9px] shrink-0">🟩</span>
+          <span className="text-white/80 font-semibold text-[9px] truncate">{game.title}</span>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot}`} />
+          <span className="text-[8px] text-white/40">{statusLabel}</span>
+        </div>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-[8px] text-white/40">{greenCells.length}/{total} cells won</span>
+        {recentWin && (
+          <span className="text-[8px] text-yellow-400/80 truncate ml-2">🏆 {recentWin.lineType} {recentWin.lineIndex + 1}</span>
+        )}
+      </div>
+      {game.status === "ACTIVE" && game.currentUser && (
+        <div className="mt-0.5 text-[8px] text-amber-300/80 truncate">
+          Current: {game.currentUser.kickUsername ?? game.currentUser.displayName}
+        </div>
+      )}
     </div>
   );
 }
@@ -104,11 +170,12 @@ export default function TournamentWidget() {
 
   if (!tournament) {
     return (
-      <div className="p-2">
-        <div className="bg-black/60 border border-white/10 rounded-lg p-4 text-center" style={{ width: 220 }}>
+      <div className="p-1.5 space-y-1.5 font-sans select-none" style={{ width: 220 }}>
+        <div className="bg-black/60 border border-white/10 rounded-lg p-4 text-center">
           <p className="text-2xl mb-1">🏆</p>
           <p className="text-white/50 text-[10px] tracking-widest uppercase">No active tournament…</p>
         </div>
+        <RecentBingo />
       </div>
     );
   }
@@ -118,9 +185,18 @@ export default function TournamentWidget() {
     m.status === MatchStatus.ACTIVE || m.status === MatchStatus.SLOT_SELECTION
   );
   const remaining = tournament.participants.filter(p => !p.eliminated).length;
-  const champion = tournament.status === TournamentStatus.COMPLETED
-    ? tournament.participants.find(p => p.finalPosition === 1)
-    : null;
+
+  // Derive champion from the highest-round completed match winner (more reliable than finalPosition)
+  const champion = (() => {
+    if (tournament.status !== TournamentStatus.COMPLETED) return null;
+    const completed = tournament.matches.filter(m => m.status === MatchStatus.COMPLETED && m.winnerId);
+    if (completed.length === 0) return tournament.participants.find(p => p.finalPosition === 1) ?? null;
+    const finalMatch = completed.reduce((a, b) => a.round > b.round ? a : b);
+    const mp = finalMatch.participants.find(p => p.participantId === finalMatch.winnerId || p.userId === finalMatch.winnerId);
+    if (!mp) return tournament.participants.find(p => p.finalPosition === 1) ?? null;
+    const tp = tournament.participants.find(p => p.userId === mp.userId);
+    return tp ?? { displayName: mp.displayName, avatarUrl: mp.avatarUrl, currentSlot: mp.slotCall, userId: mp.userId, id: mp.participantId, finalPosition: 1, eliminated: false, seed: null, slotConfirmed: true, slotDeadline: null };
+  })();
 
   // Recent completed matches (last 3)
   const recentMatches = [...tournament.matches]
@@ -222,6 +298,9 @@ export default function TournamentWidget() {
           </div>
         </div>
       )}
+
+      {/* Recent Bingo */}
+      <RecentBingo />
 
     </div>
   );
