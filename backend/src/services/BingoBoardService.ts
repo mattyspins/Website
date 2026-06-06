@@ -200,16 +200,30 @@ export class BingoBoardService {
     const cellId = game.currentCellId;
     const claimerId = game.currentUserId;
 
-    // Update the cell
-    await prisma.bingoCell.update({
-      where: { id: cellId },
-      data: {
-        status: won ? CellStatus.GREEN : CellStatus.RED,
-        claimedById: won ? claimerId : null,
-        claimedAt: won ? now : null,
-        playedAt: now,
-      },
-    });
+    if (won) {
+      // Won: cell turns green and is claimed
+      await prisma.bingoCell.update({
+        where: { id: cellId },
+        data: {
+          status: CellStatus.GREEN,
+          claimedById: claimerId,
+          claimedAt: now,
+          playedAt: now,
+        },
+      });
+    } else {
+      // Lost: reset cell back to EMPTY so it can be spun again
+      await prisma.bingoCell.update({
+        where: { id: cellId },
+        data: {
+          status: CellStatus.EMPTY,
+          slotName: null,
+          claimedById: null,
+          claimedAt: null,
+          playedAt: null,
+        },
+      });
+    }
 
     // Clear current round
     await prisma.bonusBingo.update({
@@ -255,9 +269,8 @@ export class BingoBoardService {
       }
     }
 
-    // Check if game complete (no more EMPTY cells)
-    const remainingEmpty = freshCells.filter(c => c.status === CellStatus.EMPTY && c.id !== cellId);
-    const isComplete = remainingEmpty.length === 0;
+    // Game completes only when all cells are GREEN (lost cells go back to EMPTY and can be re-spun)
+    const isComplete = won && freshCells.every(c => c.status === CellStatus.GREEN || (c.id === cellId && won));
 
     if (isComplete) {
       await prisma.bonusBingo.update({

@@ -144,7 +144,6 @@ function AdminBingoGrid({
 
             let bg = "bg-white/5 border-white/10";
             if (cell.status === "GREEN") bg = isWonLine ? "bg-green-500/30 border-green-400/60" : "bg-green-500/20 border-green-500/30";
-            else if (cell.status === "RED") bg = "bg-red-500/10 border-red-500/20";
             else if (isActive) bg = "bg-yellow-400/20 border-yellow-400/60 animate-pulse";
 
             const h = gridSize === 3 ? "h-24" : gridSize === 4 ? "h-20" : "h-16";
@@ -170,12 +169,6 @@ function AdminBingoGrid({
                       </div>
                     )}
                     <span className="text-green-300 text-[9px] line-clamp-1 px-0.5">{cell.slotName ?? cell.claimedBy?.displayName}</span>
-                  </div>
-                )}
-                {cell.status === "RED" && (
-                  <div className="flex flex-col items-center gap-0.5">
-                    <span className="text-red-400/70 text-lg">✕</span>
-                    {cell.slotName && <span className="text-red-400/40 text-[9px] text-center line-clamp-1 px-0.5">{cell.slotName}</span>}
                   </div>
                 )}
                 {cell.status === "ACTIVE" && (
@@ -284,7 +277,7 @@ export default function AdminBingoPage() {
   const handleSpin = () => withAction(() => bingoApi.spinCell(selected!.id));
   const handleDraw = () => withAction(() => bingoApi.drawPlayer(selected!.id));
   const handleResult = (won: boolean) => {
-    if (!confirm(won ? "Mark this bonus as WON (cell turns green)?" : "Mark this bonus as LOST (cell turns red)?")) return;
+    if (!confirm(won ? "Mark this bonus as WON (cell turns green)?" : "Mark this bonus as LOST (cell resets and can be spun again)?")) return;
     setActionLoading(true); setError(null);
     bingoApi.markResult(selected!.id, won)
       .then(({ game, newLineWins }) => {
@@ -533,7 +526,6 @@ export default function AdminBingoPage() {
                   <h3 className="text-base font-semibold text-white">Board — {selected.gridSize}×{selected.gridSize}</h3>
                   <div className="flex items-center gap-4 text-xs text-white/40">
                     <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-500/40 border border-green-500/30 inline-block" /> Won</span>
-                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-500/20 border border-red-500/20 inline-block" /> Lost</span>
                     <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-yellow-400/20 border border-yellow-400/60 inline-block animate-pulse" /> Active</span>
                   </div>
                 </div>

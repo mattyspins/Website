@@ -75,7 +75,6 @@ function BingoGrid({ game, currentUserId }: { game: BingoGame; currentUserId: st
 
           let bg = "bg-white/5 border-white/10";
           if (cell.status === "GREEN") bg = isWonLine ? "bg-green-500/30 border-green-400/60" : "bg-green-500/20 border-green-500/30";
-          else if (cell.status === "RED") bg = "bg-red-500/10 border-red-500/20";
           else if (isActive) bg = "bg-yellow-400/20 border-yellow-400/60 animate-pulse";
 
           return (
@@ -107,15 +106,6 @@ function BingoGrid({ game, currentUserId }: { game: BingoGame; currentUserId: st
                   <span className="text-green-300 text-[10px] leading-tight font-medium line-clamp-1 max-w-full px-1">
                     {cell.slotName ?? cell.claimedBy?.displayName ?? "Won"}
                   </span>
-                </div>
-              )}
-
-              {cell.status === "RED" && (
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-red-400/70 text-xl">✕</span>
-                  {cell.slotName && (
-                    <span className="text-red-400/40 text-[9px] text-center line-clamp-1 px-1">{cell.slotName}</span>
-                  )}
                 </div>
               )}
 
