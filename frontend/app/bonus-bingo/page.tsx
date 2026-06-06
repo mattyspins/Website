@@ -454,7 +454,7 @@ export default function BonusBingoPage() {
                 </div>
 
                 {/* Join / Leave */}
-                {user && activeGame.status === "REGISTRATION" && (
+                {user && (activeGame.status === "REGISTRATION" || activeGame.status === "ACTIVE") && (
                   isParticipant ? (
                     <button
                       onClick={handleLeave}
@@ -473,7 +473,7 @@ export default function BonusBingoPage() {
                     </button>
                   )
                 )}
-                {!user && activeGame.status === "REGISTRATION" && (
+                {!user && (activeGame.status === "REGISTRATION" || activeGame.status === "ACTIVE") && (
                   <p className="text-white/40 text-sm">Login to join</p>
                 )}
               </div>

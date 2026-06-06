@@ -78,7 +78,9 @@ export class BingoBoardService {
   static async join(gameId: string, userId: string, io?: SocketIOServer) {
     const game = await prisma.bonusBingo.findUnique({ where: { id: gameId } });
     if (!game) throw createError.notFound('Bingo game not found');
-    if (game.status !== BingoStatus.REGISTRATION) throw createError.badRequest('Registration is not open');
+    if (game.status !== BingoStatus.REGISTRATION && game.status !== BingoStatus.ACTIVE) {
+      throw createError.badRequest('Registration is not open');
+    }
 
     const existing = await prisma.bingoParticipant.findUnique({ where: { gameId_userId: { gameId, userId } } });
     if (existing) throw createError.badRequest('Already joined');
@@ -93,7 +95,9 @@ export class BingoBoardService {
   static async leave(gameId: string, userId: string, io?: SocketIOServer) {
     const game = await prisma.bonusBingo.findUnique({ where: { id: gameId } });
     if (!game) throw createError.notFound('Bingo game not found');
-    if (game.status !== BingoStatus.REGISTRATION) throw createError.badRequest('Can only leave during registration');
+    if (game.status !== BingoStatus.REGISTRATION && game.status !== BingoStatus.ACTIVE) {
+      throw createError.badRequest('Can only leave during registration or an active game');
+    }
 
     await prisma.bingoParticipant.deleteMany({ where: { gameId, userId } });
 

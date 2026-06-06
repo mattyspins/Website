@@ -158,9 +158,9 @@ export class KickChatService {
     });
     if (!user) return;
 
-    // Find the bingo game open for registration
+    // Find the bingo game open for registration or already active
     const game = await prisma.bonusBingo.findFirst({
-      where: { status: BingoStatus.REGISTRATION },
+      where: { status: { in: [BingoStatus.REGISTRATION, BingoStatus.ACTIVE] } },
     });
     if (!game) return;
 

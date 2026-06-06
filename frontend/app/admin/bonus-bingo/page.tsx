@@ -161,7 +161,7 @@ function AdminBingoGrid({
   return (
     <>
       <div
-        className="grid gap-1.5"
+        className="grid gap-1.5 max-w-lg mx-auto"
         style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
       >
         {grid.map((row, r) =>
@@ -561,11 +561,7 @@ export default function AdminBingoPage() {
                     <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-yellow-400/20 border border-yellow-400/60 inline-block animate-pulse" /> Active</span>
                   </div>
                 </div>
-                <div className="overflow-x-auto">
-                  <div className="pl-6 pt-6 inline-block min-w-full">
-                    <AdminBingoGrid game={selected} onSetSlot={handleSetSlot} actionLoading={actionLoading} />
-                  </div>
-                </div>
+                <AdminBingoGrid game={selected} onSetSlot={handleSetSlot} actionLoading={actionLoading} />
               </div>
             )}
 
