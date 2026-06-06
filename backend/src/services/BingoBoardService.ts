@@ -167,9 +167,10 @@ export class BingoBoardService {
     });
     const alreadyWon = new Set(greenCells.map(c => c.claimedById).filter(Boolean));
     const eligible = participants.filter(p => !alreadyWon.has(p.userId));
-    if (eligible.length === 0) throw createError.badRequest('All participants have already won a cell');
+    // If everyone has won at least one cell, open the pool back up to all participants
+    const pool = eligible.length > 0 ? eligible : participants;
 
-    const pick = eligible[Math.floor(Math.random() * eligible.length)];
+    const pick = pool[Math.floor(Math.random() * pool.length)];
 
     const updated = await prisma.bonusBingo.update({
       where: { id },
@@ -295,6 +296,28 @@ export class BingoBoardService {
     const updated = await this.getById(gameId);
     this.broadcast(io, gameId, updated);
     return { game: updated, newLineWins };
+  }
+
+  static async removeParticipant(gameId: string, userId: string, io?: SocketIOServer) {
+    const game = await prisma.bonusBingo.findUnique({ where: { id: gameId } });
+    if (!game) throw createError.notFound('Bingo game not found');
+    if (game.status === BingoStatus.COMPLETED || game.status === BingoStatus.CANCELLED) {
+      throw createError.badRequest('Cannot remove participants from a finished game');
+    }
+
+    await prisma.bingoParticipant.deleteMany({ where: { gameId, userId } });
+
+    // If this user was the currently selected player, clear them
+    if (game.currentUserId === userId) {
+      await prisma.bonusBingo.update({
+        where: { id: gameId },
+        data: { currentUserId: null },
+      });
+    }
+
+    const updated = await this.getById(gameId);
+    this.broadcast(io, gameId, updated);
+    return updated;
   }
 
   static async cancel(id: string, io?: SocketIOServer) {

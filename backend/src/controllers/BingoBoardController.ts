@@ -74,6 +74,11 @@ export class BingoBoardController {
     res.json({ success: true, message: 'Bingo game deleted' });
   });
 
+  static removeParticipant = asyncHandler(async (req, res) => {
+    const game = await BingoBoardService.removeParticipant(req.params.id, req.params.userId, _io);
+    res.json({ success: true, game });
+  });
+
   // ─── Viewer (auth required) ──────────────────────────────────────────────────
 
   static join = asyncHandler(async (req, res) => {

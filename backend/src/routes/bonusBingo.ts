@@ -26,5 +26,6 @@ router.post('/:id/draw-player', authMiddleware, adminMiddleware, adminLimiter, B
 router.post('/:id/result', authMiddleware, adminMiddleware, adminLimiter, BingoBoardController.markResult);
 router.post('/:id/cancel', authMiddleware, adminMiddleware, adminLimiter, BingoBoardController.cancel);
 router.delete('/:id', authMiddleware, adminMiddleware, adminLimiter, BingoBoardController.deleteGame);
+router.delete('/:id/participants/:userId', authMiddleware, adminMiddleware, adminLimiter, BingoBoardController.removeParticipant);
 
 export default router;

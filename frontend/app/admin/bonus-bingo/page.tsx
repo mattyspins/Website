@@ -327,6 +327,10 @@ export default function AdminBingoPage() {
     if (!confirm("Cancel this bingo game?")) return;
     withAction(() => bingoApi.cancel(selected!.id));
   };
+  const handleRemoveParticipant = (userId: string, name: string) => {
+    if (!confirm(`Remove ${name} from the game?`)) return;
+    withAction(() => bingoApi.removeParticipant(selected!.id, userId));
+  };
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`Delete "${title}" permanently?`)) return;
     setActionLoading(true); setError(null);
@@ -453,20 +457,43 @@ export default function AdminBingoPage() {
                 </div>
               </div>
 
-              {/* Participant list during registration */}
-              {selected.status === "REGISTRATION" && (
+              {/* Participant list — always visible, admin can remove */}
+              {!["COMPLETED", "CANCELLED"].includes(selected.status) && (
                 <div className="mb-4">
-                  <p className="text-sm text-white/50 mb-3 font-medium">Participants ({selected.participants.length})</p>
+                  <p className="text-sm text-white/50 mb-3 font-medium">
+                    Participants ({selected.participants.length})
+                  </p>
                   {selected.participants.length === 0 ? (
-                    <p className="text-white/30 text-sm">No participants yet — the registration link is live on the Bonus Bingo page.</p>
+                    <p className="text-white/30 text-sm">No participants yet.</p>
                   ) : (
                     <div className="flex flex-wrap gap-2">
-                      {selected.participants.map(p => (
-                        <div key={p.id} className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-sm text-white/80">
-                          {p.user.avatarUrl && <img src={p.user.avatarUrl} alt="" className="w-5 h-5 rounded-full" />}
-                          {kickName(p.user)}
-                        </div>
-                      ))}
+                      {selected.participants.map(p => {
+                        const hasGreenCell = selected.cells.some(
+                          c => c.status === "GREEN" && c.claimedById === p.userId
+                        );
+                        return (
+                          <div
+                            key={p.id}
+                            className={`flex items-center gap-2 pl-2.5 pr-1.5 py-1.5 rounded-lg text-sm border ${
+                              hasGreenCell
+                                ? "bg-green-500/10 border-green-500/25 text-green-300"
+                                : "bg-white/5 border-white/10 text-white/80"
+                            }`}
+                          >
+                            {p.user.avatarUrl && <img src={p.user.avatarUrl} alt="" className="w-5 h-5 rounded-full" />}
+                            <span>{kickName(p.user)}</span>
+                            {hasGreenCell && <span className="text-green-400 text-xs">🟩</span>}
+                            <button
+                              onClick={() => handleRemoveParticipant(p.userId, kickName(p.user))}
+                              disabled={actionLoading}
+                              title="Remove participant"
+                              className="ml-1 text-white/20 hover:text-red-400 transition-colors disabled:opacity-30 text-xs leading-none"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

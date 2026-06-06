@@ -73,4 +73,6 @@ export const bingoApi = {
     api.post(`/api/bonus-bingo/${id}/result`, { won }).then(d => ({ game: d.game as BingoGame, newLineWins: d.newLineWins })),
   cancel: (id: string) => api.post(`/api/bonus-bingo/${id}/cancel`).then(d => d.game as BingoGame),
   deleteGame: (id: string) => api.delete(`/api/bonus-bingo/${id}`),
+  removeParticipant: (id: string, userId: string) =>
+    api.delete(`/api/bonus-bingo/${id}/participants/${userId}`).then(d => d.game as BingoGame),
 };
