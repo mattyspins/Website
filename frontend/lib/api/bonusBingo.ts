@@ -66,7 +66,8 @@ export const bingoApi = {
     api.post(`/api/bonus-bingo/${id}/open-registration`).then(d => d.game as BingoGame),
   startGame: (id: string) => api.post(`/api/bonus-bingo/${id}/start`).then(d => d.game as BingoGame),
   spinCell: (id: string) => api.post(`/api/bonus-bingo/${id}/spin-cell`).then(d => d.game as BingoGame),
-  drawPlayer: (id: string) => api.post(`/api/bonus-bingo/${id}/draw-player`).then(d => d.game as BingoGame),
+  drawPlayer: (id: string, includeWinners = false) =>
+    api.post(`/api/bonus-bingo/${id}/draw-player`, { includeWinners }).then(d => d.game as BingoGame),
   markResult: (id: string, won: boolean) =>
     api.post(`/api/bonus-bingo/${id}/result`, { won }).then(d => ({ game: d.game as BingoGame, newLineWins: d.newLineWins })),
   cancel: (id: string) => api.post(`/api/bonus-bingo/${id}/cancel`).then(d => d.game as BingoGame),

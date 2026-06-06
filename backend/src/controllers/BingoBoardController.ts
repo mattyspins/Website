@@ -55,7 +55,8 @@ export class BingoBoardController {
   });
 
   static drawPlayer = asyncHandler(async (req, res) => {
-    const game = await BingoBoardService.drawPlayer(req.params.id, _io);
+    const includeWinners = req.body?.includeWinners === true;
+    const game = await BingoBoardService.drawPlayer(req.params.id, includeWinners, _io);
     res.json({ success: true, game });
   });
 

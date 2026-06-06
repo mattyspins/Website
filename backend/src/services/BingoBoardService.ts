@@ -152,7 +152,7 @@ export class BingoBoardService {
     return updated;
   }
 
-  static async drawPlayer(id: string, io?: SocketIOServer) {
+  static async drawPlayer(id: string, includeWinners: boolean, io?: SocketIOServer) {
     const game = await prisma.bonusBingo.findUnique({
       where: { id },
       include: { participants: true },
@@ -164,14 +164,18 @@ export class BingoBoardService {
     const { participants } = game;
     if (participants.length === 0) throw createError.badRequest('No participants in this game');
 
-    // Exclude users who already have a green cell; fall back to everyone if all have won
-    const greenCells = await prisma.bingoCell.findMany({
-      where: { gameId: id, status: CellStatus.GREEN },
-      select: { claimedById: true },
-    });
-    const alreadyWon = new Set(greenCells.map(c => c.claimedById).filter(Boolean));
-    const eligible = participants.filter(p => !alreadyWon.has(p.userId));
-    const pool = eligible.length > 0 ? eligible : participants;
+    // Build the draw pool — optionally exclude green-cell holders
+    let pool = participants;
+    if (!includeWinners) {
+      const greenCells = await prisma.bingoCell.findMany({
+        where: { gameId: id, status: CellStatus.GREEN },
+        select: { claimedById: true },
+      });
+      const alreadyWon = new Set(greenCells.map(c => c.claimedById).filter(Boolean));
+      const eligible = participants.filter(p => !alreadyWon.has(p.userId));
+      // Fall back to everyone if all participants have won at least one cell
+      pool = eligible.length > 0 ? eligible : participants;
+    }
 
     // Shuffle-bag: cycle through everyone before repeating (skip when only 1 player)
     let pick: (typeof pool)[0];

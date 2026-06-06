@@ -250,6 +250,7 @@ export default function AdminBingoPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [lineAlert, setLineAlert] = useState<{ lineType: string; lineIndex: number; points: number } | null>(null);
+  const [includeWinners, setIncludeWinners] = useState(false);
 
   // Auth check
   useEffect(() => {
@@ -298,7 +299,7 @@ export default function AdminBingoPage() {
   const handleOpenReg = () => withAction(() => bingoApi.openRegistration(selected!.id));
   const handleStart = () => withAction(() => bingoApi.startGame(selected!.id));
   const handleSpin = () => withAction(() => bingoApi.spinCell(selected!.id));
-  const handleDraw = () => withAction(() => bingoApi.drawPlayer(selected!.id));
+  const handleDraw = () => withAction(() => bingoApi.drawPlayer(selected!.id, includeWinners));
   const handleResult = (won: boolean) => {
     if (!confirm(won ? "Mark this bonus as WON (cell turns green)?" : "Mark this bonus as LOST (cell resets and can be spun again)?")) return;
     setActionLoading(true); setError(null);
@@ -439,6 +440,17 @@ export default function AdminBingoPage() {
                     </svg>
                     OBS Widget
                   </a>
+                  <button
+                    onClick={() => setIncludeWinners(v => !v)}
+                    title={includeWinners ? "Winners are included in the draw pool — click to exclude them" : "Winners are excluded from the draw pool — click to include them"}
+                    className={`px-3 py-2 border rounded-lg text-sm flex items-center gap-1.5 transition-colors ${
+                      includeWinners
+                        ? "border-green-500/50 text-green-300 bg-green-500/10 hover:bg-green-500/20"
+                        : "border-white/10 text-white/40 hover:bg-white/5"
+                    }`}
+                  >
+                    🏆 {includeWinners ? "Winners in pool" : "Winners excluded"}
+                  </button>
                   {selected.status === "DRAFT" && (
                     <button onClick={handleOpenReg} disabled={actionLoading}
                       className="px-4 py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-400 disabled:opacity-40 transition-colors text-sm">
