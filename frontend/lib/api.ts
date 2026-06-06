@@ -218,4 +218,8 @@ export const API_ENDPOINTS = {
 
   // Leaderboard archive
   LEADERBOARDS_COMPLETED: `${API_URL}/api/manual-leaderboards?status=completed`,
+
+  // Bonus Bingo
+  BONUS_BINGO: `${API_URL}/api/bonus-bingo`,
+  BONUS_BINGO_GAME: (id: string) => `${API_URL}/api/bonus-bingo/${id}`,
 };

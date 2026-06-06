@@ -43,6 +43,7 @@ const GAMES: Game[] = [
     howItWorks: ["A wheel is spun to select a square on the board", "A viewer is then picked during stream", "The chosen viewer selects the bonus buy / slot", "If the bonus profits, the square turns green 🟩", "The viewer claims that square", "First completed line wins 🏆 (horizontal, vertical, or diagonal)"],
     rewards: ["Website points", "Giveaway entries", "Community rewards", "Special events / rewards"],
     note: "Make sure you're in stream from the start for your chance to play 👊",
+    link: "/bonus-bingo", linkLabel: "Play Bonus Bingo",
   },
   {
     id: "team-battles", name: "Team Battles",

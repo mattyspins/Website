@@ -146,6 +146,8 @@ import tournamentRoutes from '@/routes/tournament';
 import { setTournamentIO } from '@/controllers/TournamentController';
 // import bonusHuntRoutes from '@/routes/bonusHunt';
 import liveHuntRoutes from '@/routes/liveHunt';
+import bonusBingoRoutes from '@/routes/bonusBingo';
+import { setBingoIO } from '@/controllers/BingoBoardController';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
@@ -165,9 +167,11 @@ app.use('/api/viewing', viewingRoutes);
 app.use('/api/tournaments', tournamentRoutes);
 // app.use('/api/bonus-hunt', bonusHuntRoutes);
 app.use('/api/live-hunt', liveHuntRoutes);
+app.use('/api/bonus-bingo', bonusBingoRoutes);
 
 // Wire up tournament real-time events
 setTournamentIO(io);
+setBingoIO(io);
 
 // Socket.IO connection handling
 io.on('connection', socket => {
@@ -193,6 +197,14 @@ io.on('connection', socket => {
   });
   socket.on('leaveTournament', (tournamentId: string) => {
     socket.leave(`tournament:${tournamentId}`);
+  });
+
+  // Bingo rooms
+  socket.on('joinBingo', (gameId: string) => {
+    socket.join(`bingo:${gameId}`);
+  });
+  socket.on('leaveBingo', (gameId: string) => {
+    socket.leave(`bingo:${gameId}`);
   });
 
   socket.on('disconnect', () => {

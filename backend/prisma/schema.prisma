@@ -60,6 +60,10 @@ model User {
   milestoneClaims        MilestoneClaim[]
   createdTournaments     Tournament[]          @relation("TournamentCreator")
   tournamentParticipations TournamentParticipant[] @relation("TournamentParticipants")
+  createdBingos          BonusBingo[]          @relation("BingoCreator")
+  currentBingoGames      BonusBingo[]          @relation("BingoCurrentUser")
+  bingoParticipations    BingoParticipant[]    @relation("BingoParticipants")
+  bingoClaimedCells      BingoCell[]           @relation("BingoCellClaimer")
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")
@@ -557,4 +561,84 @@ model MilestoneClaim {
 
   @@unique([userId, tierId])
   @@map("milestone_claims")
+}
+
+// ─── Bonus Bingo ─────────────────────────────────────────────────────────────
+
+enum BingoStatus {
+  DRAFT
+  REGISTRATION
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum CellStatus {
+  EMPTY
+  ACTIVE
+  GREEN
+  RED
+}
+
+model BonusBingo {
+  id            String             @id @default(uuid())
+  title         String
+  gridSize      Int                @default(5) @map("grid_size")
+  status        BingoStatus        @default(DRAFT)
+  linePoints    Int                @default(500) @map("line_points")
+  currentCellId String?            @map("current_cell_id")
+  currentUserId String?            @map("current_user_id")
+  createdById   String             @map("created_by_id")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+  completedAt   DateTime?          @map("completed_at")
+  createdBy     User               @relation("BingoCreator", fields: [createdById], references: [id])
+  currentUser   User?              @relation("BingoCurrentUser", fields: [currentUserId], references: [id])
+  cells         BingoCell[]
+  participants  BingoParticipant[]
+  lineWins      BingoLineWin[]
+
+  @@map("bonus_bingo")
+}
+
+model BingoCell {
+  id          String     @id @default(uuid())
+  gameId      String     @map("game_id")
+  row         Int
+  col         Int
+  status      CellStatus @default(EMPTY)
+  slotName    String?    @map("slot_name")
+  claimedById String?    @map("claimed_by_id")
+  claimedAt   DateTime?  @map("claimed_at")
+  playedAt    DateTime?  @map("played_at")
+  game        BonusBingo @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  claimedBy   User?      @relation("BingoCellClaimer", fields: [claimedById], references: [id])
+
+  @@unique([gameId, row, col])
+  @@map("bingo_cells")
+}
+
+model BingoParticipant {
+  id       String     @id @default(uuid())
+  gameId   String     @map("game_id")
+  userId   String     @map("user_id")
+  joinedAt DateTime   @default(now()) @map("joined_at")
+  game     BonusBingo @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user     User       @relation("BingoParticipants", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, userId])
+  @@map("bingo_participants")
+}
+
+model BingoLineWin {
+  id          String     @id @default(uuid())
+  gameId      String     @map("game_id")
+  lineType    String     @map("line_type")
+  lineIndex   Int        @map("line_index")
+  pointsEach  Int        @map("points_each")
+  completedAt DateTime   @default(now()) @map("completed_at")
+  game        BonusBingo @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, lineType, lineIndex])
+  @@map("bingo_line_wins")
 }
