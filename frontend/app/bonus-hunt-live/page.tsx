@@ -54,7 +54,7 @@ function SlotImg({ src, alt }: { src: string; alt: string }) {
       <ImageOff className="w-4 h-4 text-gray-700" />
     </div>
   ) : (
-    <img src={src} alt={alt} onError={() => setErr(true)} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+    <img src={src} alt={alt} referrerPolicy="no-referrer" onError={() => setErr(true)} className="w-10 h-10 rounded-lg object-cover shrink-0" />
   );
 }
 

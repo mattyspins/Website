@@ -46,6 +46,7 @@ function SlotImg({ src, alt, size = 10 }: { src: string; alt: string; size?: num
   ) : (
     <img
       src={src} alt={alt}
+      referrerPolicy="no-referrer"
       onError={() => setErr(true)}
       className={`w-${size} h-${size} rounded-lg object-cover shrink-0`}
     />
