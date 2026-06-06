@@ -222,7 +222,7 @@ export class KickChatService {
     if (!activeCell || activeCell.slotName) return;
 
     try {
-      await BingoBoardService.setSlot(game.id, game.currentCellId, slotName, user.id, this.io ?? undefined);
+      await BingoBoardService.setSlot(game.id, game.currentCellId, slotName, user.id, false, this.io ?? undefined);
       logger.info(`KickChatService: ${kickUsername} set slot "${slotName}" via !slot`);
       await this.sendChatMessage(`${kickUsername} has picked "${slotName}" as their slot! 🎰`);
     } catch (err) {

@@ -1,15 +1,15 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { BingoBoardController } from '@/controllers/BingoBoardController';
-import { authMiddleware, adminMiddleware } from '@/middleware/auth';
+import { authMiddleware, adminMiddleware, optionalAuthMiddleware } from '@/middleware/auth';
 
 const router = Router();
 
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 300, standardHeaders: true, legacyHeaders: false });
 const adminLimiter = rateLimit({ windowMs: 5 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false });
 
-// Public
-router.get('/', limiter, BingoBoardController.getAll);
+// Public (optional auth so admins see DRAFT games in listing)
+router.get('/', optionalAuthMiddleware, limiter, BingoBoardController.getAll);
 router.get('/:id', limiter, BingoBoardController.getById);
 
 // Viewer (auth)

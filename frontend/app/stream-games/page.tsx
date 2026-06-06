@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Ticket, Swords, Zap, Trophy, Skull, Users, Star, ExternalLink, Clock, X, Radio } from "lucide-react";
+import { Crown, Ticket, Swords, Zap, Trophy, Skull, Users, Grid3X3, ExternalLink, Clock, X, Radio } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -38,7 +38,7 @@ const GAMES: Game[] = [
   {
     id: "bonus-bingo", name: "Bonus Bingo",
     tagline: "Complete a line on the bingo board to win",
-    icon: <Star className="w-6 h-6" />, color: "text-green-400", iconBg: "bg-green-500/15", border: "border-green-500/20",
+    icon: <Grid3X3 className="w-6 h-6" />, color: "text-green-400", iconBg: "bg-green-500/15", border: "border-green-500/20",
     description: "A community stream game where viewers compete to complete the bingo board. A wheel spins to select a square, a viewer is picked, and if their bonus profits the square turns green — first to complete a line wins.",
     howItWorks: ["A wheel is spun to select a square on the board", "A viewer is then picked during stream", "The chosen viewer selects the bonus buy / slot", "If the bonus profits, the square turns green 🟩", "The viewer claims that square", "First completed line wins 🏆 (horizontal, vertical, or diagonal)"],
     rewards: ["Website points", "Giveaway entries", "Community rewards", "Special events / rewards"],

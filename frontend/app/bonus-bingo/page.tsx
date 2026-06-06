@@ -7,20 +7,9 @@ import { bingoApi, BingoGame, BingoCell } from "@/lib/api/bonusBingo";
 import { getSocket } from "@/lib/socket";
 import { API_ENDPOINTS } from "@/lib/api";
 import SlotPicker from "@/components/SlotPicker";
+import { kickName, lineLabel, getLineWinners } from "@/lib/bingoUtils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function kickName(u: { kickUsername?: string | null; displayName: string } | null | undefined) {
-  return u?.kickUsername ?? u?.displayName ?? "?";
-}
-
-function lineLabel(lineType: string, lineIndex: number, gridSize: number) {
-  if (lineType === "row") return `Row ${lineIndex + 1}`;
-  if (lineType === "col") return `Column ${lineIndex + 1}`;
-  if (lineType === "diag" && lineIndex === 0) return "Main Diagonal";
-  if (lineType === "diag" && lineIndex === 1) return "Anti-Diagonal";
-  return "Line";
-}
 
 function statusColor(status: BingoGame["status"]) {
   switch (status) {
@@ -202,14 +191,14 @@ function SlotSelectModal({
 // ─── Line Celebration Overlay ─────────────────────────────────────────────────
 
 function LineCelebration({
-  lineType, lineIndex, points, gridSize, onDone,
-}: { lineType: string; lineIndex: number; points: number; gridSize: number; onDone: () => void }) {
+  lineType, lineIndex, points, onDone,
+}: { lineType: string; lineIndex: number; points: number; onDone: () => void }) {
   useEffect(() => {
     const t = setTimeout(onDone, 4000);
     return () => clearTimeout(t);
   }, [onDone]);
 
-  const label = lineLabel(lineType, lineIndex, gridSize);
+  const label = lineLabel(lineType, lineIndex);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
@@ -341,7 +330,7 @@ export default function BonusBingoPage() {
     if (!activeGame) return;
     const socket = getSocket();
     socket.emit("joinBingo", activeGame.id);
-    socket.on("bingo:updated", (updated: BingoGame) => {
+    const handleBingoUpdate = (updated: BingoGame) => {
       setGames(prev => {
         const old = prev.find(g => g.id === updated.id);
         const prevCount = old?.lineWins.length ?? 0;
@@ -351,10 +340,11 @@ export default function BonusBingoPage() {
         }
         return prev.map(g => g.id === updated.id ? updated : g);
       });
-    });
+    };
+    socket.on("bingo:updated", handleBingoUpdate);
     return () => {
       socket.emit("leaveBingo", activeGame.id);
-      socket.off("bingo:updated");
+      socket.off("bingo:updated", handleBingoUpdate);
     };
   }, [activeGame?.id]);
 
@@ -366,7 +356,10 @@ export default function BonusBingoPage() {
   const handleJoin = async () => {
     if (!activeGame || !user) return;
     setActionLoading(true); setError(null);
-    try { await bingoApi.join(activeGame.id); await loadGames(); }
+    try {
+      const updated = await bingoApi.join(activeGame.id);
+      setGames(prev => prev.map(g => g.id === updated.id ? updated : g));
+    }
     catch (e: any) { setError(e.message); }
     finally { setActionLoading(false); }
   };
@@ -374,7 +367,10 @@ export default function BonusBingoPage() {
   const handleLeave = async () => {
     if (!activeGame || !user) return;
     setActionLoading(true); setError(null);
-    try { await bingoApi.leave(activeGame.id); await loadGames(); }
+    try {
+      const updated = await bingoApi.leave(activeGame.id);
+      setGames(prev => prev.map(g => g.id === updated.id ? updated : g));
+    }
     catch (e: any) { setError(e.message); }
     finally { setActionLoading(false); }
   };
@@ -562,26 +558,13 @@ export default function BonusBingoPage() {
                       ? { type: "col", idx: lw.lineIndex }
                       : { type: "diag", idx: lw.lineIndex };
 
-                    // Get winner names from cells
-                    const winnerIds = new Set<string>();
-                    const winnerNames: string[] = [];
-                    for (const cell of activeGame.cells) {
-                      let inLine = false;
-                      if (lw.lineType === "row" && cell.row === lw.lineIndex && cell.status === "GREEN") inLine = true;
-                      if (lw.lineType === "col" && cell.col === lw.lineIndex && cell.status === "GREEN") inLine = true;
-                      if (lw.lineType === "diag" && lw.lineIndex === 0 && cell.row === cell.col && cell.status === "GREEN") inLine = true;
-                      if (lw.lineType === "diag" && lw.lineIndex === 1 && cell.row + cell.col === activeGame.gridSize - 1 && cell.status === "GREEN") inLine = true;
-                      if (inLine && cell.claimedById && !winnerIds.has(cell.claimedById)) {
-                        winnerIds.add(cell.claimedById);
-                        winnerNames.push(kickName(cell.claimedBy));
-                      }
-                    }
+                    const winnerNames = getLineWinners(activeGame.cells, lw, activeGame.gridSize);
 
                     return (
                       <div key={lw.id} className="flex items-center justify-between gap-3 bg-yellow-400/8 border border-yellow-400/15 rounded-xl px-4 py-3">
                         <div>
                           <p className="text-yellow-300 font-semibold text-sm">
-                            🏆 {lineLabel(lw.lineType, lw.lineIndex, activeGame.gridSize)}
+                            🏆 {lineLabel(lw.lineType, lw.lineIndex)}
                           </p>
                           {winnerNames.length > 0 && (
                             <p className="text-white/50 text-xs mt-0.5">Winners: {winnerNames.join(", ")}</p>
@@ -636,12 +619,11 @@ export default function BonusBingoPage() {
 
       {showRules && <RulesModal onClose={() => setShowRules(false)} />}
 
-      {lineAlert && activeGame && (
+      {lineAlert && (
         <LineCelebration
           lineType={lineAlert.lineType}
           lineIndex={lineAlert.lineIndex}
           points={lineAlert.points}
-          gridSize={activeGame.gridSize}
           onDone={() => setLineAlert(null)}
         />
       )}

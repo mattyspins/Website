@@ -6,12 +6,9 @@ import { bingoApi, BingoGame } from "@/lib/api/bonusBingo";
 import { API_ENDPOINTS } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import SlotPicker from "@/components/SlotPicker";
+import { kickName, lineLabel, getLineWinners } from "@/lib/bingoUtils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function kickName(u: { kickUsername?: string | null; displayName: string } | null | undefined) {
-  return u?.kickUsername ?? u?.displayName ?? "?";
-}
 
 function statusColor(s: BingoGame["status"]) {
   switch (s) {
@@ -23,24 +20,17 @@ function statusColor(s: BingoGame["status"]) {
   }
 }
 
-function lineLabel(lineType: string, lineIndex: number, gridSize: number) {
-  if (lineType === "row") return `Row ${lineIndex + 1}`;
-  if (lineType === "col") return `Column ${lineIndex + 1}`;
-  if (lineType === "diag" && lineIndex === 0) return "Main Diagonal ↘";
-  return "Anti-Diagonal ↙";
-}
-
 // ─── Line Celebration Overlay ─────────────────────────────────────────────────
 
 function LineCelebration({
-  lineType, lineIndex, points, gridSize, onDone,
-}: { lineType: string; lineIndex: number; points: number; gridSize: number; onDone: () => void }) {
+  lineType, lineIndex, points, onDone,
+}: { lineType: string; lineIndex: number; points: number; onDone: () => void }) {
   useEffect(() => {
     const t = setTimeout(onDone, 4000);
     return () => clearTimeout(t);
   }, [onDone]);
 
-  const label = lineLabel(lineType, lineIndex, gridSize);
+  const label = lineLabel(lineType, lineIndex);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
@@ -287,11 +277,12 @@ export default function AdminBingoPage() {
     if (!selected) return;
     const socket = getSocket();
     socket.emit("joinBingo", selected.id);
-    socket.on("bingo:updated", (updated: BingoGame) => {
+    const handleBingoUpdate = (updated: BingoGame) => {
       if (updated.id === selected.id) setSelected(updated);
       setGames(prev => prev.map(g => g.id === updated.id ? updated : g));
-    });
-    return () => { socket.emit("leaveBingo", selected.id); socket.off("bingo:updated"); };
+    };
+    socket.on("bingo:updated", handleBingoUpdate);
+    return () => { socket.emit("leaveBingo", selected.id); socket.off("bingo:updated", handleBingoUpdate); };
   }, [selected?.id]);
 
   const withAction = async (fn: () => Promise<BingoGame>) => {
@@ -598,24 +589,12 @@ export default function AdminBingoPage() {
                 <h3 className="text-base font-semibold text-white mb-4">🏆 Completed Lines</h3>
                 <div className="space-y-2">
                   {selected.lineWins.map(lw => {
-                    const winnerIds = new Set<string>();
-                    const winnerNames: string[] = [];
-                    for (const cell of selected.cells) {
-                      let inLine = false;
-                      if (lw.lineType === "row" && cell.row === lw.lineIndex && cell.status === "GREEN") inLine = true;
-                      if (lw.lineType === "col" && cell.col === lw.lineIndex && cell.status === "GREEN") inLine = true;
-                      if (lw.lineType === "diag" && lw.lineIndex === 0 && cell.row === cell.col && cell.status === "GREEN") inLine = true;
-                      if (lw.lineType === "diag" && lw.lineIndex === 1 && cell.row + cell.col === selected.gridSize - 1 && cell.status === "GREEN") inLine = true;
-                      if (inLine && cell.claimedById && !winnerIds.has(cell.claimedById)) {
-                        winnerIds.add(cell.claimedById);
-                        winnerNames.push(kickName(cell.claimedBy));
-                      }
-                    }
+                    const winnerNames = getLineWinners(selected.cells, lw, selected.gridSize);
 
                     return (
                       <div key={lw.id} className="flex items-center justify-between gap-3 bg-yellow-400/8 border border-yellow-400/15 rounded-xl px-4 py-3">
                         <div>
-                          <p className="text-yellow-300 font-semibold text-sm">{lineLabel(lw.lineType, lw.lineIndex, selected.gridSize)}</p>
+                          <p className="text-yellow-300 font-semibold text-sm">{lineLabel(lw.lineType, lw.lineIndex)}</p>
                           <p className="text-white/50 text-xs mt-0.5">
                             {winnerNames.length > 0 ? `Winners: ${winnerNames.join(", ")}` : "No claimers"}
                           </p>
@@ -647,12 +626,11 @@ export default function AdminBingoPage() {
         />
       )}
 
-      {lineAlert && selected && (
+      {lineAlert && (
         <LineCelebration
           lineType={lineAlert.lineType}
           lineIndex={lineAlert.lineIndex}
           points={lineAlert.points}
-          gridSize={selected.gridSize}
           onDone={() => setLineAlert(null)}
         />
       )}

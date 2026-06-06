@@ -20,8 +20,9 @@ const BINGO_INCLUDE = {
 };
 
 export class BingoBoardService {
-  static async getAll() {
+  static async getAll(includeAll = false) {
     return prisma.bonusBingo.findMany({
+      where: includeAll ? undefined : { status: { not: BingoStatus.DRAFT } },
       include: BINGO_INCLUDE,
       orderBy: { createdAt: 'desc' },
     });
@@ -182,15 +183,13 @@ export class BingoBoardService {
     return updated;
   }
 
-  static async setSlot(gameId: string, cellId: string, slotName: string, requesterId: string, io?: SocketIOServer) {
+  static async setSlot(gameId: string, cellId: string, slotName: string, requesterId: string, isAdminOrMod: boolean, io?: SocketIOServer) {
     const game = await prisma.bonusBingo.findUnique({ where: { id: gameId }, include: { cells: true } });
     if (!game) throw createError.notFound('Bingo game not found');
     if (game.status !== BingoStatus.ACTIVE) throw createError.badRequest('Game is not active');
     if (game.currentCellId !== cellId) throw createError.badRequest('This cell is not the active cell');
 
-    const requester = await prisma.user.findUnique({ where: { id: requesterId } });
-    const isAdmin = requester?.isAdmin || requester?.isModerator;
-    if (!isAdmin && game.currentUserId !== requesterId) {
+    if (!isAdminOrMod && game.currentUserId !== requesterId) {
       throw createError.forbidden('Only the selected player can set the slot');
     }
 
@@ -214,36 +213,22 @@ export class BingoBoardService {
     const cellId = game.currentCellId;
     const claimerId = game.currentUserId;
 
-    if (won) {
-      // Won: cell turns green and is claimed
-      await prisma.bingoCell.update({
-        where: { id: cellId },
-        data: {
-          status: CellStatus.GREEN,
-          claimedById: claimerId,
-          claimedAt: now,
-          playedAt: now,
-        },
-      });
-    } else {
-      // Lost: reset cell back to EMPTY so it can be spun again
-      await prisma.bingoCell.update({
-        where: { id: cellId },
-        data: {
-          status: CellStatus.EMPTY,
-          slotName: null,
-          claimedById: null,
-          claimedAt: null,
-          playedAt: null,
-        },
-      });
-    }
-
-    // Clear current round
-    await prisma.bonusBingo.update({
-      where: { id: gameId },
-      data: { currentCellId: null, currentUserId: null },
-    });
+    // Atomic: cell update + round clear must succeed or fail together
+    await prisma.$transaction([
+      won
+        ? prisma.bingoCell.update({
+            where: { id: cellId },
+            data: { status: CellStatus.GREEN, claimedById: claimerId, claimedAt: now, playedAt: now },
+          })
+        : prisma.bingoCell.update({
+            where: { id: cellId },
+            data: { status: CellStatus.EMPTY, slotName: null, claimedById: null, claimedAt: null, playedAt: null },
+          }),
+      prisma.bonusBingo.update({
+        where: { id: gameId },
+        data: { currentCellId: null, currentUserId: null },
+      }),
+    ]);
 
     // Re-fetch cells with updated state
     const freshCells = await prisma.bingoCell.findMany({ where: { gameId } });

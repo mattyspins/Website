@@ -1,4 +1,4 @@
-import { api, API_URL } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export interface BingoCell {
   id: string;
@@ -48,8 +48,6 @@ export interface BingoGame {
   createdBy: { id: string; displayName: string; kickUsername: string | null; avatarUrl: string | null };
   currentUser: { id: string; displayName: string; kickUsername: string | null; avatarUrl: string | null } | null;
 }
-
-const BASE = `${API_URL}/api/bonus-bingo`;
 
 export const bingoApi = {
   getAll: () => api.get(`/api/bonus-bingo`).then(d => d.games as BingoGame[]),

@@ -20,8 +20,9 @@ const slotSchema = z.object({ slotName: z.string().min(1).max(100) });
 const resultSchema = z.object({ won: z.boolean() });
 
 export class BingoBoardController {
-  static getAll = asyncHandler(async (_req, res) => {
-    const games = await BingoBoardService.getAll();
+  static getAll = asyncHandler(async (req, res) => {
+    const includeAll = !!(req.user?.isAdmin || req.user?.isModerator);
+    const games = await BingoBoardService.getAll(includeAll);
     res.json({ success: true, games });
   });
 
@@ -93,7 +94,8 @@ export class BingoBoardController {
 
   static setSlot = asyncHandler(async (req, res) => {
     const { slotName } = slotSchema.parse(req.body);
-    const game = await BingoBoardService.setSlot(req.params.id, req.params.cellId, slotName, req.user!.id, _io);
+    const isAdminOrMod = !!(req.user!.isAdmin || req.user!.isModerator);
+    const game = await BingoBoardService.setSlot(req.params.id, req.params.cellId, slotName, req.user!.id, isAdminOrMod, _io);
     res.json({ success: true, game });
   });
 }
