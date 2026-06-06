@@ -39,16 +39,24 @@ function BadgePill({ badge, custom }: { badge: BadgeType; custom?: string }) {
 /* ── Slot image ──────────────────────────────────────────── */
 function SlotImg({ src, alt, size = 10 }: { src: string; alt: string; size?: number }) {
   const [err, setErr] = useState(false);
-  return err || !src ? (
-    <div className={`w-${size} h-${size} rounded-lg bg-[#1a1535] border border-white/8 flex items-center justify-center shrink-0`}>
-      <ImageOff className="w-4 h-4 text-gray-700" />
-    </div>
-  ) : (
+  const px = size * 4;
+  if (err || !src) {
+    return (
+      <div
+        className="rounded-lg bg-[#1a1535] border border-white/8 flex items-center justify-center shrink-0 text-gray-600 font-bold"
+        style={{ width: px, height: px, fontSize: px * 0.35 }}
+      >
+        {alt?.[0]?.toUpperCase() ?? "?"}
+      </div>
+    );
+  }
+  return (
     <img
-      src={src} alt={alt}
-      referrerPolicy="no-referrer"
+      src={src}
+      alt={alt}
       onError={() => setErr(true)}
-      className={`w-${size} h-${size} rounded-lg object-cover shrink-0`}
+      className="rounded-lg object-cover shrink-0"
+      style={{ width: px, height: px }}
     />
   );
 }

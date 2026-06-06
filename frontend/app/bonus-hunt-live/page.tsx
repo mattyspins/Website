@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ImageOff, Zap, BookOpen, HelpCircle, X } from "lucide-react";
+import { ArrowLeft, Zap, BookOpen, HelpCircle, X } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/api";
 import { CURRENCY_SYMBOLS, type BadgeType } from "@/lib/huntTracker";
 
@@ -49,12 +49,24 @@ function BadgePill({ badge, custom }: { badge: BadgeType; custom?: string }) {
 /* ── Slot image ──────────────────────────────────────────── */
 function SlotImg({ src, alt }: { src: string; alt: string }) {
   const [err, setErr] = useState(false);
-  return err || !src ? (
-    <div className="w-10 h-10 rounded-lg bg-[#1a1535] border border-white/8 flex items-center justify-center shrink-0">
-      <ImageOff className="w-4 h-4 text-gray-700" />
-    </div>
-  ) : (
-    <img src={src} alt={alt} referrerPolicy="no-referrer" onError={() => setErr(true)} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+  if (err || !src) {
+    return (
+      <div
+        className="rounded-lg bg-[#1a1535] border border-white/8 flex items-center justify-center shrink-0 text-gray-600 font-bold"
+        style={{ width: 40, height: 40, fontSize: 14 }}
+      >
+        {alt?.[0]?.toUpperCase() ?? "?"}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onError={() => setErr(true)}
+      className="rounded-lg object-cover shrink-0"
+      style={{ width: 40, height: 40 }}
+    />
   );
 }
 
