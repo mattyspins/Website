@@ -24,7 +24,7 @@ function MiniGrid({ game }: { game: BingoGame }) {
 
   return (
     <div
-      className="grid gap-1 w-full"
+      className="grid gap-1 w-full max-w-[190px] mx-auto"
       style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
     >
       {grid.map((row, r) =>
@@ -201,44 +201,44 @@ export default function BingoWidget() {
   );
 
   return (
-    <div className="p-2.5 space-y-2 w-full font-sans select-none">
+    <div className="p-1.5 space-y-1.5 w-full font-sans select-none">
       {lineAlert && (
         <LineAlertBanner alert={lineAlert} onDone={() => setLineAlert(null)} />
       )}
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="bg-black/70 border border-white/10 rounded-xl px-3 py-2.5 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-base shrink-0">🎱</span>
-          <span className="text-white font-semibold text-sm truncate">{game.title}</span>
+      <div className="bg-black/70 border border-white/10 rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-sm shrink-0">🎱</span>
+          <span className="text-white font-semibold text-xs truncate">{game.title}</span>
         </div>
-        <div className={`flex items-center gap-1.5 shrink-0 ${cfg.text}`}>
+        <div className={`flex items-center gap-1 shrink-0 ${cfg.text}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-          <span className="text-xs font-medium whitespace-nowrap">{cfg.label}</span>
+          <span className="text-[10px] font-medium whitespace-nowrap">{cfg.label}</span>
         </div>
       </div>
 
       {/* ── Current Player Spotlight ─────────────────────────────────────── */}
       {game.currentUser && game.status === "ACTIVE" && (
-        <div className="bg-amber-950/60 border border-amber-500/50 rounded-xl px-3 py-2.5">
-          <p className="text-amber-500/70 text-[10px] uppercase tracking-widest font-bold mb-1">▶ Now Playing</p>
-          <p className="text-amber-300 font-bold text-xl leading-tight truncate">{kickName(game.currentUser)}</p>
-          <p className="text-amber-200/50 text-xs mt-0.5 truncate">
+        <div className="bg-amber-950/60 border border-amber-500/50 rounded-xl px-2.5 py-1.5">
+          <p className="text-amber-500/70 text-[9px] uppercase tracking-widest font-bold mb-0.5">▶ Now Playing</p>
+          <p className="text-amber-300 font-bold text-base leading-tight truncate">{kickName(game.currentUser)}</p>
+          <p className="text-amber-200/50 text-[10px] truncate">
             {activeCell?.slotName ? `🎰 ${activeCell.slotName}` : "Choosing slot…"}
           </p>
         </div>
       )}
 
       {/* ── Board ─────────────────────────────────────────────────────────── */}
-      <div className="bg-black/70 border border-white/10 rounded-xl p-2.5">
-        <p className="text-white/30 text-[9px] uppercase tracking-widest mb-1.5">Board</p>
+      <div className="bg-black/70 border border-white/10 rounded-xl p-2">
+        <p className="text-white/30 text-[9px] uppercase tracking-widest mb-1">Board</p>
         <MiniGrid game={game} />
       </div>
 
       {/* ── Participants ──────────────────────────────────────────────────── */}
       {game.participants.length > 0 && (
-        <div className="bg-black/70 border border-white/10 rounded-xl px-3 py-2.5">
-          <p className="text-white/30 text-[9px] uppercase tracking-widest mb-2">
+        <div className="bg-black/70 border border-white/10 rounded-xl px-2.5 py-1.5">
+          <p className="text-white/30 text-[9px] uppercase tracking-widest mb-1">
             Players ({game.participants.length})
           </p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
@@ -273,9 +273,9 @@ export default function BingoWidget() {
 
       {/* ── Line Wins ─────────────────────────────────────────────────────── */}
       {game.lineWins.length > 0 && (
-        <div className="bg-black/70 border border-white/10 rounded-xl px-3 py-2.5">
-          <p className="text-white/30 text-[9px] uppercase tracking-widest mb-2">Lines Won</p>
-          <div className="space-y-1.5">
+        <div className="bg-black/70 border border-white/10 rounded-xl px-2.5 py-1.5">
+          <p className="text-white/30 text-[9px] uppercase tracking-widest mb-1">Lines Won</p>
+          <div className="space-y-1">
             {game.lineWins.map((lw, i) => {
               const winners = getLineWinners(game.cells, lw, game.gridSize);
               return (
