@@ -66,6 +66,11 @@ export class BingoBoardController {
     res.json({ success: true, game: result.game, newLineWins: result.newLineWins });
   });
 
+  static unlive = asyncHandler(async (req, res) => {
+    const game = await BingoBoardService.unlive(req.params.id, _io);
+    res.json({ success: true, game });
+  });
+
   static cancel = asyncHandler(async (req, res) => {
     const game = await BingoBoardService.cancel(req.params.id, _io);
     res.json({ success: true, game });

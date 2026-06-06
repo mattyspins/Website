@@ -24,6 +24,7 @@ router.post('/:id/start', authMiddleware, adminMiddleware, adminLimiter, BingoBo
 router.post('/:id/spin-cell', authMiddleware, adminMiddleware, adminLimiter, BingoBoardController.spinCell);
 router.post('/:id/draw-player', authMiddleware, adminMiddleware, adminLimiter, BingoBoardController.drawPlayer);
 router.post('/:id/result', authMiddleware, adminMiddleware, adminLimiter, BingoBoardController.markResult);
+router.post('/:id/unlive', authMiddleware, adminMiddleware, adminLimiter, BingoBoardController.unlive);
 router.post('/:id/cancel', authMiddleware, adminMiddleware, adminLimiter, BingoBoardController.cancel);
 router.delete('/:id', authMiddleware, adminMiddleware, adminLimiter, BingoBoardController.deleteGame);
 router.delete('/:id/participants/:userId', authMiddleware, adminMiddleware, adminLimiter, BingoBoardController.removeParticipant);

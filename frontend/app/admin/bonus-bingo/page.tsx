@@ -315,6 +315,10 @@ export default function AdminBingoPage() {
       .catch(e => setError(e.message))
       .finally(() => setActionLoading(false));
   };
+  const handleUnlive = () => {
+    if (!confirm("Revert this game back to Registration? The current active cell will be reset and the draw cycle cleared.")) return;
+    withAction(() => bingoApi.unlive(selected!.id));
+  };
   const handleCancel = () => {
     if (!confirm("Cancel this bingo game?")) return;
     withAction(() => bingoApi.cancel(selected!.id));
@@ -461,6 +465,12 @@ export default function AdminBingoPage() {
                     <button onClick={handleStart} disabled={actionLoading || selected.participants.length < 1}
                       className="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-400 disabled:opacity-40 transition-colors text-sm">
                       Start Game
+                    </button>
+                  )}
+                  {selected.status === "ACTIVE" && (
+                    <button onClick={handleUnlive} disabled={actionLoading}
+                      className="px-4 py-2 border border-orange-500/40 text-orange-400 rounded-lg hover:bg-orange-500/10 disabled:opacity-40 transition-colors text-sm">
+                      ↩ Unlive
                     </button>
                   )}
                   {!["COMPLETED", "CANCELLED"].includes(selected.status) && (
