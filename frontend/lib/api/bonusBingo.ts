@@ -10,7 +10,7 @@ export interface BingoCell {
   claimedById: string | null;
   claimedAt: string | null;
   playedAt: string | null;
-  claimedBy: { id: string; displayName: string; avatarUrl: string | null } | null;
+  claimedBy: { id: string; displayName: string; kickUsername: string | null; avatarUrl: string | null } | null;
 }
 
 export interface BingoParticipant {
@@ -18,7 +18,7 @@ export interface BingoParticipant {
   gameId: string;
   userId: string;
   joinedAt: string;
-  user: { id: string; displayName: string; avatarUrl: string | null };
+  user: { id: string; displayName: string; kickUsername: string | null; avatarUrl: string | null };
 }
 
 export interface BingoLineWin {
@@ -45,8 +45,8 @@ export interface BingoGame {
   cells: BingoCell[];
   participants: BingoParticipant[];
   lineWins: BingoLineWin[];
-  createdBy: { id: string; displayName: string; avatarUrl: string | null };
-  currentUser: { id: string; displayName: string; avatarUrl: string | null } | null;
+  createdBy: { id: string; displayName: string; kickUsername: string | null; avatarUrl: string | null };
+  currentUser: { id: string; displayName: string; kickUsername: string | null; avatarUrl: string | null } | null;
 }
 
 const BASE = `${API_URL}/api/bonus-bingo`;

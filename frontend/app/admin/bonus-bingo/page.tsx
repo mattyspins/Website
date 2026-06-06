@@ -9,6 +9,10 @@ import SlotPicker from "@/components/SlotPicker";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function kickName(u: { kickUsername?: string | null; displayName: string } | null | undefined) {
+  return u?.kickUsername ?? u?.displayName ?? "?";
+}
+
 function statusColor(s: BingoGame["status"]) {
   switch (s) {
     case "REGISTRATION": return "bg-blue-500/20 text-blue-300 border-blue-500/30";
@@ -165,11 +169,11 @@ function AdminBingoGrid({
                       <img src={cell.claimedBy.avatarUrl} alt="" className="w-6 h-6 rounded-full" />
                     ) : (
                       <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center text-green-300 text-[10px] font-bold">
-                        {cell.claimedBy?.displayName?.[0]?.toUpperCase() ?? "?"}
+                        {kickName(cell.claimedBy)[0]?.toUpperCase() ?? "?"}
                       </div>
                     )}
-                    {cell.claimedBy?.displayName && (
-                      <span className="text-green-200 text-[9px] font-semibold line-clamp-1 px-0.5 leading-tight">{cell.claimedBy.displayName}</span>
+                    {cell.claimedBy && (
+                      <span className="text-green-200 text-[9px] font-semibold line-clamp-1 px-0.5 leading-tight">{kickName(cell.claimedBy)}</span>
                     )}
                     {cell.slotName && (
                       <span className="text-green-400/60 text-[8px] line-clamp-1 px-0.5 leading-tight">{cell.slotName}</span>
@@ -437,7 +441,7 @@ export default function AdminBingoPage() {
                       {selected.participants.map(p => (
                         <div key={p.id} className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-sm text-white/80">
                           {p.user.avatarUrl && <img src={p.user.avatarUrl} alt="" className="w-5 h-5 rounded-full" />}
-                          {p.user.displayName}
+                          {kickName(p.user)}
                         </div>
                       ))}
                     </div>
@@ -474,7 +478,7 @@ export default function AdminBingoPage() {
                         <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1">Step 2</p>
                         <p className="text-sm font-semibold text-white mb-2">
                           {selected.currentUserId
-                            ? selected.currentUser?.displayName
+                            ? kickName(selected.currentUser)
                             : "Draw a viewer"}
                         </p>
                         <button
@@ -515,7 +519,7 @@ export default function AdminBingoPage() {
                   {/* Slot name display */}
                   {activeCell && !activeCell.slotName && selected.currentUserId && (
                     <div className="p-3 bg-yellow-400/8 border border-yellow-400/20 rounded-xl text-yellow-300 text-sm">
-                      Waiting for {selected.currentUser?.displayName} to pick their slot on the viewer page…
+                      Waiting for {kickName(selected.currentUser)} to pick their slot on the viewer page…
                       <br />
                       <span className="text-white/40 text-xs">Or click the active cell on the board below to set it manually.</span>
                     </div>
@@ -558,7 +562,7 @@ export default function AdminBingoPage() {
                       if (lw.lineType === "diag" && lw.lineIndex === 1 && cell.row + cell.col === selected.gridSize - 1 && cell.status === "GREEN") inLine = true;
                       if (inLine && cell.claimedById && !winnerIds.has(cell.claimedById)) {
                         winnerIds.add(cell.claimedById);
-                        winnerNames.push(cell.claimedBy?.displayName ?? "?");
+                        winnerNames.push(kickName(cell.claimedBy));
                       }
                     }
 

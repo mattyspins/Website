@@ -10,6 +10,10 @@ import SlotPicker from "@/components/SlotPicker";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function kickName(u: { kickUsername?: string | null; displayName: string } | null | undefined) {
+  return u?.kickUsername ?? u?.displayName ?? "?";
+}
+
 function lineLabel(lineType: string, lineIndex: number, gridSize: number) {
   if (lineType === "row") return `Row ${lineIndex + 1}`;
   if (lineType === "col") return `Column ${lineIndex + 1}`;
@@ -100,12 +104,12 @@ function BingoGrid({ game, currentUserId }: { game: BingoGame; currentUserId: st
                     <img src={cell.claimedBy.avatarUrl} alt="" className="w-7 h-7 rounded-full ring-1 ring-green-400/50" />
                   ) : (
                     <div className="w-7 h-7 rounded-full bg-green-500/20 flex items-center justify-center text-green-300 text-xs font-bold">
-                      {cell.claimedBy?.displayName?.[0]?.toUpperCase() ?? "?"}
+                      {kickName(cell.claimedBy)[0]?.toUpperCase() ?? "?"}
                     </div>
                   )}
-                  {cell.claimedBy?.displayName && (
+                  {cell.claimedBy && (
                     <span className="text-green-200 text-[10px] leading-tight font-semibold line-clamp-1 max-w-full px-1">
-                      {cell.claimedBy.displayName}
+                      {kickName(cell.claimedBy)}
                     </span>
                   )}
                   {cell.slotName && (
@@ -424,7 +428,7 @@ export default function BonusBingoPage() {
                     {activeGame.participants.map(p => (
                       <div key={p.id} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border ${p.userId === user?.id ? "bg-green-500/15 border-green-500/30 text-green-300" : "bg-white/5 border-white/10 text-white/70"}`}>
                         {p.user.avatarUrl && <img src={p.user.avatarUrl} alt="" className="w-4 h-4 rounded-full" />}
-                        {p.user.displayName}
+                        {kickName(p.user)}
                       </div>
                     ))}
                   </div>
@@ -440,7 +444,7 @@ export default function BonusBingoPage() {
                     )}
                     <div>
                       <p className="text-yellow-300 font-bold">
-                        {isSelectedPlayer ? "You've been selected! 🎉" : `${activeGame.currentUser?.displayName} is up!`}
+                        {isSelectedPlayer ? "You've been selected! 🎉" : `${kickName(activeGame.currentUser)} is up!`}
                       </p>
                       <p className="text-white/50 text-sm mt-0.5">
                         {hasSetSlot
@@ -508,7 +512,7 @@ export default function BonusBingoPage() {
                       if (lw.lineType === "diag" && lw.lineIndex === 1 && cell.row + cell.col === activeGame.gridSize - 1 && cell.status === "GREEN") inLine = true;
                       if (inLine && cell.claimedById && !winnerIds.has(cell.claimedById)) {
                         winnerIds.add(cell.claimedById);
-                        winnerNames.push(cell.claimedBy?.displayName ?? "?");
+                        winnerNames.push(kickName(cell.claimedBy));
                       }
                     }
 

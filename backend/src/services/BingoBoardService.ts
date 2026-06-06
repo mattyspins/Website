@@ -7,16 +7,16 @@ import { BingoStatus, CellStatus } from '@prisma/client';
 
 const BINGO_INCLUDE = {
   cells: {
-    include: { claimedBy: { select: { id: true, displayName: true, avatarUrl: true } } },
+    include: { claimedBy: { select: { id: true, displayName: true, kickUsername: true, avatarUrl: true } } },
     orderBy: [{ row: 'asc' as const }, { col: 'asc' as const }],
   },
   participants: {
-    include: { user: { select: { id: true, displayName: true, avatarUrl: true } } },
+    include: { user: { select: { id: true, displayName: true, kickUsername: true, avatarUrl: true } } },
     orderBy: { joinedAt: 'asc' as const },
   },
   lineWins: { orderBy: { completedAt: 'asc' as const } },
-  createdBy: { select: { id: true, displayName: true, avatarUrl: true } },
-  currentUser: { select: { id: true, displayName: true, avatarUrl: true } },
+  createdBy: { select: { id: true, displayName: true, kickUsername: true, avatarUrl: true } },
+  currentUser: { select: { id: true, displayName: true, kickUsername: true, avatarUrl: true } },
 };
 
 export class BingoBoardService {
