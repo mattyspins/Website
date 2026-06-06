@@ -50,12 +50,17 @@ function MiniGrid({ game }: { game: BingoGame }) {
               key={cell.id}
               className={`aspect-square rounded border flex items-center justify-center overflow-hidden p-0.5 ${cellClass}`}
             >
-              {isGreen && slot ? (
-                <span className="text-[9px] leading-tight text-center w-full px-0.5 line-clamp-2">
-                  {slot}
-                </span>
-              ) : isGreen ? (
-                <span className="text-[11px] font-bold">✓</span>
+              {isGreen ? (
+                <div className="flex flex-col items-center justify-center w-full px-0.5 gap-0.5">
+                  <span className="text-[9px] font-semibold leading-tight text-center text-green-200 w-full truncate">
+                    {kickName(cell.claimedBy)}
+                  </span>
+                  {slot && (
+                    <span className="text-[8px] leading-tight text-center text-green-400/70 w-full truncate">
+                      {slot}
+                    </span>
+                  )}
+                </div>
               ) : isActive && slot ? (
                 <span className="text-[9px] leading-tight text-center w-full px-0.5 line-clamp-2">
                   {slot}
