@@ -140,6 +140,12 @@ export class KickChatService {
       await this.processBingoJoin(kickUsername);
     }
 
+    // Check for slot selection command: !slot <name>
+    const slotMatch = content.match(/^!slot\s+(.+)/i);
+    if (slotMatch) {
+      await this.processBingoSlot(kickUsername, slotMatch[1].trim());
+    }
+
     // Award points for chatting (verified users only)
     await this.awardChatPoints(kickUsername);
   }
@@ -169,6 +175,33 @@ export class KickChatService {
       logger.info(`KickChatService: ${kickUsername} joined bingo ${game.id} via !join`);
     } catch (err) {
       logger.warn(`KickChatService: !join failed for ${kickUsername}`, { error: (err as Error).message });
+    }
+  }
+
+  private static async processBingoSlot(kickUsername: string, slotName: string): Promise<void> {
+    // Find the verified user by Kick username
+    const user = await prisma.user.findFirst({
+      where: { kickUsername: { equals: kickUsername, mode: 'insensitive' }, kickVerified: true },
+      select: { id: true },
+    });
+    if (!user) return;
+
+    // Find an active bingo game where this user is the currently selected player
+    const game = await prisma.bonusBingo.findFirst({
+      where: { status: BingoStatus.ACTIVE, currentUserId: user.id },
+      include: { cells: true },
+    });
+    if (!game || !game.currentCellId) return;
+
+    // Only set if no slot chosen yet
+    const activeCell = game.cells.find(c => c.id === game.currentCellId);
+    if (!activeCell || activeCell.slotName) return;
+
+    try {
+      await BingoBoardService.setSlot(game.id, game.currentCellId, slotName, user.id, this.io ?? undefined);
+      logger.info(`KickChatService: ${kickUsername} set slot "${slotName}" via !slot`);
+    } catch (err) {
+      logger.warn(`KickChatService: !slot failed for ${kickUsername}`, { error: (err as Error).message });
     }
   }
 
