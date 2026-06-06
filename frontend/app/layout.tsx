@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { headers } from "next/headers";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -41,6 +42,21 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const isObs = headers().get("x-obs-route") === "1";
+
+  if (isObs) {
+    return (
+      <html lang="en" style={{ background: "transparent" }}>
+        <head>
+          <link rel="icon" href="/favicon.ico" />
+        </head>
+        <body className={inter.className} style={{ background: "transparent" }}>
+          {children}
+        </body>
+      </html>
+    );
+  }
+
   return (
     <html lang="en">
       <head>
