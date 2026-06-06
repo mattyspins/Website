@@ -398,8 +398,8 @@ export default function StreamGamesPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
                 onClick={() => game.link ? router.push(game.link) : setSelected(game)}
-                className={`relative border rounded-2xl p-5 flex flex-col items-center text-center gap-3 transition-all group
-                  w-full
+                className={`relative border rounded-2xl p-5 flex flex-col items-center justify-center text-center gap-3 transition-all group
+                  w-full h-[140px]
                   ${isLive
                     ? "bg-red-500/8 border-red-500/40 ring-1 ring-red-500/30 hover:bg-red-500/12"
                     : isToday
