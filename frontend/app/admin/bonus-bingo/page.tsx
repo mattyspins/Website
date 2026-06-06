@@ -315,6 +315,10 @@ export default function AdminBingoPage() {
       .catch(e => setError(e.message))
       .finally(() => setActionLoading(false));
   };
+  const handleComplete = () => {
+    if (!confirm("Mark this game as Completed? It will move to Past Games on the viewer page. This cannot be undone.")) return;
+    withAction(() => bingoApi.completeGame(selected!.id));
+  };
   const handleUnlive = () => {
     if (!confirm("Revert this game back to Registration? The current active cell will be reset and the draw cycle cleared.")) return;
     withAction(() => bingoApi.unlive(selected!.id));
@@ -471,6 +475,12 @@ export default function AdminBingoPage() {
                     <button onClick={handleUnlive} disabled={actionLoading}
                       className="px-4 py-2 border border-orange-500/40 text-orange-400 rounded-lg hover:bg-orange-500/10 disabled:opacity-40 transition-colors text-sm">
                       ↩ Unlive
+                    </button>
+                  )}
+                  {!["COMPLETED", "CANCELLED"].includes(selected.status) && (
+                    <button onClick={handleComplete} disabled={actionLoading}
+                      className="px-4 py-2 border border-yellow-500/40 text-yellow-400 rounded-lg hover:bg-yellow-500/10 disabled:opacity-40 transition-colors text-sm">
+                      ✓ End Game
                     </button>
                   )}
                   {!["COMPLETED", "CANCELLED"].includes(selected.status) && (

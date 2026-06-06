@@ -70,6 +70,7 @@ export const bingoApi = {
     api.post(`/api/bonus-bingo/${id}/draw-player`, { includeWinners }).then(d => d.game as BingoGame),
   markResult: (id: string, won: boolean) =>
     api.post(`/api/bonus-bingo/${id}/result`, { won }).then(d => ({ game: d.game as BingoGame, newLineWins: d.newLineWins })),
+  completeGame: (id: string) => api.post(`/api/bonus-bingo/${id}/complete`).then(d => d.game as BingoGame),
   unlive: (id: string) => api.post(`/api/bonus-bingo/${id}/unlive`).then(d => d.game as BingoGame),
   cancel: (id: string) => api.post(`/api/bonus-bingo/${id}/cancel`).then(d => d.game as BingoGame),
   deleteGame: (id: string) => api.delete(`/api/bonus-bingo/${id}`),

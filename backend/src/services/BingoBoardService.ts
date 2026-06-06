@@ -339,6 +339,33 @@ export class BingoBoardService {
     return updated;
   }
 
+  static async completeGame(id: string, io?: SocketIOServer) {
+    const game = await prisma.bonusBingo.findUnique({ where: { id }, include: { cells: true } });
+    if (!game) throw createError.notFound('Bingo game not found');
+    if (game.status === BingoStatus.COMPLETED || game.status === BingoStatus.CANCELLED) {
+      throw createError.badRequest('Game is already finished');
+    }
+
+    // Reset any in-progress active cell back to EMPTY
+    const activeCell = game.cells.find(c => c.status === CellStatus.ACTIVE);
+    if (activeCell) {
+      await prisma.bingoCell.update({
+        where: { id: activeCell.id },
+        data: { status: CellStatus.EMPTY, slotName: null, claimedById: null, claimedAt: null, playedAt: null },
+      });
+    }
+
+    const updated = await prisma.bonusBingo.update({
+      where: { id },
+      data: { status: BingoStatus.COMPLETED, currentCellId: null, currentUserId: null, completedAt: new Date() },
+      include: BINGO_INCLUDE,
+    });
+
+    await RedisService.del(drawCycleKey(id));
+    this.broadcast(io, id, updated);
+    return updated;
+  }
+
   static async unlive(id: string, io?: SocketIOServer) {
     const game = await prisma.bonusBingo.findUnique({ where: { id }, include: { cells: true } });
     if (!game) throw createError.notFound('Bingo game not found');
