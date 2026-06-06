@@ -95,7 +95,7 @@ function BingoGrid({ game, currentUserId }: { game: BingoGame; currentUserId: st
               )}
 
               {cell.status === "GREEN" && (
-                <div className="flex flex-col items-center gap-1 p-1 text-center">
+                <div className="flex flex-col items-center gap-0.5 p-1 text-center">
                   {cell.claimedBy?.avatarUrl ? (
                     <img src={cell.claimedBy.avatarUrl} alt="" className="w-7 h-7 rounded-full ring-1 ring-green-400/50" />
                   ) : (
@@ -103,9 +103,16 @@ function BingoGrid({ game, currentUserId }: { game: BingoGame; currentUserId: st
                       {cell.claimedBy?.displayName?.[0]?.toUpperCase() ?? "?"}
                     </div>
                   )}
-                  <span className="text-green-300 text-[10px] leading-tight font-medium line-clamp-1 max-w-full px-1">
-                    {cell.slotName ?? cell.claimedBy?.displayName ?? "Won"}
-                  </span>
+                  {cell.claimedBy?.displayName && (
+                    <span className="text-green-200 text-[10px] leading-tight font-semibold line-clamp-1 max-w-full px-1">
+                      {cell.claimedBy.displayName}
+                    </span>
+                  )}
+                  {cell.slotName && (
+                    <span className="text-green-400/60 text-[9px] leading-tight line-clamp-1 max-w-full px-1">
+                      {cell.slotName}
+                    </span>
+                  )}
                 </div>
               )}
 

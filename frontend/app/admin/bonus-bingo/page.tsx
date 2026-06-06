@@ -168,7 +168,12 @@ function AdminBingoGrid({
                         {cell.claimedBy?.displayName?.[0]?.toUpperCase() ?? "?"}
                       </div>
                     )}
-                    <span className="text-green-300 text-[9px] line-clamp-1 px-0.5">{cell.slotName ?? cell.claimedBy?.displayName}</span>
+                    {cell.claimedBy?.displayName && (
+                      <span className="text-green-200 text-[9px] font-semibold line-clamp-1 px-0.5 leading-tight">{cell.claimedBy.displayName}</span>
+                    )}
+                    {cell.slotName && (
+                      <span className="text-green-400/60 text-[8px] line-clamp-1 px-0.5 leading-tight">{cell.slotName}</span>
+                    )}
                   </div>
                 )}
                 {cell.status === "ACTIVE" && (
