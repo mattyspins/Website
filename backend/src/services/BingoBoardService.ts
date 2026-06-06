@@ -1,9 +1,12 @@
 import { prisma } from '@/config/database';
 import { Server as SocketIOServer } from 'socket.io';
 import { PointsService } from '@/services/PointsService';
+import { RedisService } from '@/config/redis';
 import { createError } from '@/middleware/errorHandler';
 import { logger } from '@/utils/logger';
 import { BingoStatus, CellStatus } from '@prisma/client';
+
+const drawCycleKey = (gameId: string) => `bingo_draw_cycle:${gameId}`;
 
 const BINGO_INCLUDE = {
   cells: {
@@ -161,17 +164,36 @@ export class BingoBoardService {
     const { participants } = game;
     if (participants.length === 0) throw createError.badRequest('No participants in this game');
 
-    // Exclude users who already have a green cell — they've claimed a spot
+    // Exclude users who already have a green cell; fall back to everyone if all have won
     const greenCells = await prisma.bingoCell.findMany({
       where: { gameId: id, status: CellStatus.GREEN },
       select: { claimedById: true },
     });
     const alreadyWon = new Set(greenCells.map(c => c.claimedById).filter(Boolean));
     const eligible = participants.filter(p => !alreadyWon.has(p.userId));
-    // If everyone has won at least one cell, open the pool back up to all participants
     const pool = eligible.length > 0 ? eligible : participants;
 
-    const pick = pool[Math.floor(Math.random() * pool.length)];
+    // Shuffle-bag: cycle through everyone before repeating (skip when only 1 player)
+    let pick: (typeof pool)[0];
+    if (pool.length === 1) {
+      pick = pool[0];
+    } else {
+      const key = drawCycleKey(id);
+      const raw = await RedisService.get(key);
+      let drawnThisCycle: string[] = raw ? JSON.parse(raw) : [];
+      const drawnSet = new Set(drawnThisCycle);
+
+      let available = pool.filter(p => !drawnSet.has(p.userId));
+      if (available.length === 0) {
+        // Full cycle complete — reset and allow everyone again
+        drawnThisCycle = [];
+        available = pool;
+      }
+
+      pick = available[Math.floor(Math.random() * available.length)];
+      drawnThisCycle.push(pick.userId);
+      await RedisService.set(key, JSON.stringify(drawnThisCycle), 86400);
+    }
 
     const updated = await prisma.bonusBingo.update({
       where: { id },
@@ -300,6 +322,14 @@ export class BingoBoardService {
       });
     }
 
+    // Remove this user from the draw cycle so they don't occupy a slot after leaving
+    const key = drawCycleKey(gameId);
+    const raw = await RedisService.get(key);
+    if (raw) {
+      const cycle: string[] = JSON.parse(raw).filter((id: string) => id !== userId);
+      await RedisService.set(key, JSON.stringify(cycle), 86400);
+    }
+
     const updated = await this.getById(gameId);
     this.broadcast(io, gameId, updated);
     return updated;
@@ -318,6 +348,7 @@ export class BingoBoardService {
       include: BINGO_INCLUDE,
     });
 
+    await RedisService.del(drawCycleKey(id));
     this.broadcast(io, id, updated);
     return updated;
   }
