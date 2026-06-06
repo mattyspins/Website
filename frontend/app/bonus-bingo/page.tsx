@@ -238,24 +238,50 @@ function RulesModal({ onClose }: { onClose: () => void }) {
           </div>
           <button onClick={onClose} className="text-white/30 hover:text-white text-lg">✕</button>
         </div>
-        <div className="px-6 py-5 space-y-4 text-sm text-white/70 leading-relaxed">
+        <div className="px-6 py-5 space-y-5 text-sm text-white/70 leading-relaxed max-h-[75vh] overflow-y-auto">
+
+          {/* Steps */}
           <ol className="space-y-3">
             {[
-              "Join the game during the registration phase",
-              "A random square on the bingo board is selected",
-              "A random viewer from the participant pool is picked",
-              "The chosen viewer picks their slot/bonus game",
-              "Matty plays that bonus live on stream",
-              "If the bonus profits → the square turns green 🟩 and the viewer claims it",
-              "If the bonus doesn't profit → the square turns red ✕",
-              "First completed line (row, column, or diagonal) wins coins for all claimers!",
-            ].map((step, i) => (
+              { text: "Registration opens — join via the website or type !join in Kick chat (verified users only)", highlight: "!join" },
+              { text: "A random square on the bingo board is selected by the wheel", highlight: null },
+              { text: "A random participant is drawn from the pool", highlight: null },
+              { text: "The selected viewer picks their slot — on the website or by typing !slot <name> in Kick chat", highlight: "!slot <name>" },
+              { text: "Matty plays that bonus live on stream", highlight: null },
+              { text: "Bonus profits → the square turns green 🟩 and the viewer claims it", highlight: null },
+              { text: "Bonus doesn't profit → the square resets and can be spun again later", highlight: null },
+              { text: "Complete a full line (row, column, or diagonal) → coins awarded to every claimer on that line!", highlight: null },
+            ].map(({ text, highlight }, i) => (
               <li key={i} className="flex gap-3">
                 <span className="text-green-400 font-bold shrink-0 w-4">{i + 1}.</span>
-                <span>{step}</span>
+                <span>
+                  {highlight ? (
+                    <>
+                      {text.split(highlight)[0]}
+                      <code className="bg-white/10 text-green-300 px-1.5 py-0.5 rounded text-xs font-mono">{highlight}</code>
+                      {text.split(highlight)[1]}
+                    </>
+                  ) : text}
+                </span>
               </li>
             ))}
           </ol>
+
+          {/* Chat commands */}
+          <div className="bg-white/5 border border-white/8 rounded-xl p-4 space-y-2">
+            <p className="text-white font-bold text-xs uppercase tracking-widest mb-3">💬 Kick Chat Commands</p>
+            {[
+              { cmd: "!join", desc: "Join the game during registration (must have Kick verified on site)" },
+              { cmd: "!slot <name>", desc: "Set your slot when you're the selected player" },
+            ].map(({ cmd, desc }) => (
+              <div key={cmd} className="flex items-start gap-3">
+                <code className="bg-green-500/15 text-green-300 px-2 py-0.5 rounded text-xs font-mono shrink-0 mt-0.5">{cmd}</code>
+                <span className="text-white/50 text-xs">{desc}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Rewards */}
           <div className="bg-white/5 border border-white/8 rounded-xl p-4">
             <p className="text-white font-bold mb-2 text-xs uppercase tracking-widest">🎁 Rewards</p>
             <div className="flex flex-wrap gap-2">
@@ -264,6 +290,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
               ))}
             </div>
           </div>
+
         </div>
       </div>
     </div>
