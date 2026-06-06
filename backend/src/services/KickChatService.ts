@@ -10,6 +10,9 @@ import { BingoStatus } from '@prisma/client';
 const KICK_CHANNEL_NAME = process.env['KICK_CHANNEL_NAME'] || 'mattyspins';
 // Set KICK_CHATROOM_ID in .env — find it by opening kick.com/mattyspins and checking the chatroom ID in network tab
 const KICK_CHATROOM_ID = parseInt(process.env['KICK_CHATROOM_ID'] || '0', 10);
+// Bot token for sending chat messages — set KICK_BOT_TOKEN in Railway env vars
+// Get it by going to kick.com → your account settings → App Access Tokens (or use OAuth with chat:write scope)
+const KICK_BOT_TOKEN = process.env['KICK_BOT_TOKEN'] || '';
 const PUSHER_APP_KEY = '32cbd69e4b950bf97679';
 const PUSHER_WS_URL = `wss://ws-us2.pusher.com/app/${PUSHER_APP_KEY}?protocol=7&client=js&version=7.4.0&flash=false`;
 const CHAT_POINTS_AMOUNT = 1;
@@ -150,6 +153,26 @@ export class KickChatService {
     await this.awardChatPoints(kickUsername);
   }
 
+  static async sendChatMessage(message: string): Promise<void> {
+    if (!KICK_BOT_TOKEN || !KICK_CHATROOM_ID) return;
+    try {
+      const res = await fetch(`https://kick.com/api/v2/messages/send/${KICK_CHATROOM_ID}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${KICK_BOT_TOKEN}`,
+          'User-Agent': 'MattySpinsBot/1.0',
+        },
+        body: JSON.stringify({ content: message, type: 'message' }),
+      });
+      if (!res.ok) {
+        logger.warn(`KickChatService: sendChatMessage failed (${res.status})`);
+      }
+    } catch (err) {
+      logger.warn('KickChatService: sendChatMessage error', { error: (err as Error).message });
+    }
+  }
+
   private static async processBingoJoin(kickUsername: string): Promise<void> {
     // Find the verified user by Kick username
     const user = await prisma.user.findFirst({
@@ -173,6 +196,7 @@ export class KickChatService {
     try {
       await BingoBoardService.join(game.id, user.id, this.io ?? undefined);
       logger.info(`KickChatService: ${kickUsername} joined bingo ${game.id} via !join`);
+      await this.sendChatMessage(`${kickUsername} has joined Bonus Bingo! 🎉`);
     } catch (err) {
       logger.warn(`KickChatService: !join failed for ${kickUsername}`, { error: (err as Error).message });
     }
@@ -200,6 +224,7 @@ export class KickChatService {
     try {
       await BingoBoardService.setSlot(game.id, game.currentCellId, slotName, user.id, this.io ?? undefined);
       logger.info(`KickChatService: ${kickUsername} set slot "${slotName}" via !slot`);
+      await this.sendChatMessage(`${kickUsername} has picked "${slotName}" as their slot! 🎰`);
     } catch (err) {
       logger.warn(`KickChatService: !slot failed for ${kickUsername}`, { error: (err as Error).message });
     }
