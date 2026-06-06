@@ -199,6 +199,31 @@ function SlotSelectModal({
   );
 }
 
+// ─── Line Celebration Overlay ─────────────────────────────────────────────────
+
+function LineCelebration({
+  lineType, lineIndex, points, gridSize, onDone,
+}: { lineType: string; lineIndex: number; points: number; gridSize: number; onDone: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 4000);
+    return () => clearTimeout(t);
+  }, [onDone]);
+
+  const label = lineLabel(lineType, lineIndex, gridSize);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+      <div className="pointer-events-auto flex flex-col items-center gap-3 bg-[#0f1a0f]/90 border border-green-400/40 rounded-2xl px-10 py-8 shadow-2xl shadow-green-900/40 animate-pop-in">
+        <div className="text-5xl animate-bounce">🏆</div>
+        <p className="text-green-300 font-black text-2xl tracking-tight">BINGO!</p>
+        <p className="text-white font-semibold text-lg">{label} complete!</p>
+        <p className="text-yellow-400 font-bold text-base">+{points.toLocaleString()} coins to all claimers</p>
+        <button onClick={onDone} className="mt-1 text-white/30 hover:text-white/60 text-xs transition-colors">dismiss</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Rules Modal ──────────────────────────────────────────────────────────────
 
 function RulesModal({ onClose }: { onClose: () => void }) {
@@ -255,6 +280,7 @@ export default function BonusBingoPage() {
   const [error, setError] = useState<string | null>(null);
   const [showRules, setShowRules] = useState(false);
   const [showSlotSelect, setShowSlotSelect] = useState(false);
+  const [lineAlert, setLineAlert] = useState<{ lineType: string; lineIndex: number; points: number } | null>(null);
 
   const activeGame = games.find(g => g.status === "ACTIVE" || g.status === "REGISTRATION");
   const pastGames = games.filter(g => g.status === "COMPLETED" || g.status === "CANCELLED");
@@ -289,7 +315,15 @@ export default function BonusBingoPage() {
     const socket = getSocket();
     socket.emit("joinBingo", activeGame.id);
     socket.on("bingo:updated", (updated: BingoGame) => {
-      setGames(prev => prev.map(g => g.id === updated.id ? updated : g));
+      setGames(prev => {
+        const old = prev.find(g => g.id === updated.id);
+        const prevCount = old?.lineWins.length ?? 0;
+        if (updated.lineWins.length > prevCount) {
+          const newest = updated.lineWins[updated.lineWins.length - 1];
+          setLineAlert({ lineType: newest.lineType, lineIndex: newest.lineIndex, points: newest.pointsEach });
+        }
+        return prev.map(g => g.id === updated.id ? updated : g);
+      });
     });
     return () => {
       socket.emit("leaveBingo", activeGame.id);
@@ -574,6 +608,16 @@ export default function BonusBingoPage() {
       </div>
 
       {showRules && <RulesModal onClose={() => setShowRules(false)} />}
+
+      {lineAlert && activeGame && (
+        <LineCelebration
+          lineType={lineAlert.lineType}
+          lineIndex={lineAlert.lineIndex}
+          points={lineAlert.points}
+          gridSize={activeGame.gridSize}
+          onDone={() => setLineAlert(null)}
+        />
+      )}
 
       {showSlotSelect && activeGame && user && (
         <SlotSelectModal

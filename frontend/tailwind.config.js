@@ -65,8 +65,13 @@ module.exports = {
         "slide-up":    "slideUp 0.5s ease-out",
         shimmer:       "shimmer 2s infinite",
         "glow-pulse":  "glowPulse 3s ease-in-out infinite",
+        "pop-in":      "popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
       },
       keyframes: {
+        popIn: {
+          "0%":   { transform: "scale(0.6)", opacity: "0" },
+          "100%": { transform: "scale(1)",   opacity: "1" },
+        },
         float: {
           "0%, 100%": { transform: "translateY(0px)" },
           "50%":      { transform: "translateY(-10px)" },

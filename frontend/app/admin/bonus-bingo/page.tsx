@@ -30,6 +30,31 @@ function lineLabel(lineType: string, lineIndex: number, gridSize: number) {
   return "Anti-Diagonal ↙";
 }
 
+// ─── Line Celebration Overlay ─────────────────────────────────────────────────
+
+function LineCelebration({
+  lineType, lineIndex, points, gridSize, onDone,
+}: { lineType: string; lineIndex: number; points: number; gridSize: number; onDone: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 4000);
+    return () => clearTimeout(t);
+  }, [onDone]);
+
+  const label = lineLabel(lineType, lineIndex, gridSize);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+      <div className="pointer-events-auto flex flex-col items-center gap-3 bg-[#0f1a0f]/90 border border-green-400/40 rounded-2xl px-10 py-8 shadow-2xl shadow-green-900/40 animate-pop-in">
+        <div className="text-5xl animate-bounce">🏆</div>
+        <p className="text-green-300 font-black text-2xl tracking-tight">BINGO!</p>
+        <p className="text-white font-semibold text-lg">{label} complete!</p>
+        <p className="text-yellow-400 font-bold text-base">+{points.toLocaleString()} coins to all claimers</p>
+        <button onClick={onDone} className="mt-1 text-white/30 hover:text-white/60 text-xs transition-colors">dismiss</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Create Modal ─────────────────────────────────────────────────────────────
 
 function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (g: BingoGame) => void }) {
@@ -237,6 +262,7 @@ export default function AdminBingoPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [lineAlert, setLineAlert] = useState<{ lineType: string; lineIndex: number; points: number } | null>(null);
 
   // Auth check
   useEffect(() => {
@@ -293,8 +319,8 @@ export default function AdminBingoPage() {
         setSelected(game);
         setGames(prev => prev.map(g => g.id === game.id ? game : g));
         if (newLineWins.length > 0) {
-          const names = newLineWins.map(lw => lineLabel(lw.lineType, lw.lineIndex, game.gridSize)).join(", ");
-          alert(`🏆 Line completed! ${names}\nPoints awarded to claimers.`);
+          const newest = newLineWins[newLineWins.length - 1];
+          setLineAlert({ lineType: newest.lineType, lineIndex: newest.lineIndex, points: game.linePoints });
         }
       })
       .catch(e => setError(e.message))
@@ -598,6 +624,16 @@ export default function AdminBingoPage() {
         <CreateModal
           onClose={() => setShowCreate(false)}
           onCreate={g => { setGames(prev => [g, ...prev]); setSelected(g); setShowCreate(false); }}
+        />
+      )}
+
+      {lineAlert && selected && (
+        <LineCelebration
+          lineType={lineAlert.lineType}
+          lineIndex={lineAlert.lineIndex}
+          points={lineAlert.points}
+          gridSize={selected.gridSize}
+          onDone={() => setLineAlert(null)}
         />
       )}
     </div>
