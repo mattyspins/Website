@@ -274,7 +274,7 @@ export class BingoBoardService {
   static async cancel(id: string, io?: SocketIOServer) {
     const game = await prisma.bonusBingo.findUnique({ where: { id } });
     if (!game) throw createError.notFound('Bingo game not found');
-    if ([BingoStatus.COMPLETED, BingoStatus.CANCELLED].includes(game.status)) {
+    if (game.status === BingoStatus.COMPLETED || game.status === BingoStatus.CANCELLED) {
       throw createError.badRequest('Game is already finished');
     }
 

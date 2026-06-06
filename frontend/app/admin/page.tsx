@@ -25,6 +25,7 @@ import {
   Ticket,
   FileText,
   Zap,
+  Grid3X3,
 } from "lucide-react";
 
 type TabId =
@@ -35,7 +36,8 @@ type TabId =
   | "store"
   | "schedule"
   | "milestones"
-  | "bonus-hunt";
+  | "bonus-hunt"
+  | "bonus-bingo";
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "overview",  label: "Overview",    icon: LayoutDashboard },
@@ -46,6 +48,7 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "milestones",label: "Milestones",  icon: Medal },
   { id: "schedule",  label: "Schedule",    icon: Calendar },
   { id: "bonus-hunt",label: "Bonus Hunt",  icon: Zap },
+  { id: "bonus-bingo",label: "Bonus Bingo", icon: Grid3X3 },
 ];
 
 export default function AdminDashboard() {
@@ -113,8 +116,8 @@ export default function AdminDashboard() {
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const active = activeTab === tab.id;
-              if (tab.id === "raffles" || tab.id === "bonus-hunt") {
-                const href = tab.id === "raffles" ? "/admin/raffle" : "/hunt-tracker";
+              if (tab.id === "raffles" || tab.id === "bonus-hunt" || tab.id === "bonus-bingo") {
+                const href = tab.id === "raffles" ? "/admin/raffle" : tab.id === "bonus-hunt" ? "/hunt-tracker" : "/admin/bonus-bingo";
                 return (
                   <a
                     key={tab.id}
@@ -190,10 +193,17 @@ export default function AdminDashboard() {
                   },
                   {
                     href: "/hunt-tracker",
-                    icon: <Zap className="w-5 h-5 text-violet-400" />,
-                    bg: "bg-violet-500/10",
+                    icon: <Zap className="w-5 h-5 text-gold-400" />,
+                    bg: "bg-gold-500/10",
                     title: "Bonus Hunt",
                     desc: "Create hunts, add slots, go live for viewers to watch the reveal",
+                  },
+                  {
+                    href: "/admin/bonus-bingo",
+                    icon: <Grid3X3 className="w-5 h-5 text-green-400" />,
+                    bg: "bg-green-500/10",
+                    title: "Bonus Bingo",
+                    desc: "Create bingo games, spin cells, draw players, mark results",
                   },
                   {
                     href: "/admin/audit-logs",
