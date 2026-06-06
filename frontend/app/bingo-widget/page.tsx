@@ -5,7 +5,7 @@ import { bingoApi, BingoGame } from "@/lib/api/bonusBingo";
 import { getSocket } from "@/lib/socket";
 import { kickName, lineLabel, getLineWinners } from "@/lib/bingoUtils";
 
-// ─── Mini Grid ────────────────────────────────────────────────────────────────
+// ─── Grid ─────────────────────────────────────────────────────────────────────
 
 function MiniGrid({ game }: { game: BingoGame }) {
   const { cells, gridSize, currentCellId, lineWins } = game;
@@ -18,14 +18,23 @@ function MiniGrid({ game }: { game: BingoGame }) {
     else if (lw.lineType === "diag" && lw.lineIndex === 1) for (let i = 0; i < gridSize; i++) wonKeys.add(`${i}:${gridSize - 1 - i}`);
   }
 
+  // Fixed grid size so it never overflows
+  const gridPx = 114;
+  const gap = 3;
+  const cellPx = Math.floor((gridPx - gap * (gridSize - 1)) / gridSize);
+
   const grid = Array.from({ length: gridSize }, (_, r) =>
     Array.from({ length: gridSize }, (_, c) => cells.find(cell => cell.row === r && cell.col === c)!)
   );
 
   return (
     <div
-      className="grid gap-1 w-full max-w-[190px] mx-auto"
-      style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
+      style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${gridSize}, ${cellPx}px)`,
+        gap: `${gap}px`,
+        width: `${gridPx}px`,
+      }}
     >
       {grid.map((row, r) =>
         row.map((cell, c) => {
@@ -34,43 +43,37 @@ function MiniGrid({ game }: { game: BingoGame }) {
           const isGreen = cell.status === "GREEN";
           const isWonLine = wonKeys.has(`${r}:${c}`);
 
-          let cellClass = "bg-white/5 border-white/10 text-white/20";
-          if (isGreen) {
-            cellClass = isWonLine
-              ? "bg-green-500/50 border-green-400/80 text-green-200"
-              : "bg-green-500/25 border-green-500/40 text-green-300";
-          } else if (isActive) {
-            cellClass = "bg-amber-500/30 border-amber-400/80 text-amber-300 animate-pulse";
-          }
-
-          const slot = cell.slotName;
+          let bg = "#ffffff0d"; // white/5
+          let border = "#ffffff1a";
+          if (isGreen) { bg = isWonLine ? "#22c55e55" : "#22c55e33"; border = isWonLine ? "#4ade80cc" : "#22c55e66"; }
+          else if (isActive) { bg = "#f59e0b33"; border = "#fbbf24cc"; }
 
           return (
             <div
               key={cell.id}
-              className={`aspect-square rounded border flex items-center justify-center overflow-hidden p-0.5 ${cellClass}`}
+              style={{
+                width: cellPx, height: cellPx,
+                background: bg, border: `1px solid ${border}`,
+                borderRadius: 4,
+                display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center",
+                overflow: "hidden", padding: "1px",
+                animation: isActive ? "pulse 2s infinite" : undefined,
+              }}
             >
               {isGreen ? (
-                <div className="flex flex-col items-center justify-center w-full px-0.5 gap-0.5">
-                  <span className="text-[9px] font-semibold leading-tight text-center text-green-200 w-full truncate">
+                <>
+                  <span style={{ fontSize: 7, lineHeight: 1.1, color: "#bbf7d0", textAlign: "center", width: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {kickName(cell.claimedBy)}
                   </span>
-                  {slot && (
-                    <span className="text-[8px] leading-tight text-center text-green-400/70 w-full truncate">
-                      {slot}
+                  {cell.slotName && (
+                    <span style={{ fontSize: 6, lineHeight: 1.1, color: "#4ade8099", textAlign: "center", width: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {cell.slotName}
                     </span>
                   )}
-                </div>
-              ) : isActive && slot ? (
-                <span className="text-[9px] leading-tight text-center w-full px-0.5 line-clamp-2">
-                  {slot}
-                </span>
+                </>
               ) : isActive ? (
-                <span className="text-[10px] font-bold">●</span>
-              ) : slot ? (
-                <span className="text-[8px] leading-tight text-center w-full px-0.5 text-white/20 line-clamp-2">
-                  {slot}
-                </span>
+                <span style={{ fontSize: 8, color: "#fbbf24", fontWeight: "bold" }}>●</span>
               ) : null}
             </div>
           );
@@ -80,29 +83,17 @@ function MiniGrid({ game }: { game: BingoGame }) {
   );
 }
 
-// ─── Line Alert Banner ────────────────────────────────────────────────────────
+// ─── Line Alert ───────────────────────────────────────────────────────────────
 
-function LineAlertBanner({
-  alert,
-  onDone,
-}: {
-  alert: { lineType: string; lineIndex: number; points: number };
-  onDone: () => void;
-}) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 4500);
-    return () => clearTimeout(t);
-  }, [onDone]);
-
-  const label = lineLabel(alert.lineType, alert.lineIndex);
-
+function LineAlertBanner({ alert, onDone }: { alert: { lineType: string; lineIndex: number; points: number }; onDone: () => void }) {
+  useEffect(() => { const t = setTimeout(onDone, 4500); return () => clearTimeout(t); }, [onDone]);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-      <div className="animate-pop-in flex flex-col items-center gap-2 bg-[#060f06]/95 border-2 border-green-400/70 rounded-2xl px-8 py-7 shadow-2xl shadow-green-900/60 text-center">
+      <div className="animate-pop-in flex flex-col items-center gap-2 bg-[#060f06]/95 border-2 border-green-400/70 rounded-2xl px-8 py-7 shadow-2xl text-center">
         <div className="text-5xl animate-bounce">🏆</div>
-        <p className="text-green-300 font-black text-4xl tracking-tight drop-shadow-lg">BINGO!</p>
-        <p className="text-white font-semibold text-base">{label} complete!</p>
-        <p className="text-yellow-400 font-bold text-sm">+{alert.points.toLocaleString()} coins awarded</p>
+        <p className="text-green-300 font-black text-4xl tracking-tight">BINGO!</p>
+        <p className="text-white font-semibold text-base">{lineLabel(alert.lineType, alert.lineIndex)} complete!</p>
+        <p className="text-yellow-400 font-bold text-sm">+{alert.points.toLocaleString()} coins</p>
       </div>
     </div>
   );
@@ -111,11 +102,11 @@ function LineAlertBanner({
 // ─── Status config ────────────────────────────────────────────────────────────
 
 const STATUS_CFG = {
-  REGISTRATION: { label: "Registration Open", dot: "bg-blue-400",              text: "text-blue-300" },
-  ACTIVE:       { label: "Live",              dot: "bg-green-400 animate-pulse", text: "text-green-300" },
-  COMPLETED:    { label: "Completed",          dot: "bg-yellow-400",             text: "text-yellow-300" },
-  CANCELLED:    { label: "Cancelled",          dot: "bg-red-400",                text: "text-red-300" },
-  DRAFT:        { label: "Draft",              dot: "bg-white/30",               text: "text-white/40" },
+  REGISTRATION: { label: "Registering", dot: "bg-blue-400",               text: "text-blue-300" },
+  ACTIVE:       { label: "Live",         dot: "bg-green-400 animate-pulse", text: "text-green-300" },
+  COMPLETED:    { label: "Done",          dot: "bg-yellow-400",             text: "text-yellow-300" },
+  CANCELLED:    { label: "Cancelled",     dot: "bg-red-400",                text: "text-red-300" },
+  DRAFT:        { label: "Draft",         dot: "bg-white/30",               text: "text-white/40" },
 } as const;
 
 // ─── Widget ───────────────────────────────────────────────────────────────────
@@ -125,10 +116,9 @@ export default function BingoWidget() {
   const [lineAlert, setLineAlert] = useState<{ lineType: string; lineIndex: number; points: number } | null>(null);
   const prevWinsRef = useRef(0);
 
-  // Force transparent background for OBS
   useEffect(() => {
     const style = document.createElement("style");
-    style.textContent = "html,body{background:transparent!important}";
+    style.textContent = "html,body{background:transparent!important;margin:0;padding:0}";
     document.head.appendChild(style);
     return () => style.remove();
   }, []);
@@ -137,58 +127,36 @@ export default function BingoWidget() {
     try {
       const games = await bingoApi.getAll();
       const active = games.find(g => g.status === "ACTIVE" || g.status === "REGISTRATION");
-      setGame(prev => {
-        if (active?.id !== prev?.id) prevWinsRef.current = 0;
-        return active ?? null;
-      });
-    } catch {
-      // silently ignore network errors
-    }
+      setGame(prev => { if (active?.id !== prev?.id) prevWinsRef.current = 0; return active ?? null; });
+    } catch { /* ignore */ }
   }, []);
 
-  // Poll every 30 s for game discovery / recovery
-  useEffect(() => {
-    findActiveGame();
-    const id = setInterval(findActiveGame, 30_000);
-    return () => clearInterval(id);
-  }, [findActiveGame]);
+  useEffect(() => { findActiveGame(); const id = setInterval(findActiveGame, 30_000); return () => clearInterval(id); }, [findActiveGame]);
 
-  // Socket subscription
   useEffect(() => {
     if (!game) return;
     const socket = getSocket();
     socket.emit("bingo:join", game.id);
-
     const handleUpdate = (updated: BingoGame) => {
       if (updated.id !== game.id) return;
-
       if (updated.lineWins.length > prevWinsRef.current) {
         const newest = updated.lineWins[updated.lineWins.length - 1];
         setLineAlert({ lineType: newest.lineType, lineIndex: newest.lineIndex, points: newest.pointsEach });
       }
       prevWinsRef.current = updated.lineWins.length;
-
       setGame(updated);
-
-      if (updated.status === "COMPLETED" || updated.status === "CANCELLED") {
-        setTimeout(findActiveGame, 8_000);
-      }
+      if (updated.status === "COMPLETED" || updated.status === "CANCELLED") setTimeout(findActiveGame, 8_000);
     };
-
     socket.on("bingo:updated", handleUpdate);
-    return () => {
-      socket.emit("bingo:leave", game.id);
-      socket.off("bingo:updated", handleUpdate);
-    };
+    return () => { socket.emit("bingo:leave", game.id); socket.off("bingo:updated", handleUpdate); };
   }, [game?.id, findActiveGame]);
 
-  // ── No active game ─────────────────────────────────────────────────────────
   if (!game) {
     return (
-      <div className="p-3">
-        <div className="bg-black/60 border border-white/10 rounded-xl p-6 text-center">
-          <p className="text-4xl mb-3">🎱</p>
-          <p className="text-white/50 text-xs tracking-widest uppercase">Waiting for Bonus Bingo…</p>
+      <div className="p-2">
+        <div className="bg-black/60 border border-white/10 rounded-lg p-3 text-center">
+          <p className="text-2xl mb-1">🎱</p>
+          <p className="text-white/50 text-[10px] tracking-widest uppercase">Waiting for Bingo…</p>
         </div>
       </div>
     );
@@ -196,100 +164,82 @@ export default function BingoWidget() {
 
   const cfg = STATUS_CFG[game.status] ?? STATUS_CFG.DRAFT;
   const activeCell = game.cells.find(c => c.id === game.currentCellId);
-  const greenUserIds = new Set(
-    game.cells.filter(c => c.status === "GREEN" && c.claimedById).map(c => c.claimedById!)
-  );
+  const greenUserIds = new Set(game.cells.filter(c => c.status === "GREEN" && c.claimedById).map(c => c.claimedById!));
 
   return (
-    <div className="p-1.5 space-y-1.5 w-full font-sans select-none">
-      {lineAlert && (
-        <LineAlertBanner alert={lineAlert} onDone={() => setLineAlert(null)} />
-      )}
+    <div className="p-1.5 space-y-1 font-sans select-none" style={{ width: "fit-content" }}>
+      {lineAlert && <LineAlertBanner alert={lineAlert} onDone={() => setLineAlert(null)} />}
 
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="bg-black/70 border border-white/10 rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-sm shrink-0">🎱</span>
-          <span className="text-white font-semibold text-xs truncate">{game.title}</span>
+      {/* ── Header ── */}
+      <div className="bg-black/70 border border-white/10 rounded-lg px-2 py-1 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1 min-w-0">
+          <span className="text-xs shrink-0">🎱</span>
+          <span className="text-white font-semibold text-[10px] truncate">{game.title}</span>
         </div>
         <div className={`flex items-center gap-1 shrink-0 ${cfg.text}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-          <span className="text-[10px] font-medium whitespace-nowrap">{cfg.label}</span>
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />
+          <span className="text-[9px] font-medium whitespace-nowrap">{cfg.label}</span>
         </div>
       </div>
 
-      {/* ── Current Player Spotlight ─────────────────────────────────────── */}
-      {game.currentUser && game.status === "ACTIVE" && (
-        <div className="bg-amber-950/60 border border-amber-500/50 rounded-xl px-2.5 py-1.5">
-          <p className="text-amber-500/70 text-[9px] uppercase tracking-widest font-bold mb-0.5">▶ Now Playing</p>
-          <p className="text-amber-300 font-bold text-base leading-tight truncate">{kickName(game.currentUser)}</p>
-          <p className="text-amber-200/50 text-[10px] truncate">
-            {activeCell?.slotName ? `🎰 ${activeCell.slotName}` : "Choosing slot…"}
-          </p>
+      {/* ── Main row: grid + sidebar ── */}
+      <div className="flex gap-1.5 items-start">
+        {/* Grid */}
+        <div className="bg-black/70 border border-white/10 rounded-lg p-1.5 shrink-0">
+          <MiniGrid game={game} />
         </div>
-      )}
 
-      {/* ── Board ─────────────────────────────────────────────────────────── */}
-      <div className="bg-black/70 border border-white/10 rounded-xl p-2">
-        <p className="text-white/30 text-[9px] uppercase tracking-widest mb-1">Board</p>
-        <MiniGrid game={game} />
-      </div>
+        {/* Sidebar */}
+        <div className="flex flex-col gap-1 min-w-0 flex-1">
+          {/* Current player */}
+          {game.currentUser && game.status === "ACTIVE" && (
+            <div className="bg-amber-950/60 border border-amber-500/40 rounded-lg px-2 py-1">
+              <p className="text-amber-500/60 text-[8px] uppercase tracking-wider font-bold">▶ Playing</p>
+              <p className="text-amber-300 font-bold text-[11px] leading-tight truncate">{kickName(game.currentUser)}</p>
+              <p className="text-amber-200/50 text-[8px] truncate">
+                {activeCell?.slotName ? `🎰 ${activeCell.slotName}` : "Choosing…"}
+              </p>
+            </div>
+          )}
 
-      {/* ── Participants ──────────────────────────────────────────────────── */}
-      {game.participants.length > 0 && (
-        <div className="bg-black/70 border border-white/10 rounded-xl px-2.5 py-1.5">
-          <p className="text-white/30 text-[9px] uppercase tracking-widest mb-1">
-            Players ({game.participants.length})
-          </p>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-            {game.participants.slice(0, 14).map(p => {
-              const isCurrent = p.userId === game.currentUser?.id;
-              const hasWon = greenUserIds.has(p.userId);
-              return (
-                <div key={p.userId} className="flex items-center gap-1.5 min-w-0">
-                  <span className="shrink-0 text-[11px] leading-none">
-                    {isCurrent ? "▶" : hasWon ? "🏆" : "·"}
-                  </span>
-                  <span
-                    className={`text-xs truncate leading-tight ${
-                      isCurrent
-                        ? "text-amber-300 font-semibold"
-                        : hasWon
-                        ? "text-green-300"
-                        : "text-white/55"
-                    }`}
-                  >
-                    {kickName(p.user)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          {game.participants.length > 14 && (
-            <p className="text-white/30 text-[10px] mt-2">+{game.participants.length - 14} more</p>
+          {/* Participants */}
+          {game.participants.length > 0 && (
+            <div className="bg-black/70 border border-white/10 rounded-lg px-2 py-1">
+              <p className="text-white/30 text-[8px] uppercase tracking-wider mb-0.5">Players ({game.participants.length})</p>
+              <div className="space-y-0.5">
+                {game.participants.slice(0, 8).map(p => {
+                  const isCurrent = p.userId === game.currentUser?.id;
+                  const hasWon = greenUserIds.has(p.userId);
+                  return (
+                    <div key={p.userId} className="flex items-center gap-1 min-w-0">
+                      <span className="shrink-0 text-[8px]">{isCurrent ? "▶" : hasWon ? "🏆" : "·"}</span>
+                      <span className={`text-[9px] truncate ${isCurrent ? "text-amber-300 font-semibold" : hasWon ? "text-green-300" : "text-white/50"}`}>
+                        {kickName(p.user)}
+                      </span>
+                    </div>
+                  );
+                })}
+                {game.participants.length > 8 && (
+                  <p className="text-white/25 text-[8px]">+{game.participants.length - 8} more</p>
+                )}
+              </div>
+            </div>
           )}
         </div>
-      )}
+      </div>
 
-      {/* ── Line Wins ─────────────────────────────────────────────────────── */}
+      {/* ── Line wins ── */}
       {game.lineWins.length > 0 && (
-        <div className="bg-black/70 border border-white/10 rounded-xl px-2.5 py-1.5">
-          <p className="text-white/30 text-[9px] uppercase tracking-widest mb-1">Lines Won</p>
-          <div className="space-y-1">
+        <div className="bg-black/70 border border-white/10 rounded-lg px-2 py-1">
+          <div className="space-y-0.5">
             {game.lineWins.map((lw, i) => {
               const winners = getLineWinners(game.cells, lw, game.gridSize);
               return (
-                <div key={i} className="flex items-center gap-2 min-w-0">
-                  <span className="text-green-400 shrink-0 text-xs leading-none">✦</span>
-                  <span className="text-green-300 text-xs font-semibold shrink-0 whitespace-nowrap">
-                    {lineLabel(lw.lineType, lw.lineIndex)}
-                  </span>
-                  {winners.length > 0 && (
-                    <span className="text-white/40 text-xs truncate">{winners.join(", ")}</span>
-                  )}
-                  <span className="text-yellow-400/70 text-[10px] shrink-0 ml-auto whitespace-nowrap">
-                    +{lw.pointsEach.toLocaleString()}
-                  </span>
+                <div key={i} className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-green-400 text-[9px] shrink-0">✦</span>
+                  <span className="text-green-300 text-[9px] font-semibold shrink-0 whitespace-nowrap">{lineLabel(lw.lineType, lw.lineIndex)}</span>
+                  {winners.length > 0 && <span className="text-white/40 text-[9px] truncate">{winners.join(", ")}</span>}
+                  <span className="text-yellow-400/70 text-[8px] shrink-0 ml-auto whitespace-nowrap">+{lw.pointsEach.toLocaleString()}</span>
                 </div>
               );
             })}
