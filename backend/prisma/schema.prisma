@@ -577,6 +577,7 @@ enum CellStatus {
   EMPTY
   ACTIVE
   GREEN
+  RED
 }
 
 model BonusBingo {
