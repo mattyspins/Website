@@ -157,7 +157,6 @@ function AdminBingoGrid({
     Array.from({ length: gridSize }, (_, c) => cells.find(cell => cell.row === r && cell.col === c)!)
   );
 
-  const cellSize = gridSize === 3 ? "h-28" : gridSize === 4 ? "h-22" : "h-18";
 
   return (
     <>
@@ -175,8 +174,6 @@ function AdminBingoGrid({
             if (cell.status === "GREEN") bg = isWonLine ? "bg-green-500/30 border-green-400/60" : "bg-green-500/20 border-green-500/30";
             else if (isActive) bg = "bg-yellow-400/20 border-yellow-400/60 animate-pulse";
 
-            const h = gridSize === 3 ? "h-24" : gridSize === 4 ? "h-20" : "h-16";
-
             return (
               <div
                 key={cell.id}
@@ -186,7 +183,7 @@ function AdminBingoGrid({
                     setSlotInput(cell.slotName ?? "");
                   }
                 }}
-                className={`relative flex flex-col items-center justify-center ${h} rounded-xl border transition-all ${bg} ${isActive && !cell.slotName ? "cursor-pointer hover:brightness-110" : ""}`}
+                className={`relative aspect-square flex flex-col items-center justify-center rounded-xl border transition-all ${bg} ${isActive && !cell.slotName ? "cursor-pointer hover:brightness-110" : ""}`}
               >
                 {cell.status === "GREEN" && (
                   <div className="flex flex-col items-center gap-0.5 p-1 text-center">

@@ -156,7 +156,16 @@ export class BingoBoardService {
     const { participants } = game;
     if (participants.length === 0) throw createError.badRequest('No participants in this game');
 
-    const pick = participants[Math.floor(Math.random() * participants.length)];
+    // Exclude users who already have a green cell — they've claimed a spot
+    const greenCells = await prisma.bingoCell.findMany({
+      where: { gameId: id, status: CellStatus.GREEN },
+      select: { claimedById: true },
+    });
+    const alreadyWon = new Set(greenCells.map(c => c.claimedById).filter(Boolean));
+    const eligible = participants.filter(p => !alreadyWon.has(p.userId));
+    if (eligible.length === 0) throw createError.badRequest('All participants have already won a cell');
+
+    const pick = eligible[Math.floor(Math.random() * eligible.length)];
 
     const updated = await prisma.bonusBingo.update({
       where: { id },
