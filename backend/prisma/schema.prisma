@@ -31,8 +31,6 @@ model User {
   isModerator            Boolean               @default(false) @map("is_moderator")
   isVip                  Boolean               @default(false) @map("is_vip")
   isDepositor            Boolean               @default(false) @map("is_depositor")
-  rainbetUsername        String?               @unique @map("rainbet_username")
-  rainbetVerified        Boolean               @default(false) @map("rainbet_verified")
   totalWagered           Decimal               @default(0) @map("total_wagered") @db.Decimal(15, 2)
   totalDeposited         Decimal               @default(0) @map("total_deposited") @db.Decimal(15, 2)
   lastDailyCheckIn       DateTime?             @map("last_daily_check_in")
@@ -64,10 +62,11 @@ model User {
   currentBingoGames      BonusBingo[]          @relation("BingoCurrentUser")
   bingoParticipations    BingoParticipant[]    @relation("BingoParticipants")
   bingoClaimedCells      BingoCell[]           @relation("BingoCellClaimer")
+  viewerPickerWins       ViewerPicker[]        @relation("ViewerPickerWinner")
+  viewerPickerEntries    ViewerPickerEntry[]
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")
-  @@index([rainbetUsername], map: "idx_users_rainbet_username")
   @@map("users")
 }
 
@@ -561,6 +560,40 @@ model MilestoneClaim {
 
   @@unique([userId, tierId])
   @@map("milestone_claims")
+}
+
+// ─── Viewer Picker ────────────────────────────────────────────────────────────
+
+enum ViewerPickerStatus {
+  OPEN
+  CLOSED
+  COMPLETED
+}
+
+model ViewerPicker {
+  id        String              @id @default(uuid())
+  keyword   String
+  label     String?
+  status    ViewerPickerStatus  @default(OPEN)
+  winnerId  String?             @map("winner_id")
+  createdAt DateTime            @default(now()) @map("created_at")
+  closedAt  DateTime?           @map("closed_at")
+  entries   ViewerPickerEntry[]
+  winner    User?               @relation("ViewerPickerWinner", fields: [winnerId], references: [id])
+
+  @@map("viewer_pickers")
+}
+
+model ViewerPickerEntry {
+  id        String       @id @default(uuid())
+  pickerId  String       @map("picker_id")
+  userId    String       @map("user_id")
+  enteredAt DateTime     @default(now()) @map("entered_at")
+  picker    ViewerPicker @relation(fields: [pickerId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pickerId, userId])
+  @@map("viewer_picker_entries")
 }
 
 // ─── Bonus Bingo ─────────────────────────────────────────────────────────────

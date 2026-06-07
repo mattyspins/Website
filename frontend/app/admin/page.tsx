@@ -206,6 +206,13 @@ export default function AdminDashboard() {
                     desc: "Create bingo games, spin cells, draw players, mark results",
                   },
                   {
+                    href: "/admin/viewer-picker",
+                    icon: <Users className="w-5 h-5 text-cyan-400" />,
+                    bg: "bg-cyan-500/10",
+                    title: "Viewer Picker",
+                    desc: "Set a keyword, viewers type it in Kick chat to enter, spin to draw a winner",
+                  },
+                  {
                     href: "/admin/audit-logs",
                     icon: <FileText className="w-5 h-5 text-blue-400" />,
                     bg: "bg-blue-500/10",

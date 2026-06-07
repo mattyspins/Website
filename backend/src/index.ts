@@ -13,7 +13,9 @@ import { logger } from '@/utils/logger';
 import { errorHandler } from '@/middleware/errorHandler';
 import { notFoundHandler } from '@/middleware/notFoundHandler';
 import { authMiddleware } from '@/middleware/auth';
+import type { JWTPayload } from '@/middleware/auth';
 import { validateEnv } from '@/config/env';
+import jwt from 'jsonwebtoken';
 import { LeaderboardExpirationJob } from '@/jobs/leaderboardExpiration';
 import { KickChatService } from '@/services/KickChatService';
 
@@ -148,6 +150,8 @@ import { setTournamentIO } from '@/controllers/TournamentController';
 import liveHuntRoutes from '@/routes/liveHunt';
 import bonusBingoRoutes from '@/routes/bonusBingo';
 import { setBingoIO } from '@/controllers/BingoBoardController';
+import viewerPickerRoutes from '@/routes/viewerPicker';
+import { setPickerIO } from '@/controllers/ViewerPickerController';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
@@ -168,10 +172,12 @@ app.use('/api/tournaments', tournamentRoutes);
 // app.use('/api/bonus-hunt', bonusHuntRoutes);
 app.use('/api/live-hunt', liveHuntRoutes);
 app.use('/api/bonus-bingo', bonusBingoRoutes);
+app.use('/api/viewer-picker', viewerPickerRoutes);
 
 // Wire up tournament real-time events
 setTournamentIO(io);
 setBingoIO(io);
+setPickerIO(io);
 
 // Socket.IO connection handling
 io.on('connection', socket => {
@@ -207,6 +213,14 @@ io.on('connection', socket => {
     socket.leave(`bingo:${gameId}`);
   });
 
+  // Viewer picker rooms
+  socket.on('joinPicker', (pickerId: string) => {
+    socket.join(`picker:${pickerId}`);
+  });
+  socket.on('leavePicker', (pickerId: string) => {
+    socket.leave(`picker:${pickerId}`);
+  });
+
   socket.on('disconnect', () => {
     logger.info(`Client disconnected: ${socket.id}`);
   });
@@ -214,10 +228,13 @@ io.on('connection', socket => {
   // Authentication for socket connections
   socket.on('authenticate', async (token: string) => {
     try {
-      // TODO: Implement socket authentication
-      logger.info(`Socket authentication attempt: ${socket.id}`);
+      const decoded = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
+      (socket as any).user = decoded;
+      socket.emit('authenticated', { success: true });
+      logger.info(`Socket authenticated: ${socket.id} (userId: ${decoded.id})`);
     } catch (error) {
-      logger.error('Socket authentication failed:', error);
+      logger.warn(`Socket authentication failed: ${socket.id}`);
+      socket.emit('authentication_error', { message: 'Invalid token' });
       socket.disconnect();
     }
   });
