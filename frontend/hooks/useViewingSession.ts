@@ -13,18 +13,13 @@ export function useViewingSession() {
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const statusRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const token = () =>
-    typeof window !== "undefined"
-      ? localStorage.getItem("access_token")
-      : null;
-
   const startSession = async () => {
-    const t = token();
-    if (!t || sessionActive.current) return;
+    if (sessionActive.current) return;
     try {
       const res = await fetch(API_ENDPOINTS.VIEWING_SESSION_START, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ streamId: STREAM_ID }),
       });
       if (res.ok) {
@@ -38,26 +33,33 @@ export function useViewingSession() {
     if (!sessionActive.current) return;
     sessionActive.current = false;
     if (heartbeatRef.current) { clearInterval(heartbeatRef.current); heartbeatRef.current = null; }
-    const t = token();
-    if (!t) return;
     try {
       await fetch(API_ENDPOINTS.VIEWING_SESSION_END, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ streamId: STREAM_ID }),
       });
     } catch { /* ignore */ }
   };
 
   const sendHeartbeat = async () => {
-    const t = token();
-    if (!t) return;
     try {
-      await fetch(API_ENDPOINTS.VIEWING_SESSION_HEARTBEAT, {
+      const res = await fetch(API_ENDPOINTS.VIEWING_SESSION_HEARTBEAT, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ streamId: STREAM_ID }),
       });
+      // Backend detected stream went offline — stop tracking immediately
+      if (res.ok) {
+        const data = await res.json();
+        if (data.streamOffline) {
+          sessionActive.current = false;
+          if (heartbeatRef.current) { clearInterval(heartbeatRef.current); heartbeatRef.current = null; }
+          setIsLive(false);
+        }
+      }
     } catch { /* ignore */ }
   };
 
@@ -67,7 +69,7 @@ export function useViewingSession() {
       const d = await res.json();
       const live: boolean = d?.data?.isLive ?? false;
       setIsLive(live);
-      if (live && token()) {
+      if (live) {
         if (!sessionActive.current) startSession();
       } else {
         if (sessionActive.current) endSession();

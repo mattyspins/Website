@@ -7,6 +7,20 @@ import { logger } from '@/utils/logger';
 import { AuthenticatedRequest } from '@/middleware/auth';
 import { RedisService } from '@/config/redis';
 import { prisma } from '@/config/database';
+import { validateEnv } from '@/config/env';
+
+const env = validateEnv();
+
+function cookieOptions(maxAgeSec: number) {
+  const isProd = env.NODE_ENV === 'production';
+  return {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
+    path: '/',
+    maxAge: maxAgeSec * 1000,
+  };
+}
 
 export class AuthController {
   // Initiate Discord OAuth flow
@@ -115,14 +129,15 @@ export class AuthController {
           `Discord authentication successful for user: ${user.displayName}`
         );
 
-        // Redirect to frontend with tokens
-        // Use the first CORS origin for redirects (in case multiple are configured)
         const corsOrigins =
           process.env['CORS_ORIGIN'] || 'http://localhost:3000';
         const frontendUrl = corsOrigins.split(',')[0].trim();
-        const callbackUrl = `${frontendUrl}/auth/callback?access_token=${encodeURIComponent(tokens.accessToken)}&refresh_token=${encodeURIComponent(tokens.refreshToken)}&user_id=${encodeURIComponent(user.id)}&display_name=${encodeURIComponent(user.displayName)}&is_admin=${user.isAdmin}&is_moderator=${user.isModerator}`;
 
-        res.redirect(callbackUrl);
+        // Set httpOnly cookies — tokens never exposed to JavaScript
+        res.cookie('access_token', tokens.accessToken, cookieOptions(60 * 60)); // 1 hour
+        res.cookie('refresh_token', tokens.refreshToken, cookieOptions(7 * 24 * 60 * 60)); // 7 days
+
+        res.redirect(`${frontendUrl}/auth/callback?success=true`);
       } catch (error) {
         logger.error('Discord OAuth callback error:', {
           message: error instanceof Error ? error.message : 'Unknown error',
@@ -327,9 +342,10 @@ export class AuthController {
     }
   );
 
-  // Refresh access token
+  // Refresh access token — reads from cookie or body, sets new cookies
   static refreshToken = asyncHandler(async (req: Request, res: Response) => {
-    const { refreshToken } = req.body;
+    const refreshToken: string | undefined =
+      req.cookies?.refresh_token || req.body?.refreshToken;
 
     if (!refreshToken || typeof refreshToken !== 'string') {
       throw createError.badRequest('Refresh token is required');
@@ -338,11 +354,12 @@ export class AuthController {
     try {
       const newTokens = await AuthService.refreshToken(refreshToken);
 
+      res.cookie('access_token', newTokens.accessToken, cookieOptions(60 * 60));
+      res.cookie('refresh_token', newTokens.refreshToken, cookieOptions(7 * 24 * 60 * 60));
+
       res.json({
         success: true,
         tokens: {
-          accessToken: newTokens.accessToken,
-          refreshToken: newTokens.refreshToken,
           expiresIn: newTokens.expiresIn,
         },
       });
@@ -351,7 +368,7 @@ export class AuthController {
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
       });
-      throw error; // Re-throw to let error handler deal with it
+      throw error;
     }
   });
 
@@ -391,8 +408,6 @@ export class AuthController {
             isDepositor: userSession.isDepositor,
             kickUsername: userSession.kickUsername,
             kickVerified: userSession.kickVerified || false,
-            rainbetUsername: userSession.rainbetUsername,
-            rainbetVerified: userSession.rainbetVerified || false,
             totalWagered: userSession.totalWagered || 0,
             createdAt: userSession.createdAt,
           },
@@ -418,6 +433,15 @@ export class AuthController {
         await AuthService.logout(req.user.id);
 
         logger.info(`User logged out: ${req.user.discordId}`);
+
+        const isProd = env.NODE_ENV === 'production';
+        const clearOpts = {
+          path: '/',
+          secure: isProd,
+          sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
+        };
+        res.clearCookie('access_token', clearOpts);
+        res.clearCookie('refresh_token', clearOpts);
 
         res.json({
           success: true,
@@ -497,63 +521,6 @@ export class AuthController {
       });
     }
   });
-
-  // Submit Rainbet username (can only be done once by user)
-  static submitRainbetUsername = asyncHandler(
-    async (req: AuthenticatedRequest, res: Response) => {
-      if (!req.user) {
-        throw createError.unauthorized('Authentication required');
-      }
-
-      const { rainbetUsername } = req.body;
-
-      if (!rainbetUsername || typeof rainbetUsername !== 'string') {
-        throw createError.badRequest('Rainbet username is required');
-      }
-
-      const trimmedUsername = rainbetUsername.trim();
-
-      if (trimmedUsername.length < 3 || trimmedUsername.length > 50) {
-        throw createError.badRequest(
-          'Rainbet username must be between 3 and 50 characters'
-        );
-      }
-
-      try {
-        // Check if user already has a Rainbet username
-        const userSession = await AuthService.getUserSession(
-          req.headers.authorization?.substring(7) || ''
-        );
-
-        if (userSession?.rainbetUsername) {
-          throw createError.badRequest(
-            'AceBet username already set. Contact an admin to change it.'
-          );
-        }
-
-        // Update user's Rainbet username
-        await AuthService.updateRainbetUsername(req.user.id, trimmedUsername);
-
-        logger.info(
-          `User ${req.user.discordId} submitted Rainbet username: ${trimmedUsername}`
-        );
-
-        res.json({
-          success: true,
-          message:
-            'Rainbet username submitted successfully. Waiting for admin verification.',
-          rainbetUsername: trimmedUsername,
-        });
-      } catch (error) {
-        logger.error('Submit Rainbet username error:', {
-          userId: req.user.id,
-          message: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : undefined,
-        });
-        throw error;
-      }
-    }
-  );
 
   // Submit Kick username (can only be done once by user)
   static submitKickUsername = asyncHandler(

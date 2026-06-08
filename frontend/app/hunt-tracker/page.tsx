@@ -10,6 +10,7 @@ import {
 import {
   Hunt, Currency, CURRENCY_SYMBOLS,
   loadHunts, saveHunts, upsertHunt, deleteHunt,
+  syncHuntToAPI, deleteHuntFromAPI, loadHuntsFromAPI,
   calcGlobalStats, fmt,
   type GlobalStats,
 } from "@/lib/huntTracker";
@@ -272,6 +273,21 @@ export default function HuntTrackerPage() {
 
   useEffect(() => { reload(); }, [reload]);
 
+  // On mount: pull from API and sync to localStorage (admin only — silently skipped if not admin)
+  useEffect(() => {
+    loadHuntsFromAPI().then((apiHunts) => {
+      if (!apiHunts || apiHunts.length === 0) return;
+      // Merge: API is source of truth; keep any local-only hunts that aren't in the API yet
+      const local = loadHunts();
+      const apiIds = new Set(apiHunts.map((h) => h.id));
+      const localOnly = local.filter((h) => !apiIds.has(h.id));
+      const merged = [...apiHunts, ...localOnly];
+      saveHunts(merged);
+      setHunts(merged);
+      setStats(calcGlobalStats(merged));
+    });
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.key === "c" || e.key === "C") && !showCreate && !editHunt && !deleteTarget
@@ -291,13 +307,11 @@ export default function HuntTrackerPage() {
   }, []);
 
   async function handleClearLive() {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
     setClearingLive(true);
     try {
       await fetch(API_ENDPOINTS.LIVE_HUNT, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
       });
       setLiveHuntName(null);
     } finally {
@@ -310,12 +324,14 @@ export default function HuntTrackerPage() {
     reload();
     setShowCreate(false);
     setEditHunt(null);
+    syncHuntToAPI(hunt);
   }
 
   function handleDelete(hunt: Hunt) {
     deleteHunt(hunt.id);
     reload();
     setDeleteTarget(null);
+    deleteHuntFromAPI(hunt.id);
   }
 
   const filtered = hunts.filter((h) =>

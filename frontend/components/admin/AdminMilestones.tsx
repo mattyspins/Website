@@ -36,10 +36,9 @@ export default function AdminMilestones() {
     setCurrentDeposited(null);
 
     try {
-      const token = localStorage.getItem("access_token");
       const res = await fetch(
         `${API_ENDPOINTS.ADMIN_USERS_SEARCH}?query=${encodeURIComponent(search)}&limit=1`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { credentials: "include" }
       );
       const data = await res.json();
       const user = data.data?.users?.[0] || data.data?.[0];
@@ -65,13 +64,13 @@ export default function AdminMilestones() {
     setSaving(true);
     setMsg(null);
     try {
-      const token = localStorage.getItem("access_token");
-      const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
       const results: string[] = [];
 
       if (newWager !== "" && parseFloat(newWager) !== currentWager) {
         const res = await fetch(API_ENDPOINTS.ADMIN_USER_WAGER(userId), {
-          method: "PATCH", headers,
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ totalWagered: parseFloat(newWager) }),
         });
         const data = await res.json();
@@ -83,7 +82,9 @@ export default function AdminMilestones() {
 
       if (newDeposited !== "" && parseFloat(newDeposited) !== currentDeposited) {
         const res = await fetch(API_ENDPOINTS.ADMIN_USER_DEPOSIT(userId), {
-          method: "PATCH", headers,
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ totalDeposited: parseFloat(newDeposited) }),
         });
         const data = await res.json();
@@ -114,7 +115,7 @@ export default function AdminMilestones() {
       <div className="bg-navy-800/60 border border-white/6 rounded-xl p-6">
         <h2 className="text-lg font-semibold text-white mb-1">Wager Milestone Management</h2>
         <p className="text-gray-500 text-sm mb-6">
-          Search a user and update their total AceBet wagered amount to unlock milestones.
+          Search a user and update their total wagered amount to unlock milestones.
         </p>
 
         {/* Search */}

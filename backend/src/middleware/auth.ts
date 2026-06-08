@@ -31,13 +31,15 @@ export const authMiddleware = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // Cookie-first, then Bearer header as fallback (for admin pages and Socket.IO)
+    const cookieToken = req.cookies?.access_token as string | undefined;
     const authHeader = req.headers.authorization;
+    const bearerToken =
+      authHeader && authHeader.startsWith('Bearer ')
+        ? authHeader.substring(7)
+        : undefined;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw createError.unauthorized('Access token required');
-    }
-
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const token = cookieToken || bearerToken;
 
     if (!token) {
       throw createError.unauthorized('Access token required');
@@ -107,19 +109,21 @@ export const optionalAuthMiddleware = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    const cookieToken = req.cookies?.access_token as string | undefined;
     const authHeader = req.headers.authorization;
+    const bearerToken =
+      authHeader && authHeader.startsWith('Bearer ')
+        ? authHeader.substring(7)
+        : undefined;
 
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
+    const token = cookieToken || bearerToken;
 
-      if (token) {
-        try {
-          const decoded = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
-          req.user = decoded;
-        } catch (jwtError) {
-          // Ignore JWT errors for optional auth
-          // User will be undefined, which is acceptable
-        }
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
+        req.user = decoded;
+      } catch {
+        // Ignore JWT errors for optional auth — user will be undefined
       }
     }
 

@@ -46,15 +46,11 @@ export default function AdminStats() {
   useEffect(() => { loadAll(); }, []);
 
   const loadAll = async () => {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
-    const headers = { Authorization: `Bearer ${token}` };
-
     try {
       const [statsRes, claimsRes, rafflesRes] = await Promise.all([
-        fetch(API_ENDPOINTS.ADMIN_STATS, { headers }),
-        fetch(API_ENDPOINTS.MILESTONES_CLAIMS_ADMIN, { headers }),
-        fetch(API_ENDPOINTS.RAFFLES_ADMIN_ALL, { headers }),
+        fetch(API_ENDPOINTS.ADMIN_STATS, { credentials: "include" }),
+        fetch(API_ENDPOINTS.MILESTONES_CLAIMS_ADMIN, { credentials: "include" }),
+        fetch(API_ENDPOINTS.RAFFLES_ADMIN_ALL, { credentials: "include" }),
       ]);
 
       if (statsRes.ok) {

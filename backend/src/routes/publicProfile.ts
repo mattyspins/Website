@@ -9,20 +9,29 @@ const router = Router();
 router.get(
   '/:userId/profile',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = await prisma.user.findUnique({
-      where: { id: req.params.userId },
-      select: {
-        id: true,
-        displayName: true,
-        avatarUrl: true,
-        totalWagered: true,
-        totalDeposited: true,
-        createdAt: true,
-        kickUsername: true,
-        kickVerified: true,
-        milestoneClaims: { select: { tierId: true, status: true } },
-      },
-    });
+    const [user, raffleWinsCount, viewingAgg] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: req.params.userId },
+        select: {
+          id: true,
+          displayName: true,
+          avatarUrl: true,
+          totalWagered: true,
+          totalDeposited: true,
+          totalEarned: true,
+          points: true,
+          createdAt: true,
+          kickUsername: true,
+          kickVerified: true,
+          milestoneClaims: { select: { tierId: true, status: true } },
+        },
+      }),
+      prisma.raffleWinner.count({ where: { userId: req.params.userId } }),
+      prisma.viewingSession.aggregate({
+        where: { userId: req.params.userId, validated: true },
+        _sum: { durationMinutes: true },
+      }),
+    ]);
 
     if (!user) throw createError.notFound('User not found');
 
@@ -48,6 +57,12 @@ router.get(
         kickUsername: user.kickVerified ? user.kickUsername : null,
         tiers,
         unlockedCount: tiers.filter((t) => t.unlocked).length,
+        communityStats: {
+          points: user.points,
+          totalEarned: user.totalEarned,
+          raffleWins: raffleWinsCount,
+          watchedMinutes: viewingAgg._sum.durationMinutes ?? 0,
+        },
       },
     });
   })

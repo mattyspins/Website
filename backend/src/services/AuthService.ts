@@ -1,4 +1,3 @@
-// @ts-nocheck
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { prisma } from '@/config/database';
@@ -46,8 +45,6 @@ export interface UserSession {
   isDepositor: boolean;
   kickUsername?: string;
   kickVerified?: boolean;
-  rainbetUsername?: string;
-  rainbetVerified?: boolean;
   totalWagered?: number;
   createdAt?: string;
 }
@@ -156,8 +153,6 @@ export class AuthService {
         isDepositor: user.isDepositor,
         kickUsername: user.kickUsername || undefined,
         kickVerified: user.kickVerified,
-        rainbetUsername: user.rainbetUsername || undefined,
-        rainbetVerified: user.rainbetVerified,
         totalWagered: Number(user.totalWagered ?? 0),
         createdAt: user.createdAt.toISOString(),
       };
@@ -295,8 +290,6 @@ export class AuthService {
         isModerator: session.user.isModerator,
         kickUsername: session.user.kickUsername || undefined,
         kickVerified: session.user.kickVerified,
-        rainbetUsername: session.user.rainbetUsername || undefined,
-        rainbetVerified: session.user.rainbetVerified,
         totalWagered: Number(session.user.totalWagered ?? 0),
       };
 
@@ -405,8 +398,6 @@ export class AuthService {
         isDepositor: user.isDepositor,
         kickUsername: user.kickUsername || undefined,
         kickVerified: user.kickVerified,
-        rainbetUsername: user.rainbetUsername || undefined,
-        rainbetVerified: user.rainbetVerified,
         totalWagered: Number(user.totalWagered ?? 0),
         createdAt: user.createdAt.toISOString(),
       };
@@ -437,47 +428,6 @@ export class AuthService {
         stack: error instanceof Error ? error.stack : undefined,
       });
       // Don't throw error as this is not critical
-    }
-  }
-
-  // Update Rainbet username (can only be done once by user)
-  static async updateRainbetUsername(
-    userId: string,
-    rainbetUsername: string
-  ): Promise<void> {
-    try {
-      // Check if user already has a Rainbet username
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { rainbetUsername: true },
-      });
-
-      if (user?.rainbetUsername) {
-        throw createError.badRequest(
-          'AceBet username already set. Contact an admin to change it.'
-        );
-      }
-
-      // Update user's Rainbet username (unverified)
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          rainbetUsername,
-          rainbetVerified: false, // Admin needs to verify
-          updatedAt: new Date(),
-        },
-      });
-
-      logger.info(
-        `Rainbet username set for user ${userId}: ${rainbetUsername}`
-      );
-    } catch (error) {
-      logger.error('Error updating Rainbet username:', {
-        userId,
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      throw error;
     }
   }
 

@@ -29,13 +29,6 @@ interface RaffleWinner {
   avatarUrl?: string | null;
 }
 
-function authHeaders(): Record<string, string> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-  return token
-    ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
-    : { "Content-Type": "application/json" };
-}
-
 // ─── Create Modal ──────────────────────────────────────────────────────────────
 function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: () => void }) {
   const [loading, setLoading] = useState(false);
@@ -68,7 +61,8 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: () 
         : new Date(Date.now() + form.durationMs).toISOString();
       const res = await fetch(API_ENDPOINTS.RAFFLES, {
         method: "POST",
-        headers: authHeaders(),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: form.title,
           description: form.description || undefined,
@@ -372,9 +366,7 @@ export default function AdminRafflePage() {
   const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) { router.push("/"); return; }
-    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(API_ENDPOINTS.AUTH_ME, { credentials: "include" })
       .then((r) => r.json())
       .then((d) => {
         if (!d.user?.isAdmin) router.push("/");
@@ -385,7 +377,7 @@ export default function AdminRafflePage() {
 
   const loadRaffles = useCallback(async () => {
     try {
-      const res = await fetch(API_ENDPOINTS.RAFFLES_ADMIN_ALL, { headers: authHeaders() });
+      const res = await fetch(API_ENDPOINTS.RAFFLES_ADMIN_ALL, { credentials: "include" });
       const data = await res.json();
       const list: Raffle[] = data.data?.raffles ?? data.raffles ?? [];
       setRaffles(list);
@@ -401,7 +393,7 @@ export default function AdminRafflePage() {
 
   const loadWinners = useCallback(async (raffleId: string) => {
     try {
-      const res = await fetch(API_ENDPOINTS.RAFFLE_WINNERS(raffleId), { headers: authHeaders() });
+      const res = await fetch(API_ENDPOINTS.RAFFLE_WINNERS(raffleId), { credentials: "include" });
       const data = await res.json();
       setWinners(data.data?.winners ?? data.winners ?? []);
     } catch {
@@ -427,7 +419,8 @@ export default function AdminRafflePage() {
     try {
       const res = await fetch(API_ENDPOINTS.RAFFLE_SELECT_WINNERS(selected.id), {
         method: "POST",
-        headers: authHeaders(),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
       const data = await res.json();
@@ -451,7 +444,8 @@ export default function AdminRafflePage() {
     try {
       const res = await fetch(API_ENDPOINTS.RAFFLE_CANCEL(selected.id), {
         method: "POST",
-        headers: authHeaders(),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: "Cancelled by admin" }),
       });
       const data = await res.json();
@@ -470,7 +464,7 @@ export default function AdminRafflePage() {
     setActionLoading(true);
     setError(null);
     try {
-      const res = await fetch(API_ENDPOINTS.RAFFLE(id), { method: "DELETE", headers: authHeaders() });
+      const res = await fetch(API_ENDPOINTS.RAFFLE(id), { method: "DELETE", credentials: "include" });
       if (!res.ok) { const d = await res.json(); setError(d.error?.message || "Failed to delete"); return; }
       const remaining = raffles.filter((r) => r.id !== id);
       setRaffles(remaining);

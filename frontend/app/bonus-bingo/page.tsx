@@ -88,21 +88,27 @@ function BingoGrid({ game, currentUserId }: { game: BingoGame; currentUserId: st
               )}
 
               {cell.status === "GREEN" && (
-                <div className="flex flex-col items-center gap-0.5 p-1 text-center">
+                <div className="flex flex-col items-center gap-0.5 p-1 text-center w-full min-w-0">
                   {cell.claimedBy?.avatarUrl ? (
-                    <img src={cell.claimedBy.avatarUrl} alt="" className="w-7 h-7 rounded-full ring-1 ring-green-400/50" />
+                    <img src={cell.claimedBy.avatarUrl} alt="" className="w-7 h-7 rounded-full ring-1 ring-green-400/50 shrink-0" />
                   ) : (
-                    <div className="w-7 h-7 rounded-full bg-green-500/20 flex items-center justify-center text-green-300 text-xs font-bold">
+                    <div className="w-7 h-7 rounded-full bg-green-500/20 flex items-center justify-center text-green-300 text-xs font-bold shrink-0">
                       {kickName(cell.claimedBy)[0]?.toUpperCase() ?? "?"}
                     </div>
                   )}
                   {cell.claimedBy && (
-                    <span className="text-green-200 text-[10px] leading-tight font-semibold line-clamp-1 max-w-full px-1">
+                    <span
+                      title={kickName(cell.claimedBy)}
+                      className="text-green-200 text-[10px] leading-tight font-semibold truncate w-full px-1"
+                    >
                       {kickName(cell.claimedBy)}
                     </span>
                   )}
                   {cell.slotName && (
-                    <span className="text-green-400/60 text-[9px] leading-tight line-clamp-1 max-w-full px-1">
+                    <span
+                      title={cell.slotName}
+                      className="text-green-400/60 text-[9px] leading-tight truncate w-full px-1"
+                    >
                       {cell.slotName}
                     </span>
                   )}
@@ -110,10 +116,15 @@ function BingoGrid({ game, currentUserId }: { game: BingoGame; currentUserId: st
               )}
 
               {cell.status === "ACTIVE" && (
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-yellow-300 text-xl animate-bounce">★</span>
+                <div className="flex flex-col items-center gap-1 w-full min-w-0 px-1">
+                  <span className="text-yellow-300 text-xl animate-bounce shrink-0">★</span>
                   {cell.slotName && (
-                    <span className="text-yellow-300/80 text-[9px] text-center line-clamp-1 px-1">{cell.slotName}</span>
+                    <span
+                      title={cell.slotName}
+                      className="text-yellow-300/80 text-[9px] text-center truncate w-full"
+                    >
+                      {cell.slotName}
+                    </span>
                   )}
                 </div>
               )}
@@ -307,11 +318,9 @@ export default function BonusBingoPage() {
     activeGame.cells.find(c => c.id === activeGame.currentCellId)?.slotName);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
-    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
-      .then(d => { if (d.user) setUser(d.user); })
+    fetch(API_ENDPOINTS.AUTH_ME, { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.user) setUser(d.user); })
       .catch(() => {});
   }, []);
 

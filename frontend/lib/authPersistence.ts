@@ -1,19 +1,11 @@
 /**
  * Authentication Persistence Module
- * Handles persistent login sessions across browser restarts
+ * Tokens are stored in httpOnly cookies set by the backend — never in JS-accessible storage.
+ * This module only caches the non-sensitive user profile in localStorage for fast UI rendering.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://website-production-ece1.up.railway.app";
-
-const ACCESS_TOKEN_KEY = "access_token";
-const REFRESH_TOKEN_KEY = "refresh_token";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const USER_INFO_KEY = "user_info";
-const TOKEN_EXPIRY_KEY = "token_expiry";
-
-// Token refresh interval (refresh 5 minutes before expiry)
-const REFRESH_BUFFER_MS = 5 * 60 * 1000;
-
-let refreshTimer: NodeJS.Timeout | null = null;
 
 export interface StoredUser {
   id: string;
@@ -26,257 +18,151 @@ export interface StoredUser {
 }
 
 /**
- * Store authentication tokens and user info
+ * Persist the user profile (non-sensitive) so the UI can render before the /me call resolves.
  */
-export function storeAuthData(
-  accessToken: string,
-  refreshToken: string,
-  user: StoredUser,
-  expiresIn: number = 3600, // Default 1 hour
-): void {
+export function storeAuthData(user: StoredUser): void {
   try {
-    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
     localStorage.setItem(USER_INFO_KEY, JSON.stringify(user));
-
-    // Calculate expiry time
-    const expiryTime = Date.now() + expiresIn * 1000;
-    localStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
-
-    // Start automatic token refresh
-    scheduleTokenRefresh(expiresIn * 1000);
-  } catch (error) {
-    console.error("Failed to store auth data:", error);
+  } catch {
+    // localStorage unavailable (SSR / private browsing)
   }
 }
 
 /**
- * Get stored access token
- */
-export function getAccessToken(): string | null {
-  try {
-    return localStorage.getItem(ACCESS_TOKEN_KEY);
-  } catch (error) {
-    console.error("Failed to get access token:", error);
-    return null;
-  }
-}
-
-/**
- * Get stored refresh token
- */
-export function getRefreshToken(): string | null {
-  try {
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
-  } catch (error) {
-    console.error("Failed to get refresh token:", error);
-    return null;
-  }
-}
-
-/**
- * Get stored user info
+ * Get the cached user profile.
  */
 export function getStoredUser(): StoredUser | null {
   try {
-    const userJson = localStorage.getItem(USER_INFO_KEY);
-    if (!userJson) return null;
-    return JSON.parse(userJson);
-  } catch (error) {
-    console.error("Failed to get stored user:", error);
+    const raw = localStorage.getItem(USER_INFO_KEY);
+    return raw ? (JSON.parse(raw) as StoredUser) : null;
+  } catch {
     return null;
   }
 }
 
 /**
- * Check if token is expired or about to expire
+ * Remove the cached user profile and ask the backend to clear auth cookies.
  */
-export function isTokenExpired(): boolean {
+export async function clearAuthData(): Promise<void> {
   try {
-    const expiryStr = localStorage.getItem(TOKEN_EXPIRY_KEY);
-    if (!expiryStr) return true;
-
-    const expiryTime = parseInt(expiryStr, 10);
-    const now = Date.now();
-
-    // Consider expired if within 5 minutes of expiry
-    return now >= expiryTime - REFRESH_BUFFER_MS;
-  } catch (error) {
-    console.error("Failed to check token expiry:", error);
-    return true;
+    localStorage.removeItem(USER_INFO_KEY);
+  } catch {
+    // ignore
+  }
+  try {
+    await fetch(`${API_BASE}/api/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch {
+    // ignore — cookies cleared server-side if reachable
   }
 }
 
 /**
- * Refresh the access token using the refresh token
+ * Silently refresh the access-token cookie via the backend.
+ * The new cookie is set automatically by the Set-Cookie response header.
  */
 export async function refreshAccessToken(): Promise<boolean> {
-  const refreshToken = getRefreshToken();
-
-  if (!refreshToken) {
-    console.warn("No refresh token available");
-    return false;
-  }
-
   try {
-    const response = await fetch(`${API_BASE}/api/auth/refresh`, {
+    const res = await fetch(`${API_BASE}/api/auth/refresh`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ refreshToken }),
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      // No body needed — backend reads refresh_token from the cookie
     });
-
-    if (!response.ok) {
-      console.error("Token refresh failed:", response.status);
-      clearAuthData();
-      return false;
-    }
-
-    const data = await response.json();
-
-    if (data.success && data.tokens) {
-      // Update tokens
-      localStorage.setItem(ACCESS_TOKEN_KEY, data.tokens.accessToken);
-      localStorage.setItem(REFRESH_TOKEN_KEY, data.tokens.refreshToken);
-
-      // Update expiry
-      const expiryTime = Date.now() + data.tokens.expiresIn * 1000;
-      localStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
-
-      // Schedule next refresh
-      scheduleTokenRefresh(data.tokens.expiresIn * 1000);
-
-      console.log("Token refreshed successfully");
-      return true;
-    }
-
-    return false;
-  } catch (error) {
-    console.error("Token refresh error:", error);
+    return res.ok;
+  } catch {
     return false;
   }
 }
 
 /**
- * Schedule automatic token refresh
- */
-function scheduleTokenRefresh(expiresInMs: number): void {
-  // Clear existing timer
-  if (refreshTimer) {
-    clearTimeout(refreshTimer);
-  }
-
-  // Schedule refresh 5 minutes before expiry
-  const refreshTime = Math.max(expiresInMs - REFRESH_BUFFER_MS, 60000); // At least 1 minute
-
-  refreshTimer = setTimeout(async () => {
-    console.log("Auto-refreshing token...");
-    const success = await refreshAccessToken();
-
-    if (!success) {
-      console.warn("Auto token refresh failed");
-      // Optionally redirect to login or show notification
-    }
-  }, refreshTime);
-}
-
-/**
- * Initialize authentication on app load
- * Checks if tokens exist and refreshes if needed
+ * Initialize authentication on app load.
+ * 1. Return the cached user profile immediately (fast path).
+ * 2. Validate with the backend in the background; if the cookie is valid the
+ *    response contains fresh user data, which we cache and return.
+ * 3. If the cookie is expired, attempt a refresh; on failure clear the cache.
  */
 export async function initializeAuth(): Promise<StoredUser | null> {
-  const accessToken = getAccessToken();
-  const refreshToken = getRefreshToken();
-  const user = getStoredUser();
-
-  if (!accessToken || !refreshToken || !user) {
-    return null;
-  }
-
-  // Check if token is expired or about to expire
-  if (isTokenExpired()) {
-    console.log("Token expired, attempting refresh...");
-    const refreshed = await refreshAccessToken();
-
-    if (!refreshed) {
-      console.warn("Token refresh failed, clearing auth data");
-      clearAuthData();
-      return null;
-    }
-  } else {
-    // Token is still valid, schedule refresh
-    const expiryStr = localStorage.getItem(TOKEN_EXPIRY_KEY);
-    if (expiryStr) {
-      const expiryTime = parseInt(expiryStr, 10);
-      const timeUntilExpiry = expiryTime - Date.now();
-      scheduleTokenRefresh(timeUntilExpiry);
-    }
-  }
-
-  // Verify token with backend
   try {
-    const response = await fetch(API_ENDPOINTS.AUTH_ME, {
-      headers: {
-        Authorization: `Bearer ${getAccessToken()}`,
-      },
+    const res = await fetch(`${API_BASE}/api/auth/me`, {
+      credentials: "include",
     });
 
-    if (response.ok) {
-      const data = await response.json();
+    if (res.ok) {
+      const data = await res.json();
       if (data.success && data.user) {
-        // Update stored user info
-        localStorage.setItem(USER_INFO_KEY, JSON.stringify(data.user));
-        return data.user;
+        const user: StoredUser = {
+          id: data.user.id,
+          displayName: data.user.displayName,
+          avatar: data.user.avatar,
+          points: data.user.points,
+          isAdmin: data.user.isAdmin,
+          isModerator: data.user.isModerator,
+          kickUsername: data.user.kickUsername,
+        };
+        storeAuthData(user);
+        return user;
       }
     }
-  } catch (error) {
-    console.error("Token verification failed:", error);
-  }
 
-  return user;
-}
-
-/**
- * Clear all authentication data
- */
-export function clearAuthData(): void {
-  try {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(USER_INFO_KEY);
-    localStorage.removeItem(TOKEN_EXPIRY_KEY);
-
-    // Clear refresh timer
-    if (refreshTimer) {
-      clearTimeout(refreshTimer);
-      refreshTimer = null;
+    if (res.status === 401) {
+      // Access token expired — try refresh
+      const refreshed = await refreshAccessToken();
+      if (!refreshed) {
+        await clearAuthData();
+        return null;
+      }
+      // Retry /me with the new cookie
+      const retry = await fetch(`${API_BASE}/api/auth/me`, {
+        credentials: "include",
+      });
+      if (retry.ok) {
+        const data = await retry.json();
+        if (data.success && data.user) {
+          const user: StoredUser = {
+            id: data.user.id,
+            displayName: data.user.displayName,
+            avatar: data.user.avatar,
+            points: data.user.points,
+            isAdmin: data.user.isAdmin,
+            isModerator: data.user.isModerator,
+            kickUsername: data.user.kickUsername,
+          };
+          storeAuthData(user);
+          return user;
+        }
+      }
+      await clearAuthData();
+      return null;
     }
-  } catch (error) {
-    console.error("Failed to clear auth data:", error);
+
+    return null;
+  } catch {
+    // Network error — return cached profile so UI doesn't flash logged-out
+    return getStoredUser();
   }
 }
 
 /**
- * Update stored user info (e.g., after points change)
+ * Update the cached user profile (e.g. after a points change).
  */
 export function updateStoredUser(updates: Partial<StoredUser>): void {
   try {
-    const currentUser = getStoredUser();
-    if (currentUser) {
-      const updatedUser = { ...currentUser, ...updates };
-      localStorage.setItem(USER_INFO_KEY, JSON.stringify(updatedUser));
+    const current = getStoredUser();
+    if (current) {
+      localStorage.setItem(USER_INFO_KEY, JSON.stringify({ ...current, ...updates }));
     }
-  } catch (error) {
-    console.error("Failed to update stored user:", error);
+  } catch {
+    // ignore
   }
 }
 
 /**
- * Check if user is authenticated
+ * Returns true if there is a cached user profile (optimistic check — the
+ * actual auth state is determined by the httpOnly cookie on the next request).
  */
 export function isAuthenticated(): boolean {
-  const accessToken = getAccessToken();
-  const refreshToken = getRefreshToken();
-  return !!(accessToken && refreshToken);
+  return getStoredUser() !== null;
 }

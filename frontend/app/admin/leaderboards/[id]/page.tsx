@@ -78,10 +78,9 @@ export default function ManageLeaderboardPage() {
 
   const exportCSV = async () => {
     try {
-      const token = localStorage.getItem("access_token");
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/manual-leaderboards/admin/${leaderboardId}/export?format=csv`,
-        { headers: { Authorization: `Bearer ${token}` } },
+        { credentials: "include" },
       );
       if (!res.ok) throw new Error();
       const blob = await res.blob();

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { prisma } from '@/config/database';
 import { RedisService } from '@/config/redis';
 import { logger } from '@/utils/logger';

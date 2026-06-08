@@ -37,12 +37,6 @@ export default function PurchaseHistoryPage() {
   }, []);
 
   const checkAuthAndLoadPurchases = async () => {
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) {
-      router.push("/?login=required");
-      return;
-    }
-
     try {
       setLoading(true);
       setError(null);
