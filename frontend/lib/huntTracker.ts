@@ -1,5 +1,3 @@
-import { API_ENDPOINTS } from "@/lib/api";
-
 export type Currency = "USD" | "EUR" | "GBP" | "CAD" | "AUD";
 export type BadgeType = "none" | "super_bonus" | "five_scatter" | "custom";
 
@@ -63,41 +61,6 @@ export function upsertHunt(hunt: Hunt): void {
 
 export function deleteHunt(id: string): void {
   saveHunts(loadHunts().filter((h) => h.id !== id));
-}
-
-/* ── Backend sync (best-effort, no throws) ───────────────── */
-
-export async function syncHuntToAPI(hunt: Hunt): Promise<void> {
-  try {
-    await fetch(`${API_ENDPOINTS.HUNT_TRACKER}/${hunt.id}`, {
-      method: "PUT",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(hunt),
-    });
-  } catch { /* ignore — localStorage is the source of truth offline */ }
-}
-
-export async function deleteHuntFromAPI(id: string): Promise<void> {
-  try {
-    await fetch(`${API_ENDPOINTS.HUNT_TRACKER}/${id}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-  } catch { /* ignore */ }
-}
-
-export async function loadHuntsFromAPI(): Promise<Hunt[] | null> {
-  try {
-    const res = await fetch(API_ENDPOINTS.HUNT_TRACKER, {
-      credentials: "include",
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return Array.isArray(data.hunts) ? (data.hunts as Hunt[]) : null;
-  } catch {
-    return null;
-  }
 }
 
 /* ── Computed stats ──────────────────────────────────────── */

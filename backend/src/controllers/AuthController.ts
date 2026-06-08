@@ -7,20 +7,6 @@ import { logger } from '@/utils/logger';
 import { AuthenticatedRequest } from '@/middleware/auth';
 import { RedisService } from '@/config/redis';
 import { prisma } from '@/config/database';
-import { validateEnv } from '@/config/env';
-
-const env = validateEnv();
-
-function cookieOptions(maxAgeSec: number) {
-  const isProd = env.NODE_ENV === 'production';
-  return {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
-    path: '/',
-    maxAge: maxAgeSec * 1000,
-  };
-}
 
 export class AuthController {
   // Initiate Discord OAuth flow
@@ -43,41 +29,41 @@ export class AuthController {
   // Handle Discord OAuth callback
   static handleDiscordCallback = asyncHandler(
     async (req: Request, res: Response) => {
-      const corsOrigins = process.env['CORS_ORIGIN'] || 'http://localhost:3000';
-      const frontendUrl = corsOrigins.split(',')[0].trim();
+      const { code, state } = req.query;
 
-      const redirectError = (message: string) => {
-        res.redirect(`${frontendUrl}/auth/callback?error=${encodeURIComponent(message)}`);
-      };
+      if (!code || typeof code !== 'string') {
+        throw createError.badRequest('Authorization code is required');
+      }
+
+      if (!state || typeof state !== 'string') {
+        throw createError.badRequest('State parameter is required');
+      }
+
+      // Validate state parameter from Redis
+      const storedState = await RedisService.get(`oauth_state:${state}`);
+      if (!storedState) {
+        logger.warn(
+          'Invalid or expired state parameter in Discord OAuth callback',
+          {
+            providedState: state.substring(0, 8) + '...',
+          }
+        );
+        throw createError.badRequest(
+          'Invalid or expired state parameter - please try logging in again'
+        );
+      }
+
+      // Delete the state from Redis (one-time use)
+      await RedisService.del(`oauth_state:${state}`);
 
       try {
-        const { code, state } = req.query;
-
-        if (!code || typeof code !== 'string') {
-          return redirectError('Authorization code is required');
-        }
-
-        if (!state || typeof state !== 'string') {
-          return redirectError('State parameter is required');
-        }
-
-        // Validate state parameter from Redis
-        const storedState = await RedisService.get(`oauth_state:${state}`);
-        if (!storedState) {
-          logger.warn('Invalid or expired state parameter in Discord OAuth callback', {
-            providedState: state.substring(0, 8) + '...',
-          });
-          return redirectError('Session expired — please try logging in again');
-        }
-
-        // Delete the state from Redis (one-time use)
-        await RedisService.del(`oauth_state:${state}`);
-
         // Exchange code for Discord tokens
         const discordTokens = await DiscordService.exchangeCodeForTokens(code);
 
         // Get Discord user info
-        const discordUser = await DiscordService.getUserInfo(discordTokens.access_token);
+        const discordUser = await DiscordService.getUserInfo(
+          discordTokens.access_token
+        );
 
         // Check if Discord server membership verification is enabled
         const requireServerMembership =
@@ -85,44 +71,76 @@ export class AuthController {
         const discordGuildId = process.env['DISCORD_GUILD_ID'];
 
         if (requireServerMembership && discordGuildId) {
+          // Check if user is a member of the Discord server
           const isMember = await DiscordService.checkServerMembership(
             discordTokens.access_token,
             discordGuildId
           );
 
           if (!isMember) {
-            const inviteUrl = process.env['DISCORD_INVITE_URL'] || 'https://discord.gg/your-invite';
-            logger.warn(`User ${discordUser.username} attempted to login but is not a Discord server member`);
-            return redirectError(
+            const inviteUrl =
+              process.env['DISCORD_INVITE_URL'] ||
+              'https://discord.gg/your-invite';
+
+            logger.warn(
+              `User ${discordUser.username} attempted to login but is not a member of the Discord server`
+            );
+
+            throw createError.forbidden(
               `You must be a member of the MattySpins Discord server to use this platform. Join here: ${inviteUrl}`
             );
           }
 
-          logger.info(`User ${discordUser.username} verified as Discord server member`);
+          logger.info(
+            `User ${discordUser.username} verified as Discord server member`
+          );
         }
 
         // Create or update user
-        const user = await AuthService.createOrUpdateUserFromDiscord(discordUser);
+        const user =
+          await AuthService.createOrUpdateUserFromDiscord(discordUser);
 
         // Generate JWT tokens
         const tokens = AuthService.generateTokens(user);
 
         // Store session
-        await AuthService.storeSession(user, tokens, req.get('User-Agent'), req.ip);
+        await AuthService.storeSession(
+          user,
+          tokens,
+          req.get('User-Agent'),
+          req.ip
+        );
 
-        logger.info(`Discord authentication successful for user: ${user.displayName}`);
+        logger.info(
+          `Discord authentication successful for user: ${user.displayName}`
+        );
 
-        // Set httpOnly cookies — tokens never exposed to JavaScript
-        res.cookie('access_token', tokens.accessToken, cookieOptions(60 * 60)); // 1 hour
-        res.cookie('refresh_token', tokens.refreshToken, cookieOptions(7 * 24 * 60 * 60)); // 7 days
+        // Redirect to frontend with tokens
+        // Use the first CORS origin for redirects (in case multiple are configured)
+        const corsOrigins =
+          process.env['CORS_ORIGIN'] || 'http://localhost:3000';
+        const frontendUrl = corsOrigins.split(',')[0].trim();
+        const callbackUrl = `${frontendUrl}/auth/callback?access_token=${encodeURIComponent(tokens.accessToken)}&refresh_token=${encodeURIComponent(tokens.refreshToken)}&user_id=${encodeURIComponent(user.id)}&display_name=${encodeURIComponent(user.displayName)}&is_admin=${user.isAdmin}&is_moderator=${user.isModerator}`;
 
-        res.redirect(`${frontendUrl}/auth/callback?success=true`);
+        res.redirect(callbackUrl);
       } catch (error) {
         logger.error('Discord OAuth callback error:', {
           message: error instanceof Error ? error.message : 'Unknown error',
           stack: error instanceof Error ? error.stack : undefined,
         });
-        redirectError(error instanceof Error ? error.message : 'Discord authentication failed');
+
+        // Redirect to frontend with error
+        // Use the first CORS origin for redirects (in case multiple are configured)
+        const corsOrigins =
+          process.env['CORS_ORIGIN'] || 'http://localhost:3000';
+        const frontendUrl = corsOrigins.split(',')[0].trim();
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Discord authentication failed';
+        const callbackUrl = `${frontendUrl}/auth/callback?error=${encodeURIComponent(errorMessage)}`;
+
+        res.redirect(callbackUrl);
       }
     }
   );
@@ -140,7 +158,7 @@ export class AuthController {
         select: { kickVerified: true, kickUsername: true },
       });
       if (existing?.kickVerified && existing.kickUsername) {
-        const token = req.token;
+        const token = req.headers.authorization?.substring(7);
         if (token) await RedisService.deleteSession(token);
         return res.json({ success: true, alreadyLinked: true, kickUsername: existing.kickUsername });
       }
@@ -284,7 +302,7 @@ export class AuthController {
 
         // Get fresh user data from database
         const userSession = await AuthService.getUserSession(
-          req.token || ''
+          req.headers.authorization?.substring(7) || ''
         );
 
         res.json({
@@ -309,10 +327,9 @@ export class AuthController {
     }
   );
 
-  // Refresh access token — reads from cookie or body, sets new cookies
+  // Refresh access token
   static refreshToken = asyncHandler(async (req: Request, res: Response) => {
-    const refreshToken: string | undefined =
-      req.cookies?.refresh_token || req.body?.refreshToken;
+    const { refreshToken } = req.body;
 
     if (!refreshToken || typeof refreshToken !== 'string') {
       throw createError.badRequest('Refresh token is required');
@@ -321,12 +338,11 @@ export class AuthController {
     try {
       const newTokens = await AuthService.refreshToken(refreshToken);
 
-      res.cookie('access_token', newTokens.accessToken, cookieOptions(60 * 60));
-      res.cookie('refresh_token', newTokens.refreshToken, cookieOptions(7 * 24 * 60 * 60));
-
       res.json({
         success: true,
         tokens: {
+          accessToken: newTokens.accessToken,
+          refreshToken: newTokens.refreshToken,
           expiresIn: newTokens.expiresIn,
         },
       });
@@ -335,7 +351,7 @@ export class AuthController {
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
       });
-      throw error;
+      throw error; // Re-throw to let error handler deal with it
     }
   });
 
@@ -351,7 +367,9 @@ export class AuthController {
         await AuthService.validateAndUpdateSession(req.user.id);
 
         // Get fresh user data
-        const userSession = await AuthService.getUserSession(req.token || '');
+        const userSession = await AuthService.getUserSession(
+          req.headers.authorization?.substring(7) || ''
+        );
 
         if (!userSession) {
           throw createError.unauthorized('Invalid session');
@@ -373,6 +391,8 @@ export class AuthController {
             isDepositor: userSession.isDepositor,
             kickUsername: userSession.kickUsername,
             kickVerified: userSession.kickVerified || false,
+            rainbetUsername: userSession.rainbetUsername,
+            rainbetVerified: userSession.rainbetVerified || false,
             totalWagered: userSession.totalWagered || 0,
             createdAt: userSession.createdAt,
           },
@@ -398,15 +418,6 @@ export class AuthController {
         await AuthService.logout(req.user.id);
 
         logger.info(`User logged out: ${req.user.discordId}`);
-
-        const isProd = env.NODE_ENV === 'production';
-        const clearOpts = {
-          path: '/',
-          secure: isProd,
-          sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
-        };
-        res.clearCookie('access_token', clearOpts);
-        res.clearCookie('refresh_token', clearOpts);
 
         res.json({
           success: true,
@@ -487,6 +498,63 @@ export class AuthController {
     }
   });
 
+  // Submit Rainbet username (can only be done once by user)
+  static submitRainbetUsername = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user) {
+        throw createError.unauthorized('Authentication required');
+      }
+
+      const { rainbetUsername } = req.body;
+
+      if (!rainbetUsername || typeof rainbetUsername !== 'string') {
+        throw createError.badRequest('Rainbet username is required');
+      }
+
+      const trimmedUsername = rainbetUsername.trim();
+
+      if (trimmedUsername.length < 3 || trimmedUsername.length > 50) {
+        throw createError.badRequest(
+          'Rainbet username must be between 3 and 50 characters'
+        );
+      }
+
+      try {
+        // Check if user already has a Rainbet username
+        const userSession = await AuthService.getUserSession(
+          req.headers.authorization?.substring(7) || ''
+        );
+
+        if (userSession?.rainbetUsername) {
+          throw createError.badRequest(
+            'AceBet username already set. Contact an admin to change it.'
+          );
+        }
+
+        // Update user's Rainbet username
+        await AuthService.updateRainbetUsername(req.user.id, trimmedUsername);
+
+        logger.info(
+          `User ${req.user.discordId} submitted Rainbet username: ${trimmedUsername}`
+        );
+
+        res.json({
+          success: true,
+          message:
+            'Rainbet username submitted successfully. Waiting for admin verification.',
+          rainbetUsername: trimmedUsername,
+        });
+      } catch (error) {
+        logger.error('Submit Rainbet username error:', {
+          userId: req.user.id,
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        throw error;
+      }
+    }
+  );
+
   // Submit Kick username (can only be done once by user)
   static submitKickUsername = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -511,7 +579,7 @@ export class AuthController {
       try {
         // Check if user already has a Kick username
         const userSession = await AuthService.getUserSession(
-          req.token || ''
+          req.headers.authorization?.substring(7) || ''
         );
 
         if (userSession?.kickUsername) {
@@ -565,7 +633,7 @@ export class AuthController {
         select: { kickVerified: true, kickUsername: true },
       });
       if (existing?.kickVerified && existing.kickUsername) {
-        const token = req.token;
+        const token = req.headers.authorization?.substring(7);
         if (token) await RedisService.deleteSession(token);
         return res.json({ success: true, alreadyVerified: true, kickUsername: existing.kickUsername });
       }
@@ -605,7 +673,7 @@ export class AuthController {
 
       // Helper: bust the session cache by access token so next /api/auth/me is fresh
       const bustSessionCache = async () => {
-        const token = req.token;
+        const token = req.headers.authorization?.substring(7);
         if (token) await RedisService.deleteSession(token);
       };
 

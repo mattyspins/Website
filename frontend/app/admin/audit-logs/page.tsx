@@ -155,20 +155,23 @@ export default function ActivityPage() {
   const [searchInput, setSearchInput] = useState("");
 
   useEffect(() => {
-    fetch(API_ENDPOINTS.AUTH_ME, { credentials: "include" })
+    const token = localStorage.getItem("access_token");
+    if (!token) { router.push("/"); return; }
+    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => { if (!d.user?.isAdmin) router.push("/"); else setAuthed(true); })
       .catch(() => router.push("/"));
   }, []);
 
   const load = useCallback(async () => {
-    if (!authed) return;
+    const token = localStorage.getItem("access_token");
+    if (!token || !authed) return;
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: "50", type: typeFilter });
       if (search) params.set("search", search);
       const res = await fetch(`${API_ENDPOINTS.ADMIN_ACTIVITY}?${params}`, {
-        credentials: "include",
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (data.success) {

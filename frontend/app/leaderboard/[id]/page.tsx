@@ -349,42 +349,27 @@ export default function PublicLeaderboardPage() {
                 <div className="col-span-2 text-right">Prize</div>
               </div>
 
-              {rest.map((ranking, i) => {
-                const isMe = userRank !== undefined && userRank === ranking.rank;
-                return (
+              {rest.map((ranking, i) => (
                 <motion.div
                   key={ranking.userId}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.05 * i }}
-                  className={`grid grid-cols-12 px-5 py-4 items-center border-b last:border-0 transition-colors ${
-                    isMe
-                      ? "bg-gold-500/10 border-gold-500/20 ring-1 ring-inset ring-gold-500/20"
-                      : "border-white/4 hover:bg-white/3"
+                  className={`grid grid-cols-12 px-5 py-4 items-center border-b border-white/4 last:border-0 hover:bg-white/3 transition-colors ${
+                    userRank === ranking.rank ? "bg-gold-500/5" : ""
                   }`}
                 >
                   <div className="col-span-1">
-                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full border text-xs font-bold ${
-                      isMe
-                        ? "bg-gold-500/20 border-gold-500/50 text-gold-400"
-                        : "bg-navy-900/80 border-white/8 text-gray-400"
-                    }`}>
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-navy-900/80 border border-white/8 text-gray-400 text-xs font-bold">
                       {ranking.rank}
                     </span>
                   </div>
 
                   <div className="col-span-6 flex items-center gap-3">
                     <AvatarCircle username={ranking.username} size="sm" />
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-white font-medium text-sm truncate">
-                        {maskUsername(ranking.username)}
-                      </span>
-                      {isMe && (
-                        <span className="text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-gold-500/20 text-gold-400 border border-gold-500/30 shrink-0">
-                          You
-                        </span>
-                      )}
-                    </div>
+                    <span className="text-white font-medium text-sm truncate">
+                      {maskUsername(ranking.username)}
+                    </span>
                   </div>
 
                   <div className="col-span-3 text-right">
@@ -403,8 +388,7 @@ export default function PublicLeaderboardPage() {
                     )}
                   </div>
                 </motion.div>
-                );
-              })}
+              ))}
             </div>
           </motion.div>
         )}

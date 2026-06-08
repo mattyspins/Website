@@ -206,10 +206,10 @@ export default function TournamentPage() {
   const [viewingPastId, setViewingPastId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(API_ENDPOINTS.AUTH_ME, { credentials: "include" })
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d?.user) setUser(d.user); })
-      .catch(() => {});
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json()).then((d) => { if (d.user) setUser(d.user); }).catch(() => {});
   }, []);
 
   const loadTournaments = useCallback(async () => {

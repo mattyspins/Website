@@ -64,7 +64,6 @@ model User {
   bingoClaimedCells      BingoCell[]           @relation("BingoCellClaimer")
   viewerPickerWins       ViewerPicker[]        @relation("ViewerPickerWinner")
   viewerPickerEntries    ViewerPickerEntry[]
-  huntTrackerSessions    HuntTrackerSession[]
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")
@@ -675,15 +674,4 @@ model BingoLineWin {
 
   @@unique([gameId, lineType, lineIndex])
   @@map("bingo_line_wins")
-}
-
-model HuntTrackerSession {
-  id        String   @id
-  userId    String   @map("user_id")
-  data      Json
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("hunt_tracker_sessions")
 }

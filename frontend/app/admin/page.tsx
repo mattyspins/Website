@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/ToastProvider";
 import AdminUsers from "@/components/admin/AdminUsers";
@@ -11,7 +11,6 @@ import AdminSchedule from "@/components/admin/AdminSchedule";
 import AdminMilestoneClaims from "@/components/admin/AdminMilestoneClaims";
 import AdminRaffles from "@/components/admin/AdminRaffles";
 import { API_ENDPOINTS } from "@/lib/api";
-import { WifiOff } from "lucide-react";
 import {
   LayoutDashboard,
   Users,
@@ -56,8 +55,6 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
-  const [kickChatConnected, setKickChatConnected] = useState<boolean | null>(null);
-  const kickPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { error } = useToast();
 
   useEffect(() => {
@@ -65,8 +62,13 @@ export default function AdminDashboard() {
   }, []);
 
   const checkAdminAccess = async () => {
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) { router.push("/"); return; }
+
     try {
-      const res = await fetch(API_ENDPOINTS.AUTH_ME, { credentials: "include" });
+      const res = await fetch(API_ENDPOINTS.AUTH_ME, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
       if (res.ok) {
         const data = await res.json();
         if (!data.user?.isAdmin) {
@@ -74,7 +76,6 @@ export default function AdminDashboard() {
           router.push("/");
         } else {
           setLoading(false);
-          startKickChatPolling();
         }
       } else {
         router.push("/");
@@ -83,25 +84,6 @@ export default function AdminDashboard() {
       router.push("/");
     }
   };
-
-  const pollKickChat = async () => {
-    try {
-      const res = await fetch(API_ENDPOINTS.ADMIN_KICK_CHAT_STATUS, { credentials: "include" });
-      if (res.ok) {
-        const d = await res.json();
-        setKickChatConnected(!!d.connected);
-      }
-    } catch { /* ignore */ }
-  };
-
-  const startKickChatPolling = () => {
-    pollKickChat();
-    kickPollRef.current = setInterval(pollKickChat, 30_000);
-  };
-
-  useEffect(() => {
-    return () => { if (kickPollRef.current) clearInterval(kickPollRef.current); };
-  }, []);
 
   if (loading) {
     return (
@@ -116,25 +98,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen pt-16">
-      {/* Kick chat disconnect banner */}
-      {kickChatConnected === false && (
-        <div className="bg-amber-500/10 border-b border-amber-500/30 px-4 py-2">
-          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-amber-400 text-sm">
-              <WifiOff className="w-4 h-4 shrink-0" />
-              <span className="font-semibold">Kick Chat Disconnected</span>
-              <span className="text-amber-500 text-xs hidden sm:inline">— chat commands and point awards are paused. Reconnecting automatically.</span>
-            </div>
-            <button
-              onClick={pollKickChat}
-              className="text-amber-400 hover:text-amber-300 text-xs font-semibold transition-colors shrink-0"
-            >
-              Refresh
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Top header bar */}
       <div className="bg-navy-900/95 border-b border-gold-500/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">

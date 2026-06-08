@@ -12,6 +12,8 @@ interface User {
   displayName: string;
   kickUsername?: string;
   kickVerified?: boolean;
+  rainbetUsername?: string;
+  rainbetVerified: boolean;
   points: number;
   isAdmin: boolean;
   isModerator: boolean;
@@ -32,6 +34,12 @@ export default function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const token = () => localStorage.getItem("access_token") ?? "";
+  const authHeaders = () => ({
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token()}`,
+  });
+
   useEffect(() => {
     loadUsers();
   }, []);
@@ -42,7 +50,7 @@ export default function AdminUsers() {
       const url = query
         ? `${API_ENDPOINTS.ADMIN_USERS_SEARCH}?query=${encodeURIComponent(query)}`
         : API_ENDPOINTS.ADMIN_USERS_SEARCH;
-      const res = await fetch(url, { credentials: "include" });
+      const res = await fetch(url, { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
         setUsers(data.data?.users ?? []);
@@ -72,8 +80,7 @@ export default function AdminUsers() {
     try {
       const res = await fetch(endpoint, {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(),
         body: JSON.stringify({ [field]: !user[field] }),
       });
       if (res.ok) {

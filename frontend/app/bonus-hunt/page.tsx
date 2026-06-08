@@ -32,19 +32,16 @@ export default function BonusHuntPage() {
   }, []);
 
   const checkAuth = async () => {
-    try {
-      const res = await fetch(API_ENDPOINTS.AUTH_ME, { credentials: "include" });
-      if (res.ok) {
+    const token = localStorage.getItem("access_token");
+    setIsAuthenticated(!!token);
+    if (token) {
+      try {
+        const res = await fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } });
         const d = await res.json();
-        setIsAuthenticated(!!(d.user));
         setKickVerified(!!(d.user?.kickVerified && d.user?.kickUsername));
-      } else {
-        setIsAuthenticated(false);
+      } catch {
         setKickVerified(false);
       }
-    } catch {
-      setIsAuthenticated(false);
-      setKickVerified(false);
     }
   };
 

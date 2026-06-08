@@ -14,7 +14,6 @@ export interface AuthenticatedRequest extends Request {
     iat?: number;
     exp?: number;
   };
-  token?: string; // resolved access token (cookie or Bearer), set by authMiddleware
 }
 
 export interface JWTPayload {
@@ -32,15 +31,13 @@ export const authMiddleware = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Cookie-first, then Bearer header as fallback (for admin pages and Socket.IO)
-    const cookieToken = req.cookies?.access_token as string | undefined;
     const authHeader = req.headers.authorization;
-    const bearerToken =
-      authHeader && authHeader.startsWith('Bearer ')
-        ? authHeader.substring(7)
-        : undefined;
 
-    const token = cookieToken || bearerToken;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw createError.unauthorized('Access token required');
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     if (!token) {
       throw createError.unauthorized('Access token required');
@@ -49,7 +46,6 @@ export const authMiddleware = async (
     try {
       const decoded = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
       req.user = decoded;
-      req.token = token;
       next();
     } catch (jwtError) {
       if (jwtError instanceof jwt.TokenExpiredError) {
@@ -111,22 +107,19 @@ export const optionalAuthMiddleware = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const cookieToken = req.cookies?.access_token as string | undefined;
     const authHeader = req.headers.authorization;
-    const bearerToken =
-      authHeader && authHeader.startsWith('Bearer ')
-        ? authHeader.substring(7)
-        : undefined;
 
-    const token = cookieToken || bearerToken;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
 
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
-        req.user = decoded;
-        req.token = token;
-      } catch {
-        // Ignore JWT errors for optional auth — user will be undefined
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
+          req.user = decoded;
+        } catch (jwtError) {
+          // Ignore JWT errors for optional auth
+          // User will be undefined, which is acceptable
+        }
       }
     }
 

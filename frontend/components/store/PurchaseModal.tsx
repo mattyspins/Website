@@ -46,12 +46,21 @@ export default function PurchaseModal({
 
       // Fallback: fetch from API if localStorage doesn't have points
       try {
-        const response = await fetch("/api/auth/me", { credentials: "include" });
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.user) {
-            setUserPoints(data.user.points || 0);
-            localStorage.setItem("user_info", JSON.stringify(data.user));
+        const accessToken = localStorage.getItem("access_token");
+        if (accessToken) {
+          const response = await fetch("/api/auth/me", {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.user) {
+              setUserPoints(data.user.points || 0);
+              // Update localStorage with complete user info
+              localStorage.setItem("user_info", JSON.stringify(data.user));
+            }
           }
         }
       } catch (err) {

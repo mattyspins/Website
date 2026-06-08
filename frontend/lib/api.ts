@@ -2,81 +2,102 @@
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-// Default headers — no Authorization header; auth is via httpOnly cookie sent automatically.
-// Pages that still pass a Bearer token manually (admin pages) are accepted as fallback by the backend.
-const DEFAULT_HEADERS = { "Content-Type": "application/json" };
+// Helper function to get auth headers
+export const getAuthHeaders = () => {
+  const accessToken = localStorage.getItem("access_token");
+  return {
+    "Content-Type": "application/json",
+    ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+  };
+};
 
-// Helper kept for backward compat with pages that manually build fetch calls.
-// Returns only Content-Type; relying on cookies for auth.
-export const getAuthHeaders = (): Record<string, string> => DEFAULT_HEADERS;
-
-function handleError(errorData: any, status: number): never {
-  throw new Error(
-    (typeof errorData.error === "object"
-      ? errorData.error?.message
-      : errorData.error) ||
-      errorData.message ||
-      `HTTP ${status}`,
-  );
-}
-
-// API Client — all requests include credentials so httpOnly cookies are sent automatically
+// API Client
 export const api = {
   get: async (endpoint: string, options?: RequestInit) => {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: "GET",
-      credentials: "include",
-      headers: DEFAULT_HEADERS,
+      headers: getAuthHeaders(),
       ...options,
     });
-    if (!response.ok) handleError(await response.json().catch(() => ({ error: "Unknown error" })), response.status);
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: "Unknown error" }));
+      throw new Error(
+        (typeof errorData.error === "object" ? errorData.error?.message : errorData.error) || errorData.message || `HTTP ${response.status}`,
+      );
+    }
+
     return response.json();
   },
 
   post: async (endpoint: string, data?: any, options?: RequestInit) => {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: "POST",
-      credentials: "include",
-      headers: DEFAULT_HEADERS,
+      headers: getAuthHeaders(),
       body: JSON.stringify(data),
       ...options,
     });
-    if (!response.ok) handleError(await response.json().catch(() => ({ error: "Unknown error" })), response.status);
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: "Unknown error" }));
+      throw new Error(
+        (typeof errorData.error === "object" ? errorData.error?.message : errorData.error) || errorData.message || `HTTP ${response.status}`,
+      );
+    }
+
     return response.json();
   },
 
   put: async (endpoint: string, data?: any, options?: RequestInit) => {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: "PUT",
-      credentials: "include",
-      headers: DEFAULT_HEADERS,
+      headers: getAuthHeaders(),
       body: JSON.stringify(data),
       ...options,
     });
-    if (!response.ok) handleError(await response.json().catch(() => ({ error: "Unknown error" })), response.status);
     return response.json();
   },
 
   patch: async (endpoint: string, data?: any, options?: RequestInit) => {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: "PATCH",
-      credentials: "include",
-      headers: DEFAULT_HEADERS,
+      headers: getAuthHeaders(),
       body: data ? JSON.stringify(data) : undefined,
       ...options,
     });
-    if (!response.ok) handleError(await response.json().catch(() => ({ error: "Unknown error" })), response.status);
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: "Unknown error" }));
+      throw new Error(
+        (typeof errorData.error === "object" ? errorData.error?.message : errorData.error) || errorData.message || `HTTP ${response.status}`,
+      );
+    }
+
     return response.json();
   },
 
   delete: async (endpoint: string, options?: RequestInit) => {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: "DELETE",
-      credentials: "include",
-      headers: DEFAULT_HEADERS,
+      headers: getAuthHeaders(),
       ...options,
     });
-    if (!response.ok) handleError(await response.json().catch(() => ({ error: "Unknown error" })), response.status);
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: "Unknown error" }));
+      throw new Error(
+        (typeof errorData.error === "object" ? errorData.error?.message : errorData.error) || errorData.message || `HTTP ${response.status}`,
+      );
+    }
+
     return response.json();
   },
 };
@@ -111,12 +132,15 @@ export const API_ENDPOINTS = {
     `${API_URL}/api/admin/users/${userId}/suspend`,
   ADMIN_USER_UNSUSPEND: (userId: string) =>
     `${API_URL}/api/admin/users/${userId}/unsuspend`,
+  ADMIN_VERIFY_RAINBET: (userId: string) =>
+    `${API_URL}/api/admin/users/${userId}/verify-rainbet`,
   ADMIN_VERIFY_KICK: (userId: string) =>
     `${API_URL}/api/admin/users/${userId}/verify-kick`,
   ADMIN_EDIT_KICK_USERNAME: (userId: string) =>
     `${API_URL}/api/admin/users/${userId}/kick-username`,
+  ADMIN_EDIT_RAINBET_USERNAME: (userId: string) =>
+    `${API_URL}/api/admin/users/${userId}/rainbet-username`,
   ADMIN_STATS: `${API_URL}/api/admin/dashboard/stats`,
-  ADMIN_KICK_CHAT_STATUS: `${API_URL}/api/admin/kick-chat/status`,
   ADMIN_AUDIT_LOGS: `${API_URL}/api/admin/audit-logs`,
   ADMIN_ACTIVITY: `${API_URL}/api/admin/activity`,
 
@@ -132,6 +156,7 @@ export const API_ENDPOINTS = {
 
   // Users
   USERS_KICK: `${API_URL}/api/auth/kick-username`,
+  USERS_RAINBET: `${API_URL}/api/auth/rainbet-username`,
 
   // Leaderboards (Manual)
   LEADERBOARDS_ACTIVE: `${API_URL}/api/manual-leaderboards?status=active`,
@@ -173,9 +198,6 @@ export const API_ENDPOINTS = {
 
   // Live Bonus Hunt (viewer page)
   LIVE_HUNT: `${API_URL}/api/live-hunt`,
-
-  // Hunt Tracker (admin persistent storage)
-  HUNT_TRACKER: `${API_URL}/api/hunt-tracker`,
 
   // Daily Check-in
   CHECKIN_STATUS: `${API_URL}/api/checkin/status`,

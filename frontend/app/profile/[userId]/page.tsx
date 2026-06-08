@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { CheckCircle, Lock, Trophy, Coins, Ticket, Clock } from "lucide-react";
+import { CheckCircle, Lock, Trophy } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/api";
 
 const TIER_COLORS: Record<string, { border: string; badge: string }> = {
@@ -25,17 +25,12 @@ interface PublicProfile {
   totalDeposited: number;
   createdAt: string;
   kickUsername?: string;
+  rainbetVerified: boolean;
   tiers: Array<{
     id: number; name: string; wagerRequired: number; reward: number;
     unlocked: boolean; claimStatus: string | null;
   }>;
   unlockedCount: number;
-  communityStats?: {
-    points: number;
-    totalEarned: number;
-    raffleWins: number;
-    watchedMinutes: number;
-  };
 }
 
 export default function PublicProfilePage() {
@@ -108,6 +103,9 @@ export default function PublicProfilePage() {
                     {profile.kickUsername}
                   </span>
                 )}
+                {profile.rainbetVerified && (
+                  <span className="text-gold-400 text-xs font-semibold">AceBet ✓</span>
+                )}
               </div>
               <p className="text-gray-600 text-xs mt-1">Joined {joinedDate}</p>
             </div>
@@ -119,7 +117,7 @@ export default function PublicProfilePage() {
               <p className="text-gold-400 font-gaming font-bold text-2xl leading-none">
                 ${profile.totalWagered.toLocaleString("en-US", { maximumFractionDigits: 0 })}
               </p>
-              <p className="text-gray-600 text-xs mt-1">Total Wagered</p>
+              <p className="text-gray-600 text-xs mt-1">Total on AceBet</p>
             </div>
             <div className="bg-navy-900/60 border border-white/6 rounded-xl p-4 text-center">
               <p className="text-gray-500 text-xs font-semibold tracking-widest uppercase mb-1.5">Milestones</p>
@@ -130,47 +128,6 @@ export default function PublicProfilePage() {
             </div>
           </div>
         </motion.div>
-
-        {/* Community stats */}
-        {profile.communityStats && (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
-            className="mb-6">
-            <h2 className="text-white font-semibold text-sm uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Coins className="w-4 h-4 text-gold-400" /> Community Stats
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-navy-800/60 border border-white/6 rounded-xl p-4 text-center">
-                <Coins className="w-5 h-5 text-gold-400 mx-auto mb-1.5" />
-                <p className="text-gold-400 font-gaming font-bold text-xl leading-none">
-                  {profile.communityStats.points.toLocaleString()}
-                </p>
-                <p className="text-gray-600 text-xs mt-1">Coins</p>
-              </div>
-              <div className="bg-navy-800/60 border border-white/6 rounded-xl p-4 text-center">
-                <Trophy className="w-5 h-5 text-gold-400 mx-auto mb-1.5" />
-                <p className="text-white font-gaming font-bold text-xl leading-none">
-                  {profile.communityStats.totalEarned.toLocaleString()}
-                </p>
-                <p className="text-gray-600 text-xs mt-1">Coins Earned</p>
-              </div>
-              <div className="bg-navy-800/60 border border-white/6 rounded-xl p-4 text-center">
-                <Ticket className="w-5 h-5 text-purple-400 mx-auto mb-1.5" />
-                <p className="text-white font-gaming font-bold text-xl leading-none">
-                  {profile.communityStats.raffleWins}
-                </p>
-                <p className="text-gray-600 text-xs mt-1">Raffle Wins</p>
-              </div>
-              <div className="bg-navy-800/60 border border-white/6 rounded-xl p-4 text-center">
-                <Clock className="w-5 h-5 text-blue-400 mx-auto mb-1.5" />
-                <p className="text-white font-gaming font-bold text-xl leading-none">
-                  {Math.floor((profile.communityStats.watchedMinutes ?? 0) / 60)}
-                  <span className="text-gray-500 text-sm font-normal">h</span>
-                </p>
-                <p className="text-gray-600 text-xs mt-1">Watched</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
 
         {/* Milestone grid */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>

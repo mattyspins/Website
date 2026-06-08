@@ -148,7 +148,6 @@ import tournamentRoutes from '@/routes/tournament';
 import { setTournamentIO } from '@/controllers/TournamentController';
 // import bonusHuntRoutes from '@/routes/bonusHunt';
 import liveHuntRoutes from '@/routes/liveHunt';
-import huntTrackerRoutes from '@/routes/huntTracker';
 import bonusBingoRoutes from '@/routes/bonusBingo';
 import { setBingoIO } from '@/controllers/BingoBoardController';
 import viewerPickerRoutes from '@/routes/viewerPicker';
@@ -172,7 +171,6 @@ app.use('/api/viewing', viewingRoutes);
 app.use('/api/tournaments', tournamentRoutes);
 // app.use('/api/bonus-hunt', bonusHuntRoutes);
 app.use('/api/live-hunt', liveHuntRoutes);
-app.use('/api/hunt-tracker', huntTrackerRoutes);
 app.use('/api/bonus-bingo', bonusBingoRoutes);
 app.use('/api/viewer-picker', viewerPickerRoutes);
 

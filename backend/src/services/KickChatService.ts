@@ -32,10 +32,6 @@ export class KickChatService {
     this.io = io;
   }
 
-  static isConnected(): boolean {
-    return this.ws?.readyState === WebSocket.OPEN;
-  }
-
   static async start(): Promise<void> {
     if (!KICK_CHATROOM_ID) {
       logger.warn('KickChatService: KICK_CHATROOM_ID not set in .env — chat listener disabled');
@@ -73,7 +69,6 @@ export class KickChatService {
 
       this.ws.on('open', () => {
         logger.info('KickChatService: WebSocket open, waiting for Pusher handshake');
-        this.io?.emit('kick_chat_status', { connected: true });
         // Keep-alive ping every 30 s
         this.pingTimer = setInterval(() => {
           if (this.ws?.readyState === WebSocket.OPEN) {
@@ -116,7 +111,6 @@ export class KickChatService {
 
       this.ws.on('close', (code, reason) => {
         logger.warn('KickChatService: connection closed', { code, reason: reason.toString() });
-        this.io?.emit('kick_chat_status', { connected: false });
         this.clearTimers();
         if (this.running) {
           this.reconnectTimer = setTimeout(() => this.connect(), RECONNECT_DELAY_MS);

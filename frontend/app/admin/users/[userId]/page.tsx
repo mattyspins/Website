@@ -17,6 +17,8 @@ interface UserDetail {
   discordId: string;
   kickUsername?: string;
   kickVerified: boolean;
+  rainbetUsername?: string;
+  rainbetVerified: boolean;
   points: number;
   totalEarned: number;
   totalSpent: number;
@@ -68,10 +70,13 @@ export default function AdminUserPage() {
   const [suspendSaving, setSuspendSaving] = useState(false);
 
   const { success, error: toastError } = useToast();
+  const token = () => localStorage.getItem("access_token") ?? "";
 
   useEffect(() => {
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) { router.push("/"); return; }
     fetch(API_ENDPOINTS.ADMIN_USER(userId), {
-      credentials: "include",
+      headers: { Authorization: `Bearer ${accessToken}` },
     })
       .then((r) => { if (r.status === 404) { setNotFound(true); return null; } return r.json(); })
       .then((d) => {
@@ -96,8 +101,7 @@ export default function AdminUserPage() {
       : { isDepositor: !current };
     const res = await fetch(endpoint, {
       method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
       body: JSON.stringify(body),
     });
     if (res.ok) setUser((u) => u ? { ...u, [field]: !current } : u);
@@ -110,8 +114,7 @@ export default function AdminUserPage() {
     try {
       const res = await fetch(API_ENDPOINTS.ADMIN_USER_POINTS(user.id), {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
         body: JSON.stringify({ amount, reason: coinsReason }),
       });
       if (res.ok) {
@@ -130,8 +133,7 @@ export default function AdminUserPage() {
       if (parseFloat(newWager) !== Number(user.totalWagered)) {
         const r = await fetch(API_ENDPOINTS.ADMIN_USER_WAGER(user.id), {
           method: "PATCH",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
           body: JSON.stringify({ totalWagered: parseFloat(newWager) }),
         });
         if (r.ok) { setUser((u) => u ? { ...u, totalWagered: newWager } : u); results.push("wagered"); }
@@ -139,8 +141,7 @@ export default function AdminUserPage() {
       if (parseFloat(newDeposited) !== Number(user.totalDeposited)) {
         const r = await fetch(API_ENDPOINTS.ADMIN_USER_DEPOSIT(user.id), {
           method: "PATCH",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
           body: JSON.stringify({ totalDeposited: parseFloat(newDeposited) }),
         });
         if (r.ok) { setUser((u) => u ? { ...u, totalDeposited: newDeposited } : u); results.push("deposited"); }
@@ -158,8 +159,7 @@ export default function AdminUserPage() {
     try {
       const res = await fetch(endpoint, {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
       });
       if (res.ok) {
         setUser((u) => u ? { ...u, isSuspended: !u.isSuspended } : u);
@@ -284,6 +284,19 @@ export default function AdminUserPage() {
                   </div>
                   <p className={`text-sm ${user.kickUsername ? "text-gray-300" : "text-gray-600"}`}>
                     {user.kickUsername || "Not linked"}
+                  </p>
+                </div>
+
+                {/* AceBet */}
+                <div className={`rounded-xl p-4 border ${user.rainbetVerified ? "bg-gold-500/5 border-gold-500/20" : user.rainbetUsername ? "bg-yellow-500/5 border-yellow-500/20" : "bg-white/3 border-white/6"}`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-gold-400 font-black text-sm">A</span>
+                    <p className="text-white text-sm font-semibold">AceBet</p>
+                    {user.rainbetVerified && <span className="text-gold-400 text-[10px] font-black ml-auto">VERIFIED</span>}
+                    {user.rainbetUsername && !user.rainbetVerified && <span className="text-yellow-400 text-[10px] font-black ml-auto">PENDING</span>}
+                  </div>
+                  <p className={`text-sm ${user.rainbetUsername ? "text-gray-300" : "text-gray-600"}`}>
+                    {user.rainbetUsername || "Not linked"}
                   </p>
                 </div>
               </div>

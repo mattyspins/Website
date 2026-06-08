@@ -18,6 +18,7 @@ const COMMUNITY_LINKS = [
   { name: "Kick",      href: "https://kick.com/mattyspinsslots" },
   { name: "Instagram", href: "https://www.instagram.com/mattyspinsslots/" },
   { name: "X",         href: "https://x.com/mattyspinsslots" },
+  { name: "AceBet",    href: "https://a.acebet.com/api/click?a=374&lp=194&c=426" },
 ];
 
 const LEGAL_LINKS = [
@@ -40,7 +41,7 @@ export default function Footer() {
               MATTY<span className="text-gold-400">SPINS</span>
             </span>
             <p className="text-gray-500 text-sm mt-3 leading-relaxed">
-              Live leaderboards, bonus hunts, stream games and exclusive community rewards.
+              Official AceBet partner. Live leaderboards, bonus hunts, stream games and exclusive community rewards.
             </p>
             {/* Socials */}
             <div className="flex gap-2 mt-5">

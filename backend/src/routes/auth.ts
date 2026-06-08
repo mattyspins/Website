@@ -55,6 +55,11 @@ router.post(
   authMiddleware,
   AuthController.submitKickUsername
 );
+router.post(
+  '/rainbet-username',
+  authMiddleware,
+  AuthController.submitRainbetUsername
+);
 // Kick chat-based verification
 router.post('/kick-verify/initiate', authLimiter, authMiddleware, AuthController.initiateKickChatVerify);
 router.get('/kick-verify/status', authMiddleware, AuthController.checkKickVerifyStatus);

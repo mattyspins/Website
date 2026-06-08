@@ -16,6 +16,7 @@ interface Claim {
     displayName: string;
     discordId: string;
     kickUsername?: string;
+    rainbetUsername?: string;
   };
 }
 
@@ -30,11 +31,13 @@ export default function AdminMilestoneClaims() {
 
   useEffect(() => { loadClaims(); }, []);
 
+  const token = () => localStorage.getItem("access_token") ?? "";
+
   const loadClaims = async () => {
     setLoading(true);
     try {
       const res = await fetch(API_ENDPOINTS.MILESTONES_CLAIMS_ADMIN, {
-        credentials: "include",
+        headers: { Authorization: `Bearer ${token()}` },
       });
       const d = await res.json();
       if (d.success) setClaims(d.claims);
@@ -46,8 +49,7 @@ export default function AdminMilestoneClaims() {
     try {
       const res = await fetch(API_ENDPOINTS.MILESTONES_CLAIM_UPDATE(claimId), {
         method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
         body: JSON.stringify({ status }),
       });
       if (res.ok) {
@@ -125,6 +127,7 @@ export default function AdminMilestoneClaims() {
                 <div className="flex items-center gap-3 flex-wrap text-xs text-gray-500">
                   <span>{claim.user.discordId}</span>
                   {claim.user.kickUsername && <span>Kick: {claim.user.kickUsername}</span>}
+                  {claim.user.rainbetUsername && <span>AceBet: {claim.user.rainbetUsername}</span>}
                 </div>
               </div>
 

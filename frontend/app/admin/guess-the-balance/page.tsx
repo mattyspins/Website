@@ -35,9 +35,15 @@ export default function AdminGuessTheBalancePage() {
   }, [statusFilter, games]);
 
   const checkAdminAccess = async () => {
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) {
+      router.push("/");
+      return;
+    }
+
     try {
       const response = await fetch(API_ENDPOINTS.AUTH_ME, {
-        credentials: "include",
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
 
       if (response.ok) {

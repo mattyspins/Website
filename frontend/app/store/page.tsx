@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { storeApi } from "@/lib/api/store";
-import { API_ENDPOINTS } from "@/lib/api";
 import type { StoreItem, StoreCategory } from "@/types/store";
 import StoreItemCard from "@/components/store/StoreItemCard";
 import PurchaseModal from "@/components/store/PurchaseModal";
@@ -21,11 +20,8 @@ export default function StorePage() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
   useEffect(() => {
+    setIsAuthenticated(!!localStorage.getItem("access_token"));
     loadStoreData();
-    fetch(API_ENDPOINTS.AUTH_ME, { credentials: "include" })
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => setIsAuthenticated(!!(d?.user)))
-      .catch(() => {});
   }, []);
 
   useEffect(() => {

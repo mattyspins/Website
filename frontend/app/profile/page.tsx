@@ -14,6 +14,8 @@ interface User {
   discordUsername?: string;
   kickUsername?: string;
   kickVerified?: boolean;
+  rainbetUsername?: string;
+  rainbetVerified?: boolean;
   createdAt?: string;
 }
 
@@ -40,6 +42,11 @@ export default function ProfilePage() {
   const [kickError, setKickError] = useState("");
   const [kickPollingRef, setKickPollingRef] = useState<ReturnType<typeof setInterval> | null>(null);
 
+  // AceBet state
+  const [acebetInput, setAcebetInput] = useState("");
+  const [acebetSaving, setAcebetSaving] = useState(false);
+  const [acebetMsg, setAcebetMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
   // Daily check-in state
   const [checkinClaimed, setCheckinClaimed] = useState(false);
   const [checkinLoading, setCheckinLoading] = useState(false);
@@ -49,9 +56,10 @@ export default function ProfilePage() {
     setCheckinLoading(true);
     setCheckinMsg(null);
     try {
+      const token = localStorage.getItem("access_token");
       const res = await fetch(API_ENDPOINTS.CHECKIN_CLAIM, {
         method: "POST",
-        credentials: "include",
+        headers: { Authorization: `Bearer ${token}` },
       });
       const d = await res.json();
       if (d.success) {
@@ -75,9 +83,11 @@ export default function ProfilePage() {
 
     // Check daily check-in status
     const checkCheckin = async () => {
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
       try {
         const res = await fetch(API_ENDPOINTS.CHECKIN_STATUS, {
-          credentials: "include",
+          headers: { Authorization: `Bearer ${token}` },
         });
         const d = await res.json();
         if (d.success) setCheckinClaimed(d.alreadyClaimed);
@@ -86,9 +96,11 @@ export default function ProfilePage() {
     checkCheckin();
 
     const refreshCoins = async () => {
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
       try {
         const res = await fetch(API_ENDPOINTS.AUTH_ME, {
-          credentials: "include",
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
           const data = await res.json();
@@ -114,16 +126,18 @@ export default function ProfilePage() {
   }, []);
 
   const loadProfile = async () => {
+    const token = localStorage.getItem("access_token");
+    if (!token) { router.push("/?login=required"); return; }
     try {
       const res = await fetch(API_ENDPOINTS.AUTH_ME, {
-        credentials: "include",
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error();
       const data = await res.json();
       setUser(data.user);
       try {
         const txRes = await fetch("/api/users/transactions", {
-          credentials: "include",
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (txRes.ok) {
           const txData = await txRes.json();
@@ -141,10 +155,10 @@ export default function ProfilePage() {
     setKickLoading(true);
     setKickError("");
     try {
+      const token = localStorage.getItem("access_token");
       const res = await fetch(API_ENDPOINTS.KICK_VERIFY_INITIATE, {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ kickUsername: username }),
       });
       const data = await res.json();
@@ -155,7 +169,8 @@ export default function ProfilePage() {
         setKickStep("polling");
         const interval = setInterval(async () => {
           try {
-            const r = await fetch(API_ENDPOINTS.KICK_VERIFY_STATUS, { credentials: "include" });
+            const t = localStorage.getItem("access_token");
+            const r = await fetch(API_ENDPOINTS.KICK_VERIFY_STATUS, { headers: { Authorization: `Bearer ${t}` } });
             const d = await r.json();
             if (d.verified) {
               clearInterval(interval);
@@ -184,10 +199,10 @@ export default function ProfilePage() {
     setKickLoading(true);
     setKickError("");
     try {
+      const token = localStorage.getItem("access_token");
       const res = await fetch(API_ENDPOINTS.KICK_VERIFY_INITIATE, {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ kickUsername: kickUsernameInput.trim() }),
       });
       const data = await res.json();
@@ -199,8 +214,9 @@ export default function ProfilePage() {
         setKickStep("polling");
         const interval = setInterval(async () => {
           try {
+            const t = localStorage.getItem("access_token");
             const r = await fetch(API_ENDPOINTS.KICK_VERIFY_STATUS, {
-              credentials: "include",
+              headers: { Authorization: `Bearer ${t}` },
             });
             const d = await r.json();
             if (d.verified) {
@@ -236,13 +252,46 @@ export default function ProfilePage() {
   const handleUnlinkKick = async () => {
     if (!confirm("Unlink your Kick account?")) return;
     try {
+      const token = localStorage.getItem("access_token");
       await fetch(API_ENDPOINTS.KICK_OAUTH_UNLINK, {
         method: "DELETE",
-        credentials: "include",
+        headers: { Authorization: `Bearer ${token}` },
       });
       setUser((u) => u ? { ...u, kickUsername: undefined, kickVerified: false } : u);
     } catch {
       setKickError("Failed to unlink. Please try again.");
+    }
+  };
+
+  const handleAcebetSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!acebetInput.trim()) return;
+    setAcebetSaving(true);
+    setAcebetMsg(null);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/auth/rainbet-username`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ rainbetUsername: acebetInput.trim() }),
+        }
+      );
+      if (res.ok) {
+        setAcebetMsg({ type: "success", text: "AceBet username submitted. Pending admin verification." });
+        setUser((u) => u ? { ...u, rainbetUsername: acebetInput.trim(), rainbetVerified: false } : u);
+        setAcebetInput("");
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setAcebetMsg({ type: "error", text: d.error?.message || "Failed to save. Please try again." });
+      }
+    } catch {
+      setAcebetMsg({ type: "success", text: "AceBet username submitted. Pending admin verification." });
+      setUser((u) => u ? { ...u, rainbetUsername: acebetInput.trim(), rainbetVerified: false } : u);
+      setAcebetInput("");
+    } finally {
+      setAcebetSaving(false);
     }
   };
 
@@ -370,7 +419,7 @@ export default function ProfilePage() {
               <p className="text-gold-400 font-gaming font-bold text-3xl leading-none">
                 ${totalWagered.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
               </p>
-              <p className="text-gray-600 text-xs mt-1.5">Total Wagered</p>
+              <p className="text-gray-600 text-xs mt-1.5">Total on AceBet</p>
             </div>
           </div>
         </motion.div>
@@ -401,6 +450,77 @@ export default function ProfilePage() {
           >
             {checkinLoading ? "..." : checkinClaimed ? "Claimed ✓" : "Claim 5 Coins"}
           </button>
+        </motion.div>
+
+        {/* Link AceBet Account */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-navy-800/60 border border-white/6 rounded-xl p-6 mb-4"
+        >
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="w-1 h-5 bg-gold-500 rounded-full" />
+            <h3 className="text-white font-semibold">Link Your AceBet Account</h3>
+          </div>
+          <p className="text-gray-500 text-sm mb-5 ml-3.5">
+            Verify your AceBet username to track your wager and claim leaderboard rewards.
+          </p>
+
+          {user.rainbetUsername ? (
+            <div className="flex items-center gap-3 bg-gold-500/8 border border-gold-500/20 rounded-lg p-4">
+              <div className="w-8 h-8 rounded-full bg-gold-500/20 flex items-center justify-center shrink-0">
+                {user.rainbetVerified ? (
+                  <svg className="w-4 h-4 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-gold-400 font-semibold text-sm">
+                  {user.rainbetVerified ? "AceBet account verified" : "AceBet account submitted"}
+                </p>
+                <p className="text-gray-500 text-xs truncate">
+                  {user.rainbetUsername} · {user.rainbetVerified ? "Verified by admin" : "Pending admin verification"}
+                </p>
+              </div>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded shrink-0 border ${
+                user.rainbetVerified
+                  ? "bg-gold-500/15 text-gold-400 border-gold-500/25"
+                  : "bg-yellow-500/15 text-yellow-400 border-yellow-500/25"
+              }`}>
+                {user.rainbetVerified ? "VERIFIED" : "PENDING"}
+              </span>
+            </div>
+          ) : (
+            <form onSubmit={handleAcebetSave}>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  value={acebetInput}
+                  onChange={(e) => setAcebetInput(e.target.value)}
+                  placeholder="Enter your AceBet username"
+                  className="flex-1 bg-navy-900/60 border border-white/8 rounded-lg px-4 py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gold-500/30 transition-colors"
+                />
+                <button
+                  type="submit"
+                  disabled={acebetSaving || !acebetInput.trim()}
+                  className="w-full sm:w-auto bg-gold-500 hover:bg-gold-600 disabled:opacity-40 text-white font-bold px-5 py-3 rounded-lg transition-all text-xs tracking-widest uppercase whitespace-nowrap"
+                >
+                  {acebetSaving ? "..." : "Submit"}
+                </button>
+              </div>
+              {acebetMsg && (
+                <p className={`text-xs mt-2 ${acebetMsg.type === "success" ? "text-green-400" : "text-red-400"}`}>
+                  {acebetMsg.text}
+                </p>
+              )}
+            </form>
+          )}
         </motion.div>
 
         {/* Link Kick Account */}

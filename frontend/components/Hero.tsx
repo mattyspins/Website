@@ -13,6 +13,17 @@ export default function Hero() {
       <div className="absolute top-2/3 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-gold-700/4 rounded-full blur-3xl" />
 
       <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
+        {/* Partner badge */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="inline-flex items-center gap-2 bg-gold-500/10 border border-gold-500/25 rounded-full px-4 py-1.5 text-sm text-gold-400 font-medium mb-8"
+        >
+          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+          Official AceBet Partner
+        </motion.div>
+
         {/* Heading */}
         <motion.h1
           initial={{ opacity: 0, y: 24 }}
@@ -49,6 +60,17 @@ export default function Hero() {
           >
             <Play className="w-4 h-4" />
             Watch Live
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+
+          <a
+            href="https://acebet.co/welcome/r/mattyspins"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-glow inline-flex items-center gap-2 bg-gold-500 hover:bg-gold-600 text-black px-6 py-3 rounded-lg font-semibold text-sm transition-all hover:scale-105 neon-glow"
+          >
+            <span className="font-gaming font-bold text-base">A</span>
+            Play on AceBet
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
 

@@ -315,7 +315,9 @@ export default function AdminTournamentPage() {
   const [winnerMatchId, setWinnerMatchId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(API_ENDPOINTS.AUTH_ME, { credentials: "include" })
+    const token = localStorage.getItem("access_token");
+    if (!token) { router.push("/"); return; }
+    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((d) => {
         if (!d.user?.isAdmin) router.push("/");

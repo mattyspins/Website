@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import {
   Hunt, HuntBonus, BadgeType, CURRENCY_SYMBOLS,
-  getHunt, upsertHunt, syncHuntToAPI, calcHuntStats, fmt, fmtMulti,
+  getHunt, upsertHunt, calcHuntStats, fmt, fmtMulti,
 } from "@/lib/huntTracker";
 import { SLOT_GAMES, type SlotGame } from "@/lib/slotGames";
 import { API_ENDPOINTS } from "@/lib/api";
@@ -407,6 +407,8 @@ export default function HuntDetailPage() {
   useEffect(() => { reload(); }, [reload]);
 
   useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
     fetch(API_ENDPOINTS.LIVE_HUNT)
       .then((r) => r.json())
       .then((d) => { if (d.hunt?.id === huntId) setIsLive(true); })
@@ -415,12 +417,13 @@ export default function HuntDetailPage() {
 
   async function handleGoLive() {
     if (!hunt) return;
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
     setLiveLoading(true);
     try {
       const res = await fetch(API_ENDPOINTS.LIVE_HUNT, {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(hunt),
       });
       if (res.ok) setIsLive(true);
@@ -428,11 +431,13 @@ export default function HuntDetailPage() {
   }
 
   async function handleTakeDown() {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
     setLiveLoading(true);
     try {
       const res = await fetch(API_ENDPOINTS.LIVE_HUNT, {
         method: "DELETE",
-        credentials: "include",
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setIsLive(false);
     } catch { /* ignore */ } finally { setLiveLoading(false); }
@@ -458,16 +463,16 @@ export default function HuntDetailPage() {
     const updated = updater(hunt);
     upsertHunt(updated);
     setHunt(updated);
-    // Sync to backend DB
-    syncHuntToAPI(updated);
     // If this hunt is currently live, push the update automatically
     if (isLive) {
-      fetch(API_ENDPOINTS.LIVE_HUNT, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated),
-      }).catch(() => {});
+      const token = localStorage.getItem("access_token");
+      if (token) {
+        fetch(API_ENDPOINTS.LIVE_HUNT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(updated),
+        }).catch(() => {});
+      }
     }
   }
 
@@ -490,11 +495,14 @@ export default function HuntDetailPage() {
     setOpeningMode(false);
     // Take down live if needed
     if (isLive) {
-      await fetch(API_ENDPOINTS.LIVE_HUNT, {
-        method: "DELETE",
-        credentials: "include",
-      }).catch(() => {});
-      setIsLive(false);
+      const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+      if (token) {
+        await fetch(API_ENDPOINTS.LIVE_HUNT, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => {});
+        setIsLive(false);
+      }
     }
   }
 

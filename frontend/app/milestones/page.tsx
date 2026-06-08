@@ -40,17 +40,15 @@ export default function MilestonesPage() {
   const [claimMsgs, setClaimMsgs] = useState<Record<number, string>>({});
 
   useEffect(() => {
-    loadMilestones();
-    fetch(API_ENDPOINTS.AUTH_ME, { credentials: "include" })
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => setIsAuthenticated(!!(d?.user)))
-      .catch(() => {});
+    const token = localStorage.getItem("access_token");
+    setIsAuthenticated(!!token);
+    loadMilestones(token);
   }, []);
 
-  const loadMilestones = async () => {
+  const loadMilestones = async (token: string | null) => {
     try {
       const res = await fetch(API_ENDPOINTS.MILESTONES, {
-        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const data = await res.json();
       if (data.success) {
@@ -62,12 +60,13 @@ export default function MilestonesPage() {
   };
 
   const handleClaim = async (tier: MilestoneTier) => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
     setClaiming(tier.id);
     try {
       const res = await fetch(API_ENDPOINTS.MILESTONES_CLAIM, {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ tierId: tier.id }),
       });
       const d = await res.json();
@@ -103,13 +102,22 @@ export default function MilestonesPage() {
           className="text-center mb-10"
         >
           <span className="inline-block bg-gold-500/10 border border-gold-500/30 text-gold-400 text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded mb-4">
-            Wager Milestones
+            AceBet Wager Milestones
           </span>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-gaming text-white mb-3 tracking-wide">
             MILE<span className="text-gold-400">STONES</span>
           </h1>
           <p className="text-gray-400 text-sm max-w-xl mx-auto">
-            Reach wager milestones and unlock cash rewards at every tier.
+            Wager on{" "}
+            <a
+              href="https://acebet.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gold-400 hover:text-gold-300 underline underline-offset-2"
+            >
+              AceBet
+            </a>{" "}
+            and unlock cash rewards at every tier. Only AceBet wagers count.
           </p>
         </motion.div>
 
@@ -160,6 +168,24 @@ export default function MilestonesPage() {
               to see your progress
             </p>
           )}
+        </motion.div>
+
+        {/* Notice */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.15 }}
+          className="bg-gold-500/8 border border-gold-500/20 rounded-xl px-5 py-4 mb-10 flex items-start gap-3"
+        >
+          <Trophy className="w-5 h-5 text-gold-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-gold-300 font-semibold text-sm">Only AceBet wagers count</p>
+            <p className="text-gray-400 text-sm mt-0.5">
+              Starting now, only wagering on AceBet counts towards wager milestones and leaderboard rewards.
+              Link your AceBet account in your{" "}
+              <a href="/profile" className="text-gold-400 hover:text-gold-300 underline underline-offset-2">profile</a>.
+            </p>
+          </div>
         </motion.div>
 
         {/* Milestones grid */}
@@ -253,16 +279,23 @@ export default function MilestonesPage() {
           className="mt-12 bg-navy-800/40 border border-white/5 rounded-xl p-6"
         >
           <h3 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">How It Works</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-500">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-500">
             <div className="flex items-start gap-3">
               <span className="text-gold-400 mt-0.5">01</span>
               <div>
-                <p className="text-gray-300 font-medium">Reach Your Wager Goal</p>
-                <p>Hit the wager threshold for each tier to unlock that milestone&apos;s cash reward</p>
+                <p className="text-gray-300 font-medium">Link AceBet</p>
+                <p>Verify your AceBet username in your profile to start tracking wagers</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-gold-400 mt-0.5">02</span>
+              <div>
+                <p className="text-gray-300 font-medium">Wager on AceBet</p>
+                <p>Only wagers placed on AceBet count towards milestone progress</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-gold-400 mt-0.5">03</span>
               <div>
                 <p className="text-gray-300 font-medium">Claim Rewards</p>
                 <p>Click the claim button when you hit a milestone — we&apos;ll reach out via Discord to pay you out</p>

@@ -23,6 +23,11 @@ const STATUS_STYLE: Record<string, string> = {
   cancelled: "bg-red-500/10 text-red-400 border border-red-500/20",
 };
 
+function authHeaders() {
+  const token = localStorage.getItem("access_token");
+  return token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : {};
+}
+
 export default function AdminRaffles() {
   const [raffles, setRaffles] = useState<Raffle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +40,7 @@ export default function AdminRaffles() {
   const loadRaffles = useCallback(async () => {
     try {
       const url = filter === "all" ? API_ENDPOINTS.RAFFLES_ADMIN_ALL : API_ENDPOINTS.RAFFLES_ACTIVE;
-      const res = await fetch(url, { credentials: "include" });
+      const res = await fetch(url, { headers: authHeaders() });
       const data = await res.json();
       setRaffles(data.data?.raffles ?? data.raffles ?? []);
     } catch {
@@ -59,8 +64,7 @@ export default function AdminRaffles() {
     try {
       const res = await fetch(API_ENDPOINTS.RAFFLES_SELECT_WINNERS(raffle.id), {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(),
         body: JSON.stringify({}),
       });
       const data = await res.json();
@@ -84,8 +88,7 @@ export default function AdminRaffles() {
     try {
       const res = await fetch(API_ENDPOINTS.RAFFLE_CANCEL(raffle.id), {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(),
         body: JSON.stringify({ reason: "Cancelled by admin" }),
       });
       const data = await res.json();
@@ -234,8 +237,7 @@ function CreateRaffleModal({ onClose, onCreated }: { onClose: () => void; onCrea
     try {
       const res = await fetch(API_ENDPOINTS.RAFFLES_CREATE, {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(),
         body: JSON.stringify({
           title: form.title,
           description: form.description || undefined,

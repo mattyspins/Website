@@ -194,19 +194,7 @@ export class ViewingController {
       }
 
       try {
-        // Verify the stream is still live — prevents farming points after broadcast ends
-        const isLive = await KickService.isMattySpinsLive();
-        if (!isLive) {
-          // End any dangling session so points are awarded for time actually watched
-          await KickService.endViewingSession(req.user.id, streamId).catch(() => null);
-          return res.json({
-            success: false,
-            streamOffline: true,
-            message: 'Stream is no longer live',
-          });
-        }
-
-        // Validate user presence (session still tracked in Redis)
+        // Validate user presence
         const isValid = await KickService.validateUserPresence(
           req.user.id,
           streamId
@@ -216,7 +204,7 @@ export class ViewingController {
           throw createError.badRequest('Invalid viewing session');
         }
 
-        // Update activity timestamp
+        // Update activity
         const updated = await KickService.updateViewingActivity(
           req.user.id,
           streamId

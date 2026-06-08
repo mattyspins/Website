@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import UserProfile from "./UserProfile";
 import { useToast } from "./ui/ToastProvider";
-import { API_URL, API_ENDPOINTS } from "@/lib/api";
+import { API_ENDPOINTS } from "@/lib/api";
 import { User, ShoppingBag, LayoutDashboard, LogOut } from "lucide-react";
 import {
   storeAuthData,
@@ -37,16 +37,47 @@ export default function AuthButtons({ inline = false, onNavigate }: AuthButtonsP
   // Check if user is logged in on component mount
   useEffect(() => {
     const checkAuth = async () => {
+      // Try to initialize auth from stored tokens
       const storedUser = await initializeAuth();
-      if (storedUser) setUser(storedUser);
+
+      if (storedUser) {
+        setUser(storedUser);
+        return;
+      }
+
+      // Fallback: check with backend if we have a token
+      const accessToken = localStorage.getItem("access_token");
+      if (!accessToken) return;
+
+      try {
+        const response = await fetch(API_ENDPOINTS.AUTH_ME, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user) {
+            setUser(data.user);
+            updateStoredUser(data.user);
+          }
+        } else {
+          clearAuthData();
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error);
+      }
     };
 
     checkAuth();
 
     const refreshBalance = async () => {
+      const accessToken = localStorage.getItem("access_token");
+      if (!accessToken) return;
       try {
-        const response = await fetch(`${API_URL}/api/auth/me`, {
-          credentials: "include",
+        const response = await fetch(API_ENDPOINTS.AUTH_ME, {
+          headers: { Authorization: `Bearer ${accessToken}` },
         });
         if (response.ok) {
           const data = await response.json();
@@ -128,8 +159,26 @@ export default function AuthButtons({ inline = false, onNavigate }: AuthButtonsP
   };
 
   const handleLogout = async () => {
-    await clearAuthData(); // calls /api/auth/logout with credentials to clear cookies
+    const accessToken = localStorage.getItem("access_token");
+
+    if (accessToken) {
+      try {
+        await fetch(API_ENDPOINTS.AUTH_LOGOUT, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+      } catch (err) {
+        console.error("Logout error:", err);
+      }
+    }
+
+    // Clear all auth data using the persistence module
+    clearAuthData();
     setUser(null);
+
+    // Redirect to home
     window.location.href = "/";
   };
 

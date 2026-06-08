@@ -146,7 +146,9 @@ function RaffleList() {
   const [myTickets, setMyTickets] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    fetch(API_ENDPOINTS.RAFFLES, { credentials: "include" })
+    const token = localStorage.getItem("access_token");
+    setIsLoggedIn(!!token);
+    fetch(API_ENDPOINTS.RAFFLES, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
       .then((r) => r.json())
       .then((d) => {
         if (d.raffles) {
@@ -154,22 +156,22 @@ function RaffleList() {
           const init: Record<string, number> = {};
           for (const r of d.raffles) init[r.id] = 1;
           setQuantities(init);
-          loadTickets(d.raffles);
+          if (token) loadTickets(token, d.raffles);
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-    fetch(API_ENDPOINTS.AUTH_ME, { credentials: "include" })
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d?.user) { setIsLoggedIn(true); setUserCoins(d.user.points); } })
-      .catch(() => {});
+    if (token) {
+      fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => r.json()).then((d) => { if (d.user) setUserCoins(d.user.points); }).catch(() => {});
+    }
   }, []);
 
-  const loadTickets = async (list: Raffle[]) => {
+  const loadTickets = async (token: string, list: Raffle[]) => {
     const result: Record<string, number> = {};
     await Promise.all(list.map(async (r) => {
       try {
-        const res = await fetch(API_ENDPOINTS.RAFFLE_USER_TICKETS(r.id), { credentials: "include" });
+        const res = await fetch(API_ENDPOINTS.RAFFLE_USER_TICKETS(r.id), { headers: { Authorization: `Bearer ${token}` } });
         const d = await res.json();
         if (d.tickets) result[r.id] = d.tickets.length;
       } catch { /* ignore */ }
@@ -178,13 +180,14 @@ function RaffleList() {
   };
 
   const handleBuy = async (raffle: Raffle) => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
     const qty = quantities[raffle.id] ?? 1;
     setBuying(raffle.id);
     try {
       const res = await fetch(API_ENDPOINTS.RAFFLE_PURCHASE(raffle.id), {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ quantity: qty }),
       });
       const d = await res.json();

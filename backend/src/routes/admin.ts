@@ -1,7 +1,6 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import { AdminController } from '@/controllers/AdminController';
 import { authMiddleware, adminMiddleware } from '@/middleware/auth';
-import { KickChatService } from '@/services/KickChatService';
 import rateLimit from 'express-rate-limit';
 
 const router = Router();
@@ -68,6 +67,11 @@ router.post(
   AdminController.unsuspendUser
 );
 router.post(
+  '/users/:userId/verify-rainbet',
+  criticalActionLimiter,
+  AdminController.verifyRainbetUsername
+);
+router.post(
   '/users/:userId/verify-kick',
   criticalActionLimiter,
   AdminController.verifyKickUsername
@@ -76,6 +80,11 @@ router.patch(
   '/users/:userId/kick-username',
   criticalActionLimiter,
   AdminController.editKickUsername
+);
+router.patch(
+  '/users/:userId/rainbet-username',
+  criticalActionLimiter,
+  AdminController.editRainbetUsername
 );
 router.delete(
   '/users/:userId',
@@ -102,11 +111,6 @@ router.put(
   criticalActionLimiter,
   AdminController.updateSystemConfig
 );
-
-// Kick Chat Status
-router.get('/kick-chat/status', (_req: Request, res: Response) => {
-  res.json({ success: true, connected: KickChatService.isConnected() });
-});
 
 // Note: Leaderboard, Store, and Raffle admin endpoints are in their respective route files
 // This keeps the admin routes focused on user management, system config, and audit logs

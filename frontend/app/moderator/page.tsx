@@ -11,6 +11,7 @@ interface User {
   discordId: string;
   displayName: string;
   kickUsername?: string;
+  rainbetUsername?: string;
   points: number;
   isAdmin: boolean;
   isModerator: boolean;
@@ -34,9 +35,15 @@ export default function ModeratorDashboard() {
   }, []);
 
   const checkModeratorAccess = async () => {
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) {
+      router.push("/");
+      return;
+    }
+
     try {
       const response = await fetch(API_ENDPOINTS.AUTH_ME, {
-        credentials: "include",
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
 
       if (response.ok) {
@@ -60,13 +67,16 @@ export default function ModeratorDashboard() {
   };
 
   const searchUsers = async (query: string) => {
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) return;
+
     try {
       const url = query
         ? `${API_ENDPOINTS.ADMIN_USERS_SEARCH}?q=${encodeURIComponent(query)}`
         : API_ENDPOINTS.ADMIN_USERS_SEARCH;
 
       const response = await fetch(url, {
-        credentials: "include",
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
 
       if (response.ok) {
@@ -84,13 +94,18 @@ export default function ModeratorDashboard() {
       return;
     }
 
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) return;
+
     try {
       const response = await fetch(
         API_ENDPOINTS.ADMIN_USER_SUSPEND(selectedUser.id),
         {
           method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
           body: JSON.stringify({
             reason: suspendReason,
             durationDays: suspendDuration,
@@ -122,10 +137,15 @@ export default function ModeratorDashboard() {
       return;
     }
 
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) return;
+
     try {
       const response = await fetch(API_ENDPOINTS.ADMIN_USER_UNSUSPEND(userId), {
         method: "POST",
-        credentials: "include",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       });
 
       if (response.ok) {

@@ -38,11 +38,13 @@ export default function AdminSchedule() {
 
   useEffect(() => { loadEvents(); }, []);
 
+  const token = () => localStorage.getItem("access_token") ?? "";
+
   const loadEvents = async () => {
     setLoading(true);
     try {
       const res = await fetch(API_ENDPOINTS.STREAM_EVENTS_ALL, {
-        credentials: "include",
+        headers: { Authorization: `Bearer ${token()}` },
       });
       const d = await res.json();
       if (d.success) setEvents(d.events);
@@ -56,8 +58,7 @@ export default function AdminSchedule() {
     try {
       const res = await fetch(API_ENDPOINTS.STREAM_EVENTS, {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
         body: JSON.stringify({ title: title.trim(), scheduledAt, gameType: gameType || undefined }),
       });
       const d = await res.json();
@@ -73,8 +74,7 @@ export default function AdminSchedule() {
     try {
       await fetch(API_ENDPOINTS.STREAM_EVENT(event.id), {
         method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
         body: JSON.stringify({ isLive: !event.isLive }),
       });
       loadEvents();
@@ -84,7 +84,7 @@ export default function AdminSchedule() {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this event?")) return;
     try {
-      await fetch(API_ENDPOINTS.STREAM_EVENT(id), { method: "DELETE", credentials: "include" });
+      await fetch(API_ENDPOINTS.STREAM_EVENT(id), { method: "DELETE", headers: { Authorization: `Bearer ${token()}` } });
       loadEvents();
     } catch { /* ignore */ }
   };
