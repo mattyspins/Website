@@ -20,8 +20,6 @@ router.get(
         createdAt: true,
         kickUsername: true,
         kickVerified: true,
-        rainbetUsername: true,
-        rainbetVerified: true,
         milestoneClaims: { select: { tierId: true, status: true } },
       },
     });
@@ -48,7 +46,6 @@ router.get(
         totalDeposited: Number(user.totalDeposited),
         createdAt: user.createdAt,
         kickUsername: user.kickVerified ? user.kickUsername : null,
-        rainbetVerified: user.rainbetVerified,
         tiers,
         unlockedCount: tiers.filter((t) => t.unlocked).length,
       },
