@@ -43,41 +43,41 @@ export class AuthController {
   // Handle Discord OAuth callback
   static handleDiscordCallback = asyncHandler(
     async (req: Request, res: Response) => {
-      const { code, state } = req.query;
+      const corsOrigins = process.env['CORS_ORIGIN'] || 'http://localhost:3000';
+      const frontendUrl = corsOrigins.split(',')[0].trim();
 
-      if (!code || typeof code !== 'string') {
-        throw createError.badRequest('Authorization code is required');
-      }
-
-      if (!state || typeof state !== 'string') {
-        throw createError.badRequest('State parameter is required');
-      }
-
-      // Validate state parameter from Redis
-      const storedState = await RedisService.get(`oauth_state:${state}`);
-      if (!storedState) {
-        logger.warn(
-          'Invalid or expired state parameter in Discord OAuth callback',
-          {
-            providedState: state.substring(0, 8) + '...',
-          }
-        );
-        throw createError.badRequest(
-          'Invalid or expired state parameter - please try logging in again'
-        );
-      }
-
-      // Delete the state from Redis (one-time use)
-      await RedisService.del(`oauth_state:${state}`);
+      const redirectError = (message: string) => {
+        res.redirect(`${frontendUrl}/auth/callback?error=${encodeURIComponent(message)}`);
+      };
 
       try {
+        const { code, state } = req.query;
+
+        if (!code || typeof code !== 'string') {
+          return redirectError('Authorization code is required');
+        }
+
+        if (!state || typeof state !== 'string') {
+          return redirectError('State parameter is required');
+        }
+
+        // Validate state parameter from Redis
+        const storedState = await RedisService.get(`oauth_state:${state}`);
+        if (!storedState) {
+          logger.warn('Invalid or expired state parameter in Discord OAuth callback', {
+            providedState: state.substring(0, 8) + '...',
+          });
+          return redirectError('Session expired — please try logging in again');
+        }
+
+        // Delete the state from Redis (one-time use)
+        await RedisService.del(`oauth_state:${state}`);
+
         // Exchange code for Discord tokens
         const discordTokens = await DiscordService.exchangeCodeForTokens(code);
 
         // Get Discord user info
-        const discordUser = await DiscordService.getUserInfo(
-          discordTokens.access_token
-        );
+        const discordUser = await DiscordService.getUserInfo(discordTokens.access_token);
 
         // Check if Discord server membership verification is enabled
         const requireServerMembership =
@@ -85,53 +85,32 @@ export class AuthController {
         const discordGuildId = process.env['DISCORD_GUILD_ID'];
 
         if (requireServerMembership && discordGuildId) {
-          // Check if user is a member of the Discord server
           const isMember = await DiscordService.checkServerMembership(
             discordTokens.access_token,
             discordGuildId
           );
 
           if (!isMember) {
-            const inviteUrl =
-              process.env['DISCORD_INVITE_URL'] ||
-              'https://discord.gg/your-invite';
-
-            logger.warn(
-              `User ${discordUser.username} attempted to login but is not a member of the Discord server`
-            );
-
-            throw createError.forbidden(
+            const inviteUrl = process.env['DISCORD_INVITE_URL'] || 'https://discord.gg/your-invite';
+            logger.warn(`User ${discordUser.username} attempted to login but is not a Discord server member`);
+            return redirectError(
               `You must be a member of the MattySpins Discord server to use this platform. Join here: ${inviteUrl}`
             );
           }
 
-          logger.info(
-            `User ${discordUser.username} verified as Discord server member`
-          );
+          logger.info(`User ${discordUser.username} verified as Discord server member`);
         }
 
         // Create or update user
-        const user =
-          await AuthService.createOrUpdateUserFromDiscord(discordUser);
+        const user = await AuthService.createOrUpdateUserFromDiscord(discordUser);
 
         // Generate JWT tokens
         const tokens = AuthService.generateTokens(user);
 
         // Store session
-        await AuthService.storeSession(
-          user,
-          tokens,
-          req.get('User-Agent'),
-          req.ip
-        );
+        await AuthService.storeSession(user, tokens, req.get('User-Agent'), req.ip);
 
-        logger.info(
-          `Discord authentication successful for user: ${user.displayName}`
-        );
-
-        const corsOrigins =
-          process.env['CORS_ORIGIN'] || 'http://localhost:3000';
-        const frontendUrl = corsOrigins.split(',')[0].trim();
+        logger.info(`Discord authentication successful for user: ${user.displayName}`);
 
         // Set httpOnly cookies — tokens never exposed to JavaScript
         res.cookie('access_token', tokens.accessToken, cookieOptions(60 * 60)); // 1 hour
@@ -143,19 +122,7 @@ export class AuthController {
           message: error instanceof Error ? error.message : 'Unknown error',
           stack: error instanceof Error ? error.stack : undefined,
         });
-
-        // Redirect to frontend with error
-        // Use the first CORS origin for redirects (in case multiple are configured)
-        const corsOrigins =
-          process.env['CORS_ORIGIN'] || 'http://localhost:3000';
-        const frontendUrl = corsOrigins.split(',')[0].trim();
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : 'Discord authentication failed';
-        const callbackUrl = `${frontendUrl}/auth/callback?error=${encodeURIComponent(errorMessage)}`;
-
-        res.redirect(callbackUrl);
+        redirectError(error instanceof Error ? error.message : 'Discord authentication failed');
       }
     }
   );

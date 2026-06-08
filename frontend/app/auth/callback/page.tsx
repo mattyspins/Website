@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import { initializeAuth, storeAuthData } from "@/lib/authPersistence";
 
-export default function AuthCallback() {
-  const searchParams = useSearchParams();
+function AuthCallbackContent() {
   const router = useRouter();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("Processing authentication...");
 
   useEffect(() => {
     const handleCallback = async () => {
-      const error = searchParams.get("error");
+      // Read directly from the URL so we always get the real params after the
+      // OAuth redirect, regardless of Next.js SSR/hydration timing.
+      const params = new URLSearchParams(window.location.search);
+      const error = params.get("error");
 
       if (error) {
         setStatus("error");
@@ -21,7 +23,7 @@ export default function AuthCallback() {
         return;
       }
 
-      const success = searchParams.get("success");
+      const success = params.get("success");
       if (success === "true") {
         // Tokens are already in httpOnly cookies set by the backend.
         // Just verify the session and cache the user profile.
@@ -52,7 +54,7 @@ export default function AuthCallback() {
     };
 
     handleCallback();
-  }, [searchParams, router]);
+  }, [router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">
@@ -93,5 +95,23 @@ export default function AuthCallback() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthCallback() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-8 max-w-md w-full mx-4">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Authenticating</h2>
+            <p className="text-gray-400">Processing authentication...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <AuthCallbackContent />
+    </Suspense>
   );
 }
