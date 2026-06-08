@@ -43,7 +43,7 @@ function SpinDrum({
   const animRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
   const ITEM_H = 72; // px per slot item
-  const SPIN_DURATION = 3200; // ms
+  const SPIN_DURATION = 6500; // ms
 
   // Build a long shuffled list for the reel
   const reel = (() => {
@@ -77,7 +77,7 @@ function SpinDrum({
     if (!spinning || !containerRef.current) return;
     startTimeRef.current = performance.now();
 
-    const easeOut = (t: number) => 1 - Math.pow(1 - t, 4);
+    const easeOut = (t: number) => 1 - Math.pow(1 - t, 6);
 
     const tick = (now: number) => {
       const elapsed = now - startTimeRef.current;
@@ -312,8 +312,32 @@ export default function AdminViewerPickerPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white">Viewer Picker</h1>
-          <p className="text-white/40 text-sm mt-0.5">Set a keyword — viewers type it in Kick chat to enter the draw</p>
+          <button
+            onClick={() => router.push("/admin")}
+            className="flex items-center gap-1.5 text-white/40 hover:text-white/80 text-sm mb-4 transition-colors group"
+          >
+            <svg className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Admin
+          </button>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-white">Viewer Picker</h1>
+              <p className="text-white/40 text-sm mt-0.5">Set a keyword — viewers type it in Kick chat to enter the draw</p>
+            </div>
+            <a
+              href="/picker-widget"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 text-xs font-semibold rounded-lg transition-colors shrink-0"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.069A1 1 0 0121 8.882v6.236a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+              </svg>
+              OBS Widget
+            </a>
+          </div>
         </div>
 
         {error && (
