@@ -60,11 +60,11 @@ export class AuthService {
     };
 
     const accessToken = jwt.sign(payload, env.JWT_SECRET, {
-      expiresIn: env.JWT_EXPIRES_IN,
+      expiresIn: env.JWT_EXPIRES_IN as any,
     });
 
     const refreshToken = jwt.sign(payload, env.JWT_REFRESH_SECRET, {
-      expiresIn: env.JWT_REFRESH_EXPIRES_IN,
+      expiresIn: env.JWT_REFRESH_EXPIRES_IN as any,
     });
 
     // Parse expiration time
@@ -200,6 +200,8 @@ export class AuthService {
         points: updatedUser.points,
         isAdmin: updatedUser.isAdmin,
         isModerator: updatedUser.isModerator,
+        isVip: updatedUser.isVip,
+        isDepositor: updatedUser.isDepositor,
         kickUsername: updatedUser.kickUsername || undefined,
       };
     } catch (error) {
@@ -288,6 +290,8 @@ export class AuthService {
         points: session.user.points,
         isAdmin: session.user.isAdmin,
         isModerator: session.user.isModerator,
+        isVip: session.user.isVip,
+        isDepositor: session.user.isDepositor,
         kickUsername: session.user.kickUsername || undefined,
         kickVerified: session.user.kickVerified,
         totalWagered: Number(session.user.totalWagered ?? 0),
