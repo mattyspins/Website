@@ -173,7 +173,7 @@ export class AuthController {
         select: { kickVerified: true, kickUsername: true },
       });
       if (existing?.kickVerified && existing.kickUsername) {
-        const token = req.headers.authorization?.substring(7);
+        const token = req.token;
         if (token) await RedisService.deleteSession(token);
         return res.json({ success: true, alreadyLinked: true, kickUsername: existing.kickUsername });
       }
@@ -317,7 +317,7 @@ export class AuthController {
 
         // Get fresh user data from database
         const userSession = await AuthService.getUserSession(
-          req.headers.authorization?.substring(7) || ''
+          req.token || ''
         );
 
         res.json({
@@ -384,9 +384,7 @@ export class AuthController {
         await AuthService.validateAndUpdateSession(req.user.id);
 
         // Get fresh user data
-        const userSession = await AuthService.getUserSession(
-          req.headers.authorization?.substring(7) || ''
-        );
+        const userSession = await AuthService.getUserSession(req.token || '');
 
         if (!userSession) {
           throw createError.unauthorized('Invalid session');
@@ -546,7 +544,7 @@ export class AuthController {
       try {
         // Check if user already has a Kick username
         const userSession = await AuthService.getUserSession(
-          req.headers.authorization?.substring(7) || ''
+          req.token || ''
         );
 
         if (userSession?.kickUsername) {
@@ -600,7 +598,7 @@ export class AuthController {
         select: { kickVerified: true, kickUsername: true },
       });
       if (existing?.kickVerified && existing.kickUsername) {
-        const token = req.headers.authorization?.substring(7);
+        const token = req.token;
         if (token) await RedisService.deleteSession(token);
         return res.json({ success: true, alreadyVerified: true, kickUsername: existing.kickUsername });
       }
@@ -640,7 +638,7 @@ export class AuthController {
 
       // Helper: bust the session cache by access token so next /api/auth/me is fresh
       const bustSessionCache = async () => {
-        const token = req.headers.authorization?.substring(7);
+        const token = req.token;
         if (token) await RedisService.deleteSession(token);
       };
 

@@ -14,6 +14,7 @@ export interface AuthenticatedRequest extends Request {
     iat?: number;
     exp?: number;
   };
+  token?: string; // resolved access token (cookie or Bearer), set by authMiddleware
 }
 
 export interface JWTPayload {
@@ -48,6 +49,7 @@ export const authMiddleware = async (
     try {
       const decoded = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
       req.user = decoded;
+      req.token = token;
       next();
     } catch (jwtError) {
       if (jwtError instanceof jwt.TokenExpiredError) {
@@ -122,6 +124,7 @@ export const optionalAuthMiddleware = async (
       try {
         const decoded = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
         req.user = decoded;
+        req.token = token;
       } catch {
         // Ignore JWT errors for optional auth — user will be undefined
       }
