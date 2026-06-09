@@ -29,6 +29,8 @@ model User {
   kickRefreshToken       String?               @map("kick_refresh_token")
   kickTokenExpiresAt     DateTime?             @map("kick_token_expires_at")
   isModerator            Boolean               @default(false) @map("is_moderator")
+  rainbetUsername        String?               @unique @map("rainbet_username")
+  rainbetVerified        Boolean               @default(false) @map("rainbet_verified")
   isVip                  Boolean               @default(false) @map("is_vip")
   isDepositor            Boolean               @default(false) @map("is_depositor")
   totalWagered           Decimal               @default(0) @map("total_wagered") @db.Decimal(15, 2)

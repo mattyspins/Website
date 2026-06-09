@@ -30,6 +30,8 @@ export interface UserManagement {
   totalSpent: number;
   isAdmin: boolean;
   isModerator: boolean;
+  isVip: boolean;
+  isDepositor: boolean;
   isSuspended: boolean;
   suspensionReason?: string;
   suspensionExpiresAt?: Date;
@@ -155,6 +157,8 @@ export class AdminService {
             totalSpent: true,
             isAdmin: true,
             isModerator: true,
+            isVip: true,
+            isDepositor: true,
             isSuspended: true,
             suspensionReason: true,
             suspensionExpiresAt: true,
@@ -183,6 +187,8 @@ export class AdminService {
           totalSpent: u.totalSpent,
           isAdmin: u.isAdmin,
           isModerator: u.isModerator,
+          isVip: u.isVip,
+          isDepositor: u.isDepositor,
           isSuspended: u.isSuspended,
           suspensionReason: u.suspensionReason || undefined,
           suspensionExpiresAt: u.suspensionExpiresAt || undefined,
