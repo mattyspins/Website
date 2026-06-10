@@ -43,7 +43,7 @@ function SpinDrum({
   const animRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
   const ITEM_H = 72; // px per slot item
-  const SPIN_DURATION = 10000; // ms
+  const SPIN_DURATION = 12000; // ms
 
   // Build a long shuffled list for the reel
   const reel = (() => {
@@ -77,19 +77,15 @@ function SpinDrum({
     if (!spinning || !containerRef.current) return;
     startTimeRef.current = performance.now();
 
-    // Fast first 40% of time, then a long dramatic deceleration for suspense
-    const easeOut = (t: number) => {
-      if (t < 0.4) return (t / 0.4) * 0.72;
-      const t2 = (t - 0.4) / 0.6;
-      return 0.72 + 0.28 * (1 - Math.pow(1 - t2, 3));
-    };
+    // Quartic ease-out: fast start, long natural deceleration for suspense
+    const easeOut = (t: number) => 1 - Math.pow(1 - t, 4);
 
     const tick = (now: number) => {
       const elapsed = now - startTimeRef.current;
       const progress = Math.min(elapsed / SPIN_DURATION, 1);
       const eased = easeOut(progress);
 
-      const fastDistance = totalH * 4;
+      const fastDistance = totalH * 3;
       const currentOffset = (fastDistance + stopOffset) * eased;
       const wrapped = currentOffset % totalH;
 
@@ -262,6 +258,7 @@ export default function AdminViewerPickerPage() {
   const [spinning, setSpinning] = useState(false);
   const [showWinner, setShowWinner] = useState(false);
   const [pendingWinner, setPendingWinner] = useState<PickerUser | null>(null);
+  const pendingPickerRef = useRef<ViewerPicker | null>(null);
 
   const active = pickers.find((p) => p.status === "OPEN") ?? null;
   const past = pickers.filter((p) => p.status === "COMPLETED" || p.status === "CLOSED");
@@ -340,22 +337,27 @@ export default function AdminViewerPickerPage() {
 
   const handleDraw = async () => {
     if (!active || spinning) return;
-    setSpinning(true);
-    // Immediately draw from server (get the real winner), but hold the reveal
     setActionLoading(true); setError(null);
     try {
+      // Fetch the winner FIRST so the reel is built with the correct stop position
       const updated = await pickerApi.draw(active.id);
-      setPickers((prev) => prev.map((p) => p.id === updated.id ? updated : p));
+      pendingPickerRef.current = updated;
+      // Set winner and start spinning in the same batch — reel gets correct stopOffset
       setPendingWinner(updated.winner);
-      // Animation runs for SPIN_DURATION; onSpinDone shows reveal
+      setSpinning(true);
     } catch (e: any) {
       setError(e.message);
-      setSpinning(false);
     } finally { setActionLoading(false); }
   };
 
   const handleSpinDone = () => {
     setSpinning(false);
+    // Apply picker state update AFTER spin completes so the UI doesn't flip mid-spin
+    if (pendingPickerRef.current) {
+      const u = pendingPickerRef.current;
+      setPickers((prev) => prev.map((p) => p.id === u.id ? u : p));
+      pendingPickerRef.current = null;
+    }
     if (pendingWinner) setShowWinner(true);
   };
 
