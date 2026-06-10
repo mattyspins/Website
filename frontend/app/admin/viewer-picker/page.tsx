@@ -43,7 +43,7 @@ function SpinDrum({
   const animRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
   const ITEM_H = 72; // px per slot item
-  const SPIN_DURATION = 6500; // ms
+  const SPIN_DURATION = 10000; // ms
 
   // Build a long shuffled list for the reel
   const reel = (() => {
@@ -77,15 +77,19 @@ function SpinDrum({
     if (!spinning || !containerRef.current) return;
     startTimeRef.current = performance.now();
 
-    const easeOut = (t: number) => 1 - Math.pow(1 - t, 6);
+    // Fast first 40% of time, then a long dramatic deceleration for suspense
+    const easeOut = (t: number) => {
+      if (t < 0.4) return (t / 0.4) * 0.72;
+      const t2 = (t - 0.4) / 0.6;
+      return 0.72 + 0.28 * (1 - Math.pow(1 - t2, 3));
+    };
 
     const tick = (now: number) => {
       const elapsed = now - startTimeRef.current;
       const progress = Math.min(elapsed / SPIN_DURATION, 1);
       const eased = easeOut(progress);
 
-      // Start fast (10 full rotations worth) and ease into final position
-      const fastDistance = totalH * 2;
+      const fastDistance = totalH * 4;
       const currentOffset = (fastDistance + stopOffset) * eased;
       const wrapped = currentOffset % totalH;
 
@@ -123,6 +127,12 @@ function SpinDrum({
       <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0a0a0a] to-transparent z-10 pointer-events-none" />
       {/* Active slot highlight */}
       <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[72px] border-y-2 border-yellow-400/60 bg-yellow-400/5 z-10 pointer-events-none" />
+      {/* Arrow pointing at the winner slot */}
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-none text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,1)]">
+        <svg viewBox="0 0 24 24" className="w-7 h-7" fill="currentColor">
+          <path d="M15 5L7 12L15 19V5Z" />
+        </svg>
+      </div>
 
       <div ref={containerRef} className="will-change-transform">
         {reel.map((u, i) => (
@@ -136,6 +146,78 @@ function SpinDrum({
   );
 }
 
+// ─── Fireworks ───────────────────────────────────────────────────────────────
+
+function Fireworks() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const colors = ["#facc15", "#4ade80", "#60a5fa", "#f472b6", "#fb923c", "#a78bfa", "#34d399", "#ffffff"];
+
+    interface Particle { x: number; y: number; vx: number; vy: number; color: string; alpha: number; radius: number; }
+    const particles: Particle[] = [];
+
+    const burst = (x: number, y: number) => {
+      for (let i = 0; i < 70; i++) {
+        const angle = (Math.PI * 2 * i) / 70 + (Math.random() - 0.5) * 0.4;
+        const speed = 4 + Math.random() * 9;
+        particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 3, color: colors[Math.floor(Math.random() * colors.length)], alpha: 1, radius: 2 + Math.random() * 3 });
+      }
+    };
+
+    const schedule = [
+      { x: 0.2,  y: 0.25, delay: 100  },
+      { x: 0.8,  y: 0.2,  delay: 400  },
+      { x: 0.5,  y: 0.12, delay: 700  },
+      { x: 0.15, y: 0.5,  delay: 1000 },
+      { x: 0.85, y: 0.45, delay: 1300 },
+      { x: 0.35, y: 0.2,  delay: 1700 },
+      { x: 0.65, y: 0.3,  delay: 2100 },
+      { x: 0.25, y: 0.35, delay: 2500 },
+      { x: 0.75, y: 0.25, delay: 2900 },
+      { x: 0.5,  y: 0.1,  delay: 3300 },
+    ];
+
+    let startTime: number | null = null;
+    let raf: number;
+    const fired = new Set<number>();
+
+    const animate = (now: number) => {
+      if (startTime === null) startTime = now;
+      const elapsed = now - startTime;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      schedule.forEach((b, bi) => {
+        if (!fired.has(bi) && elapsed >= b.delay) { burst(b.x * canvas.width, b.y * canvas.height); fired.add(bi); }
+      });
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.vy += 0.18; p.vx *= 0.98; p.alpha -= 0.013;
+        if (p.alpha <= 0) { particles.splice(i, 1); continue; }
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      if (elapsed < 4000 || particles.length > 0) raf = requestAnimationFrame(animate);
+    };
+
+    raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-[60]" />;
+}
+
 // ─── Winner Reveal ────────────────────────────────────────────────────────────
 
 function WinnerReveal({ winner, onClose }: { winner: PickerUser; onClose: () => void }) {
@@ -143,23 +225,11 @@ function WinnerReveal({ winner, onClose }: { winner: PickerUser; onClose: () => 
   useEffect(() => { setTimeout(() => setShow(true), 50); }, []);
 
   return (
+    <>
+    <Fireworks />
     <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-500 ${show ? "opacity-100" : "opacity-0"}`}>
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
       <div className={`relative flex flex-col items-center gap-5 bg-gradient-to-b from-yellow-900/60 to-[#0a0a0a] border border-yellow-400/40 rounded-3xl px-14 py-12 shadow-2xl shadow-yellow-900/40 transition-all duration-500 ${show ? "scale-100 translate-y-0" : "scale-90 translate-y-8"}`}>
-        {/* Confetti dots */}
-        {Array.from({ length: 20 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-2 h-2 rounded-full animate-ping"
-            style={{
-              background: ["#facc15","#4ade80","#60a5fa","#f472b6","#fb923c"][i % 5],
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 0.8}s`,
-              animationDuration: `${0.8 + Math.random() * 0.6}s`,
-            }}
-          />
-        ))}
         <div className="text-6xl animate-bounce drop-shadow-[0_0_24px_rgba(250,204,21,0.6)]">🎉</div>
         <p className="text-yellow-400/70 text-xs font-black uppercase tracking-[0.3em]">Winner!</p>
         {winner.avatarUrl && (
@@ -174,6 +244,7 @@ function WinnerReveal({ winner, onClose }: { winner: PickerUser; onClose: () => 
         </button>
       </div>
     </div>
+    </>
   );
 }
 

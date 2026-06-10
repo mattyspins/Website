@@ -317,19 +317,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
                   {user.pointTransactions.length > 0 && (
                     <div className="bg-navy-800/60 border border-white/6 rounded-xl p-4">
                       <p className="text-white text-xs font-bold uppercase tracking-widest mb-3">Recent Transactions</p>
-                      <div className="space-y-2">
-                        {user.pointTransactions.slice(0, 10).map((tx) => (
-                          <div key={tx.id} className="flex items-center justify-between py-1.5 border-b border-white/4 last:border-0">
-                            <div className="min-w-0">
-                              <p className="text-gray-300 text-xs truncate">{tx.reason || tx.transactionType}</p>
-                              <p className="text-gray-600 text-[10px]">{new Date(tx.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
-                            </div>
-                            <span className={`text-sm font-bold shrink-0 ml-3 ${tx.amount >= 0 ? "text-green-400" : "text-red-400"}`}>
-                              {tx.amount >= 0 ? "+" : ""}{tx.amount.toLocaleString()}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+                      <TxList transactions={user.pointTransactions} />
                     </div>
                   )}
                 </div>
@@ -339,6 +327,86 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
         </>
       )}
     </AnimatePresence>
+  );
+}
+
+type Tx = { id: string; amount: number; transactionType: string; reason?: string; createdAt: string };
+
+interface TxGroup {
+  key: string;
+  label: string;
+  date: string;
+  totalAmount: number;
+  items: Tx[];
+}
+
+function TxList({ transactions }: { transactions: Tx[] }) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const groups: TxGroup[] = [];
+  for (const tx of transactions) {
+    const label = tx.reason || tx.transactionType;
+    const date = new Date(tx.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const key = `${label}||${date}`;
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) {
+      last.totalAmount += tx.amount;
+      last.items.push(tx);
+    } else {
+      groups.push({ key, label, date, totalAmount: tx.amount, items: [tx] });
+    }
+  }
+
+  const toggle = (key: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+
+  return (
+    <div className="space-y-0 max-h-64 overflow-y-auto pr-1">
+      {groups.map((g) => {
+        const isGroup = g.items.length > 1;
+        const isOpen = expanded.has(g.key);
+        return (
+          <div key={g.key}>
+            <div
+              className={`flex items-center justify-between py-1.5 border-b border-white/4 ${isGroup ? "cursor-pointer hover:bg-white/3 rounded px-1 -mx-1" : ""}`}
+              onClick={() => isGroup && toggle(g.key)}
+            >
+              <div className="min-w-0 flex items-center gap-1.5">
+                {isGroup && (
+                  isOpen ? <ChevronUp size={11} className="text-gray-500 shrink-0" /> : <ChevronDown size={11} className="text-gray-500 shrink-0" />
+                )}
+                <div>
+                  <p className="text-gray-300 text-xs truncate">
+                    {g.label}
+                    {isGroup && <span className="text-gray-500 ml-1">×{g.items.length}</span>}
+                  </p>
+                  <p className="text-gray-600 text-[10px]">{g.date}</p>
+                </div>
+              </div>
+              <span className={`text-sm font-bold shrink-0 ml-3 ${g.totalAmount >= 0 ? "text-green-400" : "text-red-400"}`}>
+                {g.totalAmount >= 0 ? "+" : ""}{g.totalAmount.toLocaleString()}
+              </span>
+            </div>
+            {isGroup && isOpen && (
+              <div className="ml-4 border-l border-white/6 pl-2 mb-1">
+                {g.items.map((tx) => (
+                  <div key={tx.id} className="flex items-center justify-between py-1 border-b border-white/3 last:border-0">
+                    <p className="text-gray-500 text-[10px]">{new Date(tx.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</p>
+                    <span className={`text-xs font-bold shrink-0 ml-3 ${tx.amount >= 0 ? "text-green-500" : "text-red-500"}`}>
+                      {tx.amount >= 0 ? "+" : ""}{tx.amount}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
