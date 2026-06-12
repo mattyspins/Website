@@ -33,7 +33,8 @@ export class ViewerPickerController {
   });
 
   static drawWinner = asyncHandler(async (req, res) => {
-    const picker = await ViewerPickerService.drawWinner(req.params.id, _io);
+    const excludeUserIds: string[] = Array.isArray(req.body?.excludeUserIds) ? req.body.excludeUserIds : [];
+    const picker = await ViewerPickerService.drawWinner(req.params.id, _io, excludeUserIds);
     res.json({ success: true, picker });
   });
 

@@ -42,8 +42,8 @@ function SpinDrum({
   const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
-  const ITEM_H = 72; // px per slot item
-  const SPIN_DURATION = 12000; // ms
+  const ITEM_H = 72;
+  const SPIN_DURATION = 12000;
 
   const reel = useMemo(() => {
     if (entries.length === 0) return [] as PickerUser[];
@@ -57,8 +57,6 @@ function SpinDrum({
       [repeated[i], repeated[j]] = [repeated[j], repeated[i]];
     }
     if (winner) {
-      // Place winner at reel.length - 5; stopOffset = (reel.length - 6) * ITEM_H
-      // puts that index at 72px from the top = center of the 3-slot window
       const targetIdx = repeated.length - 5;
       const existingIdx = repeated.findIndex((u) => u.id === winner.id);
       if (existingIdx !== -1 && existingIdx !== targetIdx) {
@@ -70,7 +68,7 @@ function SpinDrum({
   }, [entries.length, winner?.id]);
 
   const totalH = reel.length * ITEM_H;
-  // -6 (not -5) so the winner slot lands in the center highlighted row, not the top row
+  // -6 so winner slot lands in the center highlighted row (not the top row)
   const stopOffset = winner ? (reel.length - 6) * ITEM_H : 0;
 
   useEffect(() => {
@@ -83,10 +81,7 @@ function SpinDrum({
       const elapsed = now - startTimeRef.current;
       const progress = Math.min(elapsed / SPIN_DURATION, 1);
       const eased = easeOut(progress);
-
-      const fastDistance = totalH * 3;
-      const currentOffset = (fastDistance + stopOffset) * eased;
-      const wrapped = currentOffset % totalH;
+      const wrapped = ((totalH * 3 + stopOffset) * eased) % totalH;
 
       if (containerRef.current) {
         containerRef.current.style.transform = `translateY(-${wrapped}px)`;
@@ -124,7 +119,6 @@ function SpinDrum({
           <path d="M15 5L7 12L15 19V5Z" />
         </svg>
       </div>
-
       <div ref={containerRef} className="will-change-transform">
         {reel.map((u, i) => (
           <div key={i} className="flex items-center gap-3 px-4 h-[72px]">
@@ -150,7 +144,6 @@ function Fireworks() {
     canvas.height = window.innerHeight;
 
     const colors = ["#facc15", "#4ade80", "#60a5fa", "#f472b6", "#fb923c", "#a78bfa", "#34d399", "#ffffff"];
-
     interface Particle { x: number; y: number; vx: number; vy: number; color: string; alpha: number; radius: number; }
     const particles: Particle[] = [];
 
@@ -163,16 +156,11 @@ function Fireworks() {
     };
 
     const schedule = [
-      { x: 0.2,  y: 0.25, delay: 100  },
-      { x: 0.8,  y: 0.2,  delay: 400  },
-      { x: 0.5,  y: 0.12, delay: 700  },
-      { x: 0.15, y: 0.5,  delay: 1000 },
-      { x: 0.85, y: 0.45, delay: 1300 },
-      { x: 0.35, y: 0.2,  delay: 1700 },
-      { x: 0.65, y: 0.3,  delay: 2100 },
-      { x: 0.25, y: 0.35, delay: 2500 },
-      { x: 0.75, y: 0.25, delay: 2900 },
-      { x: 0.5,  y: 0.1,  delay: 3300 },
+      { x: 0.2, y: 0.25, delay: 100 }, { x: 0.8, y: 0.2,  delay: 400 },
+      { x: 0.5, y: 0.12, delay: 700 }, { x: 0.15, y: 0.5, delay: 1000 },
+      { x: 0.85, y: 0.45, delay: 1300 }, { x: 0.35, y: 0.2, delay: 1700 },
+      { x: 0.65, y: 0.3, delay: 2100 }, { x: 0.25, y: 0.35, delay: 2500 },
+      { x: 0.75, y: 0.25, delay: 2900 }, { x: 0.5, y: 0.1,  delay: 3300 },
     ];
 
     let startTime: number | null = null;
@@ -183,11 +171,9 @@ function Fireworks() {
       if (startTime === null) startTime = now;
       const elapsed = now - startTime;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       schedule.forEach((b, bi) => {
         if (!fired.has(bi) && elapsed >= b.delay) { burst(b.x * canvas.width, b.y * canvas.height); fired.add(bi); }
       });
-
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.x += p.vx; p.y += p.vy; p.vy += 0.18; p.vx *= 0.98; p.alpha -= 0.013;
@@ -213,46 +199,53 @@ function Fireworks() {
 
 function WinnerReveal({
   winner,
+  winnerNumber,
   onClose,
-  onRedraw,
+  onPickAnother,
 }: {
   winner: PickerUser;
+  winnerNumber: number;
   onClose: () => void;
-  onRedraw?: () => void;
+  onPickAnother?: () => void;
 }) {
   const [show, setShow] = useState(false);
   useEffect(() => { setTimeout(() => setShow(true), 50); }, []);
 
   return (
     <>
-    <Fireworks />
-    <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-500 ${show ? "opacity-100" : "opacity-0"}`}>
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative flex flex-col items-center gap-5 bg-gradient-to-b from-yellow-900/60 to-[#0a0a0a] border border-yellow-400/40 rounded-3xl px-14 py-12 shadow-2xl shadow-yellow-900/40 transition-all duration-500 ${show ? "scale-100 translate-y-0" : "scale-90 translate-y-8"}`}>
-        <div className="text-6xl animate-bounce drop-shadow-[0_0_24px_rgba(250,204,21,0.6)]">🎉</div>
-        <p className="text-yellow-400/70 text-xs font-black uppercase tracking-[0.3em]">Winner!</p>
-        {winner.avatarUrl && (
-          <img src={winner.avatarUrl} alt="" className="w-24 h-24 rounded-full ring-4 ring-yellow-400/60 shadow-[0_0_32px_rgba(250,204,21,0.4)]" />
-        )}
-        <p className="text-white font-black text-4xl tracking-tight text-center">{name(winner)}</p>
-        {winner.kickUsername && winner.displayName !== winner.kickUsername && (
-          <p className="text-white/40 text-sm">{winner.displayName}</p>
-        )}
-        <div className="flex items-center gap-3 mt-2">
-          {onRedraw && (
-            <button
-              onClick={onRedraw}
-              className="px-6 py-3 bg-white/10 border border-white/20 text-white/70 font-semibold rounded-xl hover:bg-white/15 transition-colors text-sm"
-            >
-              🔄 Re-draw
-            </button>
+      <Fireworks />
+      <div className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-500 ${show ? "opacity-100" : "opacity-0"}`}>
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+        <div className={`relative flex flex-col items-center gap-5 bg-gradient-to-b from-yellow-900/60 to-[#0a0a0a] border border-yellow-400/40 rounded-3xl px-14 py-12 shadow-2xl shadow-yellow-900/40 transition-all duration-500 ${show ? "scale-100 translate-y-0" : "scale-90 translate-y-8"}`}>
+          <div className="text-6xl animate-bounce drop-shadow-[0_0_24px_rgba(250,204,21,0.6)]">🎉</div>
+          <p className="text-yellow-400/70 text-xs font-black uppercase tracking-[0.3em]">
+            Winner #{winnerNumber}
+          </p>
+          {winner.avatarUrl && (
+            <img src={winner.avatarUrl} alt="" className="w-24 h-24 rounded-full ring-4 ring-yellow-400/60 shadow-[0_0_32px_rgba(250,204,21,0.4)]" />
           )}
-          <button onClick={onClose} className="px-8 py-3 bg-yellow-400 text-black font-bold rounded-xl hover:bg-yellow-300 transition-colors text-sm">
-            Awesome! 🎊
-          </button>
+          <p className="text-white font-black text-4xl tracking-tight text-center">{name(winner)}</p>
+          {winner.kickUsername && winner.displayName !== winner.kickUsername && (
+            <p className="text-white/40 text-sm">{winner.displayName}</p>
+          )}
+          <div className="flex items-center gap-3 mt-2">
+            {onPickAnother && (
+              <button
+                onClick={onPickAnother}
+                className="px-6 py-3 bg-yellow-400 text-black font-bold rounded-xl hover:bg-yellow-300 transition-colors text-sm"
+              >
+                🎯 Pick Another
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="px-8 py-3 bg-white/10 border border-white/20 text-white/70 font-semibold rounded-xl hover:bg-white/15 transition-colors text-sm"
+            >
+              {onPickAnother ? "Done ✓" : "Awesome! 🎊"}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 }
@@ -273,12 +266,19 @@ export default function AdminViewerPickerPage() {
   const [showWinner, setShowWinner] = useState(false);
   const [pendingWinner, setPendingWinner] = useState<PickerUser | null>(null);
   const [lastCompleted, setLastCompleted] = useState<ViewerPicker | null>(null);
+  // All winners picked in the current session (cleared when starting a new draw)
+  const [sessionWinners, setSessionWinners] = useState<PickerUser[]>([]);
   const [manualUsername, setManualUsername] = useState("");
   const [copiedKeyword, setCopiedKeyword] = useState(false);
   const pendingPickerRef = useRef<ViewerPicker | null>(null);
 
   const active = pickers.find((p) => p.status === "OPEN") ?? null;
   const past = pickers.filter((p) => p.status === "COMPLETED" || p.status === "CLOSED");
+
+  // Entries still eligible for the next pick (excludes everyone already won this session)
+  const eligibleEntries = lastCompleted
+    ? lastCompleted.entries.filter((e) => !sessionWinners.find((w) => w.id === e.user.id))
+    : [];
 
   // Auth check
   useEffect(() => {
@@ -307,12 +307,8 @@ export default function AdminViewerPickerPage() {
   // Single socket listener — joins the active picker room and handles all updates
   useEffect(() => {
     const socket = getSocket();
-
     const joinRoom = () => { if (active) socket.emit("joinPicker", active.id); };
-    if (active) {
-      joinRoom();
-      socket.on("connect", joinRoom);
-    }
+    if (active) { joinRoom(); socket.on("connect", joinRoom); }
 
     const handle = (updated: ViewerPicker) => {
       setPickers((prev) => {
@@ -324,10 +320,7 @@ export default function AdminViewerPickerPage() {
     socket.on("picker:updated", handle);
 
     return () => {
-      if (active) {
-        socket.emit("leavePicker", active.id);
-        socket.off("connect", joinRoom);
-      }
+      if (active) { socket.emit("leavePicker", active.id); socket.off("connect", joinRoom); }
       socket.off("picker:updated", handle);
     };
   }, [active?.id]);
@@ -351,18 +344,20 @@ export default function AdminViewerPickerPage() {
     await withAction(() => pickerApi.create(keyword.trim(), label.trim() || undefined));
     setKeyword(""); setLabel("");
     setLastCompleted(null);
+    setSessionWinners([]);
   };
 
   const handleClose = () => active && withAction(() => pickerApi.close(active.id));
 
-  const handleDraw = async () => {
-    if (!active || spinning) return;
-    const entrySnapshot = [...active.entries];
+  // Shared spin logic used by first draw, pick-another, and re-draw
+  const triggerSpin = async (pickerId: string, entries: ViewerPicker["entries"], excludeIds: string[]) => {
     setActionLoading(true); setError(null);
     try {
-      const updated = await pickerApi.draw(active.id);
+      const updated = await pickerApi.draw(pickerId, excludeIds);
       pendingPickerRef.current = updated;
-      setSpinEntries(entrySnapshot);
+      // Only show eligible entries in the drum (exclude already-won viewers)
+      const eligible = entries.filter((e) => !excludeIds.includes(e.user.id));
+      setSpinEntries(eligible.length > 0 ? eligible : entries);
       setPendingWinner(updated.winner);
       setSpinning(true);
     } catch (e: any) {
@@ -370,21 +365,18 @@ export default function AdminViewerPickerPage() {
     } finally { setActionLoading(false); }
   };
 
-  const handleRedraw = async (pickerId: string) => {
-    if (spinning) return;
-    const picker = pickers.find((p) => p.id === pickerId) ?? lastCompleted;
-    if (!picker) return;
-    const entrySnapshot = [...picker.entries];
-    setActionLoading(true); setError(null);
-    try {
-      const updated = await pickerApi.draw(pickerId);
-      pendingPickerRef.current = updated;
-      setSpinEntries(entrySnapshot);
-      setPendingWinner(updated.winner);
-      setSpinning(true);
-    } catch (e: any) {
-      setError(e.message);
-    } finally { setActionLoading(false); }
+  // First draw from the active (OPEN) picker — resets session
+  const handleDraw = async () => {
+    if (!active || spinning) return;
+    setSessionWinners([]);
+    await triggerSpin(active.id, active.entries, []);
+  };
+
+  // Pick another winner in the current session
+  const handlePickAnother = async () => {
+    if (!lastCompleted || spinning) return;
+    const excludeIds = sessionWinners.map((w) => w.id);
+    await triggerSpin(lastCompleted.id, lastCompleted.entries, excludeIds);
   };
 
   const handleSpinDone = () => {
@@ -393,9 +385,20 @@ export default function AdminViewerPickerPage() {
       const u = pendingPickerRef.current;
       setPickers((prev) => prev.map((p) => p.id === u.id ? u : p));
       setLastCompleted(u);
+      // Add winner to session list (guard against duplicates)
+      if (u.winner) {
+        setSessionWinners((prev) =>
+          prev.find((w) => w.id === u.winner!.id) ? prev : [...prev, u.winner!]
+        );
+      }
       pendingPickerRef.current = null;
     }
     if (pendingWinner) setShowWinner(true);
+  };
+
+  const handleEndSession = () => {
+    setSessionWinners([]);
+    setLastCompleted(null);
   };
 
   const handleAddEntry = async () => {
@@ -415,7 +418,7 @@ export default function AdminViewerPickerPage() {
     try {
       await pickerApi.delete(id);
       setPickers((prev) => prev.filter((p) => p.id !== id));
-      if (lastCompleted?.id === id) setLastCompleted(null);
+      if (lastCompleted?.id === id) { setLastCompleted(null); setSessionWinners([]); }
     } catch (e: any) { setError(e.message); }
     finally { setActionLoading(false); }
   };
@@ -433,6 +436,8 @@ export default function AdminViewerPickerPage() {
       </div>
     );
   }
+
+  const inSession = sessionWinners.length > 0 && lastCompleted;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -474,19 +479,17 @@ export default function AdminViewerPickerPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          {/* ── Left: Setup + Entries ── */}
+          {/* ── Left: Setup / Active / Session ── */}
           <div className="space-y-4">
 
-            {/* Active picker */}
+            {/* Active (OPEN) picker */}
             {active && (
               <div className="bg-white/5 border border-yellow-400/20 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                      <p className="text-white font-bold">
-                        {active.label || "Draw Open"}
-                      </p>
+                      <p className="text-white font-bold">{active.label || "Draw Open"}</p>
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <p className="text-white/40 text-xs">
@@ -527,9 +530,9 @@ export default function AdminViewerPickerPage() {
                 </div>
 
                 {/* Live entry list */}
-                <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
+                <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
                   {active.entries.length === 0 ? (
-                    <p className="text-white/25 text-sm text-center py-6">Waiting for viewers to enter…</p>
+                    <p className="text-white/25 text-sm text-center py-4">Waiting for viewers to enter…</p>
                   ) : (
                     active.entries.map((e, i) => (
                       <div key={e.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/3 border border-white/5">
@@ -567,8 +570,43 @@ export default function AdminViewerPickerPage() {
               </div>
             )}
 
-            {/* Completed picker — shown after a draw until user starts a new one */}
-            {!active && lastCompleted && (
+            {/* Multi-pick session — shown after first draw until admin ends the session */}
+            {!active && inSession && (
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-white font-bold">Pick Session</p>
+                    <p className="text-white/30 text-xs mt-0.5">
+                      <code className="bg-white/8 text-white/50 px-1.5 py-0.5 rounded font-mono">{lastCompleted!.keyword}</code>
+                      {lastCompleted!.label && <span className="ml-1.5">{lastCompleted!.label}</span>}
+                      {" · "}{lastCompleted!.entries.length} entries · {eligibleEntries.length} remaining
+                    </p>
+                  </div>
+                  <span className="text-yellow-400 font-black text-lg">{sessionWinners.length}</span>
+                </div>
+
+                {/* Session winner list */}
+                <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+                  {sessionWinners.map((w, i) => (
+                    <div key={w.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/3 border border-white/5">
+                      <span className="text-yellow-400 text-xs font-black w-5 shrink-0 text-right">#{i + 1}</span>
+                      <Avatar u={w} size={7} />
+                      <span className="text-white font-semibold text-sm truncate">{name(w)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={handleEndSession}
+                  className="w-full mt-4 py-2.5 border border-white/10 text-white/40 rounded-xl hover:bg-white/5 text-sm transition-colors"
+                >
+                  End Session · Start New Draw
+                </button>
+              </div>
+            )}
+
+            {/* Completed single draw (no session) */}
+            {!active && !inSession && lastCompleted && (
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -582,7 +620,6 @@ export default function AdminViewerPickerPage() {
                     </p>
                   </div>
                 </div>
-
                 {lastCompleted.winner && (
                   <div className="flex items-center gap-3 p-3 bg-yellow-400/8 border border-yellow-400/15 rounded-xl mb-4">
                     <span className="text-yellow-400 text-lg shrink-0">🏆</span>
@@ -593,7 +630,6 @@ export default function AdminViewerPickerPage() {
                     </div>
                   </div>
                 )}
-
                 <button
                   onClick={() => setLastCompleted(null)}
                   className="w-full py-2.5 border border-white/10 text-white/50 rounded-xl hover:bg-white/5 text-sm transition-colors"
@@ -603,7 +639,7 @@ export default function AdminViewerPickerPage() {
               </div>
             )}
 
-            {/* Create form — shown when no active draw and user dismissed completed view */}
+            {/* Create form */}
             {!active && !lastCompleted && (
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                 <h2 className="text-base font-semibold text-white mb-4">Start a New Draw</h2>
@@ -633,7 +669,7 @@ export default function AdminViewerPickerPage() {
             )}
           </div>
 
-          {/* ── Right: Wheel + Draw Button ── */}
+          {/* ── Right: Wheel + Action Button ── */}
           <div className="space-y-4">
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
               <h2 className="text-base font-semibold text-white mb-4">Draw a Winner</h2>
@@ -648,7 +684,7 @@ export default function AdminViewerPickerPage() {
                 />
               </div>
 
-              {/* Spin / Re-draw / placeholder button */}
+              {/* Action button */}
               {active ? (
                 <button
                   onClick={handleDraw}
@@ -661,25 +697,39 @@ export default function AdminViewerPickerPage() {
                 >
                   {spinning ? "🎰 Spinning…" : "🎰 Spin & Draw Winner"}
                 </button>
-              ) : lastCompleted ? (
+              ) : lastCompleted && eligibleEntries.length > 0 ? (
                 <button
-                  onClick={() => handleRedraw(lastCompleted.id)}
-                  disabled={actionLoading || spinning || lastCompleted.entries.length <= 1}
-                  className="w-full py-4 rounded-xl font-black text-lg tracking-wide bg-white/8 border border-white/10 text-white/60 hover:bg-white/12 disabled:opacity-40 transition-all active:scale-95"
-                  title={lastCompleted.entries.length <= 1 ? "Need at least 2 entries to re-draw" : "Pick a different winner"}
+                  onClick={handlePickAnother}
+                  disabled={actionLoading || spinning}
+                  className={`w-full py-4 rounded-xl font-black text-lg tracking-wide transition-all ${
+                    spinning
+                      ? "bg-yellow-400/40 text-black/40 cursor-not-allowed"
+                      : "bg-gradient-to-r from-yellow-400 to-amber-400 text-black hover:from-yellow-300 hover:to-amber-300 shadow-lg shadow-yellow-900/30 active:scale-95"
+                  } disabled:opacity-40`}
                 >
-                  {spinning ? "🎰 Spinning…" : "🔄 Re-draw"}
+                  {spinning ? "🎰 Spinning…" : `🎯 Pick Another Winner`}
                 </button>
+              ) : lastCompleted && eligibleEntries.length === 0 ? (
+                <div className="w-full py-4 rounded-xl text-center text-white/30 text-sm border border-white/5">
+                  All {lastCompleted.entries.length} entries have been picked
+                </div>
               ) : (
                 <div className="w-full py-4 rounded-xl text-center text-white/20 text-sm border border-white/5">
                   Start a draw first
                 </div>
               )}
+
+              {/* Session progress hint */}
+              {inSession && !spinning && eligibleEntries.length > 0 && (
+                <p className="text-center text-white/25 text-xs mt-3">
+                  {sessionWinners.length} picked · {eligibleEntries.length} remaining
+                </p>
+              )}
             </div>
           </div>
         </div>
 
-        {/* ── Past Winners ── */}
+        {/* ── Past Draws ── */}
         {past.length > 0 && (
           <div className="mt-10">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30 mb-4">Past Draws</p>
@@ -687,18 +737,12 @@ export default function AdminViewerPickerPage() {
               {past.map((p) => (
                 <div key={p.id} className="flex items-center gap-4 bg-white/3 border border-white/8 rounded-xl px-5 py-4">
                   <div className="shrink-0">
-                    <code className="text-yellow-400/80 font-mono text-sm bg-yellow-400/10 px-2 py-0.5 rounded">
-                      {p.keyword}
-                    </code>
+                    <code className="text-yellow-400/80 font-mono text-sm bg-yellow-400/10 px-2 py-0.5 rounded">{p.keyword}</code>
                     {p.label && <span className="ml-2 text-white/40 text-xs">{p.label}</span>}
                   </div>
-
                   <div className="text-white/15 text-sm shrink-0">·</div>
-
                   <span className="text-white/40 text-sm shrink-0">{p.entries.length} entries</span>
-
                   <div className="text-white/15 text-sm shrink-0">·</div>
-
                   {p.winner ? (
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <span className="text-yellow-400 text-sm shrink-0">🏆</span>
@@ -708,11 +752,9 @@ export default function AdminViewerPickerPage() {
                   ) : (
                     <span className="text-white/25 text-sm flex-1">No winner drawn</span>
                   )}
-
                   <span className="text-white/20 text-xs shrink-0 ml-auto">
                     {new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </span>
-
                   <button
                     onClick={() => handleDelete(p.id)}
                     disabled={actionLoading}
@@ -732,10 +774,13 @@ export default function AdminViewerPickerPage() {
       {showWinner && pendingWinner && (
         <WinnerReveal
           winner={pendingWinner}
+          winnerNumber={sessionWinners.length}
           onClose={() => { setShowWinner(false); load(); }}
-          onRedraw={lastCompleted && lastCompleted.entries.length > 1
-            ? () => { setShowWinner(false); handleRedraw(lastCompleted.id); }
-            : undefined}
+          onPickAnother={
+            lastCompleted && eligibleEntries.length > 0
+              ? () => { setShowWinner(false); handlePickAnother(); }
+              : undefined
+          }
         />
       )}
     </div>

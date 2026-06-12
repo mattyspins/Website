@@ -62,14 +62,15 @@ export class ViewerPickerService {
     return updated;
   }
 
-  static async drawWinner(id: string, io?: SocketIOServer) {
+  static async drawWinner(id: string, io?: SocketIOServer, excludeUserIds: string[] = []) {
     const picker = await prisma.viewerPicker.findUnique({ where: { id }, include: INCLUDE });
     if (!picker) throw createError.notFound('Picker not found');
     if (picker.entries.length === 0) throw createError.badRequest('No entries to pick from');
 
-    // On re-draws, exclude the previous winner so a new person is always selected
-    const pool = picker.winnerId
-      ? picker.entries.filter(e => e.userId !== picker.winnerId)
+    // Exclude the previous DB winner plus any session winners passed by the client
+    const allExcluded = new Set([...excludeUserIds, ...(picker.winnerId ? [picker.winnerId] : [])]);
+    const pool = allExcluded.size > 0
+      ? picker.entries.filter(e => !allExcluded.has(e.userId))
       : picker.entries;
     if (pool.length === 0) throw createError.badRequest('No other eligible entries');
 
