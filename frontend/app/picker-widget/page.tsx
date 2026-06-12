@@ -33,16 +33,25 @@ function Avatar({ u, size }: { u: PickerUser | null | undefined; size: number })
   );
 }
 
-// Continuously scrolling list of entries
+// Continuously scrolling list of entries — scroll position is NOT reset on new entries
 function EntryRoll({ entries }: { entries: ViewerPicker["entries"] }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const posRef   = useRef(0);
   const rafRef   = useRef<number | null>(null);
   const SPEED    = 30; // px per second
 
+  const hasEntries = entries.length > 0;
+
   useEffect(() => {
-    if (!trackRef.current) return;
+    if (!trackRef.current || !hasEntries) {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      return;
+    }
+
+    // Only reset scroll position when going from 0 entries to first entries (fresh draw)
+    // When new entries arrive mid-draw, the RAF continues without interruption
     posRef.current = 0;
+
     const track = trackRef.current;
     let last = performance.now();
 
@@ -57,9 +66,9 @@ function EntryRoll({ entries }: { entries: ViewerPicker["entries"] }) {
 
     rafRef.current = requestAnimationFrame(tick);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [entries.length]);
+  }, [hasEntries]); // only restart when going between 0 ↔ non-zero entries
 
-  if (entries.length === 0) {
+  if (!hasEntries) {
     return (
       <div style={{ padding: "10px 0", textAlign: "center", color: "rgba(255,255,255,0.2)", fontSize: 10, letterSpacing: 1 }}>
         Waiting for entries…
@@ -228,30 +237,40 @@ export default function PickerWidget() {
             </span>
           </div>
 
-          {/* Status badge */}
-          {isOpen && (
-            <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-              <span style={{
-                width: 6, height: 6, borderRadius: "50%",
-                background: "#4ade80",
-                boxShadow: "0 0 6px #4ade80",
-                animation: "blink 1.4s ease-in-out infinite",
-              }} />
-              <span style={{ color: "#4ade80", fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Live</span>
-            </div>
-          )}
-          {isCompleted && (
-            <span style={{ color: "#fcd34d", fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Done</span>
-          )}
-          {picker.status === "CLOSED" && (
-            <span style={{ color: "rgba(255,255,255,0.28)", fontSize: 9, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Closed</span>
-          )}
+          {/* Status badge + entry count */}
+          <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+            {isOpen && (
+              <>
+                <span style={{
+                  color: "rgba(255,255,255,0.55)", fontSize: 10, fontWeight: 700,
+                  background: "rgba(255,255,255,0.07)", borderRadius: 5, padding: "1px 5px",
+                }}>
+                  {picker.entries.length}
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                  <span style={{
+                    width: 6, height: 6, borderRadius: "50%",
+                    background: "#4ade80",
+                    boxShadow: "0 0 6px #4ade80",
+                    animation: "blink 1.4s ease-in-out infinite",
+                  }} />
+                  <span style={{ color: "#4ade80", fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Live</span>
+                </div>
+              </>
+            )}
+            {isCompleted && (
+              <span style={{ color: "#fcd34d", fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Done</span>
+            )}
+            {picker.status === "CLOSED" && (
+              <span style={{ color: "rgba(255,255,255,0.28)", fontSize: 9, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Closed</span>
+            )}
+          </div>
         </div>
 
-        {/* ── Open: keyword + count + scroller ── */}
+        {/* ── Open: keyword + scroller ── */}
         {isOpen && (
           <>
-            <div style={{ padding: "5px 10px 2px", display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ padding: "5px 10px 4px", display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ color: "rgba(255,255,255,0.22)", fontSize: 9, letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap" }}>
                 Type in chat:
               </span>
@@ -263,10 +282,6 @@ export default function PickerWidget() {
               }}>
                 {picker.keyword}
               </span>
-            </div>
-
-            <div style={{ padding: "2px 10px 4px", color: "rgba(255,255,255,0.28)", fontSize: 9 }}>
-              {picker.entries.length} {picker.entries.length === 1 ? "entry" : "entries"}
             </div>
 
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", marginTop: 2 }}>

@@ -23,7 +23,7 @@ export class ViewerPickerService {
     });
 
     const picker = await prisma.viewerPicker.create({
-      data: { keyword: keyword.trim(), label: label?.trim() || null },
+      data: { keyword: keyword.trim().toLowerCase(), label: label?.trim() || null },
       include: INCLUDE,
     });
 
@@ -67,7 +67,13 @@ export class ViewerPickerService {
     if (!picker) throw createError.notFound('Picker not found');
     if (picker.entries.length === 0) throw createError.badRequest('No entries to pick from');
 
-    const pick = picker.entries[Math.floor(Math.random() * picker.entries.length)];
+    // On re-draws, exclude the previous winner so a new person is always selected
+    const pool = picker.winnerId
+      ? picker.entries.filter(e => e.userId !== picker.winnerId)
+      : picker.entries;
+    if (pool.length === 0) throw createError.badRequest('No other eligible entries');
+
+    const pick = pool[Math.floor(Math.random() * pool.length)];
 
     const updated = await prisma.viewerPicker.update({
       where: { id },
@@ -79,6 +85,32 @@ export class ViewerPickerService {
     io?.emit('picker:updated', updated);
     logger.info(`ViewerPicker ${id}: winner=${pick.userId}`);
     return updated;
+  }
+
+  static async addEntryByUsername(id: string, kickUsername: string, io?: SocketIOServer) {
+    const picker = await prisma.viewerPicker.findUnique({ where: { id } });
+    if (!picker) throw createError.notFound('Picker not found');
+    if (picker.status !== ViewerPickerStatus.OPEN) throw createError.badRequest('Draw is not open');
+
+    const user = await prisma.user.findFirst({
+      where: { kickUsername: { equals: kickUsername.trim(), mode: 'insensitive' } },
+      select: { id: true, displayName: true, kickUsername: true, avatarUrl: true },
+    });
+    if (!user) throw createError.notFound(`No user found with username "${kickUsername}"`);
+
+    const existing = await prisma.viewerPickerEntry.findUnique({
+      where: { pickerId_userId: { pickerId: id, userId: user.id } },
+    });
+    if (existing) throw createError.badRequest(`${user.kickUsername ?? user.displayName} is already in the draw`);
+
+    await prisma.viewerPickerEntry.create({ data: { pickerId: id, userId: user.id } });
+
+    const updated = await prisma.viewerPicker.findUnique({ where: { id }, include: INCLUDE });
+    io?.to(`picker:${id}`).emit('picker:updated', updated);
+    io?.emit('picker:updated', updated);
+
+    logger.info(`ViewerPicker ${id}: manually added ${kickUsername}`);
+    return updated!;
   }
 
   static async delete(id: string) {

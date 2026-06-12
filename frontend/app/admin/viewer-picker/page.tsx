@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { pickerApi, ViewerPicker, PickerUser } from "@/lib/api/viewerPicker";
 import { getSocket } from "@/lib/socket";
@@ -45,22 +45,20 @@ function SpinDrum({
   const ITEM_H = 72; // px per slot item
   const SPIN_DURATION = 12000; // ms
 
-  // Build a long shuffled list for the reel
-  const reel = (() => {
+  const reel = useMemo(() => {
     if (entries.length === 0) return [] as PickerUser[];
     const pool = entries.map((e) => e.user);
     const repeated: PickerUser[] = [];
-    // Repeat enough to fill the reel
     while (repeated.length < Math.max(40, pool.length * 4)) {
       for (const u of pool) repeated.push(u);
     }
-    // Shuffle
     for (let i = repeated.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [repeated[i], repeated[j]] = [repeated[j], repeated[i]];
     }
-    // If we have a winner, make sure it appears near the end
     if (winner) {
+      // Place winner at reel.length - 5; stopOffset = (reel.length - 6) * ITEM_H
+      // puts that index at 72px from the top = center of the 3-slot window
       const targetIdx = repeated.length - 5;
       const existingIdx = repeated.findIndex((u) => u.id === winner.id);
       if (existingIdx !== -1 && existingIdx !== targetIdx) {
@@ -68,16 +66,17 @@ function SpinDrum({
       }
     }
     return repeated;
-  })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries.length, winner?.id]);
 
   const totalH = reel.length * ITEM_H;
-  const stopOffset = winner ? (reel.length - 5) * ITEM_H : 0;
+  // -6 (not -5) so the winner slot lands in the center highlighted row, not the top row
+  const stopOffset = winner ? (reel.length - 6) * ITEM_H : 0;
 
   useEffect(() => {
     if (!spinning || !containerRef.current) return;
     startTimeRef.current = performance.now();
 
-    // Quartic ease-out: fast start, long natural deceleration for suspense
     const easeOut = (t: number) => 1 - Math.pow(1 - t, 4);
 
     const tick = (now: number) => {
@@ -96,7 +95,6 @@ function SpinDrum({
       if (progress < 1) {
         animRef.current = requestAnimationFrame(tick);
       } else {
-        // Settle exactly on winner
         if (containerRef.current) {
           containerRef.current.style.transform = `translateY(-${stopOffset % totalH}px)`;
         }
@@ -118,12 +116,9 @@ function SpinDrum({
 
   return (
     <div className="relative h-[216px] overflow-hidden rounded-xl">
-      {/* Gradient masks */}
       <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#0a0a0a] to-transparent z-10 pointer-events-none" />
       <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0a0a0a] to-transparent z-10 pointer-events-none" />
-      {/* Active slot highlight */}
       <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[72px] border-y-2 border-yellow-400/60 bg-yellow-400/5 z-10 pointer-events-none" />
-      {/* Arrow pointing at the winner slot */}
       <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-none text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,1)]">
         <svg viewBox="0 0 24 24" className="w-7 h-7" fill="currentColor">
           <path d="M15 5L7 12L15 19V5Z" />
@@ -216,7 +211,15 @@ function Fireworks() {
 
 // ─── Winner Reveal ────────────────────────────────────────────────────────────
 
-function WinnerReveal({ winner, onClose }: { winner: PickerUser; onClose: () => void }) {
+function WinnerReveal({
+  winner,
+  onClose,
+  onRedraw,
+}: {
+  winner: PickerUser;
+  onClose: () => void;
+  onRedraw?: () => void;
+}) {
   const [show, setShow] = useState(false);
   useEffect(() => { setTimeout(() => setShow(true), 50); }, []);
 
@@ -235,9 +238,19 @@ function WinnerReveal({ winner, onClose }: { winner: PickerUser; onClose: () => 
         {winner.kickUsername && winner.displayName !== winner.kickUsername && (
           <p className="text-white/40 text-sm">{winner.displayName}</p>
         )}
-        <button onClick={onClose} className="mt-2 px-8 py-3 bg-yellow-400 text-black font-bold rounded-xl hover:bg-yellow-300 transition-colors text-sm">
-          Awesome! 🎊
-        </button>
+        <div className="flex items-center gap-3 mt-2">
+          {onRedraw && (
+            <button
+              onClick={onRedraw}
+              className="px-6 py-3 bg-white/10 border border-white/20 text-white/70 font-semibold rounded-xl hover:bg-white/15 transition-colors text-sm"
+            >
+              🔄 Re-draw
+            </button>
+          )}
+          <button onClick={onClose} className="px-8 py-3 bg-yellow-400 text-black font-bold rounded-xl hover:bg-yellow-300 transition-colors text-sm">
+            Awesome! 🎊
+          </button>
+        </div>
       </div>
     </div>
     </>
@@ -256,8 +269,12 @@ export default function AdminViewerPickerPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [spinning, setSpinning] = useState(false);
+  const [spinEntries, setSpinEntries] = useState<ViewerPicker["entries"]>([]);
   const [showWinner, setShowWinner] = useState(false);
   const [pendingWinner, setPendingWinner] = useState<PickerUser | null>(null);
+  const [lastCompleted, setLastCompleted] = useState<ViewerPicker | null>(null);
+  const [manualUsername, setManualUsername] = useState("");
+  const [copiedKeyword, setCopiedKeyword] = useState(false);
   const pendingPickerRef = useRef<ViewerPicker | null>(null);
 
   const active = pickers.find((p) => p.status === "OPEN") ?? null;
@@ -281,13 +298,22 @@ export default function AdminViewerPickerPage() {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
-  // Socket.IO — subscribe to active picker updates
   useEffect(() => {
-    if (!active) return;
+    load();
+    const id = setInterval(load, 5000);
+    return () => clearInterval(id);
+  }, [load]);
+
+  // Single socket listener — joins the active picker room and handles all updates
+  useEffect(() => {
     const socket = getSocket();
-    socket.emit("joinPicker", active.id);
+
+    const joinRoom = () => { if (active) socket.emit("joinPicker", active.id); };
+    if (active) {
+      joinRoom();
+      socket.on("connect", joinRoom);
+    }
+
     const handle = (updated: ViewerPicker) => {
       setPickers((prev) => {
         const exists = prev.find((p) => p.id === updated.id);
@@ -296,22 +322,15 @@ export default function AdminViewerPickerPage() {
       });
     };
     socket.on("picker:updated", handle);
-    return () => { socket.emit("leavePicker", active.id); socket.off("picker:updated", handle); };
+
+    return () => {
+      if (active) {
+        socket.emit("leavePicker", active.id);
+        socket.off("connect", joinRoom);
+      }
+      socket.off("picker:updated", handle);
+    };
   }, [active?.id]);
-
-  // Also listen for global picker:updated (new picker created replaces list)
-  useEffect(() => {
-    const socket = getSocket();
-    const handle = (updated: ViewerPicker) => {
-      setPickers((prev) => {
-        const exists = prev.find((p) => p.id === updated.id);
-        if (exists) return prev.map((p) => p.id === updated.id ? updated : p);
-        return [updated, ...prev];
-      });
-    };
-    socket.on("picker:updated", handle);
-    return () => { socket.off("picker:updated", handle); };
-  }, []);
 
   const withAction = async (fn: () => Promise<ViewerPicker>) => {
     setActionLoading(true); setError(null);
@@ -331,18 +350,36 @@ export default function AdminViewerPickerPage() {
     if (!keyword.trim()) { setError("Keyword is required"); return; }
     await withAction(() => pickerApi.create(keyword.trim(), label.trim() || undefined));
     setKeyword(""); setLabel("");
+    setLastCompleted(null);
   };
 
   const handleClose = () => active && withAction(() => pickerApi.close(active.id));
 
   const handleDraw = async () => {
     if (!active || spinning) return;
+    const entrySnapshot = [...active.entries];
     setActionLoading(true); setError(null);
     try {
-      // Fetch the winner FIRST so the reel is built with the correct stop position
       const updated = await pickerApi.draw(active.id);
       pendingPickerRef.current = updated;
-      // Set winner and start spinning in the same batch — reel gets correct stopOffset
+      setSpinEntries(entrySnapshot);
+      setPendingWinner(updated.winner);
+      setSpinning(true);
+    } catch (e: any) {
+      setError(e.message);
+    } finally { setActionLoading(false); }
+  };
+
+  const handleRedraw = async (pickerId: string) => {
+    if (spinning) return;
+    const picker = pickers.find((p) => p.id === pickerId) ?? lastCompleted;
+    if (!picker) return;
+    const entrySnapshot = [...picker.entries];
+    setActionLoading(true); setError(null);
+    try {
+      const updated = await pickerApi.draw(pickerId);
+      pendingPickerRef.current = updated;
+      setSpinEntries(entrySnapshot);
       setPendingWinner(updated.winner);
       setSpinning(true);
     } catch (e: any) {
@@ -352,13 +389,24 @@ export default function AdminViewerPickerPage() {
 
   const handleSpinDone = () => {
     setSpinning(false);
-    // Apply picker state update AFTER spin completes so the UI doesn't flip mid-spin
     if (pendingPickerRef.current) {
       const u = pendingPickerRef.current;
       setPickers((prev) => prev.map((p) => p.id === u.id ? u : p));
+      setLastCompleted(u);
       pendingPickerRef.current = null;
     }
     if (pendingWinner) setShowWinner(true);
+  };
+
+  const handleAddEntry = async () => {
+    if (!active || !manualUsername.trim()) return;
+    setActionLoading(true); setError(null);
+    try {
+      const updated = await pickerApi.addEntry(active.id, manualUsername.trim());
+      setPickers((prev) => prev.map((p) => p.id === updated.id ? updated : p));
+      setManualUsername("");
+    } catch (e: any) { setError(e.message); }
+    finally { setActionLoading(false); }
   };
 
   const handleDelete = async (id: string) => {
@@ -367,8 +415,15 @@ export default function AdminViewerPickerPage() {
     try {
       await pickerApi.delete(id);
       setPickers((prev) => prev.filter((p) => p.id !== id));
+      if (lastCompleted?.id === id) setLastCompleted(null);
     } catch (e: any) { setError(e.message); }
     finally { setActionLoading(false); }
+  };
+
+  const copyKeyword = (kw: string) => {
+    navigator.clipboard.writeText(kw);
+    setCopiedKeyword(true);
+    setTimeout(() => setCopiedKeyword(false), 2000);
   };
 
   if (authLoading || loading) {
@@ -422,8 +477,134 @@ export default function AdminViewerPickerPage() {
           {/* ── Left: Setup + Entries ── */}
           <div className="space-y-4">
 
-            {/* Create form */}
-            {!active && (
+            {/* Active picker */}
+            {active && (
+              <div className="bg-white/5 border border-yellow-400/20 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                      <p className="text-white font-bold">
+                        {active.label || "Draw Open"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <p className="text-white/40 text-xs">
+                        Type{" "}
+                        <code className="bg-white/10 text-yellow-300 px-1.5 py-0.5 rounded font-mono">{active.keyword}</code>
+                        {" "}in Kick chat to enter
+                      </p>
+                      <button
+                        onClick={() => copyKeyword(active.keyword)}
+                        className="text-white/25 hover:text-yellow-400 transition-colors"
+                        title="Copy keyword"
+                      >
+                        {copiedKeyword ? (
+                          <svg className="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleClose()}
+                    disabled={actionLoading}
+                    className="px-3 py-1.5 border border-white/15 text-white/40 text-xs rounded-lg hover:bg-white/5 disabled:opacity-30 transition-colors"
+                  >
+                    Close Entries
+                  </button>
+                </div>
+
+                {/* Entry counter */}
+                <div className="flex items-center gap-3 mb-4 p-3 bg-yellow-400/8 border border-yellow-400/15 rounded-xl">
+                  <span className="text-2xl font-black text-yellow-400">{active.entries.length}</span>
+                  <span className="text-white/60 text-sm">{active.entries.length === 1 ? "viewer" : "viewers"} in the draw</span>
+                </div>
+
+                {/* Live entry list */}
+                <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
+                  {active.entries.length === 0 ? (
+                    <p className="text-white/25 text-sm text-center py-6">Waiting for viewers to enter…</p>
+                  ) : (
+                    active.entries.map((e, i) => (
+                      <div key={e.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/3 border border-white/5">
+                        <span className="text-white/20 text-xs w-5 shrink-0 text-right">{i + 1}</span>
+                        <Avatar u={e.user} size={7} />
+                        <span className="text-white/80 text-sm font-medium truncate">{name(e.user)}</span>
+                        <span className="ml-auto text-white/20 text-[10px] shrink-0">
+                          {new Date(e.enteredAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Manual entry */}
+                <div className="mt-3 pt-3 border-t border-white/8">
+                  <p className="text-white/30 text-xs mb-2">Add viewer manually</p>
+                  <div className="flex gap-2">
+                    <input
+                      value={manualUsername}
+                      onChange={(e) => setManualUsername(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleAddEntry()}
+                      placeholder="Kick username"
+                      className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-yellow-400/40 font-mono"
+                    />
+                    <button
+                      onClick={handleAddEntry}
+                      disabled={actionLoading || !manualUsername.trim()}
+                      className="px-3 py-1.5 bg-white/8 border border-white/10 text-white/60 text-xs rounded-lg hover:bg-white/12 disabled:opacity-30 transition-colors shrink-0"
+                    >
+                      + Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Completed picker — shown after a draw until user starts a new one */}
+            {!active && lastCompleted && (
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-white/20" />
+                      <p className="text-white/60 font-bold">{lastCompleted.label || "Draw Completed"}</p>
+                    </div>
+                    <p className="text-white/30 text-xs mt-0.5">
+                      <code className="bg-white/8 text-white/50 px-1.5 py-0.5 rounded font-mono">{lastCompleted.keyword}</code>
+                      {" · "}{lastCompleted.entries.length} {lastCompleted.entries.length === 1 ? "entry" : "entries"}
+                    </p>
+                  </div>
+                </div>
+
+                {lastCompleted.winner && (
+                  <div className="flex items-center gap-3 p-3 bg-yellow-400/8 border border-yellow-400/15 rounded-xl mb-4">
+                    <span className="text-yellow-400 text-lg shrink-0">🏆</span>
+                    <Avatar u={lastCompleted.winner} size={9} />
+                    <div className="min-w-0">
+                      <p className="text-white font-bold truncate">{name(lastCompleted.winner)}</p>
+                      <p className="text-white/30 text-xs">Winner</p>
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => setLastCompleted(null)}
+                  className="w-full py-2.5 border border-white/10 text-white/50 rounded-xl hover:bg-white/5 text-sm transition-colors"
+                >
+                  + Start New Draw
+                </button>
+              </div>
+            )}
+
+            {/* Create form — shown when no active draw and user dismissed completed view */}
+            {!active && !lastCompleted && (
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                 <h2 className="text-base font-semibold text-white mb-4">Start a New Draw</h2>
                 <label className="block text-xs text-white/50 mb-1 uppercase tracking-widest">Keyword *</label>
@@ -450,56 +631,6 @@ export default function AdminViewerPickerPage() {
                 </button>
               </div>
             )}
-
-            {/* Active picker */}
-            {active && (
-              <div className="bg-white/5 border border-yellow-400/20 rounded-2xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                      <p className="text-white font-bold">
-                        {active.label || "Draw Open"}
-                      </p>
-                    </div>
-                    <p className="text-white/40 text-xs mt-0.5">
-                      Type <code className="bg-white/10 text-yellow-300 px-1.5 py-0.5 rounded font-mono">{active.keyword}</code> in Kick chat to enter
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleClose()}
-                    disabled={actionLoading}
-                    className="px-3 py-1.5 border border-white/15 text-white/40 text-xs rounded-lg hover:bg-white/5 disabled:opacity-30 transition-colors"
-                  >
-                    Close Entries
-                  </button>
-                </div>
-
-                {/* Entry counter */}
-                <div className="flex items-center gap-3 mb-4 p-3 bg-yellow-400/8 border border-yellow-400/15 rounded-xl">
-                  <span className="text-2xl font-black text-yellow-400">{active.entries.length}</span>
-                  <span className="text-white/60 text-sm">{active.entries.length === 1 ? "viewer" : "viewers"} in the draw</span>
-                </div>
-
-                {/* Live entry list */}
-                <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
-                  {active.entries.length === 0 ? (
-                    <p className="text-white/25 text-sm text-center py-6">Waiting for viewers to enter…</p>
-                  ) : (
-                    active.entries.map((e, i) => (
-                      <div key={e.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/3 border border-white/5">
-                        <span className="text-white/20 text-xs w-5 shrink-0 text-right">{i + 1}</span>
-                        <Avatar u={e.user} size={7} />
-                        <span className="text-white/80 text-sm font-medium truncate">{name(e.user)}</span>
-                        <span className="ml-auto text-white/20 text-[10px] shrink-0">
-                          {new Date(e.enteredAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* ── Right: Wheel + Draw Button ── */}
@@ -510,15 +641,15 @@ export default function AdminViewerPickerPage() {
               {/* Spin drum */}
               <div className="bg-[#0d0d0d] border border-white/8 rounded-xl mb-4 overflow-hidden">
                 <SpinDrum
-                  entries={active?.entries ?? []}
+                  entries={spinning ? spinEntries : (active?.entries ?? lastCompleted?.entries ?? [])}
                   spinning={spinning}
                   winner={pendingWinner}
                   onSpinDone={handleSpinDone}
                 />
               </div>
 
-              {/* Draw button */}
-              {active && active.status === "OPEN" ? (
+              {/* Spin / Re-draw / placeholder button */}
+              {active ? (
                 <button
                   onClick={handleDraw}
                   disabled={actionLoading || spinning || active.entries.length === 0}
@@ -530,28 +661,19 @@ export default function AdminViewerPickerPage() {
                 >
                   {spinning ? "🎰 Spinning…" : "🎰 Spin & Draw Winner"}
                 </button>
-              ) : active?.status === "CLOSED" ? (
+              ) : lastCompleted ? (
                 <button
-                  onClick={handleDraw}
-                  disabled={actionLoading || spinning || active.entries.length === 0}
-                  className="w-full py-4 rounded-xl font-black text-lg bg-gradient-to-r from-yellow-400 to-amber-400 text-black hover:from-yellow-300 hover:to-amber-300 shadow-lg shadow-yellow-900/30 disabled:opacity-40 transition-all active:scale-95"
+                  onClick={() => handleRedraw(lastCompleted.id)}
+                  disabled={actionLoading || spinning || lastCompleted.entries.length <= 1}
+                  className="w-full py-4 rounded-xl font-black text-lg tracking-wide bg-white/8 border border-white/10 text-white/60 hover:bg-white/12 disabled:opacity-40 transition-all active:scale-95"
+                  title={lastCompleted.entries.length <= 1 ? "Need at least 2 entries to re-draw" : "Pick a different winner"}
                 >
-                  {spinning ? "🎰 Spinning…" : "🎰 Spin & Draw Winner"}
+                  {spinning ? "🎰 Spinning…" : "🔄 Re-draw"}
                 </button>
               ) : (
                 <div className="w-full py-4 rounded-xl text-center text-white/20 text-sm border border-white/5">
                   Start a draw first
                 </div>
-              )}
-
-              {/* Start new draw after completion */}
-              {active?.status === "COMPLETED" && (
-                <button
-                  onClick={() => { setKeyword(""); setLabel(""); setPendingWinner(null); }}
-                  className="w-full mt-2 py-2.5 border border-white/10 text-white/50 rounded-xl hover:bg-white/5 text-sm transition-colors"
-                >
-                  + Start New Draw
-                </button>
               )}
             </div>
           </div>
@@ -564,7 +686,6 @@ export default function AdminViewerPickerPage() {
             <div className="space-y-2">
               {past.map((p) => (
                 <div key={p.id} className="flex items-center gap-4 bg-white/3 border border-white/8 rounded-xl px-5 py-4">
-                  {/* Keyword / label */}
                   <div className="shrink-0">
                     <code className="text-yellow-400/80 font-mono text-sm bg-yellow-400/10 px-2 py-0.5 rounded">
                       {p.keyword}
@@ -574,12 +695,10 @@ export default function AdminViewerPickerPage() {
 
                   <div className="text-white/15 text-sm shrink-0">·</div>
 
-                  {/* Entry count */}
                   <span className="text-white/40 text-sm shrink-0">{p.entries.length} entries</span>
 
                   <div className="text-white/15 text-sm shrink-0">·</div>
 
-                  {/* Winner */}
                   {p.winner ? (
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <span className="text-yellow-400 text-sm shrink-0">🏆</span>
@@ -590,12 +709,10 @@ export default function AdminViewerPickerPage() {
                     <span className="text-white/25 text-sm flex-1">No winner drawn</span>
                   )}
 
-                  {/* Date */}
                   <span className="text-white/20 text-xs shrink-0 ml-auto">
                     {new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </span>
 
-                  {/* Delete */}
                   <button
                     onClick={() => handleDelete(p.id)}
                     disabled={actionLoading}
@@ -616,6 +733,9 @@ export default function AdminViewerPickerPage() {
         <WinnerReveal
           winner={pendingWinner}
           onClose={() => { setShowWinner(false); load(); }}
+          onRedraw={lastCompleted && lastCompleted.entries.length > 1
+            ? () => { setShowWinner(false); handleRedraw(lastCompleted.id); }
+            : undefined}
         />
       )}
     </div>

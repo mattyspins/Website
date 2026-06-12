@@ -34,5 +34,7 @@ export const pickerApi = {
     api.post("/api/viewer-picker", { keyword, label }).then((d) => d.picker as ViewerPicker),
   close: (id: string) => api.post(`/api/viewer-picker/${id}/close`, {}).then((d) => d.picker as ViewerPicker),
   draw: (id: string) => api.post(`/api/viewer-picker/${id}/draw`, {}).then((d) => d.picker as ViewerPicker),
+  addEntry: (id: string, kickUsername: string) =>
+    api.post(`/api/viewer-picker/${id}/add-entry`, { kickUsername }).then((d) => d.picker as ViewerPicker),
   delete: (id: string) => api.delete(`/api/viewer-picker/${id}`),
 };

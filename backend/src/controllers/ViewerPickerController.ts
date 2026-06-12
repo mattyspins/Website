@@ -37,6 +37,13 @@ export class ViewerPickerController {
     res.json({ success: true, picker });
   });
 
+  static addEntry = asyncHandler(async (req, res) => {
+    const { kickUsername } = req.body;
+    if (!kickUsername?.trim()) { res.status(400).json({ error: 'kickUsername is required' }); return; }
+    const picker = await ViewerPickerService.addEntryByUsername(req.params.id, kickUsername, _io);
+    res.json({ success: true, picker });
+  });
+
   static deletePicker = asyncHandler(async (req, res) => {
     await ViewerPickerService.delete(req.params.id);
     res.json({ success: true });

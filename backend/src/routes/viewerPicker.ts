@@ -11,6 +11,7 @@ router.get('/active', lim, ViewerPickerController.getActive);
 router.post('/', authMiddleware, adminMiddleware, lim, ViewerPickerController.create);
 router.post('/:id/close', authMiddleware, adminMiddleware, lim, ViewerPickerController.close);
 router.post('/:id/draw', authMiddleware, adminMiddleware, lim, ViewerPickerController.drawWinner);
+router.post('/:id/add-entry', authMiddleware, adminMiddleware, lim, ViewerPickerController.addEntry);
 router.delete('/:id', authMiddleware, adminMiddleware, lim, ViewerPickerController.deletePicker);
 
 export default router;
