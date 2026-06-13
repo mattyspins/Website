@@ -66,6 +66,7 @@ model User {
   bingoClaimedCells      BingoCell[]           @relation("BingoCellClaimer")
   viewerPickerWins       ViewerPicker[]        @relation("ViewerPickerWinner")
   viewerPickerEntries    ViewerPickerEntry[]
+  slotRequests           SlotRequest[]
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")
@@ -663,6 +664,27 @@ model BingoParticipant {
 
   @@unique([gameId, userId])
   @@map("bingo_participants")
+}
+
+// ─── Slot Requests ───────────────────────────────────────────────────────────
+
+enum SlotRequestStatus {
+  PENDING
+  ADDED
+  REJECTED
+}
+
+model SlotRequest {
+  id           String            @id @default(uuid())
+  slotName     String            @map("slot_name")
+  kickUsername String            @map("kick_username")
+  userId       String?           @map("user_id")
+  status       SlotRequestStatus @default(PENDING)
+  requestedAt  DateTime          @default(now()) @map("requested_at")
+  user         User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status], map: "idx_slot_requests_status")
+  @@map("slot_requests")
 }
 
 model BingoLineWin {

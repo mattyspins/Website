@@ -13,6 +13,8 @@ import {
 } from "@/lib/huntTracker";
 import { SLOT_GAMES, type SlotGame } from "@/lib/slotGames";
 import { API_ENDPOINTS } from "@/lib/api";
+import { slotRequestApi, SlotRequest } from "@/lib/api/slotRequests";
+import { getSocket } from "@/lib/socket";
 
 /* ── helpers ─────────────────────────────────────────────── */
 function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
@@ -72,18 +74,24 @@ const BADGES: { value: BadgeType; label: string }[] = [
 function AddBonusModal({
   initial,
   currency,
+  prefillSlotName,
   onClose,
   onSave,
 }: {
   initial?: HuntBonus | null;
   currency: string;
+  prefillSlotName?: string;
   onClose: () => void;
   onSave: (b: HuntBonus) => void;
 }) {
   const sym = CURRENCY_SYMBOLS[currency as keyof typeof CURRENCY_SYMBOLS] ?? "$";
   const [query, setQuery] = useState("");
+  const prefilled = prefillSlotName
+    ? SLOT_GAMES.find((g) => g.name.toLowerCase() === prefillSlotName.toLowerCase()) ??
+      SLOT_GAMES.find((g) => g.name.toLowerCase().includes(prefillSlotName.toLowerCase())) ?? null
+    : null;
   const [selected, setSelected] = useState<SlotGame | null>(
-    initial ? { name: initial.slotName, provider: initial.provider, image: initial.image, volatility: "High" } : null
+    initial ? { name: initial.slotName, provider: initial.provider, image: initial.image, volatility: "High" } : prefilled
   );
   const [betSize, setBetSize] = useState(initial?.betSize?.toString() ?? "");
   const [note, setNote] = useState(initial?.note ?? "");
@@ -398,6 +406,12 @@ export default function HuntDetailPage() {
   const [payoutInput, setPayoutInput] = useState("");
   const [noteInput, setNoteInput] = useState("");
   const [showEndConfirm, setShowEndConfirm] = useState(false);
+  // Slot requests
+  const [slotRequests, setSlotRequests] = useState<SlotRequest[]>([]);
+  const [requestsOpen, setRequestsOpen] = useState(false);
+  const [srLoading, setSrLoading] = useState(false);
+  const [addFromRequest, setAddFromRequest] = useState<{ requestId: string; slotName: string } | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const reload = useCallback(() => {
     const h = getHunt(huntId);
@@ -414,6 +428,78 @@ export default function HuntDetailPage() {
       .then((d) => { if (d.hunt?.id === huntId) setIsLive(true); })
       .catch(() => {});
   }, [huntId]);
+
+  // Admin check + initial slot request load
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => { if (d.role === "ADMIN" || d.role === "MODERATOR") setIsAdmin(true); })
+      .catch(() => {});
+
+    Promise.all([slotRequestApi.getStatus(), slotRequestApi.getAll()])
+      .then(([open, reqs]) => { setRequestsOpen(open); setSlotRequests(reqs); })
+      .catch(() => {});
+  }, []);
+
+  // Poll slot requests every 8s
+  useEffect(() => {
+    const id = setInterval(() => {
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
+      slotRequestApi.getAll().then(setSlotRequests).catch(() => {});
+    }, 8000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Socket for slot request real-time events
+  useEffect(() => {
+    const socket = getSocket();
+    const onStatus = ({ open }: { open: boolean }) => setRequestsOpen(open);
+    const onNew = (req: SlotRequest) => setSlotRequests((prev) => [req, ...prev]);
+    const onUpdated = (req: SlotRequest) => setSlotRequests((prev) => prev.map((r) => r.id === req.id ? req : r));
+    const onCleared = () => setSlotRequests((prev) => prev.filter((r) => r.status !== "PENDING"));
+    socket.on("slot_request:status", onStatus);
+    socket.on("slot_request:new", onNew);
+    socket.on("slot_request:updated", onUpdated);
+    socket.on("slot_request:cleared", onCleared);
+    return () => {
+      socket.off("slot_request:status", onStatus);
+      socket.off("slot_request:new", onNew);
+      socket.off("slot_request:updated", onUpdated);
+      socket.off("slot_request:cleared", onCleared);
+    };
+  }, []);
+
+  async function handleOpenRequests() {
+    setSrLoading(true);
+    try { await slotRequestApi.open(); setRequestsOpen(true); } catch { /* ignore */ } finally { setSrLoading(false); }
+  }
+
+  async function handleCloseRequests() {
+    setSrLoading(true);
+    try { await slotRequestApi.close(); setRequestsOpen(false); } catch { /* ignore */ } finally { setSrLoading(false); }
+  }
+
+  function handleAddFromRequest(req: SlotRequest) {
+    setAddFromRequest({ requestId: req.id, slotName: req.slotName });
+    setShowAddBonus(true);
+  }
+
+  async function handleRejectRequest(id: string) {
+    try {
+      await slotRequestApi.markRejected(id);
+      setSlotRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: "REJECTED" } : r));
+    } catch { /* ignore */ }
+  }
+
+  async function handleClearPending() {
+    try {
+      await slotRequestApi.clearPending();
+      setSlotRequests((prev) => prev.filter((r) => r.status !== "PENDING"));
+    } catch { /* ignore */ }
+  }
 
   async function handleGoLive() {
     if (!hunt) return;
@@ -549,6 +635,12 @@ export default function HuntDetailPage() {
         : [...h.bonuses, bonus];
       return { ...h, bonuses };
     });
+    if (addFromRequest) {
+      slotRequestApi.markAdded(addFromRequest.requestId)
+        .then(() => setSlotRequests((prev) => prev.map((r) => r.id === addFromRequest.requestId ? { ...r, status: "ADDED" } : r)))
+        .catch(() => {});
+      setAddFromRequest(null);
+    }
     setShowAddBonus(false);
     setEditBonus(null);
   }
@@ -993,6 +1085,116 @@ export default function HuntDetailPage() {
           )}
         </div>
 
+        {/* ── Slot Requests panel (admin only) ────────────────── */}
+        {isAdmin && (
+          <div className="mb-4 bg-[#14102a]/80 border border-white/8 rounded-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4">
+              <div className="flex items-center gap-3">
+                <span className="text-white font-semibold text-sm">Slot Requests</span>
+                {requestsOpen && (
+                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Open
+                  </span>
+                )}
+                {!requestsOpen && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600 bg-white/5 border border-white/8 px-2 py-0.5 rounded-full">
+                    Closed
+                  </span>
+                )}
+                {slotRequests.filter((r) => r.status === "PENDING").length > 0 && (
+                  <span className="text-[10px] font-bold text-white bg-gold-500 px-2 py-0.5 rounded-full">
+                    {slotRequests.filter((r) => r.status === "PENDING").length}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {slotRequests.filter((r) => r.status === "PENDING").length > 0 && (
+                  <button
+                    onClick={handleClearPending}
+                    className="text-xs text-gray-500 hover:text-red-400 transition-colors px-2 py-1"
+                  >
+                    Clear pending
+                  </button>
+                )}
+                {requestsOpen ? (
+                  <button
+                    onClick={handleCloseRequests}
+                    disabled={srLoading}
+                    className="flex items-center gap-1.5 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    Close Requests
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleOpenRequests}
+                    disabled={srLoading}
+                    className="flex items-center gap-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    Open Requests
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {slotRequests.length > 0 && (
+              <div className="border-t border-white/6 divide-y divide-white/5 max-h-72 overflow-y-auto">
+                {slotRequests.map((req) => {
+                  const game = SLOT_GAMES.find((g) => g.name.toLowerCase() === req.slotName.toLowerCase())
+                    ?? SLOT_GAMES.find((g) => g.name.toLowerCase().includes(req.slotName.toLowerCase()));
+                  return (
+                    <div key={req.id} className={`flex items-center gap-3 px-5 py-3 ${req.status !== "PENDING" ? "opacity-40" : ""}`}>
+                      {game ? (
+                        <SlotImg src={game.image} alt={game.name} size={8} />
+                      ) : (
+                        <div className="w-8 h-8 rounded-lg bg-[#1a1535] border border-white/8 flex items-center justify-center shrink-0">
+                          <ImageOff className="w-4 h-4 text-gray-600" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-semibold truncate">{req.slotName}</p>
+                        <p className="text-gray-500 text-xs">
+                          by <span className="text-gray-400">{req.kickUsername}</span>
+                          {game && <span className="text-gray-600"> · {game.provider}</span>}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {req.status === "PENDING" && (
+                          <>
+                            <button
+                              onClick={() => handleAddFromRequest(req)}
+                              className="text-xs font-semibold bg-gold-500/15 hover:bg-gold-500/25 border border-gold-500/30 text-gold-400 px-3 py-1 rounded-lg transition-colors"
+                            >
+                              Add
+                            </button>
+                            <button
+                              onClick={() => handleRejectRequest(req.id)}
+                              className="text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 px-3 py-1 rounded-lg transition-colors"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        {req.status === "ADDED" && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">Added</span>
+                        )}
+                        {req.status === "REJECTED" && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">Rejected</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {slotRequests.length === 0 && (
+              <div className="px-5 pb-4 text-gray-600 text-xs">
+                {requestsOpen ? "No requests yet — viewers can type !sr <slot name> in chat." : "Open requests to let viewers suggest slots via !sr in chat."}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── Add Bonus area ──────────────────────────────────── */}
         <button
           onClick={() => setShowAddBonus(true)}
@@ -1114,7 +1316,8 @@ export default function HuntDetailPage() {
           <AddBonusModal
             initial={editBonus}
             currency={hunt.currency}
-            onClose={() => { setShowAddBonus(false); setEditBonus(null); }}
+            prefillSlotName={addFromRequest?.slotName}
+            onClose={() => { setShowAddBonus(false); setEditBonus(null); setAddFromRequest(null); }}
             onSave={handleSaveBonus}
           />
         )}

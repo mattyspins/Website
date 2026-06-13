@@ -6,6 +6,7 @@ import { logger } from '@/utils/logger';
 import { PointsService } from '@/services/PointsService';
 import { BingoBoardService } from '@/services/BingoBoardService';
 import { ViewerPickerService } from '@/services/ViewerPickerService';
+import { SlotRequestService } from '@/services/SlotRequestService';
 import { BingoStatus } from '@prisma/client';
 
 const KICK_CHANNEL_NAME = process.env['KICK_CHANNEL_NAME'] || 'mattyspins';
@@ -148,6 +149,12 @@ export class KickChatService {
     const slotMatch = content.match(/^!slot\s+(.+)/i);
     if (slotMatch) {
       await this.processBingoSlot(kickUsername, slotMatch[1].trim());
+    }
+
+    // Check for slot request command: !sr <slot name>
+    const srMatch = content.match(/^!sr\s+(.+)/i);
+    if (srMatch) {
+      await SlotRequestService.handleChatRequest(kickUsername, srMatch[1].trim(), this.io ?? undefined);
     }
 
     // Check for viewer picker keyword

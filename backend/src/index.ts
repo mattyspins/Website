@@ -152,6 +152,8 @@ import bonusBingoRoutes from '@/routes/bonusBingo';
 import { setBingoIO } from '@/controllers/BingoBoardController';
 import viewerPickerRoutes from '@/routes/viewerPicker';
 import { setPickerIO } from '@/controllers/ViewerPickerController';
+import slotRequestRoutes from '@/routes/slotRequest';
+import { setSlotRequestIO } from '@/controllers/SlotRequestController';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
@@ -173,11 +175,13 @@ app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/live-hunt', liveHuntRoutes);
 app.use('/api/bonus-bingo', bonusBingoRoutes);
 app.use('/api/viewer-picker', viewerPickerRoutes);
+app.use('/api/slot-requests', slotRequestRoutes);
 
 // Wire up tournament real-time events
 setTournamentIO(io);
 setBingoIO(io);
 setPickerIO(io);
+setSlotRequestIO(io);
 
 // Socket.IO connection handling
 io.on('connection', socket => {
