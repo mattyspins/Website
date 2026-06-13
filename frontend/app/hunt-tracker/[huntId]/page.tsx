@@ -444,7 +444,7 @@ export default function HuntDetailPage() {
     if (!token) return;
     fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
-      .then((d) => { if (d.role === "ADMIN" || d.role === "MODERATOR") setIsAdmin(true); })
+      .then((d) => { if (d.isAdmin || d.isModerator) setIsAdmin(true); })
       .catch(() => {});
 
     Promise.all([slotRequestApi.getStatus(), slotRequestApi.getAll()])
