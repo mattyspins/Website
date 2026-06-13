@@ -1160,11 +1160,15 @@ export default function HuntDetailPage() {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-semibold truncate">{req.slotName}</p>
-                        <p className="text-gray-500 text-xs">
-                          by <span className="text-gray-400">{req.kickUsername}</span>
-                          {game && <span className="text-gray-600"> · {game.provider}</span>}
-                        </p>
+                        <p className="text-white text-sm font-semibold truncate">{game ? game.name : req.slotName}</p>
+                        {game && game.name.toLowerCase() !== req.slotName.toLowerCase() && (
+                          <p className="text-gray-600 text-[10px] truncate">"{req.slotName}"</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {game && <span className="text-gray-600 text-xs">{game.provider}</span>}
+                          {game && <span className="text-gray-700 text-xs">·</span>}
+                          <span className="text-xs text-gold-400 font-semibold">{req.kickUsername}</span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {req.status === "PENDING" && (
