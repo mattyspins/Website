@@ -262,6 +262,7 @@ export default function HuntTrackerPage() {
   const [deleteTarget, setDeleteTarget] = useState<Hunt | null>(null);
   const [search, setSearch] = useState("");
   const [liveHuntName, setLiveHuntName] = useState<string | null>(null);
+  const [liveHuntId, setLiveHuntId] = useState<string | null>(null);
   const [clearingLive, setClearingLive] = useState(false);
 
   const reload = useCallback(() => {
@@ -286,7 +287,7 @@ export default function HuntTrackerPage() {
   useEffect(() => {
     fetch(API_ENDPOINTS.LIVE_HUNT)
       .then((r) => r.ok ? r.json() : null)
-      .then((data) => { if (data?.hunt?.name) setLiveHuntName(data.hunt.name); })
+      .then((data) => { if (data?.hunt?.name) { setLiveHuntName(data.hunt.name); setLiveHuntId(data.hunt.id ?? null); } })
       .catch(() => {});
   }, []);
 
@@ -349,7 +350,11 @@ export default function HuntTrackerPage() {
             <div className="flex items-center gap-3">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
               <p className="text-amber-300 text-sm font-medium">
-                <span className="font-bold">{liveHuntName}</span> is currently live on the viewer page.
+                {liveHuntId ? (
+                  <button onClick={() => router.push(`/hunt-tracker/${liveHuntId}`)} className="font-bold underline underline-offset-2 hover:text-amber-200 transition-colors">{liveHuntName}</button>
+                ) : (
+                  <span className="font-bold">{liveHuntName}</span>
+                )} is currently live on the viewer page.
               </p>
             </div>
             <button
