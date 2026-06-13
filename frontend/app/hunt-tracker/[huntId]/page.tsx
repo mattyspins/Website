@@ -422,10 +422,19 @@ export default function HuntDetailPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
-    if (!token) return;
-    fetch(API_ENDPOINTS.LIVE_HUNT)
-      .then((r) => r.json())
-      .then((d) => { if (d.hunt?.id === huntId) setIsLive(true); })
+    fetch(API_ENDPOINTS.LIVE_HUNT, token ? { headers: { Authorization: `Bearer ${token}` } } : {})
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (!d?.hunt) return;
+        if (d.hunt.id === huntId) {
+          setIsLive(true);
+          // If hunt wasn't in localStorage (different browser/session), recover it from the backend
+          if (!getHunt(huntId)) {
+            upsertHunt(d.hunt);
+            setHunt(d.hunt);
+          }
+        }
+      })
       .catch(() => {});
   }, [huntId]);
 
