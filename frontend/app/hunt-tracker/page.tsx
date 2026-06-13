@@ -344,28 +344,6 @@ export default function HuntTrackerPage() {
           <p className="text-gray-500 text-sm ml-9">Track your bonus hunts, stats and results.</p>
         </motion.div>
 
-        {/* ── Live hunt warning ───────────────────────────────── */}
-        {liveHuntName && (
-          <div className="mb-6 flex items-center justify-between gap-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl px-5 py-4">
-            <div className="flex items-center gap-3">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
-              <p className="text-amber-300 text-sm font-medium">
-                {liveHuntId ? (
-                  <button onClick={() => router.push(`/hunt-tracker/${liveHuntId}`)} className="font-bold underline underline-offset-2 hover:text-amber-200 transition-colors">{liveHuntName}</button>
-                ) : (
-                  <span className="font-bold">{liveHuntName}</span>
-                )} is currently live on the viewer page.
-              </p>
-            </div>
-            <button
-              onClick={handleClearLive}
-              disabled={clearingLive}
-              className="shrink-0 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
-            >
-              {clearingLive ? "Clearing…" : "Take Down"}
-            </button>
-          </div>
-        )}
 
         {/* ── Statistics ──────────────────────────────────────── */}
         <section className="mb-6">
@@ -458,10 +436,13 @@ export default function HuntTrackerPage() {
                     >
                       {/* Title */}
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className={`w-2 h-2 rounded-full shrink-0 ${hunt.isCompleted ? "bg-emerald-400" : hunt.isStarted ? "bg-gold-400 animate-pulse" : "bg-gray-600"}`} />
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${hunt.id === liveHuntId ? "bg-emerald-400 animate-pulse" : hunt.isCompleted ? "bg-emerald-400" : hunt.isStarted ? "bg-gold-400 animate-pulse" : "bg-gray-600"}`} />
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-white font-semibold text-sm truncate group-hover:text-gold-300 transition-colors">{hunt.name}</p>
+                            {hunt.id === liveHuntId && (
+                              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">LIVE</span>
+                            )}
                             {hunt.isCompleted && (
                               <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">DONE</span>
                             )}
@@ -488,6 +469,16 @@ export default function HuntTrackerPage() {
 
                       {/* Actions */}
                       <div className="flex items-center gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
+                        {hunt.id === liveHuntId && (
+                          <button
+                            onClick={handleClearLive}
+                            disabled={clearingLive}
+                            className="text-[10px] font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-2 py-1 rounded-lg transition-colors disabled:opacity-50"
+                            title="Take down from live"
+                          >
+                            Take Down
+                          </button>
+                        )}
                         <button
                           onClick={() => router.push(`/hunt-tracker/${hunt.id}`)}
                           className="p-1.5 text-gray-600 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
