@@ -583,7 +583,7 @@ export class GuessTheBalanceService {
   static async getGameDetails(
     gameId: string,
     userId?: string
-  ): Promise<GameResponse> {
+  ): Promise<GameWithWinnerResponse> {
     try {
       const game = await prisma.guessTheBalance.findUnique({
         where: { id: gameId },
