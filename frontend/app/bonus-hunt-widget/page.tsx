@@ -201,20 +201,22 @@ export default function BonusHuntWidget() {
                   <div style={{ color: "rgba(255,255,255,0.25)", fontSize: 9 }}>{b.provider}</div>
                 </div>
 
-                {/* Bet */}
+                {/* Bet size (always shown) */}
                 <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 9, flexShrink: 0 }}>
                   {fmt(b.betSize, hunt.currency)}
                 </div>
 
-                {/* Mult */}
-                <div style={{ width: 36, textAlign: "right", flexShrink: 0 }}>
-                  {mult !== null ? (
-                    <span style={{
-                      fontSize: 10, fontWeight: 700,
-                      color: isHighMult ? gold : "#34d399",
-                    }}>
-                      {mult >= 1000 ? `${(mult / 1000).toFixed(1)}k` : Math.round(mult)}x
-                    </span>
+                {/* Payout + Mult stacked */}
+                <div style={{ width: 52, textAlign: "right", flexShrink: 0 }}>
+                  {isOpen && mult !== null ? (
+                    <>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.85)", lineHeight: 1.2 }}>
+                        {fmt(b.payout!, hunt.currency)}
+                      </div>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: isHighMult ? gold : "#34d399", lineHeight: 1.2 }}>
+                        {mult >= 1000 ? `${(mult / 1000).toFixed(1)}k` : Math.round(mult)}x
+                      </div>
+                    </>
                   ) : (
                     <span style={{ fontSize: 9, color: "rgba(255,255,255,0.15)" }}>–</span>
                   )}
