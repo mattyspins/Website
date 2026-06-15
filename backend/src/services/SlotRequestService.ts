@@ -129,6 +129,12 @@ export class SlotRequestService {
   static async clearPending(io?: SocketIOServer) {
     await prisma.slotRequest.deleteMany({ where: { status: SlotRequestStatus.PENDING } });
     io?.emit('slot_request:cleared');
-    logger.info('SlotRequestService: all pending requests cleared');
+    logger.info('SlotRequestService: pending requests cleared');
+  }
+
+  static async clearAll(io?: SocketIOServer) {
+    await prisma.slotRequest.deleteMany({});
+    io?.emit('slot_request:cleared');
+    logger.info('SlotRequestService: all requests cleared');
   }
 }

@@ -15,6 +15,7 @@ router.get('/pending', authMiddleware, adminMiddleware, lim, SlotRequestControll
 router.post('/open', authMiddleware, adminMiddleware, lim, SlotRequestController.open);
 router.post('/close', authMiddleware, adminMiddleware, lim, SlotRequestController.close);
 router.delete('/clear', authMiddleware, adminMiddleware, lim, SlotRequestController.clearPending);
+router.delete('/clear-all', authMiddleware, adminMiddleware, lim, SlotRequestController.clearAll);
 router.patch('/:id/add', authMiddleware, adminMiddleware, lim, SlotRequestController.markAdded);
 router.patch('/:id/reject', authMiddleware, adminMiddleware, lim, SlotRequestController.markRejected);
 router.delete('/:id', authMiddleware, adminMiddleware, lim, SlotRequestController.delete);

@@ -510,6 +510,13 @@ export default function HuntDetailPage() {
     } catch { /* ignore */ }
   }
 
+  async function handleClearAll() {
+    try {
+      await slotRequestApi.clearAll();
+      setSlotRequests([]);
+    } catch { /* ignore */ }
+  }
+
   async function handleGoLive() {
     if (!hunt) return;
     const token = localStorage.getItem("access_token");
@@ -1136,12 +1143,12 @@ export default function HuntDetailPage() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {slotRequests.filter((r) => r.status === "PENDING").length > 0 && (
+                {slotRequests.length > 0 && (
                   <button
-                    onClick={handleClearPending}
+                    onClick={handleClearAll}
                     className="text-xs text-gray-500 hover:text-red-400 transition-colors px-2 py-1"
                   >
-                    Clear pending
+                    Clear all
                   </button>
                 )}
                 {requestsOpen ? (

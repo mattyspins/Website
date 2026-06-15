@@ -54,4 +54,9 @@ export class SlotRequestController {
     await SlotRequestService.clearPending(_io);
     res.json({ success: true });
   });
+
+  static clearAll = wrap(async (_req, res) => {
+    await SlotRequestService.clearAll(_io);
+    res.json({ success: true });
+  });
 }

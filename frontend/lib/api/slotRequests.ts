@@ -27,4 +27,5 @@ export const slotRequestApi = {
   markRejected: (id: string) => api.patch(`/api/slot-requests/${id}/reject`, {}),
   delete: (id: string) => api.delete(`/api/slot-requests/${id}`),
   clearPending: () => api.delete("/api/slot-requests/clear"),
+  clearAll: () => api.delete("/api/slot-requests/clear-all"),
 };
