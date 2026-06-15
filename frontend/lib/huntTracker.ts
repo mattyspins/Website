@@ -28,6 +28,7 @@ export interface Hunt {
   createdAt: string;
   isStarted: boolean;
   isCompleted?: boolean;
+  gtbGameId?: string;
 }
 
 const STORAGE_KEY = "mattyspins_hunts";

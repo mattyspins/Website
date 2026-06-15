@@ -58,6 +58,19 @@ export class GuessTheBalanceController {
   );
 
   /**
+   * Create game and immediately open it (hunt integration)
+   * POST /api/guess-the-balance/admin/create-and-open
+   */
+  static createAndOpen = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) throw createError.forbidden('Admin access required');
+      const validatedData = createGameSchema.parse(req.body);
+      const game = await GuessTheBalanceService.createAndOpen(validatedData, req.user.id);
+      res.status(201).json({ success: true, game });
+    }
+  );
+
+  /**
    * Open guessing for a game
    * PATCH /api/admin/guess-the-balance/:id/open
    */

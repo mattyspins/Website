@@ -14,6 +14,7 @@ import {
 import { SLOT_GAMES, type SlotGame } from "@/lib/slotGames";
 import { API_ENDPOINTS } from "@/lib/api";
 import { slotRequestApi, SlotRequest } from "@/lib/api/slotRequests";
+import { gtbApi, type GTBGame } from "@/lib/api/gtb";
 import { getSocket } from "@/lib/socket";
 
 /* ── helpers ─────────────────────────────────────────────── */
@@ -412,6 +413,12 @@ export default function HuntDetailPage() {
   const [srLoading, setSrLoading] = useState(false);
   const [addFromRequest, setAddFromRequest] = useState<{ requestId: string; slotName: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  // GTB integration
+  const [gtbGame, setGtbGame] = useState<GTBGame | null>(null);
+  const [gtbLoading, setGtbLoading] = useState(false);
+  const [showCompleteGTB, setShowCompleteGTB] = useState(false);
+  const [gtbFinalBalance, setGtbFinalBalance] = useState("");
+  const [gtbReward, setGtbReward] = useState("1000");
 
   const reload = useCallback(() => {
     const h = getHunt(huntId);
@@ -515,6 +522,60 @@ export default function HuntDetailPage() {
       await slotRequestApi.clearAll();
       setSlotRequests([]);
     } catch { /* ignore */ }
+  }
+
+  // Load GTB game when hunt has a linked game
+  useEffect(() => {
+    if (!hunt?.gtbGameId) return;
+    gtbApi.getGame(hunt.gtbGameId).then(setGtbGame).catch(() => {});
+  }, [hunt?.gtbGameId]);
+
+  // Poll GTB game for guess count updates
+  useEffect(() => {
+    if (!hunt?.gtbGameId) return;
+    const id = setInterval(() => {
+      gtbApi.getGame(hunt!.gtbGameId!).then(setGtbGame).catch(() => {});
+    }, 10000);
+    return () => clearInterval(id);
+  }, [hunt?.gtbGameId]);
+
+  async function handleOpenGTB() {
+    if (!hunt) return;
+    setGtbLoading(true);
+    try {
+      const totalBet = hunt.bonuses.reduce((s, b) => s + b.betSize, 0);
+      const breakEven = totalBet > 0 ? hunt.startCost / totalBet : 1;
+      const game = await gtbApi.createAndOpen({
+        title: hunt.name,
+        startingBalance: hunt.startCost,
+        numberOfBonuses: hunt.bonuses.length,
+        breakEvenMultiplier: Math.max(0.01, Math.min(10, breakEven)),
+      });
+      setGtbGame(game);
+      mutateHunt((h) => ({ ...h, gtbGameId: game.id }));
+    } catch { /* ignore */ } finally { setGtbLoading(false); }
+  }
+
+  async function handleCloseGTB() {
+    if (!gtbGame) return;
+    setGtbLoading(true);
+    try {
+      const game = await gtbApi.closeGuessing(gtbGame.id);
+      setGtbGame(game);
+    } catch { /* ignore */ } finally { setGtbLoading(false); }
+  }
+
+  async function handleCompleteGTB() {
+    if (!gtbGame) return;
+    const finalBal = parseFloat(gtbFinalBalance);
+    const reward = parseInt(gtbReward, 10);
+    if (isNaN(finalBal) || finalBal < 0) return;
+    setGtbLoading(true);
+    try {
+      const game = await gtbApi.complete(gtbGame.id, finalBal, isNaN(reward) ? 0 : reward);
+      setGtbGame(game);
+      setShowCompleteGTB(false);
+    } catch { /* ignore */ } finally { setGtbLoading(false); }
   }
 
   async function handleGoLive() {
@@ -1234,6 +1295,74 @@ export default function HuntDetailPage() {
           </div>
         )}
 
+        {/* ── Guess the Balance panel (admin only) ────────────── */}
+        {isAdmin && (
+          <div className="mb-4 bg-[#14102a]/80 border border-white/8 rounded-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4">
+              <div className="flex items-center gap-3">
+                <span className="text-white font-semibold text-sm">Guess the Balance</span>
+                {gtbGame && gtbGame.status === "OPEN" && (
+                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Open
+                  </span>
+                )}
+                {gtbGame && gtbGame.status === "CLOSED" && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">Closed</span>
+                )}
+                {gtbGame && gtbGame.status === "COMPLETED" && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full">Completed</span>
+                )}
+                {gtbGame && gtbGame.totalGuesses != null && (
+                  <span className="text-gray-500 text-xs">{gtbGame.totalGuesses} {gtbGame.totalGuesses === 1 ? "guess" : "guesses"}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {!hunt.gtbGameId && (
+                  <button
+                    onClick={handleOpenGTB}
+                    disabled={gtbLoading || hunt.bonuses.length === 0}
+                    title={hunt.bonuses.length === 0 ? "Add bonuses first" : undefined}
+                    className="flex items-center gap-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-400 font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Open GTB
+                  </button>
+                )}
+                {gtbGame && gtbGame.status === "OPEN" && (
+                  <button
+                    onClick={handleCloseGTB}
+                    disabled={gtbLoading}
+                    className="flex items-center gap-1.5 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 text-amber-400 font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    Close Guessing
+                  </button>
+                )}
+                {gtbGame && gtbGame.status === "CLOSED" && hunt.isCompleted && (
+                  <button
+                    onClick={() => {
+                      setGtbFinalBalance(stats.winnings.toFixed(2));
+                      setShowCompleteGTB(true);
+                    }}
+                    disabled={gtbLoading}
+                    className="flex items-center gap-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    Complete GTB
+                  </button>
+                )}
+                {gtbGame && gtbGame.status === "COMPLETED" && gtbGame.winner && (
+                  <span className="text-xs text-gray-400">
+                    Winner: <span className="text-gold-400 font-semibold">{gtbGame.winner.displayName}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+            {!hunt.gtbGameId && (
+              <div className="px-5 pb-4 text-gray-600 text-xs">
+                Open a Guess the Balance game so viewers can guess the final hunt balance via Kick chat or website.
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── Add Bonus area ──────────────────────────────────── */}
         <button
           onClick={() => setShowAddBonus(true)}
@@ -1402,6 +1531,55 @@ export default function HuntDetailPage() {
               <div className="flex gap-3">
                 <button onClick={() => setShowEndConfirm(false)} className="flex-1 bg-[#1a1535] hover:bg-[#211a45] border border-white/10 text-gray-300 font-semibold py-2.5 rounded-xl transition-colors text-sm">Cancel</button>
                 <button onClick={handleEndHunt} className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl transition-colors text-sm">End Hunt</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+        {showCompleteGTB && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowCompleteGTB(false)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+              className="relative bg-[#0f0c1e] border border-white/10 rounded-2xl w-full max-w-sm p-7 z-10"
+            >
+              <h3 className="text-white font-bold text-lg mb-1">Complete GTB</h3>
+              <p className="text-gray-500 text-sm mb-6">Set the final balance and coin reward for the winner.</p>
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="text-sm text-gray-400 mb-2 block">Final Balance <span className="text-gray-600">(pre-filled from hunt)</span></label>
+                  <div className="flex items-center bg-[#1a1535] border border-white/10 rounded-xl px-4 py-3 gap-2 focus-within:border-gold-500 transition-colors">
+                    <span className="text-gray-500 font-semibold">{sym}</span>
+                    <input
+                      autoFocus
+                      type="number" min="0" step="0.01"
+                      value={gtbFinalBalance}
+                      onChange={(e) => setGtbFinalBalance(e.target.value)}
+                      className="flex-1 bg-transparent text-white placeholder-gray-600 focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400 mb-2 block">Winner Coin Reward</label>
+                  <div className="flex items-center bg-[#1a1535] border border-white/10 rounded-xl px-4 py-3 gap-2 focus-within:border-gold-500 transition-colors">
+                    <span className="text-gray-500 font-semibold">🪙</span>
+                    <input
+                      type="number" min="0" step="100"
+                      value={gtbReward}
+                      onChange={(e) => setGtbReward(e.target.value)}
+                      className="flex-1 bg-transparent text-white placeholder-gray-600 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setShowCompleteGTB(false)} className="flex-1 bg-[#1a1535] hover:bg-[#211a45] border border-white/10 text-gray-300 font-semibold py-2.5 rounded-xl transition-colors text-sm">Cancel</button>
+                <button
+                  onClick={handleCompleteGTB}
+                  disabled={gtbLoading}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl transition-colors text-sm disabled:opacity-50"
+                >
+                  {gtbLoading ? "Completing…" : "Award Winner"}
+                </button>
               </div>
             </motion.div>
           </div>

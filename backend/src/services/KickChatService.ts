@@ -7,6 +7,7 @@ import { PointsService } from '@/services/PointsService';
 import { BingoBoardService } from '@/services/BingoBoardService';
 import { ViewerPickerService } from '@/services/ViewerPickerService';
 import { SlotRequestService } from '@/services/SlotRequestService';
+import { GuessTheBalanceService } from '@/services/GuessTheBalanceService';
 import { BingoStatus } from '@prisma/client';
 
 const KICK_CHANNEL_NAME = process.env['KICK_CHANNEL_NAME'] || 'mattyspins';
@@ -155,6 +156,22 @@ export class KickChatService {
     const srMatch = content.match(/^!sr\s+(.+)/i);
     if (srMatch) {
       await SlotRequestService.handleChatRequest(kickUsername, srMatch[1].trim(), this.io ?? undefined);
+    }
+
+    // Check for GTB guess command: !guess <amount>
+    const guessMatch = content.match(/^!guess\s+([\d.,]+)/i);
+    if (guessMatch) {
+      const amount = parseFloat(guessMatch[1].replace(/,/g, ''));
+      const result = await GuessTheBalanceService.submitGuessByKickUsername(kickUsername, amount);
+      if (result === 'ok') {
+        await this.sendChatMessage(`✅ @${kickUsername} your guess of $${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} has been recorded!`);
+      } else if (result === 'not_verified') {
+        await this.sendChatMessage(`@${kickUsername} you need to verify your Kick account on the website first to participate!`);
+      } else if (result === 'no_game') {
+        await this.sendChatMessage(`@${kickUsername} there is no active Guess the Balance game right now.`);
+      } else if (result === 'invalid') {
+        await this.sendChatMessage(`@${kickUsername} invalid amount. Use !guess <amount> e.g. !guess 1500`);
+      }
     }
 
     // Check for viewer picker keyword

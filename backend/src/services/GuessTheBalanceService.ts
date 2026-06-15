@@ -456,6 +456,86 @@ export class GuessTheBalanceService {
     }
   }
 
+  /**
+   * Create a game and immediately open it in one step (for hunt integration)
+   */
+  static async createAndOpen(
+    data: CreateGameDTO,
+    adminId: string
+  ): Promise<GameResponse> {
+    try {
+      const game = await prisma.guessTheBalance.create({
+        data: {
+          title: data.title,
+          description: data.description,
+          startingBalance: new Prisma.Decimal(data.startingBalance),
+          numberOfBonuses: data.numberOfBonuses,
+          breakEvenMultiplier: new Prisma.Decimal(data.breakEvenMultiplier),
+          createdBy: adminId,
+          status: GuessTheBalanceStatus.OPEN,
+          openedAt: new Date(),
+        },
+      });
+      logger.info(`Game ${game.id} created and opened by admin ${adminId}`);
+      return this.formatGameResponse(game);
+    } catch (error) {
+      logger.error('Error in createAndOpen:', error);
+      throw createError.internal('Failed to create and open game');
+    }
+  }
+
+  /**
+   * Find the current OPEN game (used by Kick !guess command)
+   */
+  static async getOpenGame(): Promise<GameResponse | null> {
+    try {
+      const game = await prisma.guessTheBalance.findFirst({
+        where: { status: GuessTheBalanceStatus.OPEN },
+        orderBy: { openedAt: 'desc' },
+        include: { guesses: { select: { id: true } } },
+      });
+      if (!game) return null;
+      const response = this.formatGameResponse(game);
+      response.totalGuesses = (game as any).guesses.length;
+      return response;
+    } catch (error) {
+      logger.error('Error fetching open game:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Submit a guess from Kick chat — verified users only
+   */
+  static async submitGuessByKickUsername(
+    kickUsername: string,
+    amount: number,
+    io?: import('socket.io').Server
+  ): Promise<'ok' | 'not_verified' | 'no_game' | 'invalid'> {
+    if (amount <= 0 || isNaN(amount)) return 'invalid';
+
+    const user = await prisma.user.findFirst({
+      where: { kickUsername: { equals: kickUsername, mode: 'insensitive' }, kickVerified: true },
+      select: { id: true },
+    });
+    if (!user) return 'not_verified';
+
+    const game = await prisma.guessTheBalance.findFirst({
+      where: { status: GuessTheBalanceStatus.OPEN },
+      orderBy: { openedAt: 'desc' },
+    });
+    if (!game) return 'no_game';
+
+    await prisma.guessSubmission.upsert({
+      where: { gameId_userId: { gameId: game.id, userId: user.id } },
+      create: { gameId: game.id, userId: user.id, guessAmount: new Prisma.Decimal(amount) },
+      update: { guessAmount: new Prisma.Decimal(amount), updatedAt: new Date() },
+    });
+
+    logger.info(`Kick !guess: ${kickUsername} guessed ${amount} on game ${game.id}`);
+    return 'ok';
+  }
+
   // ==================== USER METHODS ====================
 
   /**

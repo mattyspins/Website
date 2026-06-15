@@ -37,6 +37,14 @@ router.post(
   GuessTheBalanceController.createGame
 );
 
+// Create and immediately open (hunt integration)
+router.post(
+  '/admin/create-and-open',
+  authMiddleware,
+  createGameLimiter,
+  GuessTheBalanceController.createAndOpen
+);
+
 // Open guessing
 router.patch(
   '/admin/:id/open',
