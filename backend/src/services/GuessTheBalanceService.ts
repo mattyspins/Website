@@ -588,6 +588,9 @@ export class GuessTheBalanceService {
       const game = await prisma.guessTheBalance.findUnique({
         where: { id: gameId },
         include: {
+          winner: {
+            select: { id: true, displayName: true, avatarUrl: true },
+          },
           guesses: userId
             ? {
                 where: {
@@ -613,6 +616,16 @@ export class GuessTheBalanceService {
       response.totalGuesses = game.guesses.length;
       if (userId) {
         response.userHasGuessed = game.guesses.length > 0;
+      }
+      if (game.winner && game.winnerGuess && game.finalBalance) {
+        response.winner = {
+          id: game.winner.id,
+          displayName: game.winner.displayName,
+          avatar: game.winner.avatarUrl || undefined,
+          guessAmount: game.winnerGuess.toNumber(),
+          difference: Math.abs(game.finalBalance.toNumber() - game.winnerGuess.toNumber()),
+          reward: game.winnerReward || 0,
+        };
       }
 
       return response;
