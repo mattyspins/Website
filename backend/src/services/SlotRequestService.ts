@@ -19,12 +19,15 @@ export class SlotRequestService {
   }
 
   static async open(io?: SocketIOServer): Promise<void> {
+    // Clear all previous requests for a clean slate each session
+    await prisma.slotRequest.deleteMany({});
     await RedisService.set(OPEN_KEY, '1');
+    io?.emit('slot_request:cleared');
     io?.emit('slot_request:status', { open: true });
     await KickChatService.sendChatMessage(
       '🎰 Slot requests are now OPEN! Type !sr <slot name> to request a slot for the hunt!'
     );
-    logger.info('SlotRequestService: requests opened');
+    logger.info('SlotRequestService: requests opened (all previous cleared)');
   }
 
   static async close(io?: SocketIOServer): Promise<void> {

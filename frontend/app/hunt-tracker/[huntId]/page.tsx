@@ -951,28 +951,47 @@ export default function HuntDetailPage() {
             <h1 className="text-white font-bold text-xl flex-1">
               {hunt.name} – {fmtDate(hunt.date)}
             </h1>
-            {isLive ? (
-              <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> LIVE
-                </span>
-                <button
-                  onClick={handleTakeDown}
-                  disabled={liveLoading}
-                  className="flex items-center gap-1.5 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 font-semibold px-3 py-1.5 rounded-xl transition-colors text-xs disabled:opacity-50"
-                >
-                  <EyeOff className="w-3.5 h-3.5" /> Take Down
-                </button>
-              </div>
-            ) : (
+            <div className="flex items-center gap-2">
+              {/* OBS widget button */}
               <button
-                onClick={handleGoLive}
-                disabled={liveLoading}
-                className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl transition-colors text-sm disabled:opacity-50"
+                onClick={() => {
+                  const url = `${window.location.origin}/bonus-hunt-widget`;
+                  navigator.clipboard.writeText(url).catch(() => {});
+                  window.open(url, "_blank");
+                }}
+                title="Open OBS widget (also copies URL)"
+                className="flex items-center gap-1.5 bg-[#1a1535] hover:bg-[#211a45] border border-white/10 text-gray-400 hover:text-white font-semibold px-3 py-1.5 rounded-xl transition-colors text-xs"
               >
-                <Radio className="w-4 h-4" /> {liveLoading ? "Publishing…" : "Go Live"}
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" />
+                  <path d="M8 21h8M12 17v4" />
+                </svg>
+                OBS
               </button>
-            )}
+
+              {isLive ? (
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> LIVE
+                  </span>
+                  <button
+                    onClick={handleTakeDown}
+                    disabled={liveLoading}
+                    className="flex items-center gap-1.5 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 font-semibold px-3 py-1.5 rounded-xl transition-colors text-xs disabled:opacity-50"
+                  >
+                    <EyeOff className="w-3.5 h-3.5" /> Take Down
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleGoLive}
+                  disabled={liveLoading}
+                  className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl transition-colors text-sm disabled:opacity-50"
+                >
+                  <Radio className="w-4 h-4" /> {liveLoading ? "Publishing…" : "Go Live"}
+                </button>
+              )}
+            </div>
           </div>
         </motion.div>
 
