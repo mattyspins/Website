@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
 import { Trophy, Plus, Trash2, ExternalLink, Settings, X, ChevronDown } from "lucide-react";
@@ -30,6 +31,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AdminLeaderboardsPage() {
+  const router = useRouter();
   const [leaderboards, setLeaderboards] = useState<Leaderboard[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -44,7 +46,12 @@ export default function AdminLeaderboardsPage() {
   const fetchLeaderboards = async () => {
     try {
       const r = await api.get("/api/manual-leaderboards?limit=50");
-      if (r.success) setLeaderboards(r.leaderboards);
+      if (r.success) {
+        setLeaderboards(r.leaderboards);
+        // Auto-redirect to the active leaderboard if one exists
+        const active = (r.leaderboards as Leaderboard[]).find((l) => l.status === "active");
+        if (active) { router.replace(`/admin/leaderboards/${active.id}`); return; }
+      }
     } catch { /* ignore */ } finally { setLoading(false); }
   };
 

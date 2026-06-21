@@ -31,7 +31,8 @@ export interface PrizeDistribution {
 }
 
 export interface WagerData {
-  userId: string;
+  userId?: string;
+  externalUsername?: string;
   amount: number;
   notes?: string;
   verifiedBy: string;
@@ -46,6 +47,7 @@ export interface LeaderboardRanking {
   wagerCount: number;
   prize?: string | undefined;
   prizeDescription?: string | undefined;
+  isExternal?: boolean;
 }
 
 export interface LeaderboardWithDetails extends Leaderboard {
@@ -55,7 +57,7 @@ export interface LeaderboardWithDetails extends Leaderboard {
       id: string;
       displayName: string;
       kickUsername: string | null;
-    };
+    } | null;
   })[];
 }
 
@@ -172,31 +174,22 @@ export class LeaderboardService {
     wager: WagerData
   ): Promise<LeaderboardWager> {
     try {
-      // Validate required fields
       if (!leaderboardId || leaderboardId.trim().length === 0) {
         throw new Error('Leaderboard ID is required');
       }
 
-      if (!wager.userId || wager.userId.trim().length === 0) {
-        throw new Error('User ID is required');
+      if (!wager.userId && !wager.externalUsername?.trim()) {
+        throw new Error('Either a registered user or an external username is required');
       }
 
       if (!wager.verifiedBy || wager.verifiedBy.trim().length === 0) {
         throw new Error('Verifier ID is required');
       }
 
-      // Validate wager amount (Requirement 7.6, 7.7, 20.1)
-      if (typeof wager.amount !== 'number' || wager.amount <= 0) {
-        throw new Error(
-          'Wager amount must be a positive number greater than zero'
-        );
+      if (typeof wager.amount !== 'number' || wager.amount <= 0 || !Number.isFinite(wager.amount)) {
+        throw new Error('Wager amount must be a positive number greater than zero');
       }
 
-      if (!Number.isFinite(wager.amount)) {
-        throw new Error('Wager amount must be a valid number');
-      }
-
-      // Fetch leaderboard to validate status
       const leaderboard = await prisma.leaderboard.findUnique({
         where: { id: leaderboardId },
       });
@@ -205,35 +198,23 @@ export class LeaderboardService {
         throw new Error('Leaderboard not found');
       }
 
-      // Prevent wager entry on ended leaderboards (Requirement 10.3, 20.5)
-      if (
-        leaderboard.status === 'ended' ||
-        leaderboard.status === 'cancelled'
-      ) {
-        throw new Error(
-          `Cannot add wagers to ${leaderboard.status} leaderboards`
-        );
+      if (leaderboard.status === 'ended' || leaderboard.status === 'cancelled') {
+        throw new Error(`Cannot add wagers to ${leaderboard.status} leaderboards`);
       }
 
-      // Validate user exists and is not suspended (Requirement 20.3)
-      const user = await prisma.user.findUnique({
-        where: { id: wager.userId },
-      });
-
-      if (!user) {
-        throw new Error('User not found');
+      // For registered users, validate they exist and are not suspended
+      if (wager.userId) {
+        const user = await prisma.user.findUnique({ where: { id: wager.userId } });
+        if (!user) throw new Error('User not found');
+        if (user.isSuspended) throw new Error('Cannot add wagers for suspended users');
       }
 
-      if (user.isSuspended) {
-        throw new Error('Cannot add wagers for suspended users');
-      }
-
-      // Create wager (Requirement 7.3, 7.4)
       const now = new Date();
       const newWager = await prisma.leaderboardWager.create({
         data: {
-          leaderboardId: leaderboardId,
-          userId: wager.userId,
+          leaderboardId,
+          userId: wager.userId || null,
+          externalUsername: wager.externalUsername?.trim() || null,
           wagerAmount: wager.amount,
           submittedAt: now,
           verifiedBy: wager.verifiedBy || null,
@@ -242,9 +223,7 @@ export class LeaderboardService {
         },
       });
 
-      logger.info(
-        `Wager added: ${newWager.id} - User ${wager.userId} - Amount ${wager.amount}`
-      );
+      logger.info(`Wager added: ${newWager.id} - ${wager.userId ? `User ${wager.userId}` : `External "${wager.externalUsername}"`} - Amount ${wager.amount}`);
       return newWager;
     } catch (error) {
       logger.error('Error adding wager:', error);
@@ -264,85 +243,71 @@ export class LeaderboardService {
         throw new Error('Leaderboard ID is required');
       }
 
-      // Fetch leaderboard with wagers and prizes
       const leaderboard = await prisma.leaderboard.findUnique({
         where: { id: leaderboardId },
         include: {
           wagers: {
             include: {
               user: {
-                select: {
-                  id: true,
-                  displayName: true,
-                  kickUsername: true,
-                },
+                select: { id: true, displayName: true, kickUsername: true },
               },
             },
           },
-          prizes: {
-            orderBy: {
-              position: 'asc',
-            },
-          },
+          prizes: { orderBy: { position: 'asc' } },
         },
       });
 
-      if (!leaderboard) {
-        throw new Error('Leaderboard not found');
-      }
+      if (!leaderboard) throw new Error('Leaderboard not found');
+      if (leaderboard.wagers.length === 0) return [];
 
-      // If no wagers, return empty array (Requirement 8.6)
-      if (leaderboard.wagers.length === 0) {
-        return [];
-      }
-
-      // Aggregate wagers by user (Requirement 7.5)
-      const userWagers = new Map<
-        string,
-        {
-          userId: string;
-          username: string;
-          kickUsername?: string | undefined;
-          totalWagers: number;
-          wagerCount: number;
-        }
-      >();
+      // Aggregate by userId (registered) or externalUsername (external)
+      const playerMap = new Map<string, {
+        key: string;
+        userId: string;
+        username: string;
+        kickUsername?: string;
+        totalWagers: number;
+        wagerCount: number;
+        isExternal: boolean;
+      }>();
 
       for (const wager of leaderboard.wagers) {
-        const existing = userWagers.get(wager.userId);
+        const key = wager.userId ?? `ext:${wager.externalUsername}`;
+        const existing = playerMap.get(key);
         if (existing) {
           existing.totalWagers += Number(wager.wagerAmount);
           existing.wagerCount += 1;
         } else {
-          userWagers.set(wager.userId, {
-            userId: wager.userId,
-            username: wager.user.displayName,
-            kickUsername: wager.user.kickUsername || undefined,
+          const isExternal = !wager.userId;
+          playerMap.set(key, {
+            key,
+            userId: wager.userId ?? key,
+            username: wager.user?.displayName ?? wager.externalUsername ?? 'Unknown',
+            kickUsername: wager.user?.kickUsername ?? undefined,
             totalWagers: Number(wager.wagerAmount),
             wagerCount: 1,
+            isExternal,
           });
         }
       }
 
-      // Sort by total wagers descending (Requirement 8.1)
-      const sortedUsers = Array.from(userWagers.values()).sort(
+      const sortedPlayers = Array.from(playerMap.values()).sort(
         (a, b) => b.totalWagers - a.totalWagers
       );
 
-      // Assign ranks and prizes (Requirement 8.2, 8.4)
-      const rankings: LeaderboardRanking[] = sortedUsers.map((user, index) => {
+      const rankings: LeaderboardRanking[] = sortedPlayers.map((player, index) => {
         const rank = index + 1;
         const prize = leaderboard.prizes.find(p => p.position === rank);
-
         return {
           rank,
-          userId: user.userId,
-          username: user.username,
-          kickUsername: user.kickUsername,
-          totalWagers: user.totalWagers,
-          wagerCount: user.wagerCount,
+          userId: player.userId,
+          username: player.username,
+          kickUsername: player.kickUsername,
+          totalWagers: player.totalWagers,
+          wagerCount: player.wagerCount,
           prize: prize?.prizeAmount,
           prizeDescription: prize?.prizeDescription || undefined,
+          isExternal: player.isExternal,
         };
       });
 
@@ -413,16 +378,10 @@ export class LeaderboardService {
           wagers: {
             include: {
               user: {
-                select: {
-                  id: true,
-                  displayName: true,
-                  kickUsername: true,
-                },
+                select: { id: true, displayName: true, kickUsername: true },
               },
             },
-            orderBy: {
-              submittedAt: 'desc',
-            },
+            orderBy: { submittedAt: 'desc' },
           },
         },
       });
@@ -451,6 +410,7 @@ export class LeaderboardService {
           wagers: {
             select: {
               userId: true,
+              externalUsername: true,
               wagerAmount: true,
             },
           },
@@ -471,9 +431,9 @@ export class LeaderboardService {
           return sum + amount;
         }, 0);
 
-        // Calculate unique participants
+        // Calculate unique participants (registered by userId, external by name)
         const uniqueParticipants = new Set(
-          leaderboard.wagers.map(w => w.userId)
+          leaderboard.wagers.map(w => w.userId ?? `ext:${w.externalUsername}`)
         );
         const participantCount = uniqueParticipants.size;
 
@@ -608,15 +568,14 @@ export class LeaderboardService {
    */
   static async getUserTotalWagers(
     leaderboardId: string,
-    userId: string
+    userId: string,
+    externalUsername?: string
   ): Promise<number> {
     try {
-      const wagers = await prisma.leaderboardWager.findMany({
-        where: {
-          leaderboardId,
-          userId,
-        },
-      });
+      const where = externalUsername
+        ? { leaderboardId, externalUsername }
+        : { leaderboardId, userId };
+      const wagers = await prisma.leaderboardWager.findMany({ where });
 
       const total = wagers.reduce(
         (sum, wager) => sum + Number(wager.wagerAmount),

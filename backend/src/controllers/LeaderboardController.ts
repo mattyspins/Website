@@ -143,26 +143,23 @@ export class LeaderboardController {
   static async addWager(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const { userId, amount, notes } = req.body;
+      const { userId, externalUsername, amount, notes } = req.body;
       const adminId = (req as any).user?.id;
 
       if (!adminId) {
-        res.status(401).json({
-          success: false,
-          error: 'Unauthorized',
-        });
+        res.status(401).json({ success: false, error: 'Unauthorized' });
         return;
       }
 
       const wager = await LeaderboardService.addWager(id, {
         userId,
+        externalUsername,
         amount: parseFloat(amount),
         notes,
         verifiedBy: adminId,
       });
 
-      // Get updated total for the user
-      const userTotal = await LeaderboardService.getUserTotalWagers(id, userId);
+      const userTotal = await LeaderboardService.getUserTotalWagers(id, userId, externalUsername);
 
       // Emit real-time update via Socket.IO
       io.to(`leaderboard:${id}`).emit('wagerAdded', {

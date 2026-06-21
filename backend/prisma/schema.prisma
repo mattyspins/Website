@@ -155,16 +155,17 @@ model LeaderboardPrize {
 }
 
 model LeaderboardWager {
-  id            String      @id @default(uuid())
-  leaderboardId String      @map("leaderboard_id")
-  userId        String      @map("user_id")
-  wagerAmount   Decimal     @map("wager_amount") @db.Decimal(12, 2)
-  submittedAt   DateTime    @default(now()) @map("submitted_at")
-  verifiedBy    String?     @map("verified_by")
-  verifiedAt    DateTime?   @map("verified_at")
-  notes         String?
-  leaderboard   Leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String      @id @default(uuid())
+  leaderboardId    String      @map("leaderboard_id")
+  userId           String?     @map("user_id")
+  externalUsername String?     @map("external_username")
+  wagerAmount      Decimal     @map("wager_amount") @db.Decimal(12, 2)
+  submittedAt      DateTime    @default(now()) @map("submitted_at")
+  verifiedBy       String?     @map("verified_by")
+  verifiedAt       DateTime?   @map("verified_at")
+  notes            String?
+  leaderboard      Leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
+  user             User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([leaderboardId, userId], map: "idx_leaderboard_wagers_leaderboard_user")
   @@map("leaderboard_wagers")

@@ -11,6 +11,7 @@ interface Ranking {
   rank: number; userId: string; username: string;
   kickUsername?: string; totalWagers: number; wagerCount: number;
   prize?: string; prizeDescription?: string;
+  isExternal?: boolean;
 }
 interface Leaderboard {
   id: string; title: string; description?: string;
@@ -31,9 +32,11 @@ export default function ManageLeaderboardPage() {
   const [loading, setLoading] = useState(true);
 
   // Add wager form
+  const [playerType, setPlayerType] = useState<"registered" | "external">("registered");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<User[]>([]);
   const [selected, setSelected] = useState<User | null>(null);
+  const [externalName, setExternalName] = useState("");
   const [amount, setAmount] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -60,15 +63,22 @@ export default function ManageLeaderboardPage() {
 
   const handleAddWager = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selected) return;
+    const isExternal = playerType === "external";
+    if (!isExternal && !selected) { setWagerMsg({ type: "error", text: "Select a player." }); return; }
+    if (isExternal && !externalName.trim()) { setWagerMsg({ type: "error", text: "Enter the player name." }); return; }
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt <= 0) { setWagerMsg({ type: "error", text: "Enter a valid amount." }); return; }
     setSubmitting(true); setWagerMsg(null);
     try {
-      const r = await api.post(`/api/manual-leaderboards/admin/${leaderboardId}/wagers`, { userId: selected.id, amount: amt, notes });
+      const body = isExternal
+        ? { externalUsername: externalName.trim(), amount: amt, notes }
+        : { userId: selected!.id, amount: amt, notes };
+      const r = await api.post(`/api/manual-leaderboards/admin/${leaderboardId}/wagers`, body);
       if (r.success) {
-        setWagerMsg({ type: "success", text: `Wager added. ${selected.displayName} total: $${r.userTotal?.toFixed(2) ?? amt.toFixed(2)}` });
-        setAmount(""); setNotes(""); setSelected(null); setQuery(""); setResults([]);
+        const name = isExternal ? externalName.trim() : selected!.displayName;
+        setWagerMsg({ type: "success", text: `Wager added for ${name}. Total: $${r.userTotal?.toFixed(2) ?? amt.toFixed(2)}` });
+        setAmount(""); setNotes("");
+        if (isExternal) setExternalName(""); else { setSelected(null); setQuery(""); setResults([]); }
         fetchDetails();
       } else {
         setWagerMsg({ type: "error", text: r.error || "Failed to add wager." });
@@ -168,40 +178,63 @@ export default function ManageLeaderboardPage() {
               <Plus className="w-4 h-4 text-gold-400" /> Add Wager
             </h2>
             <form onSubmit={handleAddWager} className="space-y-4">
-              {/* User search */}
+              {/* Player type toggle */}
               <div>
-                <label className="text-gray-400 text-xs mb-1 block">Player *</label>
-                <div className="relative">
+                <label className="text-gray-400 text-xs mb-2 block">Player *</label>
+                <div className="flex gap-1 mb-3 bg-navy-900/60 border border-white/8 rounded-xl p-1 w-fit">
+                  <button type="button" onClick={() => { setPlayerType("registered"); setExternalName(""); }}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${playerType === "registered" ? "bg-gold-500 text-white" : "text-gray-500 hover:text-white"}`}>
+                    Website User
+                  </button>
+                  <button type="button" onClick={() => { setPlayerType("external"); setSelected(null); setQuery(""); setResults([]); }}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${playerType === "external" ? "bg-gold-500 text-white" : "text-gray-500 hover:text-white"}`}>
+                    External Player
+                  </button>
+                </div>
+
+                {playerType === "registered" ? (
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                    <input value={query} onChange={(e) => searchUsers(e.target.value)}
-                      placeholder="Search by username or Kick..." className="w-full bg-navy-900/60 border border-white/8 rounded-xl pl-9 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30" />
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                      <input value={query} onChange={(e) => searchUsers(e.target.value)}
+                        placeholder="Search by username or Kick..." className="w-full bg-navy-900/60 border border-white/8 rounded-xl pl-9 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30" />
+                      {selected && (
+                        <button type="button" onClick={() => { setSelected(null); setQuery(""); setResults([]); }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    {results.length > 0 && !selected && (
+                      <div className="absolute z-10 w-full mt-1 bg-navy-900 border border-white/10 rounded-xl overflow-hidden shadow-xl">
+                        {results.map((u) => (
+                          <button key={u.id} type="button" onClick={() => { setSelected(u); setQuery(u.displayName); setResults([]); }}
+                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left">
+                            <div className="w-7 h-7 rounded-full bg-yellow-600/40 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                              {u.displayName.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="text-white text-sm font-medium">{u.displayName}</p>
+                              {u.kickUsername && <p className="text-gray-500 text-xs">Kick: {u.kickUsername}</p>}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     {selected && (
-                      <button type="button" onClick={() => { setSelected(null); setQuery(""); setResults([]); }}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                      <p className="text-green-400 text-xs mt-1.5 font-semibold">✓ {selected.displayName}{selected.kickUsername ? ` · Kick: ${selected.kickUsername}` : ""}</p>
                     )}
                   </div>
-                  {results.length > 0 && !selected && (
-                    <div className="absolute z-10 w-full mt-1 bg-navy-900 border border-white/10 rounded-xl overflow-hidden shadow-xl">
-                      {results.map((u) => (
-                        <button key={u.id} type="button" onClick={() => { setSelected(u); setQuery(u.displayName); setResults([]); }}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left">
-                          <div className="w-7 h-7 rounded-full bg-yellow-600/40 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                            {u.displayName.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="text-white text-sm font-medium">{u.displayName}</p>
-                            {u.kickUsername && <p className="text-gray-500 text-xs">Kick: {u.kickUsername}</p>}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {selected && (
-                  <p className="text-green-400 text-xs mt-1.5 font-semibold">✓ {selected.displayName}{selected.kickUsername ? ` · Kick: ${selected.kickUsername}` : ""}</p>
+                ) : (
+                  <div>
+                    <input
+                      value={externalName}
+                      onChange={(e) => setExternalName(e.target.value)}
+                      placeholder="Enter their name or username…"
+                      className="w-full bg-navy-900/60 border border-white/8 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gold-500/30"
+                    />
+                    <p className="text-gray-600 text-xs mt-1">For players not registered on the website.</p>
+                  </div>
                 )}
               </div>
 
@@ -219,7 +252,7 @@ export default function ManageLeaderboardPage() {
               </div>
 
               <div className="flex items-center gap-4">
-                <button type="submit" disabled={submitting || !selected}
+                <button type="submit" disabled={submitting || (playerType === "registered" ? !selected : !externalName.trim())}
                   className="bg-gold-500 hover:bg-gold-600 disabled:opacity-40 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
                   {submitting ? "Adding…" : "Add Wager"}
                 </button>
@@ -286,7 +319,10 @@ export default function ManageLeaderboardPage() {
                             {r.rank}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-white font-medium max-w-[160px] truncate">{r.username}</td>
+                        <td className="px-5 py-3 max-w-[160px]">
+                          <span className="text-white font-medium truncate block">{r.username}</span>
+                          {r.isExternal && <span className="text-[10px] text-gray-600 font-semibold uppercase tracking-wider">External</span>}
+                        </td>
                         <td className="px-5 py-3 text-gray-500 text-xs">{r.kickUsername || "—"}</td>
                         <td className="px-5 py-3 text-right font-bold text-gold-400">
                           ${r.totalWagers.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
