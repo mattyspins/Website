@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
 import { LeaderboardService } from '../services/LeaderboardService';
+import { RedisService } from '../config/redis';
 import { logger } from '../utils/logger';
 import { io } from '../index';
+
+const LIVE_LEADERBOARD_KEY = 'live_leaderboard_id';
 
 /**
  * Leaderboard Controller
@@ -377,6 +380,43 @@ export class LeaderboardController {
         success: false,
         error: error.message || 'Failed to delete leaderboard',
       });
+    }
+  }
+
+  /** GET /api/manual-leaderboards/live — public */
+  static async getLiveLeaderboard(req: Request, res: Response): Promise<void> {
+    try {
+      const leaderboardId = await RedisService.get(LIVE_LEADERBOARD_KEY);
+      res.json({ success: true, leaderboardId: leaderboardId ?? null });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: 'Failed to get live leaderboard' });
+    }
+  }
+
+  /** POST /api/manual-leaderboards/admin/go-live — admin */
+  static async goLive(req: Request, res: Response): Promise<void> {
+    try {
+      const { leaderboardId } = req.body;
+      if (!leaderboardId) {
+        res.status(400).json({ success: false, error: 'leaderboardId is required' });
+        return;
+      }
+      await RedisService.set(LIVE_LEADERBOARD_KEY, leaderboardId);
+      io.emit('leaderboard:live', { leaderboardId });
+      res.json({ success: true, leaderboardId });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: 'Failed to go live' });
+    }
+  }
+
+  /** DELETE /api/manual-leaderboards/admin/go-live — admin */
+  static async takeDownLive(req: Request, res: Response): Promise<void> {
+    try {
+      await RedisService.del(LIVE_LEADERBOARD_KEY);
+      io.emit('leaderboard:live', { leaderboardId: null });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: 'Failed to take down' });
     }
   }
 }

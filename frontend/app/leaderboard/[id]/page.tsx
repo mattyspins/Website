@@ -170,26 +170,36 @@ export default function PublicLeaderboardPage() {
   const [userRank, setUserRank] = useState<number | undefined>();
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
     fetchLeaderboardDetails();
+    fetchLiveStatus();
 
     const socket = getSocket();
     socket.emit("joinLeaderboard", leaderboardId);
-    socket.on(
-      "rankingsUpdated",
-      (data: { leaderboardId: string; rankings: Ranking[] }) => {
-        if (data.leaderboardId === leaderboardId) setRankings(data.rankings);
-      },
-    );
+    socket.on("rankingsUpdated", (data: { leaderboardId: string; rankings: Ranking[] }) => {
+      if (data.leaderboardId === leaderboardId) setRankings(data.rankings);
+    });
+    socket.on("leaderboard:live", (data: { leaderboardId: string | null }) => {
+      setIsLive(data.leaderboardId === leaderboardId);
+    });
 
     const interval = setInterval(fetchLeaderboardDetails, 30000);
     return () => {
       clearInterval(interval);
       socket.emit("leaveLeaderboard", leaderboardId);
       socket.off("rankingsUpdated");
+      socket.off("leaderboard:live");
     };
   }, [leaderboardId]);
+
+  const fetchLiveStatus = async () => {
+    try {
+      const r = await api.get("/api/manual-leaderboards/live");
+      if (r.success) setIsLive(r.leaderboardId === leaderboardId);
+    } catch { /* ignore */ }
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -278,7 +288,13 @@ export default function PublicLeaderboardPage() {
             </p>
           )}
           <div className="inline-flex items-center gap-3">
-            {!isEnded && (
+            {isLive && !isEnded && (
+              <span className="inline-flex items-center gap-2 bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-xs font-bold px-4 py-1.5 rounded-full tracking-widest uppercase shadow-[0_0_12px_rgba(52,211,153,0.25)]">
+                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                Live
+              </span>
+            )}
+            {!isLive && !isEnded && (
               <span className="inline-flex items-center gap-1.5 border border-gold-500/40 text-gold-400 text-xs font-semibold px-3 py-1 rounded tracking-wider">
                 <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
                 LIVE RACE

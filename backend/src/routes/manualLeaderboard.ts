@@ -39,6 +39,9 @@ const adminLimiter = rateLimit({
 // GET /api/manual-leaderboards?status=active&limit=10
 router.get('/', leaderboardLimiter, LeaderboardController.getLeaderboards);
 
+// GET /api/manual-leaderboards/live  — must be before /:id
+router.get('/live', leaderboardLimiter, LeaderboardController.getLiveLeaderboard);
+
 // GET /api/manual-leaderboards/:id
 router.get(
   '/:id',
@@ -100,6 +103,24 @@ router.delete(
   authMiddleware,
   adminMiddleware,
   LeaderboardController.deleteLeaderboard
+);
+
+// POST /api/manual-leaderboards/admin/go-live
+router.post(
+  '/admin/go-live',
+  adminLimiter,
+  authMiddleware,
+  adminMiddleware,
+  LeaderboardController.goLive
+);
+
+// DELETE /api/manual-leaderboards/admin/go-live
+router.delete(
+  '/admin/go-live',
+  adminLimiter,
+  authMiddleware,
+  adminMiddleware,
+  LeaderboardController.takeDownLive
 );
 
 export default router;

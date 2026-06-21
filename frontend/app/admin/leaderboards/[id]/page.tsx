@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
-import { Trophy, Download, Plus, Users, Search, X, Crown } from "lucide-react";
+import { Trophy, Download, Plus, Users, Search, X, Crown, Radio, EyeOff } from "lucide-react";
 
 interface User { id: string; displayName: string; kickUsername?: string; }
 interface Ranking {
@@ -30,6 +30,8 @@ export default function ManageLeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<Leaderboard | null>(null);
   const [rankings, setRankings] = useState<Ranking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLive, setIsLive] = useState(false);
+  const [liveLoading, setLiveLoading] = useState(false);
 
   // Add wager form
   const [playerType, setPlayerType] = useState<"registered" | "external">("registered");
@@ -42,13 +44,36 @@ export default function ManageLeaderboardPage() {
   const [submitting, setSubmitting] = useState(false);
   const [wagerMsg, setWagerMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  useEffect(() => { fetchDetails(); }, [leaderboardId]);
+  useEffect(() => { fetchDetails(); fetchLiveStatus(); }, [leaderboardId]);
 
   const fetchDetails = async () => {
     try {
       const r = await api.get(`/api/manual-leaderboards/${leaderboardId}`);
       if (r.success) { setLeaderboard(r.data.leaderboard); setRankings(r.data.rankings); }
     } catch { /* ignore */ } finally { setLoading(false); }
+  };
+
+  const fetchLiveStatus = async () => {
+    try {
+      const r = await api.get("/api/manual-leaderboards/live");
+      if (r.success) setIsLive(r.leaderboardId === leaderboardId);
+    } catch { /* ignore */ }
+  };
+
+  const handleGoLive = async () => {
+    setLiveLoading(true);
+    try {
+      const r = await api.post("/api/manual-leaderboards/admin/go-live", { leaderboardId });
+      if (r.success) setIsLive(true);
+    } catch { /* ignore */ } finally { setLiveLoading(false); }
+  };
+
+  const handleTakeDown = async () => {
+    setLiveLoading(true);
+    try {
+      const r = await api.delete("/api/manual-leaderboards/admin/go-live");
+      if (r.success) setIsLive(false);
+    } catch { /* ignore */ } finally { setLiveLoading(false); }
   };
 
   const searchUsers = async (q: string) => {
@@ -159,7 +184,29 @@ export default function ManageLeaderboardPage() {
                 <div><span className="text-gray-500">{new Date(leaderboard.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} → {new Date(leaderboard.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></div>
               </div>
             </div>
-            <div className="flex gap-2 shrink-0">
+            <div className="flex gap-2 shrink-0 flex-wrap">
+              {isLive ? (
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> LIVE
+                  </span>
+                  <button
+                    onClick={handleTakeDown}
+                    disabled={liveLoading}
+                    className="flex items-center gap-1.5 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 font-semibold px-3 py-2 rounded-xl text-xs transition-colors disabled:opacity-50"
+                  >
+                    <EyeOff className="w-3.5 h-3.5" /> Take Down
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleGoLive}
+                  disabled={liveLoading}
+                  className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition-colors disabled:opacity-50"
+                >
+                  <Radio className="w-3.5 h-3.5" /> {liveLoading ? "Going Live…" : "Go Live"}
+                </button>
+              )}
               <a href={`/leaderboard/${leaderboard.id}`} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-gray-400 font-semibold px-3 py-2 rounded-xl text-xs transition-colors">
                 View Public
