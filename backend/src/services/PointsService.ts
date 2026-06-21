@@ -82,14 +82,6 @@ export class PointsService {
           throw createError.notFound('User not found');
         }
 
-        // Check for negative balance (only for deductions)
-        const newBalance = user.points + request.amount;
-        if (newBalance < 0) {
-          throw createError.badRequest(
-            'Transaction would result in negative balance'
-          );
-        }
-
         // Create transaction record
         const transaction = await tx.pointTransaction.create({
           data: {
@@ -104,22 +96,33 @@ export class PointsService {
           },
         });
 
-        // Update user balance and totals
-        const updateData: any = {
-          points: newBalance,
-          updatedAt: new Date(),
-        };
-
-        if (request.amount > 0) {
-          updateData.totalEarned = user.totalEarned + request.amount;
+        if (request.amount < 0) {
+          // Deduction: WHERE + decrement in one SQL statement — prevents concurrent overdraft.
+          // Two racing transactions both see sufficient balance but only one will match the WHERE
+          // clause after the first commits, so the second gets count=0 and throws.
+          const deductAmount = Math.abs(request.amount);
+          const updated = await tx.user.updateMany({
+            where: { id: request.userId, points: { gte: deductAmount } },
+            data: {
+              points: { decrement: deductAmount },
+              totalSpent: { increment: deductAmount },
+              updatedAt: new Date(),
+            },
+          });
+          if (updated.count === 0) {
+            throw createError.badRequest('Insufficient points balance');
+          }
         } else {
-          updateData.totalSpent = user.totalSpent + Math.abs(request.amount);
+          // Addition: simple increment, no balance constraint needed.
+          await tx.user.update({
+            where: { id: request.userId },
+            data: {
+              points: { increment: request.amount },
+              totalEarned: { increment: request.amount },
+              updatedAt: new Date(),
+            },
+          });
         }
-
-        await tx.user.update({
-          where: { id: request.userId },
-          data: updateData,
-        });
 
         return transaction;
       });

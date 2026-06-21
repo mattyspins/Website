@@ -1,3 +1,4 @@
+import { randomInt } from 'crypto';
 import { prisma } from '@/config/database';
 import { Server as SocketIOServer } from 'socket.io';
 import { createError } from '@/middleware/errorHandler';
@@ -74,7 +75,7 @@ export class ViewerPickerService {
       : picker.entries;
     if (pool.length === 0) throw createError.badRequest('No other eligible entries');
 
-    const pick = pool[Math.floor(Math.random() * pool.length)];
+    const pick = pool[randomInt(0, pool.length)];
 
     const updated = await prisma.viewerPicker.update({
       where: { id },

@@ -180,21 +180,17 @@ export class StoreService {
           throw createError.badRequest(`Only ${item.stock} items available`);
         }
 
-        // Get user details
-        const user = await tx.user.findUnique({
+        // Verify user exists
+        const userExists = await tx.user.findUnique({
           where: { id: userId },
+          select: { id: true },
         });
 
-        if (!user) {
+        if (!userExists) {
           throw createError.notFound('User not found');
         }
 
         const totalPrice = quantity * item.price;
-
-        // Check user balance
-        if (user.points < totalPrice) {
-          throw createError.badRequest('Insufficient points');
-        }
 
         // Create purchase record
         const purchase = await tx.storePurchase.create({
@@ -219,14 +215,19 @@ export class StoreService {
           });
         }
 
-        // Deduct points from user
-        await tx.user.update({
-          where: { id: userId },
+        // Atomically deduct points — WHERE + decrement in one SQL statement prevents
+        // concurrent purchases from both passing the balance check and overdrafting.
+        const deducted = await tx.user.updateMany({
+          where: { id: userId, points: { gte: totalPrice } },
           data: {
             points: { decrement: totalPrice },
             totalSpent: { increment: totalPrice },
           },
         });
+
+        if (deducted.count === 0) {
+          throw createError.badRequest('Insufficient points');
+        }
 
         // Create point transaction
         await tx.pointTransaction.create({
