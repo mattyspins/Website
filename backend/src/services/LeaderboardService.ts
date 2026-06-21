@@ -568,13 +568,13 @@ export class LeaderboardService {
    */
   static async getUserTotalWagers(
     leaderboardId: string,
-    userId: string,
+    userId: string | undefined,
     externalUsername?: string
   ): Promise<number> {
     try {
       const where = externalUsername
         ? { leaderboardId, externalUsername }
-        : { leaderboardId, userId };
+        : { leaderboardId, userId: userId ?? null };
       const wagers = await prisma.leaderboardWager.findMany({ where });
 
       const total = wagers.reduce(

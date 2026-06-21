@@ -113,7 +113,7 @@ export default function ManageLeaderboardPage() {
       } else {
         setWagerMsg({ type: "error", text: r.error || "Failed to add wager." });
       }
-    } catch { setWagerMsg({ type: "error", text: "Network error." }); } finally { setSubmitting(false); }
+    } catch (err: any) { setWagerMsg({ type: "error", text: err?.message || "Network error." }); } finally { setSubmitting(false); }
   };
 
   const handleUpdateWager = async (r: Ranking) => {
