@@ -383,6 +383,39 @@ export class LeaderboardController {
     }
   }
 
+  /**
+   * Set a player's total wager to an exact amount (Admin only)
+   * PUT /api/manual-leaderboards/admin/:id/wagers
+   */
+  static async updateWager(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { userId, externalUsername, amount, notes } = req.body;
+      const adminId = (req as any).user?.id;
+
+      if (!adminId) {
+        res.status(401).json({ success: false, error: 'Unauthorized' });
+        return;
+      }
+
+      const total = await LeaderboardService.setWagerTotal(id, {
+        userId,
+        externalUsername,
+        amount: parseFloat(amount),
+        notes,
+        verifiedBy: adminId,
+      });
+
+      const rankings = await LeaderboardService.getRankings(id);
+      io.to(`leaderboard:${id}`).emit('rankingsUpdated', { leaderboardId: id, rankings });
+
+      res.json({ success: true, userTotal: total });
+    } catch (error: any) {
+      logger.error('Error in updateWager:', error);
+      res.status(400).json({ success: false, error: error.message || 'Failed to update wager' });
+    }
+  }
+
   /** GET /api/manual-leaderboards/live — public */
   static async getLiveLeaderboard(req: Request, res: Response): Promise<void> {
     try {

@@ -153,7 +153,7 @@ function PodiumCard({
         <div>
           <p className="text-gray-500 text-xs tracking-wider mb-1">PRIZE</p>
           <p className="text-prize font-bold text-xl prize-text">
-            {ranking.prize}
+            {ranking.prize.startsWith("$") ? ranking.prize : `$${ranking.prize}`}
           </p>
         </div>
       )}
@@ -397,7 +397,7 @@ export default function PublicLeaderboardPage() {
                   <div className="col-span-2 text-right">
                     {ranking.prize ? (
                       <span className="text-prize font-bold text-sm">
-                        {ranking.prize}
+                        {ranking.prize.startsWith("$") ? ranking.prize : `$${ranking.prize}`}
                       </span>
                     ) : (
                       <span className="text-gray-600 text-sm">—</span>

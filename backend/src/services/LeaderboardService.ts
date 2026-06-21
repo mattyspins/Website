@@ -589,6 +589,55 @@ export class LeaderboardService {
   }
 
   /**
+   * Set a player's total wager to an exact amount (replaces all existing entries)
+   */
+  static async setWagerTotal(
+    leaderboardId: string,
+    wager: WagerData
+  ): Promise<number> {
+    try {
+      if (!wager.userId && !wager.externalUsername?.trim()) {
+        throw new Error('Either userId or externalUsername is required');
+      }
+      if (typeof wager.amount !== 'number' || wager.amount < 0 || !Number.isFinite(wager.amount)) {
+        throw new Error('Wager amount must be a non-negative number');
+      }
+
+      const leaderboard = await prisma.leaderboard.findUnique({ where: { id: leaderboardId } });
+      if (!leaderboard) throw new Error('Leaderboard not found');
+
+      const where = wager.userId
+        ? { leaderboardId, userId: wager.userId }
+        : { leaderboardId, externalUsername: wager.externalUsername };
+
+      const now = new Date();
+      await prisma.$transaction(async (tx) => {
+        await tx.leaderboardWager.deleteMany({ where });
+        if (wager.amount > 0) {
+          await tx.leaderboardWager.create({
+            data: {
+              leaderboardId,
+              userId: wager.userId || null,
+              externalUsername: wager.externalUsername?.trim() || null,
+              wagerAmount: wager.amount,
+              submittedAt: now,
+              verifiedBy: wager.verifiedBy,
+              verifiedAt: now,
+              notes: wager.notes?.trim() || null,
+            },
+          });
+        }
+      });
+
+      logger.info(`Wager total set: ${wager.userId ?? wager.externalUsername} → ${wager.amount}`);
+      return wager.amount;
+    } catch (error) {
+      logger.error('Error setting wager total:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Delete a leaderboard and all associated data (Admin only)
    * Validates: Requirements 18.1, 18.2, 18.3, 18.4
    */

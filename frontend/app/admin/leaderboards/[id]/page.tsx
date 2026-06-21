@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
-import { Trophy, Download, Plus, Users, Search, X, Crown, Radio, EyeOff } from "lucide-react";
+import { Trophy, Download, Plus, Users, Search, X, Crown, Radio, EyeOff, Pencil, Check } from "lucide-react";
 
 interface User { id: string; displayName: string; kickUsername?: string; }
 interface Ranking {
@@ -43,6 +43,11 @@ export default function ManageLeaderboardPage() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [wagerMsg, setWagerMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Inline edit state
+  const [editingRow, setEditingRow] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   useEffect(() => { fetchDetails(); fetchLiveStatus(); }, [leaderboardId]);
 
@@ -109,6 +114,20 @@ export default function ManageLeaderboardPage() {
         setWagerMsg({ type: "error", text: r.error || "Failed to add wager." });
       }
     } catch { setWagerMsg({ type: "error", text: "Network error." }); } finally { setSubmitting(false); }
+  };
+
+  const handleUpdateWager = async (r: Ranking) => {
+    const amt = parseFloat(editAmount);
+    if (isNaN(amt) || amt < 0) return;
+    setEditSubmitting(true);
+    try {
+      const body = r.isExternal
+        ? { externalUsername: r.username, amount: amt }
+        : { userId: r.userId, amount: amt };
+      await api.put(`/api/manual-leaderboards/admin/${leaderboardId}/wagers`, body);
+      setEditingRow(null);
+      fetchDetails();
+    } catch { /* ignore */ } finally { setEditSubmitting(false); }
   };
 
   const exportCSV = async () => {
@@ -359,27 +378,66 @@ export default function ManageLeaderboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/4">
-                    {rankings.map((r) => (
-                      <tr key={r.userId} className="hover:bg-white/2 transition-colors">
-                        <td className="px-5 py-3">
-                          <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-black border ${RANK_COLORS[r.rank] ?? "bg-white/5 border-white/8 text-gray-500"}`}>
-                            {r.rank}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3 max-w-[160px]">
-                          <span className="text-white font-medium truncate block">{r.username}</span>
-                          {r.isExternal && <span className="text-[10px] text-gray-600 font-semibold uppercase tracking-wider">External</span>}
-                        </td>
-                        <td className="px-5 py-3 text-gray-500 text-xs">{r.kickUsername || "—"}</td>
-                        <td className="px-5 py-3 text-right font-bold text-gold-400">
-                          ${r.totalWagers.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </td>
-                        <td className="px-5 py-3 text-right text-gray-500">{r.wagerCount}</td>
-                        <td className="px-5 py-3 text-right">
-                          {r.prize ? <span className="text-green-400 font-semibold">{r.prize}</span> : <span className="text-gray-700">—</span>}
-                        </td>
-                      </tr>
-                    ))}
+                    {rankings.map((r) => {
+                      const isEditing = editingRow === r.userId;
+                      return (
+                        <tr key={r.userId} className="hover:bg-white/2 transition-colors group">
+                          <td className="px-5 py-3">
+                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-black border ${RANK_COLORS[r.rank] ?? "bg-white/5 border-white/8 text-gray-500"}`}>
+                              {r.rank}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3 max-w-[160px]">
+                            <span className="text-white font-medium truncate block">{r.username}</span>
+                            {r.isExternal && <span className="text-[10px] text-gray-600 font-semibold uppercase tracking-wider">External</span>}
+                          </td>
+                          <td className="px-5 py-3 text-gray-500 text-xs">{r.kickUsername || "—"}</td>
+                          <td className="px-5 py-3 text-right">
+                            {isEditing ? (
+                              <div className="flex items-center justify-end gap-2">
+                                <div className="relative">
+                                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">$</span>
+                                  <input
+                                    type="number" step="0.01" min="0" autoFocus
+                                    value={editAmount}
+                                    onChange={(e) => setEditAmount(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === "Enter") handleUpdateWager(r); if (e.key === "Escape") setEditingRow(null); }}
+                                    className="w-28 bg-navy-900 border border-gold-500/40 rounded-lg pl-6 pr-2 py-1 text-white text-sm text-right focus:outline-none focus:border-gold-500"
+                                  />
+                                </div>
+                                <button onClick={() => handleUpdateWager(r)} disabled={editSubmitting}
+                                  className="p-1.5 rounded-lg bg-green-600/20 hover:bg-green-600/30 text-green-400 transition-colors disabled:opacity-50">
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => setEditingRow(null)}
+                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-500 transition-colors">
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-end gap-2">
+                                <span className="font-bold text-gold-400">
+                                  ${r.totalWagers.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                                <button
+                                  onClick={() => { setEditingRow(r.userId); setEditAmount(r.totalWagers.toFixed(2)); }}
+                                  className="opacity-0 group-hover:opacity-100 p-1 rounded-md bg-white/5 hover:bg-white/10 text-gray-500 hover:text-white transition-all"
+                                  title="Update wager total"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-5 py-3 text-right text-gray-500">{r.wagerCount}</td>
+                          <td className="px-5 py-3 text-right">
+                            {r.prize
+                              ? <span className="text-green-400 font-semibold">{r.prize.startsWith("$") ? r.prize : `$${r.prize}`}</span>
+                              : <span className="text-gray-700">—</span>}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

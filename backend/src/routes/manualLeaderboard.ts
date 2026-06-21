@@ -105,6 +105,15 @@ router.delete(
   LeaderboardController.deleteLeaderboard
 );
 
+// PUT /api/manual-leaderboards/admin/:id/wagers  (set total, not add)
+router.put(
+  '/admin/:id/wagers',
+  adminLimiter,
+  authMiddleware,
+  adminMiddleware,
+  LeaderboardController.updateWager
+);
+
 // POST /api/manual-leaderboards/admin/go-live
 router.post(
   '/admin/go-live',
