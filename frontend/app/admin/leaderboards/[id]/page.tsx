@@ -349,7 +349,6 @@ export default function ManageLeaderboardPage() {
                         {pos === 1 ? <Crown className="w-5 h-5" /> : `#${pos}`}
                       </div>
                       <p className="text-white font-bold text-sm truncate">{r.username}</p>
-                      {r.kickUsername && <p className="text-gray-500 text-xs truncate">{r.kickUsername}</p>}
                       <p className={`font-black text-lg mt-1 ${pos === 1 ? "text-gold-400" : pos === 2 ? "text-gray-300" : "text-orange-400"}`}>
                         ${r.totalWagers.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
@@ -371,7 +370,6 @@ export default function ManageLeaderboardPage() {
                     <tr className="text-gray-500 text-xs font-semibold uppercase tracking-widest border-b border-white/5">
                       <th className="text-left px-5 py-3">#</th>
                       <th className="text-left px-5 py-3">Player</th>
-                      <th className="text-left px-5 py-3">Kick</th>
                       <th className="text-right px-5 py-3">Wagered</th>
                       <th className="text-right px-5 py-3">Entries</th>
                       <th className="text-right px-5 py-3">Prize</th>
@@ -387,11 +385,12 @@ export default function ManageLeaderboardPage() {
                               {r.rank}
                             </span>
                           </td>
-                          <td className="px-5 py-3 max-w-[160px]">
+                          <td className="px-5 py-3 max-w-[200px]">
                             <span className="text-white font-medium truncate block">{r.username}</span>
-                            {r.isExternal && <span className="text-[10px] text-gray-600 font-semibold uppercase tracking-wider">External</span>}
+                            {r.isExternal
+                              ? <span className="text-[10px] text-gray-600 font-semibold uppercase tracking-wider">External</span>
+                              : !r.kickUsername && <span className="text-[10px] text-gray-600">no kick username</span>}
                           </td>
-                          <td className="px-5 py-3 text-gray-500 text-xs">{r.kickUsername || "—"}</td>
                           <td className="px-5 py-3 text-right">
                             {isEditing ? (
                               <div className="flex items-center justify-end gap-2">

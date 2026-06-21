@@ -282,7 +282,7 @@ export class LeaderboardService {
           playerMap.set(key, {
             key,
             userId: wager.userId ?? key,
-            username: wager.user?.displayName ?? wager.externalUsername ?? 'Unknown',
+            username: wager.user?.kickUsername ?? wager.user?.displayName ?? wager.externalUsername ?? 'Unknown',
             kickUsername: wager.user?.kickUsername ?? undefined,
             totalWagers: Number(wager.wagerAmount),
             wagerCount: 1,
