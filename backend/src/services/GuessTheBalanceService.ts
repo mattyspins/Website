@@ -612,7 +612,7 @@ export class GuessTheBalanceService {
         throw createError.notFound('Game not found');
       }
 
-      const response = this.formatGameResponse(game);
+      const response = this.formatGameResponse(game) as GameWithWinnerResponse;
       response.totalGuesses = game.guesses.length;
       if (userId) {
         response.userHasGuessed = game.guesses.length > 0;
