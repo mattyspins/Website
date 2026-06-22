@@ -55,8 +55,7 @@ export default function AuthCallback() {
           setStatus("success");
           setMessage("Login successful! Redirecting...");
 
-          // Redirect to home page
-          setTimeout(() => router.push("/"), 1500);
+          setTimeout(() => router.push("/"), 300);
         } else {
           setStatus("error");
           setMessage("Authentication failed. No tokens received.");

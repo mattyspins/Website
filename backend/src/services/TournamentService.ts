@@ -1,3 +1,4 @@
+import { randomInt } from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import createError from 'http-errors';
 import { Server as SocketIOServer } from 'socket.io';
@@ -97,11 +98,11 @@ export class TournamentService {
     return Math.ceil(Math.log2(n));
   }
 
-  /** Fisher-Yates shuffle */
+  /** Fisher-Yates shuffle using crypto.randomInt for uniform distribution */
   private static shuffle<T>(arr: T[]): T[] {
     const a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = randomInt(0, i + 1);
       [a[i], a[j]] = [a[j], a[i]];
     }
     return a;
@@ -223,7 +224,7 @@ export class TournamentService {
     // Remaining entries not in guaranteed list
     const remaining = entries.filter((e) => !validGuaranteed.includes(e.userId));
     const randomSpotsNeeded = count - validGuaranteed.length;
-    const randomPicks = [...remaining].sort(() => Math.random() - 0.5).slice(0, randomSpotsNeeded);
+    const randomPicks = TournamentService.shuffle([...remaining]).slice(0, randomSpotsNeeded);
 
     // Combine: guaranteed first, then random fills
     const guaranteed = entries.filter((e) => validGuaranteed.includes(e.userId));
@@ -316,7 +317,7 @@ export class TournamentService {
       // No replacement available — just remove participant and leave spot empty
       await prisma.tournamentParticipant.delete({ where: { id: participantId } });
     } else {
-      const replacement = candidates[Math.floor(Math.random() * candidates.length)];
+      const replacement = candidates[randomInt(0, candidates.length)];
       const deadline = new Date(Date.now() + t.slotTimerSeconds * 1000);
       await prisma.$transaction([
         prisma.tournamentParticipant.delete({ where: { id: participantId } }),

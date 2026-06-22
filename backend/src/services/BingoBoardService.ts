@@ -1,3 +1,4 @@
+import { randomInt } from 'crypto';
 import { prisma } from '@/config/database';
 import { Server as SocketIOServer } from 'socket.io';
 import { PointsService } from '@/services/PointsService';
@@ -138,7 +139,7 @@ export class BingoBoardService {
     const emptyCells = game.cells.filter(c => c.status === CellStatus.EMPTY);
     if (emptyCells.length === 0) throw createError.badRequest('No empty cells remaining');
 
-    const pick = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+    const pick = emptyCells[randomInt(0, emptyCells.length)];
 
     await prisma.bingoCell.update({ where: { id: pick.id }, data: { status: CellStatus.ACTIVE } });
 
@@ -194,7 +195,7 @@ export class BingoBoardService {
         available = pool;
       }
 
-      pick = available[Math.floor(Math.random() * available.length)];
+      pick = available[randomInt(0, available.length)];
       drawnThisCycle.push(pick.userId);
       await RedisService.set(key, JSON.stringify(drawnThisCycle), 86400);
     }

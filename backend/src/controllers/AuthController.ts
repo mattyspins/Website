@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 import { AuthService, UserSession } from '@/services/AuthService';
 import { DiscordService } from '@/services/DiscordService';
@@ -12,7 +13,7 @@ export class AuthController {
   // Initiate Discord OAuth flow
   static initiateDiscordAuth = asyncHandler(
     async (req: Request, res: Response) => {
-      const state = Math.random().toString(36).substring(2, 15);
+      const state = randomBytes(32).toString('hex');
       const oauthUrl = DiscordService.generateOAuthURL(state);
 
       // Store state in Redis with 10 minute expiration (more reliable than cookies for cross-domain)
@@ -653,7 +654,7 @@ export class AuthController {
       if (taken) throw createError.conflict('That Kick username is already linked to another account.');
 
       // Generate 6-char alphanumeric code
-      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const code = randomBytes(3).toString('hex').toUpperCase();
       const pendingData = JSON.stringify({ kickUsername: trimmed, code });
 
       // 10-minute expiry
