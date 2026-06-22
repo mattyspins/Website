@@ -416,4 +416,17 @@ export class RaffleController {
       }
     }
   );
+
+  static getUserRaffleHistory = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user) throw createError.unauthorized('Authentication required');
+      try {
+        const history = await RaffleService.getUserRaffleHistory(req.user.id);
+        res.json({ success: true, data: { history } });
+      } catch (error) {
+        logger.error('Error getting user raffle history:', error);
+        throw createError.internal('Failed to get raffle history');
+      }
+    }
+  );
 }

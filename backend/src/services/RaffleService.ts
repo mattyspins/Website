@@ -744,4 +744,38 @@ export class RaffleService {
       throw createError.internal('Failed to get raffle statistics');
     }
   }
+
+  static async getUserRaffleHistory(userId: string) {
+    try {
+      const groups = await prisma.raffleTicket.groupBy({
+        by: ['raffleId'],
+        where: { userId },
+        _count: { id: true },
+      });
+
+      if (groups.length === 0) return [];
+
+      const raffleIds = groups.map((g) => g.raffleId);
+      const raffles = await prisma.raffle.findMany({
+        where: { id: { in: raffleIds } },
+        include: { winners: { where: { userId }, select: { userId: true } } },
+        orderBy: { endDate: 'desc' },
+        take: 20,
+      });
+
+      const countMap = new Map(groups.map((g) => [g.raffleId, g._count.id]));
+
+      return raffles.map((raffle) => ({
+        raffleId: raffle.id,
+        title: raffle.title,
+        ticketsHeld: countMap.get(raffle.id) ?? 0,
+        isWinner: raffle.winners.length > 0,
+        status: raffle.status,
+        endDate: raffle.endDate,
+      }));
+    } catch (error) {
+      logger.error('Error getting user raffle history:', error);
+      throw createError.internal('Failed to get raffle history');
+    }
+  }
 }

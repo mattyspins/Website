@@ -52,9 +52,9 @@ export class TournamentService {
   }
 
   static async formatTournament(t: any): Promise<TournamentResponse> {
-    const entryCount = await prisma.tournamentEntry.count({
-      where: { tournamentId: t.id },
-    });
+    // Use pre-fetched _count if available (avoids N+1 when called from getAll)
+    const entryCount = t._count?.entries ??
+      await prisma.tournamentEntry.count({ where: { tournamentId: t.id } });
     return {
       id: t.id,
       title: t.title,
@@ -86,6 +86,7 @@ export class TournamentService {
           },
           orderBy: [{ round: 'asc' }, { matchNumber: 'asc' }],
         },
+        _count: { select: { entries: true } },
       },
     });
   }
@@ -123,7 +124,7 @@ export class TournamentService {
         slotTimerSeconds: dto.slotTimerSeconds,
         createdById: adminId,
       },
-      include: { participants: { include: { user: true } }, matches: { include: { participants: { include: { participant: { include: { user: true } } } } } } },
+      include: { participants: { include: { user: true } }, matches: { include: { participants: { include: { participant: { include: { user: true } } } } } }, _count: { select: { entries: true } } },
     });
     return TournamentService.formatTournament(tournament);
   }
@@ -714,6 +715,7 @@ export class TournamentService {
           include: { participants: { include: { participant: { include: { user: true } } } } },
           orderBy: [{ round: 'asc' }, { matchNumber: 'asc' }],
         },
+        _count: { select: { entries: true } },
       },
       orderBy: { createdAt: 'desc' },
     });

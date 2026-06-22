@@ -171,12 +171,13 @@ function scheduleTokenRefresh(expiresInMs: number): void {
   const refreshTime = Math.max(expiresInMs - REFRESH_BUFFER_MS, 60000); // At least 1 minute
 
   refreshTimer = setTimeout(async () => {
-    console.log("Auto-refreshing token...");
     const success = await refreshAccessToken();
 
     if (!success) {
-      console.warn("Auto token refresh failed");
-      // Optionally redirect to login or show notification
+      clearAuthData();
+      if (typeof window !== "undefined") {
+        window.location.href = "/?session=expired";
+      }
     }
   }, refreshTime);
 }

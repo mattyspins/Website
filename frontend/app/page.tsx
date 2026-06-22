@@ -13,8 +13,11 @@ export default function Home() {
   useEffect(() => {
     const loginRequired = searchParams.get("login");
     const error = searchParams.get("error");
+    const session = searchParams.get("session");
 
-    if (loginRequired === "required") {
+    if (session === "expired") {
+      setToast({ msg: "Your session has expired. Please log in again.", type: "info" });
+    } else if (loginRequired === "required") {
       setToast({ msg: "Please log in to access that page.", type: "info" });
     } else if (error === "admin_required") {
       setToast({ msg: "Admin access required.", type: "error" });

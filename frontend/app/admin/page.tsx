@@ -26,6 +26,7 @@ import {
   FileText,
   Zap,
   Grid3X3,
+  Monitor,
 } from "lucide-react";
 
 type TabId =
@@ -236,6 +237,42 @@ export default function AdminDashboard() {
                       <p className="text-gray-500 text-xs mt-0.5 leading-relaxed">{desc}</p>
                     </div>
                   </a>
+                ))}
+              </div>
+            </div>
+
+            {/* OBS Widget Links */}
+            <div>
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+                OBS Widget Links
+              </h2>
+              <p className="text-gray-600 text-xs mb-3">Copy these URLs into OBS as Browser Sources.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  { href: "/picker-widget",      label: "Viewer Picker",  desc: "Winner reveal overlay" },
+                  { href: "/bonus-hunt-widget",  label: "Bonus Hunt",     desc: "Live hunt stats overlay" },
+                  { href: "/bingo-widget",       label: "Bonus Bingo",    desc: "Bingo grid overlay" },
+                  { href: "/tournament-widget",  label: "Tournament",     desc: "Bracket display overlay" },
+                ].map(({ href, label, desc }) => (
+                  <div
+                    key={href}
+                    className="bg-navy-800/60 border border-white/6 rounded-xl p-4 flex items-start gap-3"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <Monitor className="w-4 h-4 text-indigo-400" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white font-semibold text-sm">{label}</p>
+                      <p className="text-gray-500 text-xs mt-0.5">{desc}</p>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(`${window.location.origin}${href}`)}
+                        className="mt-2 text-indigo-400 hover:text-indigo-300 text-xs font-mono truncate block w-full text-left transition-colors"
+                        title="Click to copy URL"
+                      >
+                        {href}
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>

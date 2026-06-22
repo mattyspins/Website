@@ -47,7 +47,7 @@ export const notificationApi = {
 
   // Mark all notifications as read
   markAllAsRead: async (): Promise<{ count: number }> => {
-    return api.patch("/api/notifications/read-all");
+    return api.post("/api/notifications/mark-all-read");
   },
 
   // Delete notification

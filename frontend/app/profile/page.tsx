@@ -27,11 +27,21 @@ interface Transaction {
   createdAt: string;
 }
 
+interface RaffleEntry {
+  raffleId: string;
+  title: string;
+  ticketsHeld: number;
+  isWinner: boolean;
+  status: string;
+  endDate: string | null;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [raffleHistory, setRaffleHistory] = useState<RaffleEntry[]>([]);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
   // Kick verification state
@@ -144,6 +154,17 @@ export default function ProfilePage() {
           setTransactions(txData.transactions || []);
         }
       } catch { /* transactions endpoint may not exist yet */ }
+
+      try {
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+        const raffleRes = await fetch(`${API_BASE}/api/raffles/my-history`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (raffleRes.ok) {
+          const raffleData = await raffleRes.json();
+          setRaffleHistory(raffleData.data?.history || []);
+        }
+      } catch { /* ignore */ }
     } catch {
       router.push("/?login=required");
     } finally {
@@ -656,6 +677,43 @@ export default function ProfilePage() {
             <svg className="w-4 h-4 text-gray-600 group-hover:text-gold-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </a>
         </motion.div>
+
+        {/* Raffle History */}
+        {raffleHistory.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.19 }}
+            className="bg-navy-800/60 border border-white/6 rounded-xl p-6"
+          >
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-1 h-5 bg-purple-500 rounded-full" />
+              <h3 className="text-white font-semibold">Raffle History</h3>
+            </div>
+            <div className="space-y-2">
+              {raffleHistory.map((entry) => (
+                <div key={entry.raffleId} className="flex items-center justify-between py-2.5 border-b border-white/4 last:border-0 gap-3">
+                  <div className="min-w-0">
+                    <p className="text-gray-300 text-sm truncate">{entry.title}</p>
+                    <p className="text-gray-600 text-xs mt-0.5">
+                      {entry.ticketsHeld} ticket{entry.ticketsHeld !== 1 ? "s" : ""}
+                      {entry.endDate ? ` · ${new Date(entry.endDate).toLocaleDateString()}` : ""}
+                    </p>
+                  </div>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded shrink-0 border ${
+                    entry.isWinner
+                      ? "bg-gold-500/15 text-gold-400 border-gold-500/25"
+                      : entry.status === "ACTIVE"
+                      ? "bg-green-500/15 text-green-400 border-green-500/25"
+                      : "bg-white/5 text-gray-500 border-white/8"
+                  }`}>
+                    {entry.isWinner ? "WON" : entry.status === "ACTIVE" ? "ACTIVE" : "ENTERED"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         {/* Transaction History */}
         <motion.div
