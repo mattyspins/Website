@@ -15,7 +15,7 @@ const REQUIREMENTS = [
   "Promo available to players from UK, EU, US, Canada, Australia & New Zealand",
   "Must be following Kick, Instagram & X (links above)",
   "Must be inside the Discord server",
-  "Must have your Kick and AceBet accounts linked on this website (see your profile page)",
+  "Must have your Kick and Razed accounts linked on this website (see your profile page)",
   "Deposits must be wagered 3x before reward is eligible",
   "Dice & Limbo wagering does NOT count towards wager requirements",
   "One reward per person / account / device / payment method / IP",
@@ -56,7 +56,7 @@ export default function RewardsPage() {
 
         {/* CTA link */}
         <motion.a
-          href="https://a.acebet.com/api/click?a=374&lp=194&c=426"
+          href="https://www.razed.com/signup/?raf=Mattyspins"
           target="_blank"
           rel="noopener noreferrer"
           initial={{ opacity: 0, y: 8 }}
@@ -65,7 +65,7 @@ export default function RewardsPage() {
           className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-white font-black text-sm uppercase tracking-widest py-4 rounded-xl mb-8 transition-all shadow-lg shadow-gold-500/20"
         >
           <Gift className="w-5 h-5" />
-          Sign Up on AceBet (Affiliate Link)
+          Sign Up on Razed (Affiliate Link)
           <ExternalLink className="w-4 h-4" />
         </motion.a>
 
@@ -133,7 +133,7 @@ export default function RewardsPage() {
             className="flex items-center gap-2 bg-gold-500/8 border border-gold-500/20 rounded-lg px-4 py-3 mb-4 hover:border-gold-500/40 transition-colors"
           >
             <span className="text-gold-400 text-sm font-semibold">Link your accounts →</span>
-            <span className="text-gray-500 text-xs">Connect Kick & AceBet in your profile before claiming</span>
+            <span className="text-gray-500 text-xs">Connect Kick & Razed in your profile before claiming</span>
           </a>
           <ul className="space-y-3">
             {REQUIREMENTS.map((req, i) => (
@@ -162,7 +162,7 @@ export default function RewardsPage() {
             Open a ticket in the Discord server and include all of the following:
           </p>
           <div className="space-y-2">
-            {["Your casino username", "Proof of deposit", "Proof of follows / Discord membership", "Kick & AceBet linked on your MattySpins profile"].map((item, i) => (
+            {["Your casino username", "Proof of deposit", "Proof of follows / Discord membership", "Kick & Razed linked on your MattySpins profile"].map((item, i) => (
               <div key={i} className="flex items-center gap-3 bg-navy-900/60 border border-white/5 rounded-lg px-4 py-3">
                 <span className="text-gold-400 font-black text-xs">{String(i + 1).padStart(2, "0")}</span>
                 <p className="text-gray-300 text-sm">{item}</p>
@@ -203,7 +203,7 @@ export default function RewardsPage() {
           <p className="text-gray-400 text-sm leading-relaxed">
             Make sure you sign up using the{" "}
             <a
-              href="https://a.acebet.com/api/click?a=374&lp=194&c=426"
+              href="https://www.razed.com/signup/?raf=Mattyspins"
               target="_blank"
               rel="noopener noreferrer"
               className="text-gold-400 hover:text-gold-300 underline underline-offset-2 font-semibold"

@@ -620,7 +620,7 @@ export class AdminService {
           });
 
           if (existingUser && existingUser.id !== userId) {
-            throw createError.conflict('Rainbet username is already taken');
+            throw createError.conflict('Razed username is already taken');
           }
         }
 
@@ -682,7 +682,7 @@ export class AdminService {
 
         if (!user.rainbetUsername) {
           throw createError.badRequest(
-            'User has no Rainbet username to verify'
+            'User has no Razed username to verify'
           );
         }
 

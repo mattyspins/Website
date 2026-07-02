@@ -454,7 +454,7 @@ export class AuthService {
 
       if (user?.rainbetUsername) {
         throw createError.badRequest(
-          'AceBet username already set. Contact an admin to change it.'
+          'Razed username already set. Contact an admin to change it.'
         );
       }
 

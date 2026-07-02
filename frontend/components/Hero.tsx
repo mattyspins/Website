@@ -21,7 +21,7 @@ export default function Hero() {
           className="inline-flex items-center gap-2 bg-gold-500/10 border border-gold-500/25 rounded-full px-4 py-1.5 text-sm text-gold-400 font-medium mb-8"
         >
           <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-          Official AceBet Partner
+          Official Razed Partner
         </motion.div>
 
         {/* Heading */}
@@ -64,13 +64,13 @@ export default function Hero() {
           </a>
 
           <a
-            href="https://acebet.co/welcome/r/mattyspins"
+            href="https://www.razed.com/signup/?raf=Mattyspins"
             target="_blank"
             rel="noopener noreferrer"
             className="btn-glow inline-flex items-center gap-2 bg-gold-500 hover:bg-gold-600 text-black px-6 py-3 rounded-lg font-semibold text-sm transition-all hover:scale-105 neon-glow"
           >
-            <span className="font-gaming font-bold text-base">A</span>
-            Play on AceBet
+            <span className="font-gaming font-bold text-base">R</span>
+            Play on Razed
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
 

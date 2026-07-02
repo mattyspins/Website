@@ -509,14 +509,14 @@ export class AuthController {
       const { rainbetUsername } = req.body;
 
       if (!rainbetUsername || typeof rainbetUsername !== 'string') {
-        throw createError.badRequest('Rainbet username is required');
+        throw createError.badRequest('Razed username is required');
       }
 
       const trimmedUsername = rainbetUsername.trim();
 
       if (trimmedUsername.length < 3 || trimmedUsername.length > 50) {
         throw createError.badRequest(
-          'Rainbet username must be between 3 and 50 characters'
+          'Razed username must be between 3 and 50 characters'
         );
       }
 
@@ -528,7 +528,7 @@ export class AuthController {
 
         if (userSession?.rainbetUsername) {
           throw createError.badRequest(
-            'AceBet username already set. Contact an admin to change it.'
+            'Razed username already set. Contact an admin to change it.'
           );
         }
 
@@ -542,7 +542,7 @@ export class AuthController {
         res.json({
           success: true,
           message:
-            'Rainbet username submitted successfully. Waiting for admin verification.',
+            'Razed username submitted successfully. Waiting for admin verification.',
           rainbetUsername: trimmedUsername,
         });
       } catch (error) {

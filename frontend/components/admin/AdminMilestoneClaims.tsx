@@ -127,7 +127,7 @@ export default function AdminMilestoneClaims() {
                 <div className="flex items-center gap-3 flex-wrap text-xs text-gray-500">
                   <span>{claim.user.discordId}</span>
                   {claim.user.kickUsername && <span>Kick: {claim.user.kickUsername}</span>}
-                  {claim.user.rainbetUsername && <span>AceBet: {claim.user.rainbetUsername}</span>}
+                  {claim.user.rainbetUsername && <span>Razed: {claim.user.rainbetUsername}</span>}
                 </div>
               </div>
 

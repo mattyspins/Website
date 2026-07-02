@@ -104,7 +104,7 @@ export default function PublicProfilePage() {
                   </span>
                 )}
                 {profile.rainbetVerified && (
-                  <span className="text-gold-400 text-xs font-semibold">AceBet ✓</span>
+                  <span className="text-gold-400 text-xs font-semibold">Razed ✓</span>
                 )}
               </div>
               <p className="text-gray-600 text-xs mt-1">Joined {joinedDate}</p>
@@ -117,7 +117,7 @@ export default function PublicProfilePage() {
               <p className="text-gold-400 font-gaming font-bold text-2xl leading-none">
                 ${profile.totalWagered.toLocaleString("en-US", { maximumFractionDigits: 0 })}
               </p>
-              <p className="text-gray-600 text-xs mt-1">Total on AceBet</p>
+              <p className="text-gray-600 text-xs mt-1">Total on Razed</p>
             </div>
             <div className="bg-navy-900/60 border border-white/6 rounded-xl p-4 text-center">
               <p className="text-gray-500 text-xs font-semibold tracking-widest uppercase mb-1.5">Milestones</p>

@@ -287,11 +287,11 @@ export default function AdminUserPage() {
                   </p>
                 </div>
 
-                {/* AceBet */}
+                {/* Razed */}
                 <div className={`rounded-xl p-4 border ${user.rainbetVerified ? "bg-gold-500/5 border-gold-500/20" : user.rainbetUsername ? "bg-yellow-500/5 border-yellow-500/20" : "bg-white/3 border-white/6"}`}>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-gold-400 font-black text-sm">A</span>
-                    <p className="text-white text-sm font-semibold">AceBet</p>
+                    <span className="text-gold-400 font-black text-sm">R</span>
+                    <p className="text-white text-sm font-semibold">Razed</p>
                     {user.rainbetVerified && <span className="text-gold-400 text-[10px] font-black ml-auto">VERIFIED</span>}
                     {user.rainbetUsername && !user.rainbetVerified && <span className="text-yellow-400 text-[10px] font-black ml-auto">PENDING</span>}
                   </div>

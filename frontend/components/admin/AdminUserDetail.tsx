@@ -215,7 +215,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
                       { label: "Member Since",  value: new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) },
                       { label: "Last Active",   value: new Date(user.lastActiveAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) },
                       { label: "Kick",          value: user.kickUsername ? `${user.kickUsername}${user.kickVerified ? " ✓" : " (pending)"}` : "Not linked" },
-                      { label: "AceBet",        value: user.rainbetUsername ? `${user.rainbetUsername}${user.rainbetVerified ? " ✓" : " (pending)"}` : "Not linked" },
+                      { label: "Razed",         value: user.rainbetUsername ? `${user.rainbetUsername}${user.rainbetVerified ? " ✓" : " (pending)"}` : "Not linked" },
                     ].map(({ label, value }) => (
                       <div key={label} className="bg-navy-800/60 border border-white/6 rounded-xl px-4 py-3">
                         <p className="text-gray-500 text-[10px] uppercase tracking-widest mb-1">{label}</p>

@@ -102,7 +102,7 @@ export default function MilestonesPage() {
           className="text-center mb-10"
         >
           <span className="inline-block bg-gold-500/10 border border-gold-500/30 text-gold-400 text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded mb-4">
-            AceBet Wager Milestones
+            Razed Wager Milestones
           </span>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-gaming text-white mb-3 tracking-wide">
             MILE<span className="text-gold-400">STONES</span>
@@ -110,14 +110,14 @@ export default function MilestonesPage() {
           <p className="text-gray-400 text-sm max-w-xl mx-auto">
             Wager on{" "}
             <a
-              href="https://acebet.com"
+              href="https://www.razed.com/signup/?raf=Mattyspins"
               target="_blank"
               rel="noopener noreferrer"
               className="text-gold-400 hover:text-gold-300 underline underline-offset-2"
             >
-              AceBet
+              Razed
             </a>{" "}
-            and unlock cash rewards at every tier. Only AceBet wagers count.
+            and unlock cash rewards at every tier. Only Razed wagers count.
           </p>
         </motion.div>
 
@@ -179,10 +179,10 @@ export default function MilestonesPage() {
         >
           <Trophy className="w-5 h-5 text-gold-400 shrink-0 mt-0.5" />
           <div>
-            <p className="text-gold-300 font-semibold text-sm">Only AceBet wagers count</p>
+            <p className="text-gold-300 font-semibold text-sm">Only Razed wagers count</p>
             <p className="text-gray-400 text-sm mt-0.5">
-              Starting now, only wagering on AceBet counts towards wager milestones and leaderboard rewards.
-              Link your AceBet account in your{" "}
+              Starting now, only wagering on Razed counts towards wager milestones and leaderboard rewards.
+              Link your Razed account in your{" "}
               <a href="/profile" className="text-gold-400 hover:text-gold-300 underline underline-offset-2">profile</a>.
             </p>
           </div>
@@ -283,15 +283,15 @@ export default function MilestonesPage() {
             <div className="flex items-start gap-3">
               <span className="text-gold-400 mt-0.5">01</span>
               <div>
-                <p className="text-gray-300 font-medium">Link AceBet</p>
-                <p>Verify your AceBet username in your profile to start tracking wagers</p>
+                <p className="text-gray-300 font-medium">Link Razed</p>
+                <p>Verify your Razed username in your profile to start tracking wagers</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-gold-400 mt-0.5">02</span>
               <div>
-                <p className="text-gray-300 font-medium">Wager on AceBet</p>
-                <p>Only wagers placed on AceBet count towards milestone progress</p>
+                <p className="text-gray-300 font-medium">Wager on Razed</p>
+                <p>Only wagers placed on Razed count towards milestone progress</p>
               </div>
             </div>
             <div className="flex items-start gap-3">

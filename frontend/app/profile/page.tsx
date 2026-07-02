@@ -52,10 +52,10 @@ export default function ProfilePage() {
   const [kickError, setKickError] = useState("");
   const [kickPollingRef, setKickPollingRef] = useState<ReturnType<typeof setInterval> | null>(null);
 
-  // AceBet state
-  const [acebetInput, setAcebetInput] = useState("");
-  const [acebetSaving, setAcebetSaving] = useState(false);
-  const [acebetMsg, setAcebetMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  // Razed state
+  const [razedInput, setRazedInput] = useState("");
+  const [razedSaving, setRazedSaving] = useState(false);
+  const [razedMsg, setRazedMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Daily check-in state
   const [checkinClaimed, setCheckinClaimed] = useState(false);
@@ -284,11 +284,11 @@ export default function ProfilePage() {
     }
   };
 
-  const handleAcebetSave = async (e: React.FormEvent) => {
+  const handleRazedSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!acebetInput.trim()) return;
-    setAcebetSaving(true);
-    setAcebetMsg(null);
+    if (!razedInput.trim()) return;
+    setRazedSaving(true);
+    setRazedMsg(null);
     try {
       const token = localStorage.getItem("access_token");
       const res = await fetch(
@@ -296,23 +296,21 @@ export default function ProfilePage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ rainbetUsername: acebetInput.trim() }),
+          body: JSON.stringify({ rainbetUsername: razedInput.trim() }),
         }
       );
       if (res.ok) {
-        setAcebetMsg({ type: "success", text: "AceBet username submitted. Pending admin verification." });
-        setUser((u) => u ? { ...u, rainbetUsername: acebetInput.trim(), rainbetVerified: false } : u);
-        setAcebetInput("");
+        setRazedMsg({ type: "success", text: "Razed username submitted. Pending admin verification." });
+        setUser((u) => u ? { ...u, rainbetUsername: razedInput.trim(), rainbetVerified: false } : u);
+        setRazedInput("");
       } else {
         const d = await res.json().catch(() => ({}));
-        setAcebetMsg({ type: "error", text: d.error?.message || "Failed to save. Please try again." });
+        setRazedMsg({ type: "error", text: d.error?.message || "Failed to save. Please try again." });
       }
     } catch {
-      setAcebetMsg({ type: "success", text: "AceBet username submitted. Pending admin verification." });
-      setUser((u) => u ? { ...u, rainbetUsername: acebetInput.trim(), rainbetVerified: false } : u);
-      setAcebetInput("");
+      setRazedMsg({ type: "error", text: "Connection error. Please try again." });
     } finally {
-      setAcebetSaving(false);
+      setRazedSaving(false);
     }
   };
 
@@ -440,7 +438,7 @@ export default function ProfilePage() {
               <p className="text-gold-400 font-gaming font-bold text-3xl leading-none">
                 ${totalWagered.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
               </p>
-              <p className="text-gray-600 text-xs mt-1.5">Total on AceBet</p>
+              <p className="text-gray-600 text-xs mt-1.5">Total on Razed</p>
             </div>
           </div>
         </motion.div>
@@ -473,7 +471,7 @@ export default function ProfilePage() {
           </button>
         </motion.div>
 
-        {/* Link AceBet Account */}
+        {/* Link Razed Account */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -482,10 +480,10 @@ export default function ProfilePage() {
         >
           <div className="flex items-center gap-2.5 mb-1">
             <div className="w-1 h-5 bg-gold-500 rounded-full" />
-            <h3 className="text-white font-semibold">Link Your AceBet Account</h3>
+            <h3 className="text-white font-semibold">Link Your Razed Account</h3>
           </div>
           <p className="text-gray-500 text-sm mb-5 ml-3.5">
-            Verify your AceBet username to track your wager and claim leaderboard rewards.
+            Verify your Razed username to track your wager and claim leaderboard rewards.
           </p>
 
           {user.rainbetUsername ? (
@@ -503,7 +501,7 @@ export default function ProfilePage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-gold-400 font-semibold text-sm">
-                  {user.rainbetVerified ? "AceBet account verified" : "AceBet account submitted"}
+                  {user.rainbetVerified ? "Razed account verified" : "Razed account submitted"}
                 </p>
                 <p className="text-gray-500 text-xs truncate">
                   {user.rainbetUsername} · {user.rainbetVerified ? "Verified by admin" : "Pending admin verification"}
@@ -518,26 +516,26 @@ export default function ProfilePage() {
               </span>
             </div>
           ) : (
-            <form onSubmit={handleAcebetSave}>
+            <form onSubmit={handleRazedSave}>
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="text"
-                  value={acebetInput}
-                  onChange={(e) => setAcebetInput(e.target.value)}
-                  placeholder="Enter your AceBet username"
+                  value={razedInput}
+                  onChange={(e) => setRazedInput(e.target.value)}
+                  placeholder="Enter your Razed username"
                   className="flex-1 bg-navy-900/60 border border-white/8 rounded-lg px-4 py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-gold-500/30 transition-colors"
                 />
                 <button
                   type="submit"
-                  disabled={acebetSaving || !acebetInput.trim()}
+                  disabled={razedSaving || !razedInput.trim()}
                   className="w-full sm:w-auto bg-gold-500 hover:bg-gold-600 disabled:opacity-40 text-white font-bold px-5 py-3 rounded-lg transition-all text-xs tracking-widest uppercase whitespace-nowrap"
                 >
-                  {acebetSaving ? "..." : "Submit"}
+                  {razedSaving ? "..." : "Submit"}
                 </button>
               </div>
-              {acebetMsg && (
-                <p className={`text-xs mt-2 ${acebetMsg.type === "success" ? "text-green-400" : "text-red-400"}`}>
-                  {acebetMsg.text}
+              {razedMsg && (
+                <p className={`text-xs mt-2 ${razedMsg.type === "success" ? "text-green-400" : "text-red-400"}`}>
+                  {razedMsg.text}
                 </p>
               )}
             </form>

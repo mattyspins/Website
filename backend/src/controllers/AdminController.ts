@@ -380,7 +380,7 @@ export class AdminController {
 
         res.json({
           success: true,
-          message: 'Rainbet username updated successfully',
+          message: 'Razed username updated successfully',
           data: {
             userId,
             rainbetUsername: rainbetUsername || null,
@@ -421,7 +421,7 @@ export class AdminController {
 
         res.json({
           success: true,
-          message: 'Rainbet username verified successfully',
+          message: 'Razed username verified successfully',
           data: {
             userId,
             verified: verified !== false,

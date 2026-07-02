@@ -114,7 +114,7 @@ export default function AdminMilestones() {
       <div className="bg-navy-800/60 border border-white/6 rounded-xl p-6">
         <h2 className="text-lg font-semibold text-white mb-1">Wager Milestone Management</h2>
         <p className="text-gray-500 text-sm mb-6">
-          Search a user and update their total AceBet wagered amount to unlock milestones.
+          Search a user and update their total Razed wagered amount to unlock milestones.
         </p>
 
         {/* Search */}
