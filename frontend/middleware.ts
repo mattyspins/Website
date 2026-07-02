@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const OBS_PATHS = ['/bingo-widget', '/bonus-hunt-widget', '/tournament-widget', '/picker-widget'];
+const OBS_PATHS = ['/bingo-widget', '/bonus-hunt-widget', '/tournament-widget', '/picker-widget', '/king-of-the-hill-widget'];
 
 export function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
@@ -14,5 +14,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/bingo-widget/:path*', '/bonus-hunt-widget/:path*', '/tournament-widget/:path*', '/picker-widget/:path*'],
+  matcher: ['/bingo-widget/:path*', '/bonus-hunt-widget/:path*', '/tournament-widget/:path*', '/picker-widget/:path*', '/king-of-the-hill-widget/:path*'],
 };

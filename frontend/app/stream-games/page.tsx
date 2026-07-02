@@ -34,6 +34,7 @@ const GAMES: Game[] = [
     howItWorks: ["Viewers are picked during stream", "The chosen viewer selects the bonus buy / slot", "Highest multiplier becomes the current KING 👑", "Anyone who beats the current highest multiplier takes the throne", "At the end of stream, the KING wins rewards 🏆"],
     rewards: ["Website points", "Giveaway entries", "Community rewards", "Special roles / events"],
     note: "Make sure you're in stream when live for your chance to play 👊",
+    link: "/king-of-the-hill", linkLabel: "View Live King of the Hill",
   },
   {
     id: "bonus-bingo", name: "Bonus Bingo",
