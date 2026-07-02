@@ -154,6 +154,8 @@ import viewerPickerRoutes from '@/routes/viewerPicker';
 import { setPickerIO } from '@/controllers/ViewerPickerController';
 import slotRequestRoutes from '@/routes/slotRequest';
 import { setSlotRequestIO } from '@/controllers/SlotRequestController';
+import kingOfTheHillRoutes from '@/routes/kingOfTheHill';
+import { setKothIO } from '@/controllers/KingOfTheHillController';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
@@ -176,12 +178,14 @@ app.use('/api/live-hunt', liveHuntRoutes);
 app.use('/api/bonus-bingo', bonusBingoRoutes);
 app.use('/api/viewer-picker', viewerPickerRoutes);
 app.use('/api/slot-requests', slotRequestRoutes);
+app.use('/api/king-of-the-hill', kingOfTheHillRoutes);
 
 // Wire up tournament real-time events
 setTournamentIO(io);
 setBingoIO(io);
 setPickerIO(io);
 setSlotRequestIO(io);
+setKothIO(io);
 
 // Socket.IO connection handling
 io.on('connection', socket => {
@@ -223,6 +227,14 @@ io.on('connection', socket => {
   });
   socket.on('leavePicker', (pickerId: string) => {
     socket.leave(`picker:${pickerId}`);
+  });
+
+  // King of the Hill rooms
+  socket.on('joinKoth', (sessionId: string) => {
+    socket.join(`koth:${sessionId}`);
+  });
+  socket.on('leaveKoth', (sessionId: string) => {
+    socket.leave(`koth:${sessionId}`);
   });
 
   socket.on('disconnect', () => {

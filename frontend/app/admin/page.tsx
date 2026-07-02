@@ -214,6 +214,13 @@ export default function AdminDashboard() {
                     desc: "Set a keyword, viewers type it in Kick chat to enter, spin to draw a winner",
                   },
                   {
+                    href: "/admin/king-of-the-hill",
+                    icon: <Trophy className="w-5 h-5 text-amber-400" />,
+                    bg: "bg-amber-500/10",
+                    title: "King of the Hill",
+                    desc: "Viewers join with !king, draw a challenger, record their slot result, crown the king",
+                  },
+                  {
                     href: "/admin/audit-logs",
                     icon: <FileText className="w-5 h-5 text-blue-400" />,
                     bg: "bg-blue-500/10",

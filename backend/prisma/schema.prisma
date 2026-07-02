@@ -67,6 +67,8 @@ model User {
   viewerPickerWins       ViewerPicker[]        @relation("ViewerPickerWinner")
   viewerPickerEntries    ViewerPickerEntry[]
   slotRequests           SlotRequest[]
+  kothEntries            KingOfTheHillEntry[]
+  kothRounds             KingOfTheHillRound[]
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")
@@ -598,6 +600,67 @@ model ViewerPickerEntry {
 
   @@unique([pickerId, userId])
   @@map("viewer_picker_entries")
+}
+
+// ─── King of the Hill ─────────────────────────────────────────────────────────
+
+enum KingOfTheHillStatus {
+  OPEN
+  CLOSED
+}
+
+enum KothEntryStatus {
+  WAITING
+  DRAWN
+  KING
+}
+
+model KingOfTheHill {
+  id        String              @id @default(uuid())
+  label     String?
+  status    KingOfTheHillStatus @default(OPEN)
+  createdAt DateTime            @default(now()) @map("created_at")
+  closedAt  DateTime?           @map("closed_at")
+  entries   KingOfTheHillEntry[]
+  rounds    KingOfTheHillRound[]
+
+  @@map("king_of_the_hill_sessions")
+}
+
+model KingOfTheHillEntry {
+  id        String            @id @default(uuid())
+  sessionId String            @map("session_id")
+  userId    String            @map("user_id")
+  status    KothEntryStatus   @default(WAITING)
+  joinedAt  DateTime          @default(now()) @map("joined_at")
+  drawnAt   DateTime?         @map("drawn_at")
+  session   KingOfTheHill        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rounds    KingOfTheHillRound[]
+
+  @@unique([sessionId, userId])
+  @@map("king_of_the_hill_entries")
+}
+
+model KingOfTheHillRound {
+  id           String    @id @default(uuid())
+  sessionId    String    @map("session_id")
+  entryId      String    @map("entry_id")
+  userId       String    @map("user_id")
+  slotName     String?   @map("slot_name")
+  betAmount    Decimal?  @map("bet_amount") @db.Decimal(10, 2)
+  payoutAmount Decimal?  @map("payout_amount") @db.Decimal(10, 2)
+  multiplier   Decimal?  @db.Decimal(6, 2)
+  isKing       Boolean   @default(false) @map("is_king")
+  drawnAt      DateTime  @default(now()) @map("drawn_at")
+  slotCalledAt DateTime? @map("slot_called_at")
+  playedAt     DateTime? @map("played_at")
+  dethronedAt  DateTime? @map("dethroned_at")
+  session      KingOfTheHill      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  entry        KingOfTheHillEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("king_of_the_hill_rounds")
 }
 
 // ─── Bonus Bingo ─────────────────────────────────────────────────────────────

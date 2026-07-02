@@ -8,6 +8,7 @@ import { BingoBoardService } from '@/services/BingoBoardService';
 import { ViewerPickerService } from '@/services/ViewerPickerService';
 import { SlotRequestService } from '@/services/SlotRequestService';
 import { GuessTheBalanceService } from '@/services/GuessTheBalanceService';
+import { KingOfTheHillService } from '@/services/KingOfTheHillService';
 import { BingoStatus } from '@prisma/client';
 
 const KICK_CHANNEL_NAME = process.env['KICK_CHANNEL_NAME'] || 'mattyspins';
@@ -150,6 +151,12 @@ export class KickChatService {
     const slotMatch = content.match(/^!slot\s+(.+)/i);
     if (slotMatch) {
       await this.processBingoSlot(kickUsername, slotMatch[1].trim());
+      await this.processKothSlot(kickUsername, slotMatch[1].trim());
+    }
+
+    // Check for King of the Hill join command: !king
+    if (content.trim().toLowerCase() === '!king') {
+      await this.processKothJoin(kickUsername);
     }
 
     // Check for slot request command: !sr <slot name>
@@ -255,6 +262,30 @@ export class KickChatService {
       await this.sendChatMessage(`${kickUsername} has picked "${slotName}" as their slot! 🎰`);
     } catch (err) {
       logger.warn(`KickChatService: !slot failed for ${kickUsername}`, { error: (err as Error).message });
+    }
+  }
+
+  private static async processKothJoin(kickUsername: string): Promise<void> {
+    try {
+      const joined = await KingOfTheHillService.joinByKeyword(kickUsername, this.io ?? undefined);
+      if (joined) {
+        logger.info(`KickChatService: ${kickUsername} joined King of the Hill via !king`);
+        await this.sendChatMessage(`👑 ${kickUsername} has joined King of the Hill!`);
+      }
+    } catch (err) {
+      logger.warn(`KickChatService: !king failed for ${kickUsername}`, { error: (err as Error).message });
+    }
+  }
+
+  private static async processKothSlot(kickUsername: string, slotName: string): Promise<void> {
+    try {
+      const matched = await KingOfTheHillService.submitSlotCall(kickUsername, slotName, this.io ?? undefined);
+      if (matched) {
+        logger.info(`KickChatService: ${kickUsername} called slot "${slotName}" for King of the Hill`);
+        await this.sendChatMessage(`🎰 ${kickUsername} called "${slotName}" for their King of the Hill climb!`);
+      }
+    } catch (err) {
+      logger.warn(`KickChatService: koth !slot failed for ${kickUsername}`, { error: (err as Error).message });
     }
   }
 
