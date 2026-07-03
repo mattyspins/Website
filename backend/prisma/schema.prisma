@@ -62,6 +62,7 @@ model User {
   milestoneClaims        MilestoneClaim[]
   createdTournaments     Tournament[]          @relation("TournamentCreator")
   tournamentParticipations TournamentParticipant[] @relation("TournamentParticipants")
+  tournamentEntries      TournamentEntry[]     @relation("TournamentEntries")
   createdBingos          BonusBingo[]          @relation("BingoCreator")
   currentBingoGames      BonusBingo[]          @relation("BingoCurrentUser")
   bingoParticipations    BingoParticipant[]    @relation("BingoParticipants")
@@ -479,6 +480,7 @@ model Tournament {
   createdBy        User                    @relation("TournamentCreator", fields: [createdById], references: [id])
   participants     TournamentParticipant[]
   matches          TournamentMatch[]
+  entries          TournamentEntry[]
 
   @@map("tournaments")
 }
@@ -503,10 +505,12 @@ model TournamentParticipant {
 }
 
 model TournamentEntry {
-  id           String   @id @default(uuid())
-  tournamentId String   @map("tournament_id")
-  userId       String   @map("user_id")
-  enteredAt    DateTime @default(now()) @map("entered_at")
+  id           String     @id @default(uuid())
+  tournamentId String     @map("tournament_id")
+  userId       String     @map("user_id")
+  enteredAt    DateTime   @default(now()) @map("entered_at")
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user         User       @relation("TournamentEntries", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tournamentId, userId])
   @@map("tournament_entries")
