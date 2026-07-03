@@ -786,6 +786,18 @@ model RazedDailyWager {
   @@map("razed_daily_wagers")
 }
 
+model RazedUnlinkedWager {
+  id            String   @id @default(uuid())
+  razedUsername String   @map("razed_username")
+  date          DateTime @db.Date
+  amount        Decimal  @db.Decimal(14, 2)
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([razedUsername, date])
+  @@index([razedUsername])
+  @@map("razed_unlinked_wagers")
+}
+
 model MonthlyLeaderboardPrize {
   id       String @id @default(uuid())
   position Int    @unique

@@ -19,6 +19,7 @@ interface UserDetail {
   kickVerified: boolean;
   rainbetUsername?: string;
   rainbetVerified: boolean;
+  todayWagered: string;
   weeklyWagered: string;
   monthlyWagered: string;
   points: number;
@@ -301,7 +302,11 @@ export default function AdminUserPage() {
                     {user.rainbetUsername || "Not linked"}
                   </p>
                   {user.rainbetUsername && (
-                    <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/6">
+                    <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-white/6">
+                      <div>
+                        <p className="text-gray-600 text-[10px] uppercase tracking-widest mb-0.5">Today</p>
+                        <p className="text-gray-200 text-sm font-semibold">${Number(user.todayWagered).toLocaleString()}</p>
+                      </div>
                       <div>
                         <p className="text-gray-600 text-[10px] uppercase tracking-widest mb-0.5">Weekly</p>
                         <p className="text-gray-200 text-sm font-semibold">${Number(user.weeklyWagered).toLocaleString()}</p>

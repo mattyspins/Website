@@ -215,7 +215,10 @@ export class AdminService {
   // Get user details with full information
   static async getUserDetails(userId: string): Promise<any> {
     try {
-      const [user, watchTimeResult, firstSession] = await Promise.all([
+      const todayStart = new Date();
+      todayStart.setUTCHours(0, 0, 0, 0);
+
+      const [user, watchTimeResult, firstSession, todayWager] = await Promise.all([
         prisma.user.findUnique({
           where: { id: userId },
           include: {
@@ -235,6 +238,9 @@ export class AdminService {
           orderBy: { startedAt: 'asc' },
           select: { startedAt: true },
         }),
+        prisma.razedDailyWager.findUnique({
+          where: { userId_date: { userId, date: todayStart } },
+        }),
       ]);
 
       if (!user) {
@@ -245,6 +251,7 @@ export class AdminService {
         ...user,
         totalWatchMinutes: watchTimeResult._sum.durationMinutes ?? 0,
         firstWatchedAt: firstSession?.startedAt ?? null,
+        todayWagered: (todayWager?.amount ?? 0).toString(),
       };
     } catch (error) {
       logger.error('Error getting user details:', error);

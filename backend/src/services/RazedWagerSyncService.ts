@@ -30,6 +30,7 @@ export class RazedWagerSyncService {
       where: { rainbetUsername: { not: null } },
       select: { id: true, rainbetUsername: true },
     });
+    const linkedUsernames = new Set(users.map((u) => u.rainbetUsername!.toLowerCase()));
 
     for (const user of users) {
       const wagered = wagerMap.get(user.rainbetUsername!.toLowerCase());
@@ -53,6 +54,18 @@ export class RazedWagerSyncService {
           data: { totalWagered: { increment: delta } },
         });
       }
+    }
+
+    // Persist every other referred wagerer under our code too, even though they haven't
+    // linked a site account yet, so admins can see who's wagering under our affiliate code.
+    for (const [username, wagered] of wagerMap) {
+      if (linkedUsernames.has(username)) continue;
+
+      await prisma.razedUnlinkedWager.upsert({
+        where: { razedUsername_date: { razedUsername: username, date: dayStart } },
+        create: { razedUsername: username, date: dayStart, amount: wagered },
+        update: { amount: wagered },
+      });
     }
   }
 

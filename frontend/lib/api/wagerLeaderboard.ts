@@ -42,11 +42,25 @@ export interface MonthlyPrize {
   points: number;
 }
 
+export interface AllWagererRow {
+  razedUsername: string;
+  linked: boolean;
+  userId: string | null;
+  displayName: string | null;
+  kickUsername: string | null;
+  verified: boolean;
+  weeklyWagered: string;
+  monthlyWagered: string;
+  totalWagered: string;
+}
+
 export const wagerLeaderboardApi = {
   getMonthly: () => api.get("/api/wager-leaderboard/monthly").then((d) => d.standings as MonthlyStandingRow[]),
   getMonthlyHistory: () =>
     api.get("/api/wager-leaderboard/monthly/history").then((d) => d.history as MonthlyHistoryEntry[]),
   getAdminWagers: () => api.get("/api/wager-leaderboard/admin/wagers").then((d) => d.users as AdminWagerRow[]),
+  getAllWagerers: () =>
+    api.get("/api/wager-leaderboard/admin/all-wagerers").then((d) => d.wagerers as AllWagererRow[]),
   getPrizes: () => api.get("/api/wager-leaderboard/admin/prizes").then((d) => d.prizes as MonthlyPrize[]),
   setPrizes: (prizes: { position: number; points: number }[]) =>
     api.put("/api/wager-leaderboard/admin/prizes", { prizes }).then((d) => d.prizes as MonthlyPrize[]),

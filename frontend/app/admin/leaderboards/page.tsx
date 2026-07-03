@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { Trophy, ExternalLink, Trash2, RefreshCw } from "lucide-react";
-import { wagerLeaderboardApi, MonthlyStandingRow, MonthlyHistoryEntry, MonthlyPrize } from "@/lib/api/wagerLeaderboard";
+import { wagerLeaderboardApi, MonthlyStandingRow, MonthlyHistoryEntry, MonthlyPrize, AllWagererRow } from "@/lib/api/wagerLeaderboard";
 
 interface OldLeaderboard {
   id: string;
@@ -24,6 +24,7 @@ export default function AdminLeaderboardsPage() {
   const [standings, setStandings] = useState<MonthlyStandingRow[]>([]);
   const [history, setHistory] = useState<MonthlyHistoryEntry[]>([]);
   const [oldLeaderboards, setOldLeaderboards] = useState<OldLeaderboard[]>([]);
+  const [wagerers, setWagerers] = useState<AllWagererRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [resyncing, setResyncing] = useState(false);
@@ -31,16 +32,18 @@ export default function AdminLeaderboardsPage() {
 
   const load = async () => {
     try {
-      const [p, s, h, old] = await Promise.all([
+      const [p, s, h, old, w] = await Promise.all([
         wagerLeaderboardApi.getPrizes(),
         wagerLeaderboardApi.getMonthly(),
         wagerLeaderboardApi.getMonthlyHistory(),
         api.get("/api/manual-leaderboards?limit=50").catch(() => ({ leaderboards: [] })),
+        wagerLeaderboardApi.getAllWagerers().catch(() => []),
       ]);
       setPrizes(p);
       setStandings(s);
       setHistory(h);
       setOldLeaderboards(old.leaderboards ?? []);
+      setWagerers(w);
     } catch { /* ignore */ } finally { setLoading(false); }
   };
 
@@ -196,6 +199,50 @@ export default function AdminLeaderboardsPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* All Razed wagerers, linked or not */}
+        {wagerers.length > 0 && (
+          <div className="mb-10">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
+              All Wagerers Under Our Code ({wagerers.length})
+            </p>
+            <div className="bg-navy-800/60 border border-white/6 rounded-2xl overflow-hidden">
+              <div className="max-h-96 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-navy-800 text-gray-500 text-[10px] uppercase tracking-widest">
+                    <tr>
+                      <th className="text-left font-semibold px-4 py-2.5">Razed Username</th>
+                      <th className="text-left font-semibold px-4 py-2.5">Site Account</th>
+                      <th className="text-right font-semibold px-4 py-2.5">Weekly</th>
+                      <th className="text-right font-semibold px-4 py-2.5">Monthly</th>
+                      <th className="text-right font-semibold px-4 py-2.5">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {wagerers.map((w) => (
+                      <tr key={w.razedUsername} className="border-t border-white/4 hover:bg-white/3">
+                        <td className="px-4 py-2.5 text-gray-300">{w.razedUsername}</td>
+                        <td className="px-4 py-2.5">
+                          {w.linked ? (
+                            <a href={`/admin/users/${w.userId}`} className="text-gold-400 hover:underline">
+                              {w.kickUsername ?? w.displayName}
+                              {!w.verified && <span className="text-yellow-400 text-[10px] font-bold ml-1.5">PENDING</span>}
+                            </a>
+                          ) : (
+                            <span className="text-gray-600">Not linked</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5 text-right text-gray-300">${Number(w.weeklyWagered).toLocaleString()}</td>
+                        <td className="px-4 py-2.5 text-right text-gray-300">${Number(w.monthlyWagered).toLocaleString()}</td>
+                        <td className="px-4 py-2.5 text-right text-white font-semibold">${Number(w.totalWagered).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

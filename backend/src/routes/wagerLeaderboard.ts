@@ -9,6 +9,7 @@ const lim = rateLimit({ windowMs: 5 * 60 * 1000, max: 200, standardHeaders: true
 router.get('/monthly', lim, WagerLeaderboardController.getMonthly);
 router.get('/monthly/history', lim, WagerLeaderboardController.getMonthlyHistory);
 router.get('/admin/wagers', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.getAdminWagers);
+router.get('/admin/all-wagerers', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.getAllWagerers);
 router.get('/admin/prizes', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.getPrizes);
 router.put('/admin/prizes', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.setPrizes);
 router.post('/admin/resync', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.resync);
