@@ -9,7 +9,8 @@ import { ViewerPickerService } from '@/services/ViewerPickerService';
 import { SlotRequestService } from '@/services/SlotRequestService';
 import { GuessTheBalanceService } from '@/services/GuessTheBalanceService';
 import { KingOfTheHillService } from '@/services/KingOfTheHillService';
-import { BingoStatus } from '@prisma/client';
+import { TournamentService } from '@/services/TournamentService';
+import { BingoStatus, TournamentStatus } from '@prisma/client';
 
 const KICK_CHANNEL_NAME = process.env['KICK_CHANNEL_NAME'] || 'mattyspins';
 // Set KICK_CHATROOM_ID in .env — find it by opening kick.com/mattyspins and checking the chatroom ID in network tab
@@ -159,6 +160,11 @@ export class KickChatService {
       await this.processKothJoin(kickUsername);
     }
 
+    // Check for tournament join command: !jointourney
+    if (content.trim().toLowerCase() === '!jointourney') {
+      await this.processTournamentJoin(kickUsername);
+    }
+
     // Check for slot request command: !sr <slot name>
     const srMatch = content.match(/^!sr\s+(.+)/i);
     if (srMatch) {
@@ -274,6 +280,41 @@ export class KickChatService {
       }
     } catch (err) {
       logger.warn(`KickChatService: !king failed for ${kickUsername}`, { error: (err as Error).message });
+    }
+  }
+
+  private static async processTournamentJoin(kickUsername: string): Promise<void> {
+    // Find the verified user by Kick username
+    const user = await prisma.user.findFirst({
+      where: { kickUsername: { equals: kickUsername, mode: 'insensitive' }, kickVerified: true },
+      select: { id: true },
+    });
+    if (!user) {
+      await this.sendChatMessage(`@${kickUsername} you need to verify your Kick account on the website first to join the tournament!`);
+      return;
+    }
+
+    const tournament = await prisma.tournament.findFirst({
+      where: { status: TournamentStatus.REGISTRATION },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+    });
+    if (!tournament) {
+      await this.sendChatMessage(`@${kickUsername} there's no tournament registration open right now.`);
+      return;
+    }
+
+    try {
+      await TournamentService.enterRaffle(tournament.id, user.id, this.io ?? undefined);
+      logger.info(`KickChatService: ${kickUsername} joined tournament ${tournament.id} via !jointourney`);
+      await this.sendChatMessage(`🏆 @${kickUsername} has entered the tournament draw!`);
+    } catch (err) {
+      const message = (err as Error).message;
+      if (message === 'Already entered') {
+        await this.sendChatMessage(`@${kickUsername} you're already entered in the tournament!`);
+      } else {
+        logger.warn(`KickChatService: !jointourney failed for ${kickUsername}`, { error: message });
+      }
     }
   }
 
