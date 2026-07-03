@@ -128,6 +128,34 @@ export class RazedWagerSyncService {
     await RazedWagerSyncService.processMonthlyPayoutIfDue();
   }
 
+  /**
+   * Syncs every day from the 1st of the current calendar month through today. The recurring
+   * cron only looks back 2 days to stay cheap, which means anyone who wagered under our code
+   * earlier in the month never gets picked up — this is for the manual "Resync" action, so an
+   * admin can pull in everyone who's wagered under the code at any point this month on demand.
+   */
+  static async syncCurrentMonth(): Promise<void> {
+    if (!RazedService.isConfigured()) {
+      logger.warn('RazedWagerSyncService: RAZED_REFERRAL_KEY not set — skipping sync');
+      return;
+    }
+
+    const now = new Date();
+    const daysSinceMonthStart = now.getUTCDate() - 1;
+    for (let i = 0; i <= daysSinceMonthStart; i++) {
+      const day = new Date(now);
+      day.setUTCDate(day.getUTCDate() - i);
+      try {
+        await RazedWagerSyncService.syncDay(day);
+      } catch (err) {
+        logger.error(`RazedWagerSyncService: failed to sync ${toDateStr(day)}`, { error: (err as Error).message });
+      }
+    }
+
+    await RazedWagerSyncService.recomputeRollingStats();
+    await RazedWagerSyncService.processMonthlyPayoutIfDue();
+  }
+
   /** Recomputes weeklyWagered (trailing 7 days) and monthlyWagered (current calendar month) for every tracked user. */
   static async recomputeRollingStats(): Promise<void> {
     const now = new Date();
