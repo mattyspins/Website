@@ -128,21 +128,24 @@ export class RazedWagerSyncService {
     await RazedWagerSyncService.processMonthlyPayoutIfDue();
   }
 
+  /** First day the Razed referral code went live — the manual resync walks back to here. */
+  static readonly TRACKING_START = new Date(Date.UTC(2026, 5, 26));
+
   /**
-   * Syncs every day from the 1st of the current calendar month through today. The recurring
-   * cron only looks back 2 days to stay cheap, which means anyone who wagered under our code
-   * earlier in the month never gets picked up — this is for the manual "Resync" action, so an
-   * admin can pull in everyone who's wagered under the code at any point this month on demand.
+   * Syncs every day since `TRACKING_START` through today. The recurring cron only looks back
+   * 2 days to stay cheap, which means anyone who wagered under our code earlier never gets
+   * picked up — this is for the manual "Resync" action, so an admin can pull in everyone who's
+   * wagered under the code at any point since launch, on demand.
    */
-  static async syncCurrentMonth(): Promise<void> {
+  static async syncSinceLaunch(): Promise<void> {
     if (!RazedService.isConfigured()) {
       logger.warn('RazedWagerSyncService: RAZED_REFERRAL_KEY not set — skipping sync');
       return;
     }
 
     const now = new Date();
-    const daysSinceMonthStart = now.getUTCDate() - 1;
-    for (let i = 0; i <= daysSinceMonthStart; i++) {
+    const daysSinceLaunch = Math.floor((startOfDayUTC(now).getTime() - RazedWagerSyncService.TRACKING_START.getTime()) / 86400000);
+    for (let i = 0; i <= daysSinceLaunch; i++) {
       const day = new Date(now);
       day.setUTCDate(day.getUTCDate() - i);
       try {

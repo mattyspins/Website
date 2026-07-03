@@ -43,7 +43,7 @@ export class WagerLeaderboardController {
   });
 
   static resync = asyncHandler(async (_req, res) => {
-    await RazedWagerSyncService.syncCurrentMonth();
+    await RazedWagerSyncService.syncSinceLaunch();
     res.json({ success: true });
   });
 }
