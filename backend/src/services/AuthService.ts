@@ -7,6 +7,7 @@ import { validateEnv } from '@/config/env';
 import { logger } from '@/utils/logger';
 import { createError } from '@/middleware/errorHandler';
 import { RazedService } from '@/services/RazedService';
+import { RazedWagerSyncService } from '@/services/RazedWagerSyncService';
 
 const env = validateEnv();
 
@@ -478,6 +479,12 @@ export class AuthService {
           updatedAt: new Date(),
         },
       });
+
+      if (verified) {
+        await RazedWagerSyncService.migrateUnlinkedWagersToUser(userId, rainbetUsername).catch((err) =>
+          logger.error('Failed to migrate orphaned Razed wagers on link:', err)
+        );
+      }
 
       logger.info(
         `Rainbet username set for user ${userId}: ${rainbetUsername} (verified=${verified})`

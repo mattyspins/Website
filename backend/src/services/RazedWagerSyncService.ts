@@ -69,6 +69,43 @@ export class RazedWagerSyncService {
     }
   }
 
+  /**
+   * Moves any wagers captured under `razedUsername` while it wasn't linked to a site account
+   * (e.g. before this user linked, or while they had a stale/wrong username saved) into this
+   * user's own daily wager rows, then removes the now-claimed orphaned rows. Call this right
+   * after a username is verified so historical activity isn't silently lost.
+   */
+  static async migrateUnlinkedWagersToUser(userId: string, razedUsername: string): Promise<void> {
+    const username = razedUsername.toLowerCase();
+    const orphaned = await prisma.razedUnlinkedWager.findMany({ where: { razedUsername: username } });
+    if (orphaned.length === 0) return;
+
+    let totalDelta = 0;
+    for (const row of orphaned) {
+      const existing = await prisma.razedDailyWager.findUnique({
+        where: { userId_date: { userId, date: row.date } },
+      });
+      const previous = existing ? Number(existing.amount) : 0;
+      const amount = Number(row.amount);
+
+      await prisma.razedDailyWager.upsert({
+        where: { userId_date: { userId, date: row.date } },
+        create: { userId, date: row.date, amount },
+        update: { amount },
+      });
+      totalDelta += amount - previous;
+    }
+
+    if (totalDelta !== 0) {
+      await prisma.user.update({ where: { id: userId }, data: { totalWagered: { increment: totalDelta } } });
+    }
+
+    await prisma.razedUnlinkedWager.deleteMany({ where: { razedUsername: username } });
+    await RazedWagerSyncService.recomputeRollingStats();
+
+    logger.info(`RazedWagerSyncService: migrated ${orphaned.length} orphaned day(s) of wagers to user ${userId} (${razedUsername})`);
+  }
+
   /** Syncs today plus the last `daysBack` days (catches late corrections from Razed), then refreshes rolling stats. */
   static async syncRecentDays(daysBack = 2): Promise<void> {
     if (!RazedService.isConfigured()) {

@@ -14,10 +14,14 @@ export class WagerLeaderboardService {
     const now = new Date();
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
-    const [linkedUsers, unlinkedMonthly, prizes] = await Promise.all([
+    const [linkedUsers, allLinkedUsernames, unlinkedMonthly, prizes] = await Promise.all([
       prisma.user.findMany({
         where: { rainbetUsername: { not: null }, monthlyWagered: { gt: 0 } },
         select: USER_SELECT,
+      }),
+      prisma.user.findMany({
+        where: { rainbetUsername: { not: null } },
+        select: { rainbetUsername: true },
       }),
       prisma.razedUnlinkedWager.groupBy({
         by: ['razedUsername'],
@@ -26,6 +30,8 @@ export class WagerLeaderboardService {
       }),
       prisma.monthlyLeaderboardPrize.findMany({ orderBy: { position: 'asc' } }),
     ]);
+
+    const linkedUsernames = new Set(allLinkedUsernames.map((u) => u.rainbetUsername!.toLowerCase()));
 
     const linkedRows = linkedUsers.map((u) => ({
       userId: u.id as string | null,
@@ -36,7 +42,7 @@ export class WagerLeaderboardService {
     }));
 
     const unlinkedRows = unlinkedMonthly
-      .filter((r) => Number(r._sum.amount ?? 0) > 0)
+      .filter((r) => Number(r._sum.amount ?? 0) > 0 && !linkedUsernames.has(r.razedUsername))
       .map((r) => ({
         userId: null as string | null,
         displayName: r.razedUsername,

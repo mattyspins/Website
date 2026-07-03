@@ -5,6 +5,7 @@ import { logger } from '@/utils/logger';
 import { createError } from '@/middleware/errorHandler';
 import { PointsService } from '@/services/PointsService';
 import { RazedService } from '@/services/RazedService';
+import { RazedWagerSyncService } from '@/services/RazedWagerSyncService';
 
 export interface AdminStats {
   totalUsers: number;
@@ -782,6 +783,12 @@ export class AdminService {
           },
         });
       });
+
+      if (verified) {
+        await RazedWagerSyncService.migrateUnlinkedWagersToUser(userId, user.rainbetUsername).catch((err) =>
+          logger.error('Failed to migrate orphaned Razed wagers on recheck:', err)
+        );
+      }
 
       logger.info(
         `Admin ${adminId} rechecked Razed verification for user ${userId} via API: verified=${verified}`
