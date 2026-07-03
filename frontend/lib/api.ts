@@ -201,6 +201,10 @@ export const API_ENDPOINTS = {
   // Live Bonus Hunt (viewer page)
   LIVE_HUNT: `${API_URL}/api/live-hunt`,
 
+  // Bonus Hunt Tracker (shared across admins/mods)
+  HUNTS: `${API_URL}/api/hunts`,
+  HUNT: (id: string) => `${API_URL}/api/hunts/${id}`,
+
   // Daily Check-in
   CHECKIN_STATUS: `${API_URL}/api/checkin/status`,
   CHECKIN_CLAIM: `${API_URL}/api/checkin/claim`,

@@ -1,3 +1,5 @@
+import { API_ENDPOINTS } from "@/lib/api";
+
 export type Currency = "USD" | "EUR" | "GBP" | "CAD" | "AUD";
 export type BadgeType = "none" | "super_bonus" | "five_scatter" | "custom";
 
@@ -15,6 +17,7 @@ export interface HuntBonus {
   badge: BadgeType;
   customBadge?: string;
   note?: string;
+  requestedBy?: string;
   addedAt: string;
 }
 
@@ -62,6 +65,74 @@ export function upsertHunt(hunt: Hunt): void {
 
 export function deleteHunt(id: string): void {
   saveHunts(loadHunts().filter((h) => h.id !== id));
+}
+
+/* ── Server sync (shared across admins/mods) ────────────────
+   Local storage stays the source of truth for instant UI updates;
+   these functions keep it in sync with the backend so every
+   admin/mod sees hunts created on other devices/browsers. ── */
+
+function authHeaders(): HeadersInit {
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function fromServerHunt(h: any): Hunt {
+  return {
+    id: h.id,
+    name: h.name,
+    date: h.date,
+    currency: h.currency,
+    startCost: Number(h.startCost),
+    bonuses: h.bonuses ?? [],
+    createdAt: h.createdAt,
+    isStarted: h.isStarted,
+    isCompleted: h.isCompleted,
+    gtbGameId: h.gtbGameId ?? undefined,
+  };
+}
+
+/** Pulls every hunt from the server and merges it into local storage (server wins per-id). */
+export async function syncHuntsFromServer(): Promise<Hunt[]> {
+  try {
+    const res = await fetch(API_ENDPOINTS.HUNTS, { headers: authHeaders() });
+    if (!res.ok) return loadHunts();
+    const data = await res.json();
+    const serverHunts: Hunt[] = (data.hunts ?? []).map(fromServerHunt);
+    const byId = new Map(loadHunts().map((h) => [h.id, h]));
+    for (const h of serverHunts) byId.set(h.id, h);
+    const merged = Array.from(byId.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    saveHunts(merged);
+    return merged;
+  } catch {
+    return loadHunts();
+  }
+}
+
+/** Fetches a single hunt from the server — used when it isn't in local storage yet (e.g. created by another admin). */
+export async function fetchHuntFromServer(id: string): Promise<Hunt | null> {
+  try {
+    const res = await fetch(API_ENDPOINTS.HUNT(id), { headers: authHeaders() });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.hunt ? fromServerHunt(data.hunt) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function pushHuntToServer(hunt: Hunt): void {
+  fetch(API_ENDPOINTS.HUNT(hunt.id), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(hunt),
+  }).catch(() => {});
+}
+
+export function deleteHuntOnServer(id: string): void {
+  fetch(API_ENDPOINTS.HUNT(id), { method: "DELETE", headers: authHeaders() }).catch(() => {});
 }
 
 /* ── Computed stats ──────────────────────────────────────── */

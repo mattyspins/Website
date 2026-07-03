@@ -806,6 +806,24 @@ model MonthlyLeaderboardPrize {
   @@map("monthly_leaderboard_prizes")
 }
 
+// ─── Bonus Hunt Tracker (shared across admins/mods) ────────────────────────
+
+model Hunt {
+  id          String   @id
+  name        String
+  date        String
+  currency    String
+  startCost   Decimal  @map("start_cost") @db.Decimal(12, 2)
+  bonuses     Json     @default("[]")
+  isStarted   Boolean  @default(false) @map("is_started")
+  isCompleted Boolean  @default(false) @map("is_completed")
+  gtbGameId   String?  @map("gtb_game_id")
+  createdAt   DateTime @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("hunts")
+}
+
 model MonthlyLeaderboardPayout {
   id            String   @id @default(uuid())
   monthStart    DateTime @map("month_start") @db.Date

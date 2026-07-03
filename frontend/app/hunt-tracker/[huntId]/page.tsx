@@ -10,6 +10,7 @@ import {
 import {
   Hunt, HuntBonus, BadgeType, CURRENCY_SYMBOLS,
   getHunt, upsertHunt, calcHuntStats, fmt, fmtMulti,
+  fetchHuntFromServer, pushHuntToServer,
 } from "@/lib/huntTracker";
 import { SLOT_GAMES, type SlotGame } from "@/lib/slotGames";
 import { API_ENDPOINTS } from "@/lib/api";
@@ -76,12 +77,14 @@ function AddBonusModal({
   initial,
   currency,
   prefillSlotName,
+  requestedBy,
   onClose,
   onSave,
 }: {
   initial?: HuntBonus | null;
   currency: string;
   prefillSlotName?: string;
+  requestedBy?: string;
   onClose: () => void;
   onSave: (b: HuntBonus) => void;
 }) {
@@ -130,6 +133,7 @@ function AddBonusModal({
       badge,
       customBadge: badge === "custom" ? customBadge : undefined,
       note: note.trim() || undefined,
+      requestedBy: initial?.requestedBy ?? requestedBy,
       addedAt: initial?.addedAt ?? new Date().toISOString(),
     };
     onSave(bonus);
@@ -411,7 +415,7 @@ export default function HuntDetailPage() {
   const [slotRequests, setSlotRequests] = useState<SlotRequest[]>([]);
   const [requestsOpen, setRequestsOpen] = useState(false);
   const [srLoading, setSrLoading] = useState(false);
-  const [addFromRequest, setAddFromRequest] = useState<{ requestId: string; slotName: string } | null>(null);
+  const [addFromRequest, setAddFromRequest] = useState<{ requestId: string; slotName: string; kickUsername: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   // GTB integration
   const [gtbGame, setGtbGame] = useState<GTBGame | null>(null);
@@ -426,6 +430,14 @@ export default function HuntDetailPage() {
   }, [huntId]);
 
   useEffect(() => { reload(); }, [reload]);
+
+  // If this hunt wasn't created on this browser (e.g. another admin made it), fetch it from the server.
+  useEffect(() => {
+    if (getHunt(huntId)) return;
+    fetchHuntFromServer(huntId).then((h) => {
+      if (h) { upsertHunt(h); setHunt(h); }
+    });
+  }, [huntId]);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -499,7 +511,7 @@ export default function HuntDetailPage() {
   }
 
   function handleAddFromRequest(req: SlotRequest) {
-    setAddFromRequest({ requestId: req.id, slotName: req.slotName });
+    setAddFromRequest({ requestId: req.id, slotName: req.slotName, kickUsername: req.kickUsername });
     setShowAddBonus(true);
   }
 
@@ -626,7 +638,8 @@ export default function HuntDetailPage() {
     const updated = updater(hunt);
     upsertHunt(updated);
     setHunt(updated);
-    // If this hunt is currently live, push the update automatically
+    pushHuntToServer(updated); // so other admins/mods see the change
+    // If this hunt is currently live, also push the update to the OBS overlay feed
     if (isLive) {
       const token = localStorage.getItem("access_token");
       if (token) {
@@ -1485,6 +1498,7 @@ export default function HuntDetailPage() {
             initial={editBonus}
             currency={hunt.currency}
             prefillSlotName={addFromRequest?.slotName}
+            requestedBy={addFromRequest?.kickUsername}
             onClose={() => { setShowAddBonus(false); setEditBonus(null); setAddFromRequest(null); }}
             onSave={handleSaveBonus}
           />

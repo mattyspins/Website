@@ -9,7 +9,8 @@ import {
 } from "lucide-react";
 import {
   Hunt, Currency, CURRENCY_SYMBOLS,
-  loadHunts, saveHunts, upsertHunt, deleteHunt,
+  loadHunts, upsertHunt, deleteHunt,
+  syncHuntsFromServer, pushHuntToServer, deleteHuntOnServer,
   calcGlobalStats, fmt,
   type GlobalStats,
 } from "@/lib/huntTracker";
@@ -273,6 +274,14 @@ export default function HuntTrackerPage() {
 
   useEffect(() => { reload(); }, [reload]);
 
+  // Pull in hunts created by other admins/mods, then re-render with the merged list.
+  useEffect(() => {
+    syncHuntsFromServer().then((merged) => {
+      setHunts(merged);
+      setStats(calcGlobalStats(merged));
+    });
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.key === "c" || e.key === "C") && !showCreate && !editHunt && !deleteTarget
@@ -308,6 +317,7 @@ export default function HuntTrackerPage() {
 
   function handleSaveHunt(hunt: Hunt) {
     upsertHunt(hunt);
+    pushHuntToServer(hunt);
     reload();
     setShowCreate(false);
     setEditHunt(null);
@@ -315,6 +325,7 @@ export default function HuntTrackerPage() {
 
   function handleDelete(hunt: Hunt) {
     deleteHunt(hunt.id);
+    deleteHuntOnServer(hunt.id);
     reload();
     setDeleteTarget(null);
   }
