@@ -23,6 +23,9 @@ export interface UserManagement {
   kickVerified: boolean;
   rainbetUsername?: string;
   rainbetVerified: boolean;
+  weeklyWagered: string;
+  monthlyWagered: string;
+  totalWagered: string;
   displayName: string;
   avatar?: string;
   points: number;
@@ -150,6 +153,9 @@ export class AdminService {
             kickVerified: true,
             rainbetUsername: true,
             rainbetVerified: true,
+            weeklyWagered: true,
+            monthlyWagered: true,
+            totalWagered: true,
             displayName: true,
             avatarUrl: true,
             points: true,
@@ -180,6 +186,9 @@ export class AdminService {
           kickVerified: u.kickVerified,
           rainbetUsername: u.rainbetUsername || undefined,
           rainbetVerified: u.rainbetVerified,
+          weeklyWagered: u.weeklyWagered.toString(),
+          monthlyWagered: u.monthlyWagered.toString(),
+          totalWagered: u.totalWagered.toString(),
           displayName: u.displayName,
           avatar: u.avatarUrl || undefined,
           points: u.points,

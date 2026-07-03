@@ -17,6 +17,7 @@ import type { JWTPayload } from '@/middleware/auth';
 import { validateEnv } from '@/config/env';
 import jwt from 'jsonwebtoken';
 import { LeaderboardExpirationJob } from '@/jobs/leaderboardExpiration';
+import { RazedWagerSyncJob } from '@/jobs/razedWagerSync';
 import { KickChatService } from '@/services/KickChatService';
 
 // Load environment variables
@@ -156,6 +157,7 @@ import slotRequestRoutes from '@/routes/slotRequest';
 import { setSlotRequestIO } from '@/controllers/SlotRequestController';
 import kingOfTheHillRoutes from '@/routes/kingOfTheHill';
 import { setKothIO } from '@/controllers/KingOfTheHillController';
+import wagerLeaderboardRoutes from '@/routes/wagerLeaderboard';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
@@ -179,6 +181,7 @@ app.use('/api/bonus-bingo', bonusBingoRoutes);
 app.use('/api/viewer-picker', viewerPickerRoutes);
 app.use('/api/slot-requests', slotRequestRoutes);
 app.use('/api/king-of-the-hill', kingOfTheHillRoutes);
+app.use('/api/wager-leaderboard', wagerLeaderboardRoutes);
 
 // Wire up tournament real-time events
 setTournamentIO(io);
@@ -264,6 +267,7 @@ app.use(errorHandler);
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
   LeaderboardExpirationJob.stop();
+  RazedWagerSyncJob.stop();
   KickChatService.stop();
   server.close(() => {
     logger.info('Process terminated');
@@ -274,6 +278,7 @@ process.on('SIGTERM', () => {
 process.on('SIGINT', () => {
   logger.info('SIGINT received, shutting down gracefully');
   LeaderboardExpirationJob.stop();
+  RazedWagerSyncJob.stop();
   KickChatService.stop();
   server.close(() => {
     logger.info('Process terminated');
@@ -291,6 +296,7 @@ server.listen(PORT, HOST, () => {
 
   // Start background jobs
   LeaderboardExpirationJob.start();
+  RazedWagerSyncJob.start();
   logger.info('✅ Background jobs started');
 
   // Start Kick chat listener (verification + chat points + !join)

@@ -34,6 +34,8 @@ model User {
   isVip                  Boolean               @default(false) @map("is_vip")
   isDepositor            Boolean               @default(false) @map("is_depositor")
   totalWagered           Decimal               @default(0) @map("total_wagered") @db.Decimal(15, 2)
+  weeklyWagered          Decimal               @default(0) @map("weekly_wagered") @db.Decimal(14, 2)
+  monthlyWagered         Decimal               @default(0) @map("monthly_wagered") @db.Decimal(14, 2)
   totalDeposited         Decimal               @default(0) @map("total_deposited") @db.Decimal(15, 2)
   lastDailyCheckIn       DateTime?             @map("last_daily_check_in")
   auditLogsAsAdmin       AuditLog[]            @relation("AdminAuditLogs")
@@ -69,6 +71,8 @@ model User {
   slotRequests           SlotRequest[]
   kothEntries            KingOfTheHillEntry[]
   kothRounds             KingOfTheHillRound[]
+  razedDailyWagers       RazedDailyWager[]
+  monthlyPayouts         MonthlyLeaderboardPayout[]
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")
@@ -762,4 +766,40 @@ model BingoLineWin {
 
   @@unique([gameId, lineType, lineIndex])
   @@map("bingo_line_wins")
+}
+
+// ─── Razed Wager Tracking ───────────────────────────────────────────────────
+
+model RazedDailyWager {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  date      DateTime @db.Date
+  amount    Decimal  @db.Decimal(14, 2)
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("razed_daily_wagers")
+}
+
+model MonthlyLeaderboardPrize {
+  id       String @id @default(uuid())
+  position Int    @unique
+  points   Int
+
+  @@map("monthly_leaderboard_prizes")
+}
+
+model MonthlyLeaderboardPayout {
+  id            String   @id @default(uuid())
+  monthStart    DateTime @map("month_start") @db.Date
+  userId        String   @map("user_id")
+  position      Int
+  wagered       Decimal  @db.Decimal(14, 2)
+  pointsAwarded Int      @map("points_awarded")
+  paidAt        DateTime @default(now()) @map("paid_at")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([monthStart, userId])
+  @@map("monthly_leaderboard_payouts")
 }
