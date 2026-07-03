@@ -436,6 +436,32 @@ export class AdminController {
     }
   );
 
+  static recheckRazedVerification = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) {
+        throw createError.forbidden('Admin access required');
+      }
+
+      const { userId } = req.params;
+      if (!userId) {
+        throw createError.badRequest('User ID is required');
+      }
+
+      try {
+        const { verified } = await AdminService.recheckRazedVerification(userId, req.user.id);
+
+        res.json({
+          success: true,
+          message: verified ? 'Verified via Razed API' : 'Not found under our Razed code — marked unverified',
+          data: { userId, verified },
+        });
+      } catch (error) {
+        logger.error('Error rechecking Razed verification:', error);
+        throw error;
+      }
+    }
+  );
+
   static deleteUser = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
       if (!req.user?.isAdmin) {

@@ -6,6 +6,10 @@ const RAZED_REFERRAL_KEY = process.env['RAZED_REFERRAL_KEY'] || '';
 const RAZED_REFERRAL_CODE = process.env['RAZED_REFERRAL_CODE'] || 'Mattyspins';
 const PAGE_SIZE = 100;
 
+function toDateStr(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
 export class RazedAPIError extends Error {
   constructor(
     public statusCode: number,
@@ -65,6 +69,31 @@ export class RazedService {
     }
 
     return result;
+  }
+
+  /**
+   * Checks whether `username` is a real referral under our code, by scanning recent referral
+   * windows going back ~180 days (chained 45-day chunks — Razed's max range per call). Used to
+   * auto-verify/reject a user's self-submitted Razed username without needing admin review.
+   */
+  static async isValidReferral(username: string): Promise<boolean> {
+    if (!RazedService.isConfigured()) return false;
+
+    const target = username.toLowerCase();
+    let windowEnd = new Date();
+
+    for (let i = 0; i < 4; i++) {
+      const windowStart = new Date(windowEnd);
+      windowStart.setUTCDate(windowStart.getUTCDate() - 44);
+
+      const map = await RazedService.fetchAllReferrals(toDateStr(windowStart), toDateStr(windowEnd));
+      if (map.has(target)) return true;
+
+      windowEnd = new Date(windowStart);
+      windowEnd.setUTCDate(windowEnd.getUTCDate() - 1);
+    }
+
+    return false;
   }
 
   private static handleError(error: unknown): RazedAPIError {

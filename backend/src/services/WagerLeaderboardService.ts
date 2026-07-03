@@ -9,28 +9,58 @@ const USER_SELECT = {
 } as const;
 
 export class WagerLeaderboardService {
+  /** Ranks every wagerer under our Razed code this month — linked site accounts and unlinked Razed usernames alike. */
   static async getMonthlyStandings(limit = 50) {
-    const [users, prizes] = await Promise.all([
+    const now = new Date();
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
+    const [linkedUsers, unlinkedMonthly, prizes] = await Promise.all([
       prisma.user.findMany({
         where: { rainbetUsername: { not: null }, monthlyWagered: { gt: 0 } },
         select: USER_SELECT,
-        orderBy: { monthlyWagered: 'desc' },
-        take: limit,
+      }),
+      prisma.razedUnlinkedWager.groupBy({
+        by: ['razedUsername'],
+        where: { date: { gte: monthStart } },
+        _sum: { amount: true },
       }),
       prisma.monthlyLeaderboardPrize.findMany({ orderBy: { position: 'asc' } }),
     ]);
 
-    return users.map((u, i) => {
+    const linkedRows = linkedUsers.map((u) => ({
+      userId: u.id as string | null,
+      displayName: u.displayName,
+      kickUsername: u.kickUsername,
+      avatarUrl: u.avatarUrl,
+      wagered: Number(u.monthlyWagered),
+    }));
+
+    const unlinkedRows = unlinkedMonthly
+      .filter((r) => Number(r._sum.amount ?? 0) > 0)
+      .map((r) => ({
+        userId: null as string | null,
+        displayName: r.razedUsername,
+        kickUsername: null as string | null,
+        avatarUrl: null as string | null,
+        wagered: Number(r._sum.amount ?? 0),
+      }));
+
+    const combined = [...linkedRows, ...unlinkedRows]
+      .sort((a, b) => b.wagered - a.wagered)
+      .slice(0, limit);
+
+    return combined.map((row, i) => {
       const position = i + 1;
       const prize = prizes.find((p) => p.position === position);
       return {
         position,
-        userId: u.id,
-        displayName: u.displayName,
-        kickUsername: u.kickUsername,
-        avatarUrl: u.avatarUrl,
-        wagered: u.monthlyWagered.toString(),
+        userId: row.userId,
+        displayName: row.displayName,
+        kickUsername: row.kickUsername,
+        avatarUrl: row.avatarUrl,
+        wagered: row.wagered.toString(),
         points: prize?.points ?? null,
+        linked: row.userId !== null,
       };
     });
   }

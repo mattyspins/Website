@@ -56,6 +56,7 @@ export default function ProfilePage() {
   const [razedInput, setRazedInput] = useState("");
   const [razedSaving, setRazedSaving] = useState(false);
   const [razedMsg, setRazedMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [editingRazed, setEditingRazed] = useState(false);
 
   // Daily check-in state
   const [checkinClaimed, setCheckinClaimed] = useState(false);
@@ -300,9 +301,14 @@ export default function ProfilePage() {
         }
       );
       if (res.ok) {
-        setRazedMsg({ type: "success", text: "Razed username submitted. Pending admin verification." });
-        setUser((u) => u ? { ...u, rainbetUsername: razedInput.trim(), rainbetVerified: false } : u);
+        const d = await res.json().catch(() => ({}));
+        setRazedMsg({
+          type: "success",
+          text: d.rainbetVerified ? "Razed account linked and verified!" : "Razed username submitted. Pending admin verification.",
+        });
+        setUser((u) => u ? { ...u, rainbetUsername: razedInput.trim(), rainbetVerified: !!d.rainbetVerified } : u);
         setRazedInput("");
+        setEditingRazed(false);
       } else {
         const d = await res.json().catch(() => ({}));
         setRazedMsg({ type: "error", text: d.error?.message || "Failed to save. Please try again." });
@@ -486,7 +492,7 @@ export default function ProfilePage() {
             Verify your Razed username to track your wager and claim leaderboard rewards.
           </p>
 
-          {user.rainbetUsername ? (
+          {user.rainbetUsername && !editingRazed ? (
             <div className="flex items-center gap-3 bg-gold-500/8 border border-gold-500/20 rounded-lg p-4">
               <div className="w-8 h-8 rounded-full bg-gold-500/20 flex items-center justify-center shrink-0">
                 {user.rainbetVerified ? (
@@ -504,7 +510,7 @@ export default function ProfilePage() {
                   {user.rainbetVerified ? "Razed account verified" : "Razed account submitted"}
                 </p>
                 <p className="text-gray-500 text-xs truncate">
-                  {user.rainbetUsername} · {user.rainbetVerified ? "Verified by admin" : "Pending admin verification"}
+                  {user.rainbetUsername} · {user.rainbetVerified ? "Verified" : "Pending admin verification"}
                 </p>
               </div>
               <span className={`text-xs font-semibold px-2 py-0.5 rounded shrink-0 border ${
@@ -514,6 +520,12 @@ export default function ProfilePage() {
               }`}>
                 {user.rainbetVerified ? "VERIFIED" : "PENDING"}
               </span>
+              <button
+                onClick={() => { setEditingRazed(true); setRazedInput(""); setRazedMsg(null); }}
+                className="text-gray-500 hover:text-white text-xs font-semibold shrink-0 underline underline-offset-2"
+              >
+                Change
+              </button>
             </div>
           ) : (
             <form onSubmit={handleRazedSave}>
@@ -532,6 +544,15 @@ export default function ProfilePage() {
                 >
                   {razedSaving ? "..." : "Submit"}
                 </button>
+                {user.rainbetUsername && (
+                  <button
+                    type="button"
+                    onClick={() => { setEditingRazed(false); setRazedInput(""); setRazedMsg(null); }}
+                    className="w-full sm:w-auto text-gray-500 hover:text-white text-xs font-semibold px-3 py-3 whitespace-nowrap"
+                  >
+                    Cancel
+                  </button>
+                )}
               </div>
               {razedMsg && (
                 <p className={`text-xs mt-2 ${razedMsg.type === "success" ? "text-green-400" : "text-red-400"}`}>

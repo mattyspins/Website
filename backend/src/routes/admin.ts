@@ -72,6 +72,11 @@ router.post(
   AdminController.verifyRainbetUsername
 );
 router.post(
+  '/users/:userId/recheck-razed',
+  criticalActionLimiter,
+  AdminController.recheckRazedVerification
+);
+router.post(
   '/users/:userId/verify-kick',
   criticalActionLimiter,
   AdminController.verifyKickUsername

@@ -61,6 +61,7 @@ function PodiumCard({ row, position }: { row: MonthlyStandingRow; position: 1 | 
         <div>
           <p className="text-gray-500 text-xs tracking-wider mb-1">PRIZE</p>
           <p className="text-gold-400 font-bold text-xl">{row.points} pts</p>
+          {!row.linked && <p className="text-gray-600 text-[10px] mt-1">Link your Razed account to claim</p>}
         </div>
       )}
     </motion.div>
@@ -114,7 +115,7 @@ export default function LeaderboardPage() {
             {monthLabel.split(" ")[0].toUpperCase()} <span className="text-gold-400">LEADERBOARD</span>
           </h1>
           <p className="text-gray-400 text-sm max-w-xl mx-auto">
-            Ranked by wager on Razed this month. Top 10 win points automatically when the month ends.
+            Ranked by wager on Razed this month — every player under our code counts. Top 10 win points automatically when the month ends (link your Razed account on your profile to claim).
           </p>
         </motion.div>
 
@@ -122,7 +123,7 @@ export default function LeaderboardPage() {
           <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-12 text-center mb-12">
             <Trophy className="w-10 h-10 text-gold-400/40 mx-auto mb-4" />
             <p className="text-gray-400 font-semibold">No wagers recorded yet this month</p>
-            <p className="text-gray-600 text-sm mt-1">Link your Razed account on your profile to get on the board</p>
+            <p className="text-gray-600 text-sm mt-1">Wagers sync automatically from Razed — check back soon</p>
           </div>
         ) : (
           <>
@@ -137,11 +138,15 @@ export default function LeaderboardPage() {
             {rest.length > 0 && (
               <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-4 mb-12 space-y-1">
                 {rest.map((row) => (
-                  <div key={row.userId} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/3">
+                  <div key={row.userId ?? row.displayName} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/3">
                     <span className="text-gray-600 text-sm w-6 shrink-0 text-right">#{row.position}</span>
                     <AvatarCircle row={row} size="sm" />
                     <span className="text-gray-200 text-sm font-medium flex-1 truncate">{maskUsername(row.kickUsername ?? row.displayName)}</span>
-                    {row.points !== null && <span className="text-gold-400 text-xs font-bold shrink-0">{row.points} pts</span>}
+                    {row.points !== null && (
+                      <span className="text-gold-400 text-xs font-bold shrink-0">
+                        {row.points} pts{!row.linked && <span className="text-gray-600 font-normal ml-1">(link to claim)</span>}
+                      </span>
+                    )}
                     <span className="text-white text-sm font-semibold shrink-0">{fmtMoney(row.wagered)}</span>
                   </div>
                 ))}

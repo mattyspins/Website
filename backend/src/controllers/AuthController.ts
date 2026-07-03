@@ -499,7 +499,7 @@ export class AuthController {
     }
   });
 
-  // Submit Rainbet username (can only be done once by user)
+  // Submit or change a Razed username; auto-verified/rejected via the Razed API
   static submitRainbetUsername = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
       if (!req.user) {
@@ -521,29 +521,22 @@ export class AuthController {
       }
 
       try {
-        // Check if user already has a Rainbet username
-        const userSession = await AuthService.getUserSession(
-          req.headers.authorization?.substring(7) || ''
+        const { verified } = await AuthService.updateRainbetUsername(
+          req.user.id,
+          trimmedUsername
         );
 
-        if (userSession?.rainbetUsername) {
-          throw createError.badRequest(
-            'Razed username already set. Contact an admin to change it.'
-          );
-        }
-
-        // Update user's Rainbet username
-        await AuthService.updateRainbetUsername(req.user.id, trimmedUsername);
-
         logger.info(
-          `User ${req.user.discordId} submitted Rainbet username: ${trimmedUsername}`
+          `User ${req.user.discordId} submitted Rainbet username: ${trimmedUsername} (verified=${verified})`
         );
 
         res.json({
           success: true,
-          message:
-            'Razed username submitted successfully. Waiting for admin verification.',
+          message: verified
+            ? 'Razed account linked and verified!'
+            : 'Razed username submitted. Waiting for admin verification.',
           rainbetUsername: trimmedUsername,
+          rainbetVerified: verified,
         });
       } catch (error) {
         logger.error('Submit Rainbet username error:', {

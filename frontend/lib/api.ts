@@ -140,6 +140,8 @@ export const API_ENDPOINTS = {
     `${API_URL}/api/admin/users/${userId}/kick-username`,
   ADMIN_EDIT_RAINBET_USERNAME: (userId: string) =>
     `${API_URL}/api/admin/users/${userId}/rainbet-username`,
+  ADMIN_RECHECK_RAZED: (userId: string) =>
+    `${API_URL}/api/admin/users/${userId}/recheck-razed`,
   ADMIN_STATS: `${API_URL}/api/admin/dashboard/stats`,
   ADMIN_AUDIT_LOGS: `${API_URL}/api/admin/audit-logs`,
   ADMIN_ACTIVITY: `${API_URL}/api/admin/activity`,

@@ -6,6 +6,7 @@ import { RedisService } from '@/config/redis';
 import { validateEnv } from '@/config/env';
 import { logger } from '@/utils/logger';
 import { createError } from '@/middleware/errorHandler';
+import { RazedService } from '@/services/RazedService';
 
 const env = validateEnv();
 
@@ -440,37 +441,49 @@ export class AuthService {
     }
   }
 
-  // Update Rainbet username (can only be done once by user)
+  // Update (or change) a user's linked Rainbet/Razed username, auto-verified via the Razed API
   static async updateRainbetUsername(
     userId: string,
     rainbetUsername: string
-  ): Promise<void> {
+  ): Promise<{ verified: boolean }> {
     try {
-      // Check if user already has a Rainbet username
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { rainbetUsername: true },
+      const existing = await prisma.user.findUnique({
+        where: { rainbetUsername },
+        select: { id: true },
       });
-
-      if (user?.rainbetUsername) {
+      if (existing && existing.id !== userId) {
         throw createError.badRequest(
-          'Razed username already set. Contact an admin to change it.'
+          'That Razed username is already linked to another account.'
         );
       }
 
-      // Update user's Rainbet username (unverified)
+      // Auto-verify against the Razed API when configured; if the username isn't a real
+      // referral under our code, reject the submission outright instead of saving it as
+      // pending. Falls back to manual admin review when the API key isn't configured.
+      let verified = false;
+      if (RazedService.isConfigured()) {
+        verified = await RazedService.isValidReferral(rainbetUsername);
+        if (!verified) {
+          throw createError.badRequest(
+            "We couldn't find that username under our Razed referral code. Double-check the spelling and make sure you signed up using our link, then try again."
+          );
+        }
+      }
+
       await prisma.user.update({
         where: { id: userId },
         data: {
           rainbetUsername,
-          rainbetVerified: false, // Admin needs to verify
+          rainbetVerified: verified,
           updatedAt: new Date(),
         },
       });
 
       logger.info(
-        `Rainbet username set for user ${userId}: ${rainbetUsername}`
+        `Rainbet username set for user ${userId}: ${rainbetUsername} (verified=${verified})`
       );
+
+      return { verified };
     } catch (error) {
       logger.error('Error updating Rainbet username:', {
         userId,

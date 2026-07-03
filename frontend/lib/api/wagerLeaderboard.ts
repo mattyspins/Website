@@ -2,12 +2,13 @@ import { api } from "@/lib/api";
 
 export interface MonthlyStandingRow {
   position: number;
-  userId: string;
+  userId: string | null;
   displayName: string;
   kickUsername: string | null;
   avatarUrl: string | null;
   wagered: string;
   points: number | null;
+  linked: boolean;
 }
 
 export interface MonthlyHistoryWinner {

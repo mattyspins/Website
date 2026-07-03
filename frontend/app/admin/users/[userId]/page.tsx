@@ -72,6 +72,9 @@ export default function AdminUserPage() {
   // Suspend
   const [suspendSaving, setSuspendSaving] = useState(false);
 
+  // Razed recheck
+  const [razedChecking, setRazedChecking] = useState(false);
+
   const { success, error: toastError } = useToast();
   const token = () => localStorage.getItem("access_token") ?? "";
 
@@ -177,6 +180,28 @@ export default function AdminUserPage() {
       toastError("Error", "Network error.");
     } finally {
       setSuspendSaving(false);
+    }
+  };
+
+  const handleRecheckRazed = async () => {
+    if (!user) return;
+    setRazedChecking(true);
+    try {
+      const res = await fetch(API_ENDPOINTS.ADMIN_RECHECK_RAZED(user.id), {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token()}` },
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setUser((u) => u ? { ...u, rainbetVerified: !!d.data?.verified } : u);
+        success(d.data?.verified ? "Verified via Razed API" : "Not found under our code", "Marked accordingly");
+      } else {
+        toastError("Recheck failed", d.error?.message || "Could not reach Razed API.");
+      }
+    } catch {
+      toastError("Error", "Network error.");
+    } finally {
+      setRazedChecking(false);
     }
   };
 
@@ -298,9 +323,20 @@ export default function AdminUserPage() {
                     {user.rainbetVerified && <span className="text-gold-400 text-[10px] font-black ml-auto">VERIFIED</span>}
                     {user.rainbetUsername && !user.rainbetVerified && <span className="text-yellow-400 text-[10px] font-black ml-auto">PENDING</span>}
                   </div>
-                  <p className={`text-sm ${user.rainbetUsername ? "text-gray-300" : "text-gray-600"}`}>
-                    {user.rainbetUsername || "Not linked"}
-                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`text-sm ${user.rainbetUsername ? "text-gray-300" : "text-gray-600"}`}>
+                      {user.rainbetUsername || "Not linked"}
+                    </p>
+                    {user.rainbetUsername && (
+                      <button
+                        onClick={handleRecheckRazed}
+                        disabled={razedChecking}
+                        className="text-gold-400 hover:text-gold-300 disabled:opacity-40 text-[10px] font-bold uppercase tracking-widest shrink-0 underline underline-offset-2"
+                      >
+                        {razedChecking ? "Checking…" : "Recheck via API"}
+                      </button>
+                    )}
+                  </div>
                   {user.rainbetUsername && (
                     <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-white/6">
                       <div>

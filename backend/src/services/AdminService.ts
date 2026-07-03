@@ -4,6 +4,7 @@ import { RedisService } from '@/config/redis';
 import { logger } from '@/utils/logger';
 import { createError } from '@/middleware/errorHandler';
 import { PointsService } from '@/services/PointsService';
+import { RazedService } from '@/services/RazedService';
 
 export interface AdminStats {
   totalUsers: number;
@@ -736,6 +737,59 @@ export class AdminService {
       );
     } catch (error) {
       logger.error('Error verifying Rainbet username:', error);
+      throw error;
+    }
+  }
+
+  // Re-check a user's linked Razed username directly against the Razed API and
+  // set verified accordingly. Useful for re-validating stale (e.g. AceBet-era) links.
+  static async recheckRazedVerification(
+    userId: string,
+    adminId: string
+  ): Promise<{ verified: boolean }> {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { rainbetUsername: true, rainbetVerified: true },
+      });
+
+      if (!user) {
+        throw createError.notFound('User not found');
+      }
+      if (!user.rainbetUsername) {
+        throw createError.badRequest('User has no Razed username to check');
+      }
+      if (!RazedService.isConfigured()) {
+        throw createError.badRequest('Razed API is not configured');
+      }
+
+      const verified = await RazedService.isValidReferral(user.rainbetUsername);
+
+      await prisma.$transaction(async tx => {
+        await tx.user.update({
+          where: { id: userId },
+          data: { rainbetVerified: verified, updatedAt: new Date() },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            adminId,
+            action: verified ? 'VERIFY_RAINBET_USERNAME' : 'UNVERIFY_RAINBET_USERNAME',
+            targetType: 'user',
+            targetId: userId,
+            oldValues: { rainbetVerified: user.rainbetVerified },
+            newValues: { rainbetUsername: user.rainbetUsername, rainbetVerified: verified, checkedViaApi: true },
+          },
+        });
+      });
+
+      logger.info(
+        `Admin ${adminId} rechecked Razed verification for user ${userId} via API: verified=${verified}`
+      );
+
+      return { verified };
+    } catch (error) {
+      logger.error('Error rechecking Razed verification:', error);
       throw error;
     }
   }
