@@ -1,7 +1,6 @@
 import { prisma } from '@/config/database';
 import { logger } from '@/utils/logger';
 import { RazedService } from '@/services/RazedService';
-import { PointsService } from '@/services/PointsService';
 
 function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -215,9 +214,11 @@ export class RazedWagerSyncService {
   }
 
   /**
-   * Pays out the fixed points-prize table to the top finishers of the most recently completed
-   * calendar month, if that month hasn't been fully paid out yet. Safe to call repeatedly —
-   * per-user payout rows guard against double-awarding even if interrupted mid-run.
+   * Records the winners of the most recently completed calendar month against the fixed
+   * cash-prize table, if that month hasn't been recorded yet. This is real money, not site
+   * currency, so it does NOT auto-credit anything — it only creates the payout history row
+   * so admins know who's owed what and can pay them out manually. Safe to call repeatedly —
+   * per-user payout rows guard against double-recording even if interrupted mid-run.
    */
   static async processMonthlyPayoutIfDue(): Promise<void> {
     const now = new Date();
@@ -253,18 +254,11 @@ export class RazedWagerSyncService {
       });
       if (existingPayout) continue;
 
-      await PointsService.addPoints({
-        userId,
-        amount: prize.points,
-        reason: `Monthly wager leaderboard — ${monthLabel} (#${position})`,
-        referenceType: 'monthly_wager_leaderboard',
-      });
-
       await prisma.monthlyLeaderboardPayout.create({
         data: { monthStart: previousMonthStart, userId, position, wagered, pointsAwarded: prize.points },
       });
 
-      logger.info(`RazedWagerSyncService: paid ${prize.points} points to user ${userId} for #${position} in ${monthLabel}`);
+      logger.info(`RazedWagerSyncService: recorded $${prize.points} owed to user ${userId} for #${position} in ${monthLabel} (pay out manually)`);
     }
   }
 }

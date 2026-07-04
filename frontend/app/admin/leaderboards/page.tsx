@@ -132,22 +132,22 @@ export default function AdminLeaderboardsPage() {
           <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-white font-bold text-sm">Monthly Prize Table</h2>
-              <span className="text-gold-400 text-xs font-bold">{totalPoints} pts total</span>
+              <span className="text-gold-400 text-xs font-bold">${totalPoints} total</span>
             </div>
             <p className="text-gray-500 text-xs mb-4">
-              Points awarded automatically to each position when the calendar month ends. Auto-sourced from Razed wager data — no manual entry needed.
+              Cash prize recorded for each position when the calendar month ends — this is real money, so nothing is auto-credited; pay winners manually and use this table just to know who's owed what.
             </p>
             <div className="space-y-1.5 mb-4">
               {prizes.map((p) => (
                 <div key={p.position} className="flex items-center gap-3">
                   <span className="text-gray-500 text-xs w-10 shrink-0">#{p.position}</span>
+                  <span className="text-gray-600 text-xs shrink-0">$</span>
                   <input
                     type="number" min={0}
                     value={p.points}
                     onChange={(e) => updatePoints(p.position, parseInt(e.target.value) || 0)}
                     className="flex-1 bg-navy-900/60 border border-white/8 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-gold-500/30"
                   />
-                  <span className="text-gray-600 text-xs shrink-0">pts</span>
                 </div>
               ))}
             </div>
@@ -171,7 +171,7 @@ export default function AdminLeaderboardsPage() {
                   <div key={row.userId} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-white/3">
                     <span className="text-gray-600 text-xs w-5 shrink-0 text-right">{row.position}</span>
                     <span className="text-gray-200 text-sm flex-1 truncate">{maskUsername(row.kickUsername ?? row.displayName)}</span>
-                    {row.points !== null && <span className="text-gold-400 text-[10px] font-bold shrink-0">{row.points}pt</span>}
+                    {row.points !== null && <span className="text-gold-400 text-[10px] font-bold shrink-0">${row.points}</span>}
                     <span className="text-white text-xs font-semibold shrink-0">${Number(row.wagered).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 ))}
@@ -193,7 +193,7 @@ export default function AdminLeaderboardsPage() {
                   <div className="flex flex-wrap gap-2">
                     {entry.winners.map((w) => (
                       <span key={w.userId} className="text-xs text-gray-300 bg-navy-900/60 border border-white/5 rounded-lg px-2.5 py-1">
-                        #{w.position} {maskUsername(w.kickUsername ?? w.displayName)} — {w.pointsAwarded}pt
+                        #{w.position} {maskUsername(w.kickUsername ?? w.displayName)} — ${w.pointsAwarded}
                       </span>
                     ))}
                   </div>

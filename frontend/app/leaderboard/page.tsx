@@ -91,7 +91,7 @@ export default function LeaderboardPage() {
             {monthLabel.split(" ")[0].toUpperCase()} <span className="text-gold-400">LEADERBOARD</span>
           </h1>
           <p className="text-gray-400 text-sm max-w-xl mx-auto">
-            Ranked by wager on Razed this month — every player under our code counts. Top 10 win points automatically when the month ends (link your Razed account on your profile to claim).
+            Ranked by wager on Razed this month — every player under our code counts. Top 10 split $500 cash when the month ends (link your Razed account on your profile so we know who to pay).
           </p>
         </motion.div>
 
@@ -107,7 +107,7 @@ export default function LeaderboardPage() {
               <div className="col-span-1">#</div>
               <div className="col-span-6">Player</div>
               <div className="col-span-3 text-right">Wagered</div>
-              <div className="col-span-2 text-right">Points</div>
+              <div className="col-span-2 text-right">Prize</div>
             </div>
             {standings.map((row, i) => (
               <motion.div
@@ -132,8 +132,8 @@ export default function LeaderboardPage() {
                 <div className="col-span-2 text-right">
                   {row.points !== null ? (
                     <>
-                      <span className="text-gold-400 font-bold text-sm">{row.points}</span>
-                      {!row.linked && <p className="text-gray-600 text-[10px] mt-0.5">link to claim</p>}
+                      <span className="text-gold-400 font-bold text-sm">${row.points}</span>
+                      {!row.linked && <p className="text-gray-600 text-[10px] mt-0.5">link account to receive</p>}
                     </>
                   ) : (
                     <span className="text-gray-600 text-sm">—</span>
@@ -164,7 +164,7 @@ export default function LeaderboardPage() {
                           {w.position}
                         </span>
                         <span className="text-gray-200 text-xs">{maskUsername(w.kickUsername ?? w.displayName)}</span>
-                        <span className="text-gold-400 text-xs font-bold">{w.pointsAwarded} pts</span>
+                        <span className="text-gold-400 text-xs font-bold">${w.pointsAwarded}</span>
                       </div>
                     ))}
                   </div>
