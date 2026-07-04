@@ -5,7 +5,7 @@ import { logger } from '@/utils/logger';
 
 /**
  * Razed Wager Sync Background Job
- * Runs every 15 minutes: syncs recent days' wagers, refreshes weekly/monthly rolling
+ * Runs every 5 minutes: syncs recent days' wagers, refreshes weekly/monthly rolling
  * stats, and pays out the monthly leaderboard if a new calendar month has started.
  */
 export class RazedWagerSyncJob {
@@ -22,7 +22,7 @@ export class RazedWagerSyncJob {
       return;
     }
 
-    this.job = cron.schedule('*/15 * * * *', async () => {
+    this.job = cron.schedule('*/5 * * * *', async () => {
       try {
         logger.debug('Running Razed wager sync');
         await RazedWagerSyncService.syncRecentDays(2);
@@ -31,12 +31,12 @@ export class RazedWagerSyncJob {
       }
     });
 
-    // Run once at startup so data isn't stale for up to 15 minutes after a deploy.
+    // Run once at startup so data isn't stale for up to 5 minutes after a deploy.
     RazedWagerSyncService.syncRecentDays(2).catch((error) =>
       logger.error('Error in initial Razed wager sync:', error)
     );
 
-    logger.info('Razed wager sync job started (runs every 15 minutes)');
+    logger.info('Razed wager sync job started (runs every 5 minutes)');
   }
 
   static stop(): void {
