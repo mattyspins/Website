@@ -2,18 +2,56 @@ import { randomInt } from 'crypto';
 import { prisma } from '@/config/database';
 import { Server as SocketIOServer } from 'socket.io';
 import { createError } from '@/middleware/errorHandler';
-import { ViewerPickerStatus } from '@prisma/client';
+import { ViewerPickerStatus, Prisma } from '@prisma/client';
 import { logger } from '@/utils/logger';
+
+const USER_SELECT = { id: true, displayName: true, kickUsername: true, avatarUrl: true } as const;
 
 const INCLUDE = {
   entries: {
-    include: {
-      user: { select: { id: true, displayName: true, kickUsername: true, avatarUrl: true } },
-    },
+    include: { user: { select: USER_SELECT } },
     orderBy: { enteredAt: 'asc' as const },
   },
-  winner: { select: { id: true, displayName: true, kickUsername: true, avatarUrl: true } },
-};
+  winningEntry: {
+    include: { user: { select: USER_SELECT } },
+  },
+} satisfies Prisma.ViewerPickerInclude;
+
+type PickerWithRelations = Prisma.ViewerPickerGetPayload<{ include: typeof INCLUDE }>;
+type EntryWithUser = PickerWithRelations['entries'][number];
+
+// A viewer who hasn't linked Kick or registered on the site has no `user` row — fall back
+// to the raw kick_username captured from chat so they can still enter and be displayed.
+function entryUserShape(entry: EntryWithUser) {
+  if (entry.user) return entry.user;
+  return { id: entry.kickUsername, displayName: entry.kickUsername, kickUsername: entry.kickUsername, avatarUrl: null };
+}
+
+// Stable per-picker identity for an entry, usable for exclusion/dedup whether or not
+// the entrant has a linked site account.
+function entryIdentity(entry: { userId: string | null; kickUsername: string }) {
+  return entry.userId ?? entry.kickUsername;
+}
+
+function toPickerResponse(picker: PickerWithRelations) {
+  return {
+    id: picker.id,
+    keyword: picker.keyword,
+    label: picker.label,
+    status: picker.status,
+    winnerId: picker.winningEntry ? entryIdentity(picker.winningEntry) : null,
+    createdAt: picker.createdAt,
+    closedAt: picker.closedAt,
+    entries: picker.entries.map((e) => ({
+      id: e.id,
+      pickerId: e.pickerId,
+      userId: entryIdentity(e),
+      enteredAt: e.enteredAt,
+      user: entryUserShape(e),
+    })),
+    winner: picker.winningEntry ? entryUserShape(picker.winningEntry) : null,
+  };
+}
 
 export class ViewerPickerService {
   static async create(keyword: string, label?: string, io?: SocketIOServer) {
@@ -28,24 +66,27 @@ export class ViewerPickerService {
       include: INCLUDE,
     });
 
-    io?.emit('picker:updated', picker);
+    const response = toPickerResponse(picker);
+    io?.emit('picker:updated', response);
     logger.info(`ViewerPicker created: keyword="${picker.keyword}" id=${picker.id}`);
-    return picker;
+    return response;
   }
 
   static async getActive() {
-    return prisma.viewerPicker.findFirst({
+    const picker = await prisma.viewerPicker.findFirst({
       where: { status: ViewerPickerStatus.OPEN },
       include: INCLUDE,
     });
+    return picker ? toPickerResponse(picker) : null;
   }
 
   static async getAll() {
-    return prisma.viewerPicker.findMany({
+    const pickers = await prisma.viewerPicker.findMany({
       include: INCLUDE,
       orderBy: { createdAt: 'desc' },
       take: 30,
     });
+    return pickers.map(toPickerResponse);
   }
 
   static async close(id: string, io?: SocketIOServer) {
@@ -58,9 +99,10 @@ export class ViewerPickerService {
       include: INCLUDE,
     });
 
-    io?.to(`picker:${id}`).emit('picker:updated', updated);
-    io?.emit('picker:updated', updated);
-    return updated;
+    const response = toPickerResponse(updated);
+    io?.to(`picker:${id}`).emit('picker:updated', response);
+    io?.emit('picker:updated', response);
+    return response;
   }
 
   static async drawWinner(id: string, io?: SocketIOServer, excludeUserIds: string[] = []) {
@@ -68,10 +110,11 @@ export class ViewerPickerService {
     if (!picker) throw createError.notFound('Picker not found');
     if (picker.entries.length === 0) throw createError.badRequest('No entries to pick from');
 
-    // Exclude the previous DB winner plus any session winners passed by the client
-    const allExcluded = new Set([...excludeUserIds, ...(picker.winnerId ? [picker.winnerId] : [])]);
+    // Exclude the previous winner plus any session winners passed by the client
+    const prevWinnerIdentity = picker.winningEntry ? entryIdentity(picker.winningEntry) : null;
+    const allExcluded = new Set([...excludeUserIds, ...(prevWinnerIdentity ? [prevWinnerIdentity] : [])]);
     const pool = allExcluded.size > 0
-      ? picker.entries.filter(e => !allExcluded.has(e.userId))
+      ? picker.entries.filter((e) => !allExcluded.has(entryIdentity(e)))
       : picker.entries;
     if (pool.length === 0) throw createError.badRequest('No other eligible entries');
 
@@ -79,14 +122,15 @@ export class ViewerPickerService {
 
     const updated = await prisma.viewerPicker.update({
       where: { id },
-      data: { status: ViewerPickerStatus.COMPLETED, winnerId: pick.userId, closedAt: new Date() },
+      data: { status: ViewerPickerStatus.COMPLETED, winningEntryId: pick.id, closedAt: new Date() },
       include: INCLUDE,
     });
 
-    io?.to(`picker:${id}`).emit('picker:updated', updated);
-    io?.emit('picker:updated', updated);
-    logger.info(`ViewerPicker ${id}: winner=${pick.userId}`);
-    return updated;
+    const response = toPickerResponse(updated);
+    io?.to(`picker:${id}`).emit('picker:updated', response);
+    io?.emit('picker:updated', response);
+    logger.info(`ViewerPicker ${id}: winner=${entryIdentity(pick)}`);
+    return response;
   }
 
   static async addEntryByUsername(id: string, kickUsername: string, io?: SocketIOServer) {
@@ -94,32 +138,40 @@ export class ViewerPickerService {
     if (!picker) throw createError.notFound('Picker not found');
     if (picker.status !== ViewerPickerStatus.OPEN) throw createError.badRequest('Draw is not open');
 
-    const user = await prisma.user.findFirst({
-      where: { kickUsername: { equals: kickUsername.trim(), mode: 'insensitive' } },
-      select: { id: true, displayName: true, kickUsername: true, avatarUrl: true },
-    });
-    if (!user) throw createError.notFound(`No user found with username "${kickUsername}"`);
+    const trimmed = kickUsername.trim();
+    const normalized = trimmed.toLowerCase();
 
     const existing = await prisma.viewerPickerEntry.findUnique({
-      where: { pickerId_userId: { pickerId: id, userId: user.id } },
+      where: { pickerId_kickUsername: { pickerId: id, kickUsername: normalized } },
     });
-    if (existing) throw createError.badRequest(`${user.kickUsername ?? user.displayName} is already in the draw`);
+    if (existing) throw createError.badRequest(`${trimmed} is already in the draw`);
 
-    await prisma.viewerPickerEntry.create({ data: { pickerId: id, userId: user.id } });
+    // Optional bonus link — entry is valid either way, since it's keyed on kickUsername.
+    const user = await prisma.user.findFirst({
+      where: { kickUsername: { equals: normalized, mode: 'insensitive' } },
+      select: { id: true },
+    });
+
+    await prisma.viewerPickerEntry.create({
+      data: { pickerId: id, kickUsername: normalized, userId: user?.id ?? null },
+    });
 
     const updated = await prisma.viewerPicker.findUnique({ where: { id }, include: INCLUDE });
-    io?.to(`picker:${id}`).emit('picker:updated', updated);
-    io?.emit('picker:updated', updated);
+    const response = toPickerResponse(updated!);
+    io?.to(`picker:${id}`).emit('picker:updated', response);
+    io?.emit('picker:updated', response);
 
-    logger.info(`ViewerPicker ${id}: manually added ${kickUsername}`);
-    return updated!;
+    logger.info(`ViewerPicker ${id}: manually added ${trimmed}${user ? '' : ' (unlinked)'}`);
+    return response;
   }
 
   static async delete(id: string) {
     await prisma.viewerPicker.delete({ where: { id } });
   }
 
-  // Called from KickChatService when a chat message matches the active keyword
+  // Called from KickChatService when a chat message matches the active keyword.
+  // The chatter is identified by their Kick username directly from the chat event, so
+  // entry never depends on having linked Kick or registered on the site.
   static async handleKeyword(kickUsername: string, message: string, io?: SocketIOServer): Promise<boolean> {
     const picker = await prisma.viewerPicker.findFirst({
       where: { status: ViewerPickerStatus.OPEN },
@@ -129,25 +181,28 @@ export class ViewerPickerService {
     const trimmed = message.trim().toLowerCase();
     if (trimmed !== picker.keyword.toLowerCase()) return false;
 
-    const user = await prisma.user.findFirst({
-      where: { kickUsername: { equals: kickUsername, mode: 'insensitive' } },
-      select: { id: true, displayName: true, kickUsername: true, avatarUrl: true },
-    });
-    if (!user) return false;
+    const normalizedUsername = kickUsername.trim().toLowerCase();
 
-    // Upsert so duplicate messages are ignored
     const existing = await prisma.viewerPickerEntry.findUnique({
-      where: { pickerId_userId: { pickerId: picker.id, userId: user.id } },
+      where: { pickerId_kickUsername: { pickerId: picker.id, kickUsername: normalizedUsername } },
     });
     if (existing) return false;
 
-    await prisma.viewerPickerEntry.create({ data: { pickerId: picker.id, userId: user.id } });
+    const user = await prisma.user.findFirst({
+      where: { kickUsername: { equals: normalizedUsername, mode: 'insensitive' } },
+      select: { id: true },
+    });
+
+    await prisma.viewerPickerEntry.create({
+      data: { pickerId: picker.id, kickUsername: normalizedUsername, userId: user?.id ?? null },
+    });
 
     const updated = await prisma.viewerPicker.findUnique({ where: { id: picker.id }, include: INCLUDE });
-    io?.to(`picker:${picker.id}`).emit('picker:updated', updated);
-    io?.emit('picker:updated', updated);
+    const response = toPickerResponse(updated!);
+    io?.to(`picker:${picker.id}`).emit('picker:updated', response);
+    io?.emit('picker:updated', response);
 
-    logger.info(`ViewerPicker ${picker.id}: ${kickUsername} entered via keyword`);
+    logger.info(`ViewerPicker ${picker.id}: ${kickUsername} entered via keyword${user ? '' : ' (unlinked)'}`);
     return true;
   }
 }

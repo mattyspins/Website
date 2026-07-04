@@ -67,7 +67,6 @@ model User {
   currentBingoGames      BonusBingo[]          @relation("BingoCurrentUser")
   bingoParticipations    BingoParticipant[]    @relation("BingoParticipants")
   bingoClaimedCells      BingoCell[]           @relation("BingoCellClaimer")
-  viewerPickerWins       ViewerPicker[]        @relation("ViewerPickerWinner")
   viewerPickerEntries    ViewerPickerEntry[]
   slotRequests           SlotRequest[]
   kothEntries            KingOfTheHillEntry[]
@@ -585,28 +584,33 @@ enum ViewerPickerStatus {
 }
 
 model ViewerPicker {
-  id        String              @id @default(uuid())
-  keyword   String
-  label     String?
-  status    ViewerPickerStatus  @default(OPEN)
-  winnerId  String?             @map("winner_id")
-  createdAt DateTime            @default(now()) @map("created_at")
-  closedAt  DateTime?           @map("closed_at")
-  entries   ViewerPickerEntry[]
-  winner    User?               @relation("ViewerPickerWinner", fields: [winnerId], references: [id])
+  id             String              @id @default(uuid())
+  keyword        String
+  label          String?
+  status         ViewerPickerStatus  @default(OPEN)
+  winningEntryId String?             @unique @map("winning_entry_id")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  closedAt       DateTime?           @map("closed_at")
+  entries        ViewerPickerEntry[] @relation("PickerEntries")
+  winningEntry   ViewerPickerEntry?  @relation("PickerWinningEntry", fields: [winningEntryId], references: [id], onDelete: SetNull)
 
   @@map("viewer_pickers")
 }
 
+// Entries are keyed by the raw Kick chat username so anyone who types the keyword can
+// enter, whether or not they've linked Kick or registered on the site — `userId` is an
+// optional bonus link, resolved when the chatter's username happens to match a site account.
 model ViewerPickerEntry {
-  id        String       @id @default(uuid())
-  pickerId  String       @map("picker_id")
-  userId    String       @map("user_id")
-  enteredAt DateTime     @default(now()) @map("entered_at")
-  picker    ViewerPicker @relation(fields: [pickerId], references: [id], onDelete: Cascade)
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String        @id @default(uuid())
+  pickerId     String        @map("picker_id")
+  kickUsername String        @map("kick_username")
+  userId       String?       @map("user_id")
+  enteredAt    DateTime      @default(now()) @map("entered_at")
+  picker       ViewerPicker  @relation("PickerEntries", fields: [pickerId], references: [id], onDelete: Cascade)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  winningFor   ViewerPicker? @relation("PickerWinningEntry")
 
-  @@unique([pickerId, userId])
+  @@unique([pickerId, kickUsername])
   @@map("viewer_picker_entries")
 }
 
