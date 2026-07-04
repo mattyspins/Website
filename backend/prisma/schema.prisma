@@ -639,18 +639,22 @@ model KingOfTheHill {
   @@map("king_of_the_hill_sessions")
 }
 
+// Entries are keyed by the raw Kick chat username so anyone who types the keyword can
+// join, whether or not they've linked Kick or registered on the site — `userId` is an
+// optional bonus link, resolved when the chatter's username happens to match a site account.
 model KingOfTheHillEntry {
-  id        String            @id @default(uuid())
-  sessionId String            @map("session_id")
-  userId    String            @map("user_id")
-  status    KothEntryStatus   @default(WAITING)
-  joinedAt  DateTime          @default(now()) @map("joined_at")
-  drawnAt   DateTime?         @map("drawn_at")
-  session   KingOfTheHill        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  rounds    KingOfTheHillRound[]
+  id           String            @id @default(uuid())
+  sessionId    String            @map("session_id")
+  kickUsername String            @map("kick_username")
+  userId       String?           @map("user_id")
+  status       KothEntryStatus   @default(WAITING)
+  joinedAt     DateTime          @default(now()) @map("joined_at")
+  drawnAt      DateTime?         @map("drawn_at")
+  session      KingOfTheHill        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user         User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  rounds       KingOfTheHillRound[]
 
-  @@unique([sessionId, userId])
+  @@unique([sessionId, kickUsername])
   @@map("king_of_the_hill_entries")
 }
 
@@ -658,7 +662,7 @@ model KingOfTheHillRound {
   id           String    @id @default(uuid())
   sessionId    String    @map("session_id")
   entryId      String    @map("entry_id")
-  userId       String    @map("user_id")
+  userId       String?   @map("user_id")
   slotName     String?   @map("slot_name")
   betAmount    Decimal?  @map("bet_amount") @db.Decimal(10, 2)
   payoutAmount Decimal?  @map("payout_amount") @db.Decimal(10, 2)
@@ -670,7 +674,7 @@ model KingOfTheHillRound {
   dethronedAt  DateTime? @map("dethroned_at")
   session      KingOfTheHill      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   entry        KingOfTheHillEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
-  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("king_of_the_hill_rounds")
 }

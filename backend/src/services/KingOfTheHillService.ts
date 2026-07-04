@@ -2,10 +2,10 @@ import { randomInt } from 'crypto';
 import { prisma } from '@/config/database';
 import { Server as SocketIOServer } from 'socket.io';
 import { createError } from '@/middleware/errorHandler';
-import { KingOfTheHillStatus, KothEntryStatus } from '@prisma/client';
+import { KingOfTheHillStatus, KothEntryStatus, Prisma } from '@prisma/client';
 import { logger } from '@/utils/logger';
 
-const USER_SELECT = { id: true, displayName: true, kickUsername: true, avatarUrl: true };
+const USER_SELECT = { id: true, displayName: true, kickUsername: true, avatarUrl: true } as const;
 
 const INCLUDE = {
   entries: {
@@ -13,10 +13,70 @@ const INCLUDE = {
     orderBy: { joinedAt: 'asc' as const },
   },
   rounds: {
-    include: { user: { select: USER_SELECT } },
+    include: {
+      user: { select: USER_SELECT },
+      entry: { select: { kickUsername: true } },
+    },
     orderBy: { drawnAt: 'asc' as const },
   },
-};
+} satisfies Prisma.KingOfTheHillInclude;
+
+type SessionWithRelations = Prisma.KingOfTheHillGetPayload<{ include: typeof INCLUDE }>;
+type EntryWithUser = SessionWithRelations['entries'][number];
+type RoundWithUser = SessionWithRelations['rounds'][number];
+
+// A viewer who hasn't linked Kick or registered on the site has no `user` row — fall back
+// to the raw kick_username captured from chat so they can still join and be displayed.
+function entryUserShape(entry: EntryWithUser) {
+  if (entry.user) return entry.user;
+  return { id: entry.kickUsername, displayName: entry.kickUsername, kickUsername: entry.kickUsername, avatarUrl: null };
+}
+
+function roundUserShape(round: RoundWithUser) {
+  if (round.user) return round.user;
+  return { id: round.entry.kickUsername, displayName: round.entry.kickUsername, kickUsername: round.entry.kickUsername, avatarUrl: null };
+}
+
+// Stable per-session identity for an entry, usable for exclusion/dedup whether or not
+// the entrant has a linked site account.
+function entryIdentity(entry: { userId: string | null; kickUsername: string }) {
+  return entry.userId ?? entry.kickUsername;
+}
+
+function toSessionResponse(session: SessionWithRelations) {
+  return {
+    id: session.id,
+    label: session.label,
+    status: session.status,
+    createdAt: session.createdAt,
+    closedAt: session.closedAt,
+    entries: session.entries.map((e) => ({
+      id: e.id,
+      sessionId: e.sessionId,
+      userId: entryIdentity(e),
+      status: e.status,
+      joinedAt: e.joinedAt,
+      drawnAt: e.drawnAt,
+      user: entryUserShape(e),
+    })),
+    rounds: session.rounds.map((r) => ({
+      id: r.id,
+      sessionId: r.sessionId,
+      entryId: r.entryId,
+      userId: r.userId ?? r.entry.kickUsername,
+      slotName: r.slotName,
+      betAmount: r.betAmount,
+      payoutAmount: r.payoutAmount,
+      multiplier: r.multiplier,
+      isKing: r.isKing,
+      drawnAt: r.drawnAt,
+      slotCalledAt: r.slotCalledAt,
+      playedAt: r.playedAt,
+      dethronedAt: r.dethronedAt,
+      user: roundUserShape(r),
+    })),
+  };
+}
 
 export class KingOfTheHillService {
   static async create(label?: string, io?: SocketIOServer) {
@@ -30,30 +90,33 @@ export class KingOfTheHillService {
       include: INCLUDE,
     });
 
-    io?.emit('koth:updated', session);
+    const response = toSessionResponse(session);
+    io?.emit('koth:updated', response);
     logger.info(`KingOfTheHill created: id=${session.id}`);
-    return session;
+    return response;
   }
 
   static async getActive() {
-    return prisma.kingOfTheHill.findFirst({
+    const session = await prisma.kingOfTheHill.findFirst({
       where: { status: KingOfTheHillStatus.OPEN },
       include: INCLUDE,
     });
+    return session ? toSessionResponse(session) : null;
   }
 
   static async getAll() {
-    return prisma.kingOfTheHill.findMany({
+    const sessions = await prisma.kingOfTheHill.findMany({
       include: INCLUDE,
       orderBy: { createdAt: 'desc' },
       take: 30,
     });
+    return sessions.map(toSessionResponse);
   }
 
   static async getById(id: string) {
     const session = await prisma.kingOfTheHill.findUnique({ where: { id }, include: INCLUDE });
     if (!session) throw createError.notFound('Session not found');
-    return session;
+    return toSessionResponse(session);
   }
 
   static async close(id: string, io?: SocketIOServer) {
@@ -66,9 +129,10 @@ export class KingOfTheHillService {
       include: INCLUDE,
     });
 
-    io?.to(`koth:${id}`).emit('koth:updated', updated);
-    io?.emit('koth:updated', updated);
-    return updated;
+    const response = toSessionResponse(updated);
+    io?.to(`koth:${id}`).emit('koth:updated', response);
+    io?.emit('koth:updated', response);
+    return response;
   }
 
   static async delete(id: string) {
@@ -77,31 +141,38 @@ export class KingOfTheHillService {
 
   private static async emitSession(id: string, io?: SocketIOServer) {
     const updated = await prisma.kingOfTheHill.findUnique({ where: { id }, include: INCLUDE });
-    io?.to(`koth:${id}`).emit('koth:updated', updated);
-    io?.emit('koth:updated', updated);
-    return updated!;
+    const response = toSessionResponse(updated!);
+    io?.to(`koth:${id}`).emit('koth:updated', response);
+    io?.emit('koth:updated', response);
+    return response;
   }
 
-  // Called from KickChatService on exact "!king" match
+  // Called from KickChatService on exact "!king" match. The chatter is identified by their
+  // Kick username directly from the chat event, so joining never depends on having linked
+  // Kick or registered on the site.
   static async joinByKeyword(kickUsername: string, io?: SocketIOServer): Promise<boolean> {
     const session = await prisma.kingOfTheHill.findFirst({ where: { status: KingOfTheHillStatus.OPEN } });
     if (!session) return false;
 
-    const user = await prisma.user.findFirst({
-      where: { kickUsername: { equals: kickUsername, mode: 'insensitive' }, kickVerified: true },
-      select: { id: true },
-    });
-    if (!user) return false;
+    const normalized = kickUsername.trim().toLowerCase();
 
     const existing = await prisma.kingOfTheHillEntry.findUnique({
-      where: { sessionId_userId: { sessionId: session.id, userId: user.id } },
+      where: { sessionId_kickUsername: { sessionId: session.id, kickUsername: normalized } },
     });
     if (existing) return false;
 
-    await prisma.kingOfTheHillEntry.create({ data: { sessionId: session.id, userId: user.id } });
+    // Optional bonus link — entry is valid either way, since it's keyed on kickUsername.
+    const user = await prisma.user.findFirst({
+      where: { kickUsername: { equals: normalized, mode: 'insensitive' } },
+      select: { id: true },
+    });
+
+    await prisma.kingOfTheHillEntry.create({
+      data: { sessionId: session.id, kickUsername: normalized, userId: user?.id ?? null },
+    });
     await this.emitSession(session.id, io);
 
-    logger.info(`KingOfTheHill ${session.id}: ${kickUsername} joined via !king`);
+    logger.info(`KingOfTheHill ${session.id}: ${kickUsername} joined via !king${user ? '' : ' (unlinked)'}`);
     return true;
   }
 
@@ -110,20 +181,25 @@ export class KingOfTheHillService {
     if (!session) throw createError.notFound('Session not found');
     if (session.status !== KingOfTheHillStatus.OPEN) throw createError.badRequest('Session is not open');
 
-    const user = await prisma.user.findFirst({
-      where: { kickUsername: { equals: kickUsername.trim(), mode: 'insensitive' } },
-      select: { id: true, kickUsername: true, displayName: true },
-    });
-    if (!user) throw createError.notFound(`No user found with username "${kickUsername}"`);
+    const trimmed = kickUsername.trim();
+    const normalized = trimmed.toLowerCase();
 
     const existing = await prisma.kingOfTheHillEntry.findUnique({
-      where: { sessionId_userId: { sessionId: id, userId: user.id } },
+      where: { sessionId_kickUsername: { sessionId: id, kickUsername: normalized } },
     });
-    if (existing) throw createError.badRequest(`${user.kickUsername ?? user.displayName} is already in the pool`);
+    if (existing) throw createError.badRequest(`${trimmed} is already in the pool`);
 
-    await prisma.kingOfTheHillEntry.create({ data: { sessionId: id, userId: user.id } });
+    // Optional bonus link — entry is valid either way, since it's keyed on kickUsername.
+    const user = await prisma.user.findFirst({
+      where: { kickUsername: { equals: normalized, mode: 'insensitive' } },
+      select: { id: true },
+    });
 
-    logger.info(`KingOfTheHill ${id}: manually added ${kickUsername}`);
+    await prisma.kingOfTheHillEntry.create({
+      data: { sessionId: id, kickUsername: normalized, userId: user?.id ?? null },
+    });
+
+    logger.info(`KingOfTheHill ${id}: manually added ${trimmed}${user ? '' : ' (unlinked)'}`);
     return this.emitSession(id, io);
   }
 
@@ -160,7 +236,7 @@ export class KingOfTheHillService {
       }),
     ]);
 
-    logger.info(`KingOfTheHill ${sessionId}: drew ${pick.userId}`);
+    logger.info(`KingOfTheHill ${sessionId}: drew ${entryIdentity(pick)}`);
     return this.emitSession(sessionId, io);
   }
 
@@ -181,16 +257,13 @@ export class KingOfTheHillService {
     return this.emitSession(sessionId, io);
   }
 
-  // Called from KickChatService on "!slot <name>" match
+  // Called from KickChatService on "!slot <name>" match. Matched on kickUsername directly
+  // so an unlinked entrant can still call their slot and be scored.
   static async submitSlotCall(kickUsername: string, slotName: string, io?: SocketIOServer): Promise<boolean> {
-    const user = await prisma.user.findFirst({
-      where: { kickUsername: { equals: kickUsername, mode: 'insensitive' }, kickVerified: true },
-      select: { id: true },
-    });
-    if (!user) return false;
+    const normalized = kickUsername.trim().toLowerCase();
 
     const entry = await prisma.kingOfTheHillEntry.findFirst({
-      where: { userId: user.id, status: KothEntryStatus.DRAWN, session: { status: KingOfTheHillStatus.OPEN } },
+      where: { kickUsername: normalized, status: KothEntryStatus.DRAWN, session: { status: KingOfTheHillStatus.OPEN } },
     });
     if (!entry) return false;
 
