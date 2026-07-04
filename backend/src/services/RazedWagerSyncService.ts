@@ -1,6 +1,7 @@
 import { prisma } from '@/config/database';
 import { logger } from '@/utils/logger';
 import { RazedService } from '@/services/RazedService';
+import { WagerLeaderboardService } from '@/services/WagerLeaderboardService';
 
 function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -148,7 +149,7 @@ export class RazedWagerSyncService {
     }
 
     await RazedWagerSyncService.recomputeRollingStats();
-    await RazedWagerSyncService.processMonthlyPayoutIfDue();
+    await RazedWagerSyncService.processRacePayoutsIfDue();
   }
 
   /** First day the Razed referral code went live — the manual resync walks back to here. */
@@ -180,7 +181,7 @@ export class RazedWagerSyncService {
     }
 
     await RazedWagerSyncService.recomputeRollingStats();
-    await RazedWagerSyncService.processMonthlyPayoutIfDue();
+    await RazedWagerSyncService.processRacePayoutsIfDue();
   }
 
   /** Recomputes weeklyWagered (trailing 7 days) and monthlyWagered (current calendar month) for every tracked user. */
@@ -214,51 +215,53 @@ export class RazedWagerSyncService {
   }
 
   /**
-   * Records the winners of the most recently completed calendar month against the fixed
-   * cash-prize table, if that month hasn't been recorded yet. This is real money, not site
-   * currency, so it does NOT auto-credit anything — it only creates the payout history row
-   * so admins know who's owed what and can pay them out manually. Safe to call repeatedly —
-   * per-user payout rows guard against double-recording even if interrupted mid-run.
+   * Records the winners of any admin-created race whose end date has passed and hasn't been
+   * paid out yet. This is real money, not site currency, so it does NOT auto-credit anything —
+   * it only creates the payout history rows so admins know who's owed what and can pay them out
+   * manually, then marks the race "ended". Safe to call repeatedly — the per-race/per-user
+   * unique payout rows guard against double-recording even if interrupted mid-run. Only linked
+   * site accounts can be paid out (a payout must be attributed to a real user), so unlinked
+   * Razed wagerers who'd otherwise place in the money are skipped.
    */
-  static async processMonthlyPayoutIfDue(): Promise<void> {
-    const now = new Date();
-    const currentMonthStart = startOfMonthUTC(now);
-    const previousMonthStart = new Date(Date.UTC(currentMonthStart.getUTCFullYear(), currentMonthStart.getUTCMonth() - 1, 1));
+  static async processRacePayoutsIfDue(): Promise<void> {
+    const today = startOfDayUTC(new Date());
 
-    const prizes = await prisma.monthlyLeaderboardPrize.findMany({ orderBy: { position: 'asc' } });
-    if (prizes.length === 0) return;
-
-    const alreadyPaidCount = await prisma.monthlyLeaderboardPayout.count({ where: { monthStart: previousMonthStart } });
-    if (alreadyPaidCount >= prizes.length) return;
-
-    const standings = await prisma.razedDailyWager.groupBy({
-      by: ['userId'],
-      where: { date: { gte: previousMonthStart, lt: currentMonthStart } },
-      _sum: { amount: true },
-      orderBy: { _sum: { amount: 'desc' } },
-      take: prizes.length,
+    const dueRaces = await prisma.wagerRace.findMany({
+      where: { status: 'active', endDate: { lt: today } },
+      include: { prizes: { orderBy: { position: 'asc' } } },
     });
 
-    const monthLabel = previousMonthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    for (const race of dueRaces) {
+      const standings = await WagerLeaderboardService.computeStandings(
+        race.startDate,
+        race.endDate,
+        race.prizes,
+        race.prizes.length
+      );
 
-    for (let i = 0; i < standings.length; i++) {
-      const position = i + 1;
-      const prize = prizes.find((p) => p.position === position);
-      if (!prize) continue;
+      for (const row of standings) {
+        if (!row.userId || row.prizeAmount === null) continue;
 
-      const { userId } = standings[i];
-      const wagered = Number(standings[i]._sum.amount ?? 0);
+        const existingPayout = await prisma.wagerRacePayout.findUnique({
+          where: { raceId_userId: { raceId: race.id, userId: row.userId } },
+        });
+        if (existingPayout) continue;
 
-      const existingPayout = await prisma.monthlyLeaderboardPayout.findUnique({
-        where: { monthStart_userId: { monthStart: previousMonthStart, userId } },
-      });
-      if (existingPayout) continue;
+        await prisma.wagerRacePayout.create({
+          data: {
+            raceId: race.id,
+            userId: row.userId,
+            position: row.position,
+            wagered: Number(row.wagered),
+            prizeAmount: row.prizeAmount,
+          },
+        });
 
-      await prisma.monthlyLeaderboardPayout.create({
-        data: { monthStart: previousMonthStart, userId, position, wagered, pointsAwarded: prize.points },
-      });
+        logger.info(`RazedWagerSyncService: recorded $${row.prizeAmount} owed to user ${row.userId} for #${row.position} in race ${race.id} (pay out manually)`);
+      }
 
-      logger.info(`RazedWagerSyncService: recorded $${prize.points} owed to user ${userId} for #${position} in ${monthLabel} (pay out manually)`);
+      await prisma.wagerRace.update({ where: { id: race.id }, data: { status: 'ended' } });
+      logger.info(`RazedWagerSyncService: race ${race.id} ended and payouts recorded`);
     }
   }
 }

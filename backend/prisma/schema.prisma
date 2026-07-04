@@ -73,7 +73,7 @@ model User {
   kothEntries            KingOfTheHillEntry[]
   kothRounds             KingOfTheHillRound[]
   razedDailyWagers       RazedDailyWager[]
-  monthlyPayouts         MonthlyLeaderboardPayout[]
+  wagerRacePayouts       WagerRacePayout[]
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")
@@ -798,12 +798,48 @@ model RazedUnlinkedWager {
   @@map("razed_unlinked_wagers")
 }
 
-model MonthlyLeaderboardPrize {
-  id       String @id @default(uuid())
-  position Int    @unique
-  points   Int
+// ─── Admin-created wager races ──────────────────────────────────────────────
+// Replaces the old fixed-calendar-month leaderboard: admins create each race
+// with its own start/end date and however many paid positions they want.
 
-  @@map("monthly_leaderboard_prizes")
+model WagerRace {
+  id        String   @id @default(uuid())
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  status    String   @default("active") // "active" (running or awaiting payout) | "ended" (paid out)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  prizes  WagerRacePrize[]
+  payouts WagerRacePayout[]
+
+  @@index([status, startDate, endDate])
+  @@map("wager_races")
+}
+
+model WagerRacePrize {
+  id       String    @id @default(uuid())
+  raceId   String    @map("race_id")
+  position Int
+  amount   Int
+  race     WagerRace @relation(fields: [raceId], references: [id], onDelete: Cascade)
+
+  @@unique([raceId, position])
+  @@map("wager_race_prizes")
+}
+
+model WagerRacePayout {
+  id          String    @id @default(uuid())
+  raceId      String    @map("race_id")
+  userId      String    @map("user_id")
+  position    Int
+  wagered     Decimal   @db.Decimal(14, 2)
+  prizeAmount Int       @map("prize_amount")
+  paidAt      DateTime  @default(now()) @map("paid_at")
+  race        WagerRace @relation(fields: [raceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([raceId, userId])
+  @@map("wager_race_payouts")
 }
 
 // ─── Bonus Hunt Tracker (shared across admins/mods) ────────────────────────
@@ -824,16 +860,3 @@ model Hunt {
   @@map("hunts")
 }
 
-model MonthlyLeaderboardPayout {
-  id            String   @id @default(uuid())
-  monthStart    DateTime @map("month_start") @db.Date
-  userId        String   @map("user_id")
-  position      Int
-  wagered       Decimal  @db.Decimal(14, 2)
-  pointsAwarded Int      @map("points_awarded")
-  paidAt        DateTime @default(now()) @map("paid_at")
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([monthStart, userId])
-  @@map("monthly_leaderboard_payouts")
-}

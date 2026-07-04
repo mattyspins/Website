@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Trophy, Crown } from "lucide-react";
-import { wagerLeaderboardApi, MonthlyStandingRow, MonthlyHistoryEntry } from "@/lib/api/wagerLeaderboard";
+import { wagerLeaderboardApi, ActiveRace, RaceHistoryEntry } from "@/lib/api/wagerLeaderboard";
 
 function maskUsername(username: string): string {
   if (username.length <= 3) return username;
@@ -15,6 +15,10 @@ function maskUsername(username: string): string {
 
 function fmtMoney(v: string): string {
   return `$${Number(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function fmtDate(d: string): string {
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
 function rankBadgeClasses(position: number): string {
@@ -46,15 +50,15 @@ function AvatarCircle({ row }: { row: { displayName: string; kickUsername: strin
 }
 
 export default function LeaderboardPage() {
-  const [standings, setStandings] = useState<MonthlyStandingRow[]>([]);
-  const [history, setHistory] = useState<MonthlyHistoryEntry[]>([]);
+  const [race, setRace] = useState<ActiveRace | null>(null);
+  const [history, setHistory] = useState<RaceHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [s, h] = await Promise.all([wagerLeaderboardApi.getMonthly(), wagerLeaderboardApi.getMonthlyHistory()]);
-        setStandings(s);
+        const [r, h] = await Promise.all([wagerLeaderboardApi.getActive(), wagerLeaderboardApi.getHistory()]);
+        setRace(r);
         setHistory(h);
       } catch { /* ignore */ }
       finally { setLoading(false); }
@@ -75,7 +79,7 @@ export default function LeaderboardPage() {
     );
   }
 
-  const monthLabel = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const totalPrize = race?.prizes.reduce((s, p) => s + p.amount, 0) ?? 0;
 
   return (
     <div className="min-h-screen pt-20 pb-16 px-4">
@@ -85,20 +89,33 @@ export default function LeaderboardPage() {
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <span className="inline-flex items-center gap-2 bg-gold-500/10 border border-gold-500/30 text-gold-400 text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded mb-4">
             <Trophy className="w-3.5 h-3.5" />
-            Monthly Wager Race
+            Wager Race
           </span>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-gaming text-white mb-3 tracking-wide">
-            {monthLabel.split(" ")[0].toUpperCase()} <span className="text-gold-400">LEADERBOARD</span>
+            WAGER <span className="text-gold-400">LEADERBOARD</span>
           </h1>
-          <p className="text-gray-400 text-sm max-w-xl mx-auto">
-            Ranked by wager on Razed this month — every player under our code counts. Top 10 split $500 cash when the month ends (link your Razed account on your profile so we know who to pay).
-          </p>
+          {race ? (
+            <p className="text-gray-400 text-sm max-w-xl mx-auto">
+              Ranked by wager on Razed from {fmtDate(race.startDate)} to {fmtDate(race.endDate)} — every player under our code counts.
+              Top {race.prizes.length} split ${totalPrize} cash when the race ends (link your Razed account on your profile so we know who to pay).
+            </p>
+          ) : (
+            <p className="text-gray-400 text-sm max-w-xl mx-auto">
+              Ranked by wager on Razed — every player under our code counts.
+            </p>
+          )}
         </motion.div>
 
-        {standings.length === 0 ? (
+        {!race ? (
           <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-12 text-center mb-12">
             <Trophy className="w-10 h-10 text-gold-400/40 mx-auto mb-4" />
-            <p className="text-gray-400 font-semibold">No wagers recorded yet this month</p>
+            <p className="text-gray-400 font-semibold">No race is running right now</p>
+            <p className="text-gray-600 text-sm mt-1">Check back soon for the next one</p>
+          </div>
+        ) : race.standings.length === 0 ? (
+          <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-12 text-center mb-12">
+            <Trophy className="w-10 h-10 text-gold-400/40 mx-auto mb-4" />
+            <p className="text-gray-400 font-semibold">No wagers recorded yet this race</p>
             <p className="text-gray-600 text-sm mt-1">Wagers sync automatically from Razed — check back soon</p>
           </div>
         ) : (
@@ -109,7 +126,7 @@ export default function LeaderboardPage() {
               <div className="col-span-3 text-right">Wagered</div>
               <div className="col-span-2 text-right">Prize</div>
             </div>
-            {standings.map((row, i) => (
+            {race.standings.map((row, i) => (
               <motion.div
                 key={row.userId ?? row.displayName}
                 initial={{ opacity: 0, y: 8 }}
@@ -130,9 +147,9 @@ export default function LeaderboardPage() {
                   <span className="text-gray-300 text-sm font-semibold tabular-nums">{fmtMoney(row.wagered)}</span>
                 </div>
                 <div className="col-span-2 text-right">
-                  {row.points !== null ? (
+                  {row.prizeAmount !== null ? (
                     <>
-                      <span className="text-gold-400 font-bold text-sm">${row.points}</span>
+                      <span className="text-gold-400 font-bold text-sm">${row.prizeAmount}</span>
                       {!row.linked && <p className="text-gray-600 text-[10px] mt-0.5">link account to receive</p>}
                     </>
                   ) : (
@@ -153,9 +170,9 @@ export default function LeaderboardPage() {
             </p>
             <div className="space-y-4">
               {history.map((entry) => (
-                <div key={entry.monthStart} className="bg-navy-800/50 border border-white/6 rounded-xl p-4">
+                <div key={entry.id} className="bg-navy-800/50 border border-white/6 rounded-xl p-4">
                   <p className="text-gray-400 text-xs font-semibold mb-3">
-                    {new Date(entry.monthStart).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" })}
+                    {fmtDate(entry.startDate)} – {new Date(entry.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {entry.winners.map((w) => (
@@ -164,7 +181,7 @@ export default function LeaderboardPage() {
                           {w.position}
                         </span>
                         <span className="text-gray-200 text-xs">{maskUsername(w.kickUsername ?? w.displayName)}</span>
-                        <span className="text-gold-400 text-xs font-bold">${w.pointsAwarded}</span>
+                        <span className="text-gold-400 text-xs font-bold">${w.prizeAmount}</span>
                       </div>
                     ))}
                   </div>

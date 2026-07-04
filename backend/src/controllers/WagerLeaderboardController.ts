@@ -7,14 +7,14 @@ const asyncHandler = (fn: (req: AuthenticatedRequest, res: Response, next: NextF
   (req: AuthenticatedRequest, res: Response, next: NextFunction) => fn(req, res, next).catch(next);
 
 export class WagerLeaderboardController {
-  static getMonthly = asyncHandler(async (_req, res) => {
-    const standings = await WagerLeaderboardService.getMonthlyStandings();
-    res.json({ success: true, standings });
+  static getActive = asyncHandler(async (_req, res) => {
+    const race = await WagerLeaderboardService.getActiveRace();
+    res.json({ success: true, race });
   });
 
-  static getMonthlyHistory = asyncHandler(async (_req, res) => {
-    const history = await WagerLeaderboardService.getMonthlyHistory();
-    res.json({ success: true, history });
+  static getHistory = asyncHandler(async (_req, res) => {
+    const races = await WagerLeaderboardService.getRaceHistory();
+    res.json({ success: true, races });
   });
 
   static getAdminWagers = asyncHandler(async (_req, res) => {
@@ -27,19 +27,43 @@ export class WagerLeaderboardController {
     res.json({ success: true, wagerers });
   });
 
-  static getPrizes = asyncHandler(async (_req, res) => {
-    const prizes = await WagerLeaderboardService.getPrizes();
-    res.json({ success: true, prizes });
+  static listRaces = asyncHandler(async (_req, res) => {
+    const races = await WagerLeaderboardService.listRaces();
+    res.json({ success: true, races });
   });
 
-  static setPrizes = asyncHandler(async (req, res) => {
-    const { prizes } = req.body;
-    if (!Array.isArray(prizes)) {
-      res.status(400).json({ error: 'prizes must be an array of { position, points }' });
+  static createRace = asyncHandler(async (req, res) => {
+    const { startDate, endDate, prizes } = req.body;
+    if (!startDate || !endDate || !Array.isArray(prizes)) {
+      res.status(400).json({ error: 'startDate, endDate, and prizes are required' });
       return;
     }
-    const updated = await WagerLeaderboardService.setPrizes(prizes);
-    res.json({ success: true, prizes: updated });
+    try {
+      const race = await WagerLeaderboardService.createRace({ startDate, endDate, prizes });
+      res.json({ success: true, race });
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  static updateRace = asyncHandler(async (req, res) => {
+    const { raceId } = req.params;
+    try {
+      const race = await WagerLeaderboardService.updateRace(raceId, req.body);
+      res.json({ success: true, race });
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  static deleteRace = asyncHandler(async (req, res) => {
+    const { raceId } = req.params;
+    try {
+      await WagerLeaderboardService.deleteRace(raceId);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
   });
 
   static resync = asyncHandler(async (_req, res) => {
