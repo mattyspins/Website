@@ -9,7 +9,6 @@ import AdminStats from "@/components/admin/AdminStats";
 import AdminMilestones from "@/components/admin/AdminMilestones";
 import AdminSchedule from "@/components/admin/AdminSchedule";
 import AdminMilestoneClaims from "@/components/admin/AdminMilestoneClaims";
-import AdminRaffles from "@/components/admin/AdminRaffles";
 import { API_ENDPOINTS } from "@/lib/api";
 import {
   LayoutDashboard,
@@ -291,8 +290,6 @@ export default function AdminDashboard() {
         {activeTab === "milestones" && <AdminMilestones />}
 
         {activeTab === "claims" && <AdminMilestoneClaims />}
-
-        {activeTab === "raffles" && <AdminRaffles />}
 
         {activeTab === "store" && <AdminStore />}
 

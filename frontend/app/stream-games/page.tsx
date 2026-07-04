@@ -152,12 +152,13 @@ function RaffleList() {
     fetch(API_ENDPOINTS.RAFFLES, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
       .then((r) => r.json())
       .then((d) => {
-        if (d.raffles) {
-          setRaffles(d.raffles);
+        const list = d.data?.raffles;
+        if (list) {
+          setRaffles(list);
           const init: Record<string, number> = {};
-          for (const r of d.raffles) init[r.id] = 1;
+          for (const r of list) init[r.id] = 1;
           setQuantities(init);
-          if (token) loadTickets(token, d.raffles);
+          if (token) loadTickets(token, list);
         }
       })
       .catch(() => {})
@@ -174,7 +175,7 @@ function RaffleList() {
       try {
         const res = await fetch(API_ENDPOINTS.RAFFLE_USER_TICKETS(r.id), { headers: { Authorization: `Bearer ${token}` } });
         const d = await res.json();
-        if (d.tickets) result[r.id] = d.tickets.length;
+        if (d.data?.tickets) result[r.id] = d.data.tickets.length;
       } catch { /* ignore */ }
     }));
     setMyTickets(result);
@@ -209,19 +210,16 @@ function RaffleList() {
   const [pastRaffles, setPastRaffles] = useState<Array<{ id: string; title: string; prize: string; endedAt: string; winners: Array<{ displayName: string }> }>>([]);
 
   useEffect(() => {
-    fetch(API_ENDPOINTS.LEADERBOARDS_COMPLETED)
-      .then(() => {})
-      .catch(() => {});
-    fetch(API_ENDPOINTS.RAFFLES_ADMIN_ALL || API_ENDPOINTS.RAFFLES)
+    fetch(API_ENDPOINTS.RAFFLES_COMPLETED)
       .then((r) => r.json())
       .then((d) => {
-        const completed = (d.raffles ?? []).filter((r: any) => r.status === "completed" || r.status === "ended");
+        const completed: any[] = d.data?.raffles ?? [];
         Promise.all(
           completed.slice(0, 5).map(async (r: any) => {
             try {
               const wr = await fetch(API_ENDPOINTS.RAFFLE_WINNERS(r.id));
               const wd = await wr.json();
-              return { id: r.id, title: r.title, prize: r.prize, endedAt: r.endsAt, winners: wd.winners ?? [] };
+              return { id: r.id, title: r.title, prize: r.prize, endedAt: r.endsAt, winners: wd.data?.winners ?? [] };
             } catch { return { id: r.id, title: r.title, prize: r.prize, endedAt: r.endsAt, winners: [] }; }
           })
         ).then((results) => setPastRaffles(results));

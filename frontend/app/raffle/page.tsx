@@ -75,7 +75,7 @@ export default function RafflePage() {
             headers: { Authorization: `Bearer ${token}` },
           });
           const d = await res.json();
-          if (d.tickets) result[r.id] = d.tickets.length;
+          if (d.data?.tickets) result[r.id] = d.data.tickets.length;
         } catch { /* ignore */ }
       })
     );

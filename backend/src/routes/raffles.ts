@@ -43,8 +43,9 @@ const adminLimiter = rateLimit({
 // Public routes
 router.get('/', raffleLimiter, RaffleController.getActiveRaffles);
 router.get('/stats', raffleLimiter, RaffleController.getRaffleStats);
-// Must be before /:raffleId to avoid Express treating "my-history" as a raffleId param
+// Must be before /:raffleId to avoid Express treating these literal segments as a raffleId param
 router.get('/my-history', raffleLimiter, authMiddleware, RaffleController.getUserRaffleHistory);
+router.get('/completed', raffleLimiter, RaffleController.getCompletedRaffles);
 router.get('/:raffleId', raffleLimiter, RaffleController.getRaffleDetails);
 router.get(
   '/:raffleId/winners',
@@ -94,6 +95,13 @@ router.put(
   authMiddleware,
   adminMiddleware,
   RaffleController.updateRaffle
+);
+router.delete(
+  '/:raffleId',
+  adminLimiter,
+  authMiddleware,
+  adminMiddleware,
+  RaffleController.deleteRaffle
 );
 router.get(
   '/admin/all',

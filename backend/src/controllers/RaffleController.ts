@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { RaffleService, RaffleConfig } from '@/services/RaffleService';
-import { asyncHandler, createError } from '@/middleware/errorHandler';
+import { asyncHandler, createError, CustomError } from '@/middleware/errorHandler';
 import { AuthenticatedRequest } from '@/middleware/auth';
 import { logger } from '@/utils/logger';
 
@@ -24,6 +24,7 @@ export class RaffleController {
           },
         });
       } catch (error) {
+        if (error instanceof CustomError) throw error;
         logger.error('Error getting active raffles:', error);
         throw createError.internal('Failed to get active raffles');
       }
@@ -51,6 +52,7 @@ export class RaffleController {
           data: { raffle },
         });
       } catch (error) {
+        if (error instanceof CustomError) throw error;
         logger.error('Error getting raffle details:', error);
         throw createError.internal('Failed to get raffle details');
       }
@@ -145,6 +147,7 @@ export class RaffleController {
           },
         });
       } catch (error) {
+        if (error instanceof CustomError) throw error;
         logger.error('Error getting user tickets:', error);
         throw createError.internal('Failed to get user tickets');
       }
@@ -172,6 +175,7 @@ export class RaffleController {
           },
         });
       } catch (error) {
+        if (error instanceof CustomError) throw error;
         logger.error('Error getting raffle winners:', error);
         throw createError.internal('Failed to get raffle winners');
       }
@@ -188,6 +192,7 @@ export class RaffleController {
         data: stats,
       });
     } catch (error) {
+      if (error instanceof CustomError) throw error;
       logger.error('Error getting raffle statistics:', error);
       throw createError.internal('Failed to get raffle statistics');
     }
@@ -246,6 +251,7 @@ export class RaffleController {
           data: { raffle },
         });
       } catch (error) {
+        if (error instanceof CustomError) throw error;
         logger.error('Error creating raffle:', error);
         throw createError.internal('Failed to create raffle');
       }
@@ -338,46 +344,24 @@ export class RaffleController {
           },
         });
       } catch (error) {
+        if (error instanceof CustomError) throw error;
         logger.error('Error cancelling raffle:', error);
         throw createError.internal('Failed to cancel raffle');
       }
     }
   );
 
-  // Admin: Update raffle
+  // Admin: Update raffle — not implemented; nothing calls this today.
   static updateRaffle = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
       if (!req.user?.isAdmin) {
         throw createError.forbidden('Admin access required');
       }
-
-      const { raffleId } = req.params;
-      const updates = req.body;
-
-      if (!raffleId) {
-        throw createError.badRequest('Raffle ID is required');
-      }
-
-      try {
-        // This would be implemented to update raffle details
-        // For now, return a placeholder response
-        res.json({
-          success: true,
-          message: 'Raffle update functionality coming soon',
-          data: {
-            raffleId,
-            updates,
-            updatedBy: req.user.id,
-          },
-        });
-      } catch (error) {
-        logger.error('Error updating raffle:', error);
-        throw createError.internal('Failed to update raffle');
-      }
+      res.status(501).json({ error: { message: 'Raffle update is not implemented yet' } });
     }
   );
 
-  // Admin: Get all raffles (including inactive)
+  // Admin: Get all raffles (including inactive), with optional status/category filters
   static getAllRaffles = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
       if (!req.user?.isAdmin) {
@@ -389,31 +373,55 @@ export class RaffleController {
       const pageNum = Math.max(parseInt(page as string) || 1, 1);
       const limitNum = Math.min(parseInt(limit as string) || 20, 100);
 
-      try {
-        // This would be implemented to get all raffles with filters
-        // For now, return active raffles
-        const raffles = await RaffleService.getActiveRaffles();
+      const { raffles, total } = await RaffleService.getAllRafflesAdmin({
+        status: status as string | undefined,
+        category: category as string | undefined,
+        page: pageNum,
+        limit: limitNum,
+      });
 
-        res.json({
-          success: true,
-          data: {
-            raffles,
-            pagination: {
-              currentPage: pageNum,
-              totalPages: Math.ceil(raffles.length / limitNum),
-              totalRaffles: raffles.length,
-              pageSize: limitNum,
-            },
-            filters: {
-              status,
-              category,
-            },
+      res.json({
+        success: true,
+        data: {
+          raffles,
+          pagination: {
+            currentPage: pageNum,
+            totalPages: Math.ceil(total / limitNum),
+            totalRaffles: total,
+            pageSize: limitNum,
           },
-        });
-      } catch (error) {
-        logger.error('Error getting all raffles:', error);
-        throw createError.internal('Failed to get all raffles');
+          filters: { status, category },
+        },
+      });
+    }
+  );
+
+  // Public: raffles that have finished drawing winners, for a "past winners" showcase
+  static getCompletedRaffles = asyncHandler(
+    async (req: Request, res: Response) => {
+      const limit = Math.min(parseInt((req.query.limit as string) || '10') || 10, 50);
+      const raffles = await RaffleService.getCompletedRaffles(limit);
+      res.json({ success: true, data: { raffles, total: raffles.length } });
+    }
+  );
+
+  // Admin: Delete a raffle (must be cancelled or ended first — see RaffleService.deleteRaffle)
+  static deleteRaffle = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) {
+        throw createError.forbidden('Admin access required');
       }
+
+      const { raffleId } = req.params;
+      if (!raffleId) {
+        throw createError.badRequest('Raffle ID is required');
+      }
+
+      await RaffleService.deleteRaffle(raffleId);
+
+      logger.info(`Raffle deleted by admin ${req.user.id}: ${raffleId}`);
+
+      res.json({ success: true, message: 'Raffle deleted successfully' });
     }
   );
 
@@ -424,6 +432,7 @@ export class RaffleController {
         const history = await RaffleService.getUserRaffleHistory(req.user.id);
         res.json({ success: true, data: { history } });
       } catch (error) {
+        if (error instanceof CustomError) throw error;
         logger.error('Error getting user raffle history:', error);
         throw createError.internal('Failed to get raffle history');
       }

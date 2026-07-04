@@ -146,16 +146,6 @@ export const API_ENDPOINTS = {
   ADMIN_AUDIT_LOGS: `${API_URL}/api/admin/audit-logs`,
   ADMIN_ACTIVITY: `${API_URL}/api/admin/activity`,
 
-  // Raffles
-  RAFFLES_ACTIVE: `${API_URL}/api/raffles/active`,
-  RAFFLES_CREATE: `${API_URL}/api/raffles/create`,
-  RAFFLES_SELECT_WINNERS: (raffleId: string) =>
-    `${API_URL}/api/raffles/${raffleId}/select-winners`,
-  RAFFLES_TICKETS: (raffleId: string) =>
-    `${API_URL}/api/raffles/${raffleId}/tickets`,
-  RAFFLES_PURCHASE: (raffleId: string) =>
-    `${API_URL}/api/raffles/${raffleId}/purchase`,
-
   // Users
   USERS_KICK: `${API_URL}/api/auth/kick-username`,
   USERS_RAINBET: `${API_URL}/api/auth/rainbet-username`,
@@ -216,6 +206,7 @@ export const API_ENDPOINTS = {
   RAFFLE_WINNERS: (id: string) => `${API_URL}/api/raffles/${id}/winners`,
   RAFFLE_USER_TICKETS: (id: string) => `${API_URL}/api/raffles/${id}/tickets`,
   RAFFLES_ADMIN_ALL: `${API_URL}/api/raffles/admin/all`,
+  RAFFLES_COMPLETED: `${API_URL}/api/raffles/completed`,
   RAFFLE_SELECT_WINNERS: (id: string) => `${API_URL}/api/raffles/${id}/select-winners`,
   RAFFLE_CANCEL: (id: string) => `${API_URL}/api/raffles/${id}/cancel`,
 

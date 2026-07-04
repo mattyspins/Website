@@ -1,11 +1,10 @@
-// @ts-nocheck
 import { prisma } from '@/config/database';
 import { RedisService } from '@/config/redis';
 import { logger } from '@/utils/logger';
-import { createError } from '@/middleware/errorHandler';
-import { PointsService } from '@/services/PointsService';
+import { createError, CustomError } from '@/middleware/errorHandler';
 import { StatisticsService } from '@/services/StatisticsService';
 import crypto from 'crypto';
+import type { Prisma } from '@prisma/client';
 
 export interface RaffleConfig {
   title: string;
@@ -19,7 +18,7 @@ export interface RaffleConfig {
   category?: string;
   featured?: boolean;
   createdBy: string;
-  metadata?: any;
+  metadata?: Prisma.InputJsonValue;
 }
 
 export interface Raffle {
@@ -39,7 +38,7 @@ export interface Raffle {
   createdAt: Date;
   endsAt: Date;
   winnerSelectedAt?: Date;
-  metadata?: any;
+  metadata?: unknown;
 }
 
 export interface RaffleTicket {
@@ -61,6 +60,8 @@ export interface RaffleWinner {
   notifiedAt?: Date;
   prizeDeliveredAt?: Date;
   deliveryMethod?: string;
+  displayName?: string;
+  avatarUrl?: string | null;
 }
 
 export interface TicketPurchase {
@@ -68,24 +69,79 @@ export interface TicketPurchase {
   tickets: RaffleTicket[];
   totalCost: number;
   remainingBalance: number;
-  transaction?: any;
+  transaction?: { id: string; amount: number; reason: string } | null;
 }
+
+export interface GetAllRafflesOptions {
+  status?: string;
+  category?: string;
+  page?: number;
+  limit?: number;
+}
+
+const RAFFLE_SELECT_FIELDS = (raffle: {
+  id: string;
+  title: string;
+  description: string | null;
+  prize: string;
+  ticketPrice: number;
+  maxTickets: number;
+  maxEntriesPerUser: number;
+  numberOfWinners: number;
+  ticketsSold: number;
+  status: string;
+  category: string | null;
+  isFeatured: boolean;
+  createdBy: string | null;
+  createdAt: Date;
+  endsAt: Date;
+  winnerSelectedAt: Date | null;
+  metadata: unknown;
+}): Raffle => ({
+  id: raffle.id,
+  title: raffle.title,
+  description: raffle.description || undefined,
+  prize: raffle.prize,
+  ticketPrice: raffle.ticketPrice,
+  maxTickets: raffle.maxTickets,
+  maxEntriesPerUser: raffle.maxEntriesPerUser,
+  numberOfWinners: raffle.numberOfWinners,
+  ticketsSold: raffle.ticketsSold,
+  status: raffle.status as Raffle['status'],
+  category: raffle.category || undefined,
+  isFeatured: raffle.isFeatured,
+  createdBy: raffle.createdBy || '',
+  createdAt: raffle.createdAt,
+  endsAt: raffle.endsAt,
+  winnerSelectedAt: raffle.winnerSelectedAt || undefined,
+  metadata: raffle.metadata,
+});
 
 export class RaffleService {
   // Create new raffle
   static async createRaffle(config: RaffleConfig): Promise<Raffle> {
     try {
       // Validate config
-      if (config.ticketPrice <= 0) {
-        throw createError.badRequest('Ticket price must be positive');
+      if (!Number.isFinite(config.ticketPrice) || config.ticketPrice <= 0) {
+        throw createError.badRequest('Ticket price must be a positive number');
       }
 
-      if (config.maxTickets <= 0) {
-        throw createError.badRequest('Max tickets must be positive');
+      if (!Number.isInteger(config.maxTickets) || config.maxTickets <= 0) {
+        throw createError.badRequest('Max tickets must be a positive whole number');
       }
 
       if (config.endDate <= new Date()) {
         throw createError.badRequest('End date must be in the future');
+      }
+
+      const numberOfWinners = config.numberOfWinners ?? 1;
+      if (!Number.isInteger(numberOfWinners) || numberOfWinners <= 0) {
+        throw createError.badRequest('Number of winners must be a positive whole number');
+      }
+
+      const maxEntriesPerUser = config.maxEntriesPerUser ?? -1;
+      if (!Number.isInteger(maxEntriesPerUser) || maxEntriesPerUser === 0 || maxEntriesPerUser < -1) {
+        throw createError.badRequest('Max entries per user must be -1 (unlimited) or a positive whole number');
       }
 
       const raffle = await prisma.raffle.create({
@@ -95,8 +151,8 @@ export class RaffleService {
           prize: config.prize,
           ticketPrice: config.ticketPrice,
           maxTickets: config.maxTickets,
-          maxEntriesPerUser: config.maxEntriesPerUser ?? -1,
-          numberOfWinners: config.numberOfWinners || 1,
+          maxEntriesPerUser,
+          numberOfWinners,
           category: config.category,
           isFeatured: config.featured || false,
           createdBy: config.createdBy,
@@ -110,26 +166,9 @@ export class RaffleService {
 
       logger.info(`Raffle created: ${raffle.title} (${raffle.id})`);
 
-      return {
-        id: raffle.id,
-        title: raffle.title,
-        description: raffle.description || undefined,
-        prize: raffle.prize,
-        ticketPrice: raffle.ticketPrice,
-        maxTickets: raffle.maxTickets,
-        maxEntriesPerUser: raffle.maxEntriesPerUser,
-        numberOfWinners: raffle.numberOfWinners,
-        ticketsSold: raffle.ticketsSold,
-        status: raffle.status as any,
-        category: raffle.category || undefined,
-        isFeatured: raffle.isFeatured,
-        createdBy: raffle.createdBy || '',
-        createdAt: raffle.createdAt,
-        endsAt: raffle.endsAt,
-        winnerSelectedAt: raffle.winnerSelectedAt || undefined,
-        metadata: raffle.metadata,
-      };
+      return RAFFLE_SELECT_FIELDS(raffle);
     } catch (error) {
+      if (error instanceof CustomError) throw error;
       logger.error('Error creating raffle:', error);
       throw createError.internal('Failed to create raffle');
     }
@@ -146,7 +185,7 @@ export class RaffleService {
         return cached;
       }
 
-      const where: any = {
+      const where: Prisma.RaffleWhereInput = {
         status: 'active',
         endsAt: { gt: new Date() },
       };
@@ -158,34 +197,9 @@ export class RaffleService {
       const raffles = await prisma.raffle.findMany({
         where,
         orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
-        include: {
-          creator: {
-            select: {
-              displayName: true,
-            },
-          },
-        },
       });
 
-      const result = raffles.map(raffle => ({
-        id: raffle.id,
-        title: raffle.title,
-        description: raffle.description || undefined,
-        prize: raffle.prize,
-        ticketPrice: raffle.ticketPrice,
-        maxTickets: raffle.maxTickets,
-        maxEntriesPerUser: raffle.maxEntriesPerUser,
-        numberOfWinners: raffle.numberOfWinners,
-        ticketsSold: raffle.ticketsSold,
-        status: raffle.status as any,
-        category: raffle.category || undefined,
-        isFeatured: raffle.isFeatured,
-        createdBy: raffle.createdBy || '',
-        createdAt: raffle.createdAt,
-        endsAt: raffle.endsAt,
-        winnerSelectedAt: raffle.winnerSelectedAt || undefined,
-        metadata: raffle.metadata,
-      }));
+      const result = raffles.map(RAFFLE_SELECT_FIELDS);
 
       // Cache for 5 minutes
       await RedisService.setJSON(cacheKey, result, 300);
@@ -194,6 +208,49 @@ export class RaffleService {
     } catch (error) {
       logger.error('Error getting active raffles:', error);
       throw createError.internal('Failed to get active raffles');
+    }
+  }
+
+  // Get raffles that have finished drawing winners — for public "past winners" showcases
+  static async getCompletedRaffles(limit = 10): Promise<Raffle[]> {
+    try {
+      const raffles = await prisma.raffle.findMany({
+        where: { status: 'ended' },
+        orderBy: [{ winnerSelectedAt: 'desc' }, { endsAt: 'desc' }],
+        take: Math.min(Math.max(limit, 1), 50),
+      });
+
+      return raffles.map(RAFFLE_SELECT_FIELDS);
+    } catch (error) {
+      logger.error('Error getting completed raffles:', error);
+      throw createError.internal('Failed to get completed raffles');
+    }
+  }
+
+  // Admin: get all raffles with optional status/category filters and pagination
+  static async getAllRafflesAdmin(options: GetAllRafflesOptions = {}): Promise<{ raffles: Raffle[]; total: number }> {
+    try {
+      const page = Math.max(options.page ?? 1, 1);
+      const limit = Math.min(Math.max(options.limit ?? 20, 1), 100);
+
+      const where: Prisma.RaffleWhereInput = {};
+      if (options.status) where.status = options.status;
+      if (options.category) where.category = options.category;
+
+      const [raffles, total] = await Promise.all([
+        prisma.raffle.findMany({
+          where,
+          orderBy: [{ createdAt: 'desc' }],
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        prisma.raffle.count({ where }),
+      ]);
+
+      return { raffles: raffles.map(RAFFLE_SELECT_FIELDS), total };
+    } catch (error) {
+      logger.error('Error getting all raffles:', error);
+      throw createError.internal('Failed to get all raffles');
     }
   }
 
@@ -210,38 +267,13 @@ export class RaffleService {
 
       const raffle = await prisma.raffle.findUnique({
         where: { id: raffleId },
-        include: {
-          creator: {
-            select: {
-              displayName: true,
-            },
-          },
-        },
       });
 
       if (!raffle) {
         return null;
       }
 
-      const result = {
-        id: raffle.id,
-        title: raffle.title,
-        description: raffle.description || undefined,
-        prize: raffle.prize,
-        ticketPrice: raffle.ticketPrice,
-        maxTickets: raffle.maxTickets,
-        maxEntriesPerUser: raffle.maxEntriesPerUser,
-        numberOfWinners: raffle.numberOfWinners,
-        ticketsSold: raffle.ticketsSold,
-        status: raffle.status as any,
-        category: raffle.category || undefined,
-        isFeatured: raffle.isFeatured,
-        createdBy: raffle.createdBy || '',
-        createdAt: raffle.createdAt,
-        endsAt: raffle.endsAt,
-        winnerSelectedAt: raffle.winnerSelectedAt || undefined,
-        metadata: raffle.metadata,
-      };
+      const result = RAFFLE_SELECT_FIELDS(raffle);
 
       // Cache for 10 minutes
       await RedisService.setJSON(cacheKey, result, 600);
@@ -264,7 +296,7 @@ export class RaffleService {
     }
 
     try {
-      const result = await prisma.$transaction(async tx => {
+      const result = await prisma.$transaction(async (tx) => {
         // Get raffle details
         const raffle = await tx.raffle.findUnique({
           where: { id: raffleId },
@@ -285,10 +317,7 @@ export class RaffleService {
         // Check per-user entry limit
         if (raffle.maxEntriesPerUser !== -1) {
           const userTicketCount = await tx.raffleTicket.count({
-            where: {
-              raffleId,
-              userId,
-            },
+            where: { raffleId, userId },
           });
 
           const remainingEntries = raffle.maxEntriesPerUser - userTicketCount;
@@ -309,22 +338,25 @@ export class RaffleService {
         // Check ticket availability
         const availableTickets = raffle.maxTickets - raffle.ticketsSold;
         if (quantity > availableTickets) {
-          throw createError.badRequest(
-            `Only ${availableTickets} tickets available`
-          );
-        }
-
-        // Check user balance
-        const user = await tx.user.findUnique({
-          where: { id: userId },
-        });
-
-        if (!user) {
-          throw createError.notFound('User not found');
+          throw createError.badRequest(`Only ${availableTickets} tickets available`);
         }
 
         const totalCost = quantity * raffle.ticketPrice;
-        if (user.points < totalCost) {
+
+        // Atomically deduct points — WHERE + decrement in one SQL statement prevents
+        // concurrent purchases (even across different raffles) from both passing the
+        // balance check and overdrafting the user below zero.
+        const deducted = await tx.user.updateMany({
+          where: { id: userId, points: { gte: totalCost } },
+          data: {
+            points: { decrement: totalCost },
+            totalSpent: { increment: totalCost },
+          },
+        });
+
+        if (deducted.count === 0) {
+          const user = await tx.user.findUnique({ where: { id: userId }, select: { id: true } });
+          if (!user) throw createError.notFound('User not found');
           throw createError.badRequest('Insufficient points');
         }
 
@@ -334,11 +366,7 @@ export class RaffleService {
           const ticketNumber = raffle.ticketsSold + i + 1;
 
           const ticket = await tx.raffleTicket.create({
-            data: {
-              raffleId,
-              userId,
-              ticketNumber,
-            },
+            data: { raffleId, userId, ticketNumber },
           });
 
           tickets.push({
@@ -353,18 +381,7 @@ export class RaffleService {
         // Update raffle ticket count
         await tx.raffle.update({
           where: { id: raffleId },
-          data: {
-            ticketsSold: { increment: quantity },
-          },
-        });
-
-        // Deduct points from user
-        await tx.user.update({
-          where: { id: userId },
-          data: {
-            points: { decrement: totalCost },
-            totalSpent: { increment: totalCost },
-          },
+          data: { ticketsSold: { increment: quantity } },
         });
 
         // Create point transaction
@@ -384,10 +401,12 @@ export class RaffleService {
           },
         });
 
+        const updatedUser = await tx.user.findUnique({ where: { id: userId }, select: { points: true } });
+
         return {
           tickets,
           totalCost,
-          remainingBalance: user.points - totalCost,
+          remainingBalance: updatedUser?.points ?? 0,
           transaction,
         };
       });
@@ -398,9 +417,7 @@ export class RaffleService {
       // Clear caches
       await this.clearRaffleCaches(raffleId);
 
-      logger.info(
-        `Tickets purchased: ${userId} -> ${quantity} tickets for raffle ${raffleId}`
-      );
+      logger.info(`Tickets purchased: ${userId} -> ${quantity} tickets for raffle ${raffleId}`);
 
       return {
         success: true,
@@ -416,20 +433,14 @@ export class RaffleService {
   }
 
   // Get user tickets for a raffle
-  static async getUserTickets(
-    raffleId: string,
-    userId: string
-  ): Promise<RaffleTicket[]> {
+  static async getUserTickets(raffleId: string, userId: string): Promise<RaffleTicket[]> {
     try {
       const tickets = await prisma.raffleTicket.findMany({
-        where: {
-          raffleId,
-          userId,
-        },
+        where: { raffleId, userId },
         orderBy: { ticketNumber: 'asc' },
       });
 
-      return tickets.map(ticket => ({
+      return tickets.map((ticket) => ({
         id: ticket.id,
         raffleId: ticket.raffleId,
         userId: ticket.userId,
@@ -443,17 +454,16 @@ export class RaffleService {
   }
 
   // Select winners (uses raffle's numberOfWinners if not specified)
-  static async selectWinners(
-    raffleId: string,
-    winnerCount?: number
-  ): Promise<RaffleWinner[]> {
+  static async selectWinners(raffleId: string, winnerCount?: number): Promise<RaffleWinner[]> {
     try {
-      const result = await prisma.$transaction(async tx => {
+      const result = await prisma.$transaction(async (tx) => {
         // Get raffle details
         const raffle = await tx.raffle.findUnique({
           where: { id: raffleId },
           include: {
-            tickets: true,
+            tickets: {
+              include: { user: { select: { displayName: true, avatarUrl: true } } },
+            },
           },
         });
 
@@ -497,9 +507,7 @@ export class RaffleService {
               ticketId: winningTicket.id,
               position,
               prizeDescription:
-                position === 1
-                  ? raffle.prize
-                  : `${position}${this.getOrdinalSuffix(position)} Place`,
+                position === 1 ? raffle.prize : `${position}${this.getOrdinalSuffix(position)} Place`,
             },
           });
 
@@ -514,6 +522,8 @@ export class RaffleService {
             notifiedAt: winner.notifiedAt || undefined,
             prizeDeliveredAt: winner.prizeDeliveredAt || undefined,
             deliveryMethod: winner.deliveryMethod || undefined,
+            displayName: winningTicket.user.displayName,
+            avatarUrl: winningTicket.user.avatarUrl,
           });
         }
 
@@ -537,9 +547,7 @@ export class RaffleService {
       // Clear caches
       await this.clearRaffleCaches(raffleId);
 
-      logger.info(
-        `Winners selected for raffle ${raffleId}: ${result.length} winners`
-      );
+      logger.info(`Winners selected for raffle ${raffleId}: ${result.length} winners`);
 
       return result;
     } catch (error) {
@@ -555,16 +563,13 @@ export class RaffleService {
         where: { raffleId },
         include: {
           user: {
-            select: {
-              displayName: true,
-              avatarUrl: true,
-            },
+            select: { displayName: true, avatarUrl: true },
           },
         },
         orderBy: { position: 'asc' },
       });
 
-      return winners.map(winner => ({
+      return winners.map((winner) => ({
         id: winner.id,
         raffleId: winner.raffleId,
         userId: winner.userId,
@@ -575,6 +580,8 @@ export class RaffleService {
         notifiedAt: winner.notifiedAt || undefined,
         prizeDeliveredAt: winner.prizeDeliveredAt || undefined,
         deliveryMethod: winner.deliveryMethod || undefined,
+        displayName: winner.user.displayName,
+        avatarUrl: winner.user.avatarUrl,
       }));
     } catch (error) {
       logger.error('Error getting raffle winners:', error);
@@ -582,20 +589,14 @@ export class RaffleService {
     }
   }
 
-  // Cancel raffle (admin only)
+  // Cancel raffle (admin only) — refunds every ticket, grouped per user to keep the
+  // transaction fast regardless of how many tickets were sold.
   static async cancelRaffle(raffleId: string, reason: string): Promise<void> {
     try {
-      await prisma.$transaction(async tx => {
-        // Get raffle with tickets
+      await prisma.$transaction(async (tx) => {
         const raffle = await tx.raffle.findUnique({
           where: { id: raffleId },
-          include: {
-            tickets: {
-              include: {
-                user: true,
-              },
-            },
-          },
+          include: { tickets: true },
         });
 
         if (!raffle) {
@@ -606,23 +607,26 @@ export class RaffleService {
           throw createError.badRequest('Can only cancel active raffles');
         }
 
-        // Refund all ticket purchases
+        // Group tickets per user so a user with many tickets gets one refund, not one per ticket
+        const ticketsByUser = new Map<string, number>();
         for (const ticket of raffle.tickets) {
-          const refundAmount = raffle.ticketPrice;
+          ticketsByUser.set(ticket.userId, (ticketsByUser.get(ticket.userId) ?? 0) + 1);
+        }
 
-          // Add points back to user
+        for (const [userId, ticketCount] of ticketsByUser) {
+          const refundAmount = raffle.ticketPrice * ticketCount;
+
           await tx.user.update({
-            where: { id: ticket.userId },
+            where: { id: userId },
             data: {
               points: { increment: refundAmount },
               totalSpent: { decrement: refundAmount },
             },
           });
 
-          // Create refund transaction
           await tx.pointTransaction.create({
             data: {
-              userId: ticket.userId,
+              userId,
               amount: refundAmount,
               transactionType: 'refund',
               reason: `Raffle cancelled: ${raffle.title}`,
@@ -630,7 +634,7 @@ export class RaffleService {
               referenceType: 'raffle_refund',
               metadata: {
                 originalRaffleId: raffleId,
-                ticketId: ticket.id,
+                ticketCount,
                 cancellationReason: reason,
               },
             },
@@ -643,7 +647,7 @@ export class RaffleService {
           data: {
             status: 'cancelled',
             metadata: {
-              ...raffle.metadata,
+              ...(raffle.metadata as Record<string, unknown> | null),
               cancellationReason: reason,
               cancelledAt: new Date(),
             },
@@ -656,14 +660,32 @@ export class RaffleService {
 
       logger.info(`Raffle cancelled: ${raffleId} - ${reason}`);
     } catch (error) {
+      if (error instanceof CustomError) throw error;
       logger.error('Error cancelling raffle:', error);
       throw createError.internal('Failed to cancel raffle');
     }
   }
 
+  // Delete a raffle permanently. Only raffles that are no longer active can be deleted —
+  // an active raffle with real ticket sales must be cancelled first so buyers get refunded;
+  // deleting it outright would silently discard that money trail.
+  static async deleteRaffle(raffleId: string): Promise<void> {
+    const raffle = await prisma.raffle.findUnique({ where: { id: raffleId }, select: { status: true } });
+    if (!raffle) {
+      throw createError.notFound('Raffle not found');
+    }
+    if (raffle.status === 'active') {
+      throw createError.badRequest('Cancel the raffle first to refund buyers before deleting it');
+    }
+
+    await prisma.raffle.delete({ where: { id: raffleId } });
+    await this.clearRaffleCaches(raffleId);
+    logger.info(`Raffle deleted: ${raffleId}`);
+  }
+
   // Private helper methods
 
-  private static async cacheActiveRaffle(raffle: any): Promise<void> {
+  private static async cacheActiveRaffle(raffle: { id: string }): Promise<void> {
     try {
       const cacheKey = `raffle:${raffle.id}`;
       await RedisService.setJSON(cacheKey, raffle, 600); // 10 minutes
@@ -759,7 +781,7 @@ export class RaffleService {
       const raffles = await prisma.raffle.findMany({
         where: { id: { in: raffleIds } },
         include: { winners: { where: { userId }, select: { userId: true } } },
-        orderBy: { endDate: 'desc' },
+        orderBy: { endsAt: 'desc' },
         take: 20,
       });
 
@@ -771,7 +793,7 @@ export class RaffleService {
         ticketsHeld: countMap.get(raffle.id) ?? 0,
         isWinner: raffle.winners.length > 0,
         status: raffle.status,
-        endDate: raffle.endDate,
+        endDate: raffle.endsAt,
       }));
     } catch (error) {
       logger.error('Error getting user raffle history:', error);
