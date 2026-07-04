@@ -19,6 +19,8 @@ function maskUsername(username: string): string {
   return `${username[0]}${"*".repeat(Math.min(username.length - 3, 10))}${username.slice(-2)}`;
 }
 
+const DEFAULT_PRIZE_AMOUNTS = [200, 100, 70, 30, 30, 20, 20, 10, 10, 10];
+
 export default function AdminLeaderboardsPage() {
   const [prizes, setPrizes] = useState<MonthlyPrize[]>([]);
   const [standings, setStandings] = useState<MonthlyStandingRow[]>([]);
@@ -29,6 +31,7 @@ export default function AdminLeaderboardsPage() {
   const [saving, setSaving] = useState(false);
   const [resyncing, setResyncing] = useState(false);
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [wagererSearch, setWagererSearch] = useState("");
 
   const load = async () => {
     try {
@@ -39,7 +42,7 @@ export default function AdminLeaderboardsPage() {
         api.get("/api/manual-leaderboards?limit=50").catch(() => ({ leaderboards: [] })),
         wagerLeaderboardApi.getAllWagerers().catch(() => []),
       ]);
-      setPrizes(p);
+      setPrizes(p.length > 0 ? p : DEFAULT_PRIZE_AMOUNTS.map((points, i) => ({ id: `draft-${i + 1}`, position: i + 1, points })));
       setStandings(s);
       setHistory(h);
       setOldLeaderboards(old.leaderboards ?? []);
@@ -92,6 +95,16 @@ export default function AdminLeaderboardsPage() {
   }
 
   const totalPoints = prizes.reduce((sum, p) => sum + p.points, 0);
+  const filteredWagerers = wagererSearch.trim()
+    ? wagerers.filter((w) => {
+        const q = wagererSearch.trim().toLowerCase();
+        return (
+          w.razedUsername.toLowerCase().includes(q) ||
+          w.displayName?.toLowerCase().includes(q) ||
+          w.kickUsername?.toLowerCase().includes(q)
+        );
+      })
+    : wagerers;
 
   return (
     <div className="min-h-screen pt-20 pb-16 px-4">
@@ -206,9 +219,18 @@ export default function AdminLeaderboardsPage() {
         {/* All Razed wagerers, linked or not */}
         {wagerers.length > 0 && (
           <div className="mb-10">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-              All Wagerers Under Our Code ({wagerers.length})
-            </p>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                All Wagerers Under Our Code ({filteredWagerers.length}{filteredWagerers.length !== wagerers.length ? ` of ${wagerers.length}` : ""})
+              </p>
+              <input
+                type="text"
+                value={wagererSearch}
+                onChange={(e) => setWagererSearch(e.target.value)}
+                placeholder="Search username…"
+                className="bg-navy-900/60 border border-white/8 rounded-lg px-3 py-1.5 text-white text-sm w-56 focus:outline-none focus:border-gold-500/30 placeholder:text-gray-600"
+              />
+            </div>
             <div className="bg-navy-800/60 border border-white/6 rounded-2xl overflow-hidden">
               <div className="max-h-96 overflow-y-auto">
                 <table className="w-full text-sm">
@@ -222,7 +244,11 @@ export default function AdminLeaderboardsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {wagerers.map((w) => (
+                    {filteredWagerers.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-6 text-center text-gray-600">No wagerers match "{wagererSearch}"</td>
+                      </tr>
+                    ) : filteredWagerers.map((w) => (
                       <tr key={w.razedUsername} className="border-t border-white/4 hover:bg-white/3">
                         <td className="px-4 py-2.5 text-gray-300">{w.razedUsername}</td>
                         <td className="px-4 py-2.5">
