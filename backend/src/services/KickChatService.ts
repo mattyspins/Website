@@ -4,6 +4,7 @@ import { RedisService } from '@/config/redis';
 import { prisma } from '@/config/database';
 import { logger } from '@/utils/logger';
 import { PointsService } from '@/services/PointsService';
+import { AdminService } from '@/services/AdminService';
 import { BingoBoardService } from '@/services/BingoBoardService';
 import { ViewerPickerService } from '@/services/ViewerPickerService';
 import { SlotRequestService } from '@/services/SlotRequestService';
@@ -187,6 +188,15 @@ export class KickChatService {
       }
     }
 
+    // Admin-only: !addcoins <kickname> <amount> / !removecoins <kickname> <amount>
+    const coinsMatch = content.match(/^!(addcoins|removecoins)\s+(\S+)\s+(-?\d+)\b/i);
+    if (coinsMatch) {
+      const isRemove = coinsMatch[1].toLowerCase() === 'removecoins';
+      const rawAmount = parseInt(coinsMatch[3], 10);
+      const amount = isRemove ? -Math.abs(rawAmount) : rawAmount;
+      await this.processAddCoins(kickUsername, coinsMatch[2], amount);
+    }
+
     // Check for viewer picker keyword
     await ViewerPickerService.handleKeyword(kickUsername, content, this.io ?? undefined);
 
@@ -315,6 +325,44 @@ export class KickChatService {
       } else {
         logger.warn(`KickChatService: !jointourney failed for ${kickUsername}`, { error: message });
       }
+    }
+  }
+
+  // Admin-only: !addcoins <kickname> <amount> / !removecoins <kickname> <amount>. The
+  // sender is authorized by resolving their own Kick username to a verified, isAdmin
+  // site account — the same identity trust already used elsewhere in this file — so a
+  // non-admin typing this command is silently ignored rather than told the command exists.
+  private static async processAddCoins(senderKickUsername: string, targetKickUsername: string, amount: number): Promise<void> {
+    const admin = await prisma.user.findFirst({
+      where: { kickUsername: { equals: senderKickUsername, mode: 'insensitive' }, kickVerified: true, isAdmin: true },
+      select: { id: true },
+    });
+    if (!admin) return;
+
+    if (!Number.isFinite(amount) || amount === 0) {
+      await this.sendChatMessage(`@${senderKickUsername} usage: !addcoins <kickname> <amount> (or !removecoins <kickname> <amount>)`);
+      return;
+    }
+
+    const target = await prisma.user.findFirst({
+      where: { kickUsername: { equals: targetKickUsername, mode: 'insensitive' } },
+      select: { id: true, kickUsername: true, displayName: true },
+    });
+    if (!target) {
+      await this.sendChatMessage(`@${senderKickUsername} no linked user found with Kick username "${targetKickUsername}"`);
+      return;
+    }
+
+    try {
+      await AdminService.adjustUserPoints(target.id, amount, `Kick chat command by ${senderKickUsername}`, admin.id);
+      const targetName = target.kickUsername ?? target.displayName;
+      const verb = amount > 0 ? 'Added' : 'Removed';
+      const prep = amount > 0 ? 'to' : 'from';
+      await this.sendChatMessage(`✅ ${verb} ${Math.abs(amount)} coins ${prep} ${targetName}`);
+      logger.info(`KickChatService: ${senderKickUsername} adjusted ${amount} coins for ${targetKickUsername} via chat command`);
+    } catch (err) {
+      await this.sendChatMessage(`@${senderKickUsername} failed: ${(err as Error).message}`);
+      logger.warn(`KickChatService: !addcoins failed for ${targetKickUsername}`, { error: (err as Error).message });
     }
   }
 
