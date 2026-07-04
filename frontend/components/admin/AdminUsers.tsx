@@ -12,11 +12,6 @@ interface User {
   displayName: string;
   kickUsername?: string;
   kickVerified?: boolean;
-  rainbetUsername?: string;
-  rainbetVerified: boolean;
-  weeklyWagered?: string;
-  monthlyWagered?: string;
-  totalWagered?: string;
   points: number;
   isAdmin: boolean;
   isModerator: boolean;
@@ -229,9 +224,6 @@ export default function AdminUsers() {
                     Coins
                   </th>
                   <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-widest py-3 px-4">
-                    Wagered (Week / Month / Lifetime)
-                  </th>
-                  <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-widest py-3 px-4">
                     Status
                   </th>
                   <th className="text-right text-gray-500 text-xs font-semibold uppercase tracking-widest py-3 px-4">
@@ -258,21 +250,6 @@ export default function AdminUsers() {
                       <span className="text-yellow-300 font-bold text-sm">
                         {user.points.toLocaleString()}
                       </span>
-                    </td>
-
-                    {/* Wagered */}
-                    <td className="py-3.5 px-4">
-                      {user.rainbetUsername ? (
-                        <p className="text-gray-300 text-xs whitespace-nowrap">
-                          <span title="This week">${Number(user.weeklyWagered ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
-                          <span className="text-gray-700 mx-1">/</span>
-                          <span title="This month">${Number(user.monthlyWagered ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
-                          <span className="text-gray-700 mx-1">/</span>
-                          <span className="text-gold-400 font-semibold" title="Lifetime">${Number(user.totalWagered ?? 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
-                        </p>
-                      ) : (
-                        <span className="text-gray-700 text-xs">—</span>
-                      )}
                     </td>
 
                     {/* Status badges */}

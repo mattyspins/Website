@@ -275,12 +275,14 @@ export default function AdminUserPage() {
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
               className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
               {[
-                { icon: <Coins className="w-5 h-5 text-yellow-400" />,       label: "Balance",     value: user.points.toLocaleString(),                     bg: "bg-yellow-500/10" },
-                { icon: <TrendingUp className="w-5 h-5 text-green-400" />,   label: "Total Earned", value: (user.totalEarned ?? 0).toLocaleString(),          bg: "bg-green-500/10" },
-                { icon: <ShoppingCart className="w-5 h-5 text-orange-400" />,label: "Total Spent",  value: (user.totalSpent ?? 0).toLocaleString(),           bg: "bg-orange-500/10" },
-                { icon: <Trophy className="w-5 h-5 text-gold-400" />,        label: "Wagered",      value: `$${Number(user.totalWagered).toLocaleString()}`,  bg: "bg-gold-500/10" },
-                { icon: <Wallet className="w-5 h-5 text-blue-400" />,        label: "Deposited",    value: `$${Number(user.totalDeposited).toLocaleString()}`,bg: "bg-blue-500/10" },
-                { icon: <Clock className="w-5 h-5 text-teal-400" />,         label: "Watch Time",   value: fmt(user.totalWatchMinutes),                       bg: "bg-teal-500/10" },
+                { icon: <Coins className="w-5 h-5 text-yellow-400" />,       label: "Balance",         value: user.points.toLocaleString(),                        bg: "bg-yellow-500/10" },
+                { icon: <TrendingUp className="w-5 h-5 text-green-400" />,   label: "Total Earned",    value: (user.totalEarned ?? 0).toLocaleString(),             bg: "bg-green-500/10" },
+                { icon: <ShoppingCart className="w-5 h-5 text-orange-400" />,label: "Total Spent",     value: (user.totalSpent ?? 0).toLocaleString(),              bg: "bg-orange-500/10" },
+                { icon: <Trophy className="w-5 h-5 text-gold-400" />,        label: "Wagered (Week)",  value: `$${Number(user.weeklyWagered ?? 0).toLocaleString()}`,  bg: "bg-gold-500/10" },
+                { icon: <Trophy className="w-5 h-5 text-gold-400" />,        label: "Wagered (Month)", value: `$${Number(user.monthlyWagered ?? 0).toLocaleString()}`, bg: "bg-gold-500/10" },
+                { icon: <Trophy className="w-5 h-5 text-gold-400" />,        label: "Wagered (Lifetime)", value: `$${Number(user.totalWagered).toLocaleString()}`, bg: "bg-gold-500/10" },
+                { icon: <Wallet className="w-5 h-5 text-blue-400" />,        label: "Deposited",       value: `$${Number(user.totalDeposited).toLocaleString()}`,  bg: "bg-blue-500/10" },
+                { icon: <Clock className="w-5 h-5 text-teal-400" />,         label: "Watch Time",      value: fmt(user.totalWatchMinutes),                          bg: "bg-teal-500/10" },
               ].map(({ icon, label, value, bg }) => (
                 <div key={label} className={`${bg} border border-white/6 rounded-2xl p-4 flex flex-col gap-2`}>
                   <div className="flex items-center gap-2">
@@ -338,23 +340,9 @@ export default function AdminUserPage() {
                     )}
                   </div>
                   {user.rainbetUsername && (
-                    <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-white/6">
-                      <div>
-                        <p className="text-gray-600 text-[10px] uppercase tracking-widest mb-0.5">Today</p>
-                        <p className="text-gray-200 text-sm font-semibold">${Number(user.todayWagered).toLocaleString()}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600 text-[10px] uppercase tracking-widest mb-0.5">Weekly</p>
-                        <p className="text-gray-200 text-sm font-semibold">${Number(user.weeklyWagered).toLocaleString()}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600 text-[10px] uppercase tracking-widest mb-0.5">Monthly</p>
-                        <p className="text-gray-200 text-sm font-semibold">${Number(user.monthlyWagered).toLocaleString()}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600 text-[10px] uppercase tracking-widest mb-0.5">Lifetime</p>
-                        <p className="text-gold-400 text-sm font-semibold">${Number(user.totalWagered).toLocaleString()}</p>
-                      </div>
+                    <div className="mt-3 pt-3 border-t border-white/6">
+                      <p className="text-gray-600 text-[10px] uppercase tracking-widest mb-0.5">Today</p>
+                      <p className="text-gray-200 text-sm font-semibold">${Number(user.todayWagered).toLocaleString()}</p>
                     </div>
                   )}
                 </div>
