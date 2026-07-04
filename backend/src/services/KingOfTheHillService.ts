@@ -224,7 +224,14 @@ export class KingOfTheHillService {
     const pool = session.entries.filter(e => e.status === KothEntryStatus.WAITING);
     if (pool.length === 0) throw createError.badRequest('No eligible viewers to draw from');
 
-    const pick = pool[randomInt(0, pool.length)];
+    // Prefer viewers who haven't had a turn yet this session, so everyone gets a shot
+    // before anyone can be drawn a second time. Once every waiting viewer has already
+    // had at least one turn, the cycle resets and repeats become fair game again.
+    const everDrawnEntryIds = new Set(session.rounds.map((r) => r.entryId));
+    const neverDrawn = pool.filter((e) => !everDrawnEntryIds.has(e.id));
+    const drawPool = neverDrawn.length > 0 ? neverDrawn : pool;
+
+    const pick = drawPool[randomInt(0, drawPool.length)];
 
     await prisma.$transaction([
       prisma.kingOfTheHillEntry.update({
