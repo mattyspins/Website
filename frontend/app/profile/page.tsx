@@ -279,7 +279,9 @@ export default function ProfilePage() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      setUser((u) => u ? { ...u, kickUsername: undefined, kickVerified: false } : u);
+      // Unlinking only clears verification, not the linked username — it's permanently
+      // locked to this account, so keep it in local state to match the backend.
+      setUser((u) => u ? { ...u, kickVerified: false } : u);
     } catch {
       setKickError("Failed to unlink. Please try again.");
     }

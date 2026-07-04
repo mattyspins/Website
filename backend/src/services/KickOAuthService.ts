@@ -328,6 +328,22 @@ export class KickOAuthService {
         );
       }
 
+      // Once a user has ever linked a Kick account, lock it to that identity — unlinking
+      // clears kickVerified but not kickUsername, so this blocks swapping to a different
+      // account through unlink-then-relink. Reconnecting the same account is still allowed.
+      const self = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { kickUsername: true },
+      });
+      if (self?.kickUsername && self.kickUsername.toLowerCase() !== kickUser.username.toLowerCase()) {
+        throw new KickAPIError(
+          409,
+          'KICK_ACCOUNT_LOCKED',
+          'Your Kick account is permanently linked and cannot be changed. Contact an admin.',
+          false
+        );
+      }
+
       // Encrypt tokens before storage (Requirement 1.5)
       const encryptedAccessToken = encryptionService.encrypt(
         tokens.accessToken

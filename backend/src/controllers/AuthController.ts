@@ -632,6 +632,15 @@ export class AuthController {
         return res.json({ success: true, alreadyVerified: true, kickUsername: existing.kickUsername });
       }
 
+      // Once a user has ever linked a Kick account, lock it to that identity — unlinking
+      // clears kickVerified but not kickUsername, so this blocks swapping to a different
+      // account through unlink-then-relink. Reconnecting the same account is still allowed.
+      if (existing?.kickUsername && existing.kickUsername.toLowerCase() !== trimmed) {
+        throw createError.badRequest(
+          'Your Kick account is permanently linked and cannot be changed. Contact an admin.'
+        );
+      }
+
       // Note: Kick's API is Cloudflare-protected server-side; we skip the channel existence check
       // and rely on the chat verification step to confirm the username is real.
 
