@@ -3,6 +3,17 @@ import { z } from 'zod';
 import { BingoBoardService } from '@/services/BingoBoardService';
 import { Server as SocketIOServer } from 'socket.io';
 import { AuthenticatedRequest } from '@/middleware/auth';
+import { prisma } from '@/config/database';
+
+// A website joiner who also has Kick linked should still be recognized by "!join"/"!slot"
+// in chat — look up their kickUsername so it's captured on the participant record too.
+async function identityFor(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { kickUsername: true, kickVerified: true },
+  });
+  return { userId, kickUsername: user?.kickVerified ? user.kickUsername ?? undefined : undefined };
+}
 
 let _io: SocketIOServer | undefined;
 export const setBingoIO = (io: SocketIOServer) => { _io = io; };
@@ -94,19 +105,19 @@ export class BingoBoardController {
   // ─── Viewer (auth required) ──────────────────────────────────────────────────
 
   static join = asyncHandler(async (req, res) => {
-    const game = await BingoBoardService.join(req.params.id, req.user!.id, _io);
+    const game = await BingoBoardService.join(req.params.id, await identityFor(req.user!.id), _io);
     res.json({ success: true, game });
   });
 
   static leave = asyncHandler(async (req, res) => {
-    const game = await BingoBoardService.leave(req.params.id, req.user!.id, _io);
+    const game = await BingoBoardService.leave(req.params.id, { userId: req.user!.id }, _io);
     res.json({ success: true, game });
   });
 
   static setSlot = asyncHandler(async (req, res) => {
     const { slotName } = slotSchema.parse(req.body);
     const isAdminOrMod = !!(req.user!.isAdmin || req.user!.isModerator);
-    const game = await BingoBoardService.setSlot(req.params.id, req.params.cellId, slotName, req.user!.id, isAdminOrMod, _io);
+    const game = await BingoBoardService.setSlot(req.params.id, req.params.cellId, slotName, { userId: req.user!.id }, isAdminOrMod, _io);
     res.json({ success: true, game });
   });
 }

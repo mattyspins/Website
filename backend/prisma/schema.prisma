@@ -697,52 +697,60 @@ enum CellStatus {
 }
 
 model BonusBingo {
-  id            String             @id @default(uuid())
-  title         String
-  gridSize      Int                @default(5) @map("grid_size")
-  status        BingoStatus        @default(DRAFT)
-  linePoints    Int                @default(500) @map("line_points")
-  currentCellId String?            @map("current_cell_id")
-  currentUserId String?            @map("current_user_id")
-  createdById   String             @map("created_by_id")
-  createdAt     DateTime           @default(now()) @map("created_at")
-  updatedAt     DateTime           @updatedAt @map("updated_at")
-  completedAt   DateTime?          @map("completed_at")
-  createdBy     User               @relation("BingoCreator", fields: [createdById], references: [id])
-  currentUser   User?              @relation("BingoCurrentUser", fields: [currentUserId], references: [id])
-  cells         BingoCell[]
-  participants  BingoParticipant[]
-  lineWins      BingoLineWin[]
+  id                  String             @id @default(uuid())
+  title               String
+  gridSize            Int                @default(5) @map("grid_size")
+  status              BingoStatus        @default(DRAFT)
+  linePoints          Int                @default(500) @map("line_points")
+  currentCellId       String?            @map("current_cell_id")
+  currentUserId       String?            @map("current_user_id")
+  currentKickUsername String?            @map("current_kick_username")
+  createdById         String             @map("created_by_id")
+  createdAt           DateTime           @default(now()) @map("created_at")
+  updatedAt           DateTime           @updatedAt @map("updated_at")
+  completedAt         DateTime?          @map("completed_at")
+  createdBy           User               @relation("BingoCreator", fields: [createdById], references: [id])
+  currentUser         User?              @relation("BingoCurrentUser", fields: [currentUserId], references: [id])
+  cells               BingoCell[]
+  participants        BingoParticipant[]
+  lineWins            BingoLineWin[]
 
   @@map("bonus_bingo")
 }
 
 model BingoCell {
-  id          String     @id @default(uuid())
-  gameId      String     @map("game_id")
-  row         Int
-  col         Int
-  status      CellStatus @default(EMPTY)
-  slotName    String?    @map("slot_name")
-  claimedById String?    @map("claimed_by_id")
-  claimedAt   DateTime?  @map("claimed_at")
-  playedAt    DateTime?  @map("played_at")
-  game        BonusBingo @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  claimedBy   User?      @relation("BingoCellClaimer", fields: [claimedById], references: [id])
+  id                     String     @id @default(uuid())
+  gameId                 String     @map("game_id")
+  row                    Int
+  col                    Int
+  status                 CellStatus @default(EMPTY)
+  slotName               String?    @map("slot_name")
+  claimedById            String?    @map("claimed_by_id")
+  claimedByKickUsername  String?    @map("claimed_by_kick_username")
+  claimedAt              DateTime?  @map("claimed_at")
+  playedAt               DateTime?  @map("played_at")
+  game                   BonusBingo @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  claimedBy              User?      @relation("BingoCellClaimer", fields: [claimedById], references: [id])
 
   @@unique([gameId, row, col])
   @@map("bingo_cells")
 }
 
+// A participant may join via the authenticated website "Join" button (userId set,
+// kickUsername null) or via the "!join" Kick chat command (kickUsername always set,
+// userId resolved as an optional bonus link) — so anyone watching in chat can play
+// bingo whether or not they've linked Kick or registered on the site.
 model BingoParticipant {
-  id       String     @id @default(uuid())
-  gameId   String     @map("game_id")
-  userId   String     @map("user_id")
-  joinedAt DateTime   @default(now()) @map("joined_at")
-  game     BonusBingo @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  user     User       @relation("BingoParticipants", fields: [userId], references: [id], onDelete: Cascade)
+  id           String     @id @default(uuid())
+  gameId       String     @map("game_id")
+  userId       String?    @map("user_id")
+  kickUsername String?    @map("kick_username")
+  joinedAt     DateTime   @default(now()) @map("joined_at")
+  game         BonusBingo @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user         User?      @relation("BingoParticipants", fields: [userId], references: [id], onDelete: SetNull)
 
   @@unique([gameId, userId])
+  @@unique([gameId, kickUsername])
   @@map("bingo_participants")
 }
 

@@ -224,13 +224,11 @@ export class KickChatService {
     }
   }
 
+  // Called on "!join" — the chatter is identified by their Kick username directly from
+  // the chat event, so joining never depends on having linked Kick or registered on the
+  // site. A matching site account (if any) is linked as an optional bonus.
   private static async processBingoJoin(kickUsername: string): Promise<void> {
-    // Find the verified user by Kick username
-    const user = await prisma.user.findFirst({
-      where: { kickUsername: { equals: kickUsername, mode: 'insensitive' }, kickVerified: true },
-      select: { id: true },
-    });
-    if (!user) return;
+    const normalized = kickUsername.trim().toLowerCase();
 
     // Find the bingo game open for registration or already active
     const game = await prisma.bonusBingo.findFirst({
@@ -240,13 +238,18 @@ export class KickChatService {
 
     // Check not already joined
     const existing = await prisma.bingoParticipant.findUnique({
-      where: { gameId_userId: { gameId: game.id, userId: user.id } },
+      where: { gameId_kickUsername: { gameId: game.id, kickUsername: normalized } },
     });
     if (existing) return;
 
+    const user = await prisma.user.findFirst({
+      where: { kickUsername: { equals: normalized, mode: 'insensitive' } },
+      select: { id: true },
+    });
+
     try {
-      await BingoBoardService.join(game.id, user.id, this.io ?? undefined);
-      logger.info(`KickChatService: ${kickUsername} joined bingo ${game.id} via !join`);
+      await BingoBoardService.join(game.id, { userId: user?.id, kickUsername: normalized }, this.io ?? undefined);
+      logger.info(`KickChatService: ${kickUsername} joined bingo ${game.id} via !join${user ? '' : ' (unlinked)'}`);
       await this.sendChatMessage(`${kickUsername} has joined Bonus Bingo! 🎉`);
     } catch (err) {
       logger.warn(`KickChatService: !join failed for ${kickUsername}`, { error: (err as Error).message });
@@ -254,16 +257,11 @@ export class KickChatService {
   }
 
   private static async processBingoSlot(kickUsername: string, slotName: string): Promise<void> {
-    // Find the verified user by Kick username
-    const user = await prisma.user.findFirst({
-      where: { kickUsername: { equals: kickUsername, mode: 'insensitive' }, kickVerified: true },
-      select: { id: true },
-    });
-    if (!user) return;
+    const normalized = kickUsername.trim().toLowerCase();
 
-    // Find an active bingo game where this user is the currently selected player
+    // Find an active bingo game where this kick username is the currently selected player
     const game = await prisma.bonusBingo.findFirst({
-      where: { status: BingoStatus.ACTIVE, currentUserId: user.id },
+      where: { status: BingoStatus.ACTIVE, currentKickUsername: normalized },
       include: { cells: true },
     });
     if (!game || !game.currentCellId) return;
@@ -273,7 +271,7 @@ export class KickChatService {
     if (!activeCell || activeCell.slotName) return;
 
     try {
-      await BingoBoardService.setSlot(game.id, game.currentCellId, slotName, user.id, false, this.io ?? undefined);
+      await BingoBoardService.setSlot(game.id, game.currentCellId, slotName, { kickUsername: normalized }, false, this.io ?? undefined);
       logger.info(`KickChatService: ${kickUsername} set slot "${slotName}" via !slot`);
       await this.sendChatMessage(`${kickUsername} has picked "${slotName}" as their slot! 🎰`);
     } catch (err) {
