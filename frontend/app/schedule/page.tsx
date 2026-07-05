@@ -42,8 +42,8 @@ export default function SchedulePage() {
   const days = Object.keys(grouped);
 
   return (
-    <div className="min-h-screen pt-20 pb-16 px-4">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen pt-20 pb-16 px-4 flex flex-col justify-center">
+      <div className="max-w-3xl mx-auto w-full">
         <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <span className="inline-block bg-gold-500/10 border border-gold-500/30 text-gold-400 text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded mb-4">
             Upcoming Streams

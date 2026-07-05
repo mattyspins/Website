@@ -93,8 +93,8 @@ export default function KingOfTheHillPage() {
   }
 
   return (
-    <div className="min-h-screen pt-20 pb-16 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen pt-20 pb-16 px-4 flex flex-col justify-center">
+      <div className="max-w-4xl mx-auto w-full">
 
         {/* Header */}
         <motion.div

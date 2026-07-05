@@ -118,7 +118,7 @@ export default function AdminStorePage() {
                   : "text-gray-400 hover:text-white hover:bg-yellow-600/20"
               }`}
             >
-              ðŸ“¦ Store Items
+              📦 Store Items
             </button>
             <button
               onClick={() => setActiveTab("purchases")}
@@ -128,7 +128,7 @@ export default function AdminStorePage() {
                   : "text-gray-400 hover:text-white hover:bg-yellow-600/20"
               }`}
             >
-              ðŸ›’ Purchases
+              🛒 Purchases
             </button>
           </div>
         </motion.div>
@@ -240,7 +240,7 @@ export default function AdminStorePage() {
             >
               {filteredItems.length === 0 ? (
                 <div className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-8 sm:p-12 text-center">
-                  <div className="text-4xl sm:text-6xl mb-4 sm:mb-6">ðŸ“¦</div>
+                  <div className="text-4xl sm:text-6xl mb-4 sm:mb-6">📦</div>
                   <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
                     No Items Found
                   </h3>
@@ -297,7 +297,7 @@ export default function AdminStorePage() {
                             {item.itemName}
                           </p>
                           <p className="text-gray-400 text-sm">
-                            {item.totalSold} sold â€¢{" "}
+                            {item.totalSold} sold •{" "}
                             {item.revenue.toLocaleString()} coins revenue
                           </p>
                         </div>

@@ -114,11 +114,11 @@ export default function ResponsibleGaming() {
                   Behavioral Signs
                 </h3>
                 <ul className="text-gray-300 space-y-2 text-sm">
-                  <li>â€¢ Gambling more than you can afford</li>
-                  <li>â€¢ Chasing losses with bigger bets</li>
-                  <li>â€¢ Lying about gambling activities</li>
-                  <li>â€¢ Neglecting work, family, or responsibilities</li>
-                  <li>â€¢ Borrowing money to gamble</li>
+                  <li>• Gambling more than you can afford</li>
+                  <li>• Chasing losses with bigger bets</li>
+                  <li>• Lying about gambling activities</li>
+                  <li>• Neglecting work, family, or responsibilities</li>
+                  <li>• Borrowing money to gamble</li>
                 </ul>
               </div>
               <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
@@ -126,11 +126,11 @@ export default function ResponsibleGaming() {
                   Emotional Signs
                 </h3>
                 <ul className="text-gray-300 space-y-2 text-sm">
-                  <li>â€¢ Feeling anxious when not gambling</li>
-                  <li>â€¢ Mood swings related to wins/losses</li>
-                  <li>â€¢ Gambling to escape problems</li>
-                  <li>â€¢ Feeling guilty or ashamed</li>
-                  <li>â€¢ Loss of interest in other activities</li>
+                  <li>• Feeling anxious when not gambling</li>
+                  <li>• Mood swings related to wins/losses</li>
+                  <li>• Gambling to escape problems</li>
+                  <li>• Feeling guilty or ashamed</li>
+                  <li>• Loss of interest in other activities</li>
                 </ul>
               </div>
             </div>
@@ -193,17 +193,17 @@ export default function ResponsibleGaming() {
                 Ask yourself these questions honestly:
               </p>
               <ul className="text-gray-300 space-y-2">
-                <li>â€¢ Do you gamble more than you originally intended?</li>
-                <li>â€¢ Have you ever lied about your gambling activities?</li>
+                <li>• Do you gamble more than you originally intended?</li>
+                <li>• Have you ever lied about your gambling activities?</li>
                 <li>
-                  â€¢ Do you feel restless or irritable when trying to cut down?
+                  • Do you feel restless or irritable when trying to cut down?
                 </li>
                 <li>
-                  â€¢ Have you jeopardized relationships or opportunities because
+                  • Have you jeopardized relationships or opportunities because
                   of gambling?
                 </li>
                 <li>
-                  â€¢ Do you gamble to escape from problems or negative feelings?
+                  • Do you gamble to escape from problems or negative feelings?
                 </li>
               </ul>
               <p className="text-yellow-300 text-sm mt-4 font-semibold">

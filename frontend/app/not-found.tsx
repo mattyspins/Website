@@ -78,25 +78,25 @@ export default function NotFound() {
               href="/leaderboard"
               className="text-gray-400 hover:text-white transition-colors"
             >
-              ðŸ† Leaderboards
+              🏆 Leaderboards
             </Link>
             <Link
               href="/bonus-hunt"
               className="text-gray-400 hover:text-white transition-colors"
             >
-              ðŸŽ¯ Bonus Hunt
+              🎯 Bonus Hunt
             </Link>
             <Link
               href="/store"
               className="text-gray-400 hover:text-white transition-colors"
             >
-              ðŸ›’ Store
+              🛒 Store
             </Link>
             <Link
               href="/raffle"
               className="text-gray-400 hover:text-white transition-colors"
             >
-              ðŸŽŸï¸ Raffles
+              🎟️ Raffles
             </Link>
           </div>
         </motion.div>
