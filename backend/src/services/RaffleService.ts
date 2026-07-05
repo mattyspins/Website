@@ -54,6 +54,7 @@ export interface RaffleWinner {
   raffleId: string;
   userId: string;
   ticketId?: string;
+  ticketNumber?: number;
   position: number;
   prizeDescription?: string;
   selectedAt: Date;
@@ -526,6 +527,7 @@ export class RaffleService {
             raffleId: winner.raffleId,
             userId: winner.userId,
             ticketId: winner.ticketId || undefined,
+            ticketNumber: winningTicket.ticketNumber,
             position: winner.position,
             prizeDescription: winner.prizeDescription || undefined,
             selectedAt: winner.selectedAt,
@@ -617,6 +619,9 @@ export class RaffleService {
           user: {
             select: { displayName: true, avatarUrl: true },
           },
+          ticket: {
+            select: { ticketNumber: true },
+          },
         },
         orderBy: { position: 'asc' },
       });
@@ -626,6 +631,7 @@ export class RaffleService {
         raffleId: winner.raffleId,
         userId: winner.userId,
         ticketId: winner.ticketId || undefined,
+        ticketNumber: winner.ticket?.ticketNumber,
         position: winner.position,
         prizeDescription: winner.prizeDescription || undefined,
         selectedAt: winner.selectedAt,

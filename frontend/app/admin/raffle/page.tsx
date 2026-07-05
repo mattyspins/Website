@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { API_ENDPOINTS } from "@/lib/api";
+import RaffleDrawReveal from "@/components/admin/RaffleDrawReveal";
 
 interface Raffle {
   id: string;
@@ -451,6 +452,7 @@ export default function AdminRafflePage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
+  const [drawingRaffleId, setDrawingRaffleId] = useState<string | null>(null);
   const [participants, setParticipants] = useState<RaffleParticipant[]>([]);
   const [participantsLoading, setParticipantsLoading] = useState(false);
 
@@ -517,27 +519,15 @@ export default function AdminRafflePage() {
     setTimeout(() => setSuccessMsg(null), 4000);
   };
 
-  const handleSelectWinners = async () => {
-    if (!selected) return;
-    if (!confirm(`Draw ${selected.numberOfWinners} winner(s) for "${selected.title}"?`)) return;
-    setActionLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(API_ENDPOINTS.RAFFLE_SELECT_WINNERS(selected.id), {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify({}),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error?.message || "Failed to select winners"); return; }
-      flash("Winners drawn!");
-      await loadRaffles();
-      const updated = { ...selected, status: "ended" as const };
-      setSelected(updated);
-    } catch {
-      setError("Failed to select winners");
-    } finally {
-      setActionLoading(false);
+  const handleDrawComplete = async (success: boolean) => {
+    const raffleId = drawingRaffleId;
+    setDrawingRaffleId(null);
+    if (!success || !raffleId) return;
+    flash("Winners drawn!");
+    await loadRaffles();
+    if (selected?.id === raffleId) {
+      setSelected({ ...selected, status: "ended" as const });
+      await loadWinners(raffleId);
     }
   };
 
@@ -697,7 +687,7 @@ export default function AdminRafflePage() {
                   {selected.status === "active" && (
                     <>
                       <button
-                        onClick={handleSelectWinners}
+                        onClick={() => setDrawingRaffleId(selected.id)}
                         disabled={actionLoading || selected.ticketsSold === 0}
                         className="px-4 py-2 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-300 disabled:opacity-40 transition-colors text-sm"
                       >
@@ -826,6 +816,10 @@ export default function AdminRafflePage() {
           loading={participantsLoading}
           onClose={() => setShowParticipants(false)}
         />
+      )}
+
+      {drawingRaffleId && (
+        <RaffleDrawReveal raffleId={drawingRaffleId} onClose={handleDrawComplete} />
       )}
     </div>
   );
