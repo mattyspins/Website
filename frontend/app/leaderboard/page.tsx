@@ -21,6 +21,51 @@ function fmtDate(d: string): string {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
+/** Races stay active through the end of endDate (UTC) — payouts run early the next day. */
+function raceEndTimestamp(endDate: string): number {
+  return new Date(`${endDate}T00:00:00Z`).getTime() + 24 * 60 * 60 * 1000;
+}
+
+function CountdownTimer({ endDate }: { endDate: string }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const msRemaining = Math.max(0, raceEndTimestamp(endDate) - now);
+  const totalSeconds = Math.floor(msRemaining / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (msRemaining <= 0) {
+    return (
+      <p className="text-gray-500 text-sm font-semibold uppercase tracking-widest">Race ended — payouts processing</p>
+    );
+  }
+
+  const segments = [
+    { label: "Days", value: days },
+    { label: "Hours", value: hours },
+    { label: "Mins", value: minutes },
+    { label: "Secs", value: seconds },
+  ];
+
+  return (
+    <div className="flex items-center justify-center gap-3">
+      {segments.map((seg) => (
+        <div key={seg.label} className="bg-navy-900/70 border border-white/8 rounded-xl px-4 py-2.5 min-w-[68px] text-center">
+          <p className="text-2xl font-bold font-gaming text-gold-400 tabular-nums">{String(seg.value).padStart(2, "0")}</p>
+          <p className="text-gray-500 text-[10px] font-semibold uppercase tracking-wider mt-0.5">{seg.label}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function rankBadgeClasses(position: number): string {
   if (position === 1) return "bg-gold-400 text-navy-950";
   if (position === 2) return "bg-gray-300 text-navy-950";
@@ -105,6 +150,13 @@ export default function LeaderboardPage() {
             </p>
           )}
         </motion.div>
+
+        {race && (
+          <div className="mb-10">
+            <p className="text-gray-500 text-xs font-semibold uppercase tracking-widest text-center mb-3">Race Ends In</p>
+            <CountdownTimer endDate={race.endDate} />
+          </div>
+        )}
 
         {!race ? (
           <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-12 text-center mb-12">
