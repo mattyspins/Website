@@ -145,16 +145,6 @@ export default function LeaderboardPage() {
               <>WAGER <span className="text-gold-400">LEADERBOARD</span></>
             )}
           </h1>
-          {race ? (
-            <p className="text-gray-400 text-sm max-w-xl mx-auto">
-              Ranked by wager on Razed from {fmtDate(race.startDate)} to {fmtDate(race.endDate)} — every player under our code counts.
-              Top {race.prizes.length} split ${totalPrize} cash when the race ends (link your Razed account on your profile so we know who to pay).
-            </p>
-          ) : (
-            <p className="text-gray-400 text-sm max-w-xl mx-auto">
-              Ranked by wager on Razed — every player under our code counts.
-            </p>
-          )}
         </motion.div>
 
         {race && (
