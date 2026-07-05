@@ -134,10 +134,16 @@ export default function LeaderboardPage() {
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <span className="inline-flex items-center gap-2 bg-gold-500/10 border border-gold-500/30 text-gold-400 text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded mb-4">
             <Trophy className="w-3.5 h-3.5" />
-            Wager Race
+            {race && totalPrize > 0 ? "Live Prize Pool" : "Wager Race"}
           </span>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-gaming text-white mb-3 tracking-wide">
-            WAGER <span className="text-gold-400">LEADERBOARD</span>
+            {race && totalPrize > 0 ? (
+              <>
+                <span className="text-gold-400">${totalPrize.toLocaleString("en-US")}</span> WAGER RACE
+              </>
+            ) : (
+              <>WAGER <span className="text-gold-400">LEADERBOARD</span></>
+            )}
           </h1>
           {race ? (
             <p className="text-gray-400 text-sm max-w-xl mx-auto">
