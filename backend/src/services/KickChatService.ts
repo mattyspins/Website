@@ -188,10 +188,11 @@ export class KickChatService {
       }
     }
 
-    // Admin-only: !addcoins <kickname> <amount> / !removecoins <kickname> <amount>
-    const coinsMatch = content.match(/^!(addcoins|removecoins)\s+(\S+)\s+(-?\d+)\b/i);
+    // Admin-only: !addcoins/!addpoints <kickname> <amount> / !removecoins/!removepoints <kickname> <amount>.
+    // The target accepts an optional leading "@" since that's how people naturally type mentions in chat.
+    const coinsMatch = content.match(/^!(addcoins|removecoins|addpoints|removepoints)\s+@?(\S+)\s+(-?\d+)\b/i);
     if (coinsMatch) {
-      const isRemove = coinsMatch[1].toLowerCase() === 'removecoins';
+      const isRemove = /^remove/i.test(coinsMatch[1]);
       const rawAmount = parseInt(coinsMatch[3], 10);
       const amount = isRemove ? -Math.abs(rawAmount) : rawAmount;
       await this.processAddCoins(kickUsername, coinsMatch[2], amount);
@@ -326,8 +327,8 @@ export class KickChatService {
     }
   }
 
-  // Admin-only: !addcoins <kickname> <amount> / !removecoins <kickname> <amount>. The
-  // sender is authorized by resolving their own Kick username to a verified, isAdmin
+  // Admin-only: !addcoins/!addpoints <kickname> <amount> / !removecoins/!removepoints <kickname> <amount>.
+  // The sender is authorized by resolving their own Kick username to a verified, isAdmin
   // site account — the same identity trust already used elsewhere in this file — so a
   // non-admin typing this command is silently ignored rather than told the command exists.
   private static async processAddCoins(senderKickUsername: string, targetKickUsername: string, amount: number): Promise<void> {
