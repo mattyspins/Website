@@ -182,6 +182,32 @@ export class RaffleController {
     }
   );
 
+  // Admin: get everyone who's bought tickets for a raffle, grouped per user
+  static getRaffleParticipants = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) {
+        throw createError.forbidden('Admin access required');
+      }
+
+      const { raffleId } = req.params;
+      if (!raffleId) {
+        throw createError.badRequest('Raffle ID is required');
+      }
+
+      const participants = await RaffleService.getRaffleParticipants(raffleId);
+
+      res.json({
+        success: true,
+        data: {
+          raffleId,
+          participants,
+          totalParticipants: participants.length,
+          totalTickets: participants.reduce((sum, p) => sum + p.ticketCount, 0),
+        },
+      });
+    }
+  );
+
   // Get raffle statistics
   static getRaffleStats = asyncHandler(async (req: Request, res: Response) => {
     try {

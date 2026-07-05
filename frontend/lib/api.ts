@@ -204,6 +204,7 @@ export const API_ENDPOINTS = {
   RAFFLE: (id: string) => `${API_URL}/api/raffles/${id}`,
   RAFFLE_PURCHASE: (id: string) => `${API_URL}/api/raffles/${id}/purchase`,
   RAFFLE_WINNERS: (id: string) => `${API_URL}/api/raffles/${id}/winners`,
+  RAFFLE_PARTICIPANTS: (id: string) => `${API_URL}/api/raffles/${id}/participants`,
   RAFFLE_USER_TICKETS: (id: string) => `${API_URL}/api/raffles/${id}/tickets`,
   RAFFLES_ADMIN_ALL: `${API_URL}/api/raffles/admin/all`,
   RAFFLES_COMPLETED: `${API_URL}/api/raffles/completed`,

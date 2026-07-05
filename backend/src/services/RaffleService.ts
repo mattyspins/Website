@@ -64,6 +64,16 @@ export interface RaffleWinner {
   avatarUrl?: string | null;
 }
 
+export interface RaffleParticipant {
+  userId: string;
+  displayName: string;
+  kickUsername: string | null;
+  avatarUrl: string | null;
+  ticketCount: number;
+  totalSpent: number;
+  firstPurchasedAt: Date;
+}
+
 export interface TicketPurchase {
   success: boolean;
   tickets: RaffleTicket[];
@@ -553,6 +563,48 @@ export class RaffleService {
     } catch (error) {
       logger.error('Error selecting winners:', error);
       throw error;
+    }
+  }
+
+  // Admin: everyone who's bought tickets, grouped per user with ticket count — ranked by
+  // most tickets held so the admin can immediately see who's most invested in this raffle.
+  static async getRaffleParticipants(raffleId: string): Promise<RaffleParticipant[]> {
+    try {
+      const raffle = await prisma.raffle.findUnique({ where: { id: raffleId }, select: { ticketPrice: true } });
+      if (!raffle) {
+        throw createError.notFound('Raffle not found');
+      }
+
+      const tickets = await prisma.raffleTicket.findMany({
+        where: { raffleId },
+        include: { user: { select: { id: true, displayName: true, kickUsername: true, avatarUrl: true } } },
+        orderBy: { purchasedAt: 'asc' },
+      });
+
+      const byUser = new Map<string, RaffleParticipant>();
+      for (const ticket of tickets) {
+        const existing = byUser.get(ticket.userId);
+        if (existing) {
+          existing.ticketCount += 1;
+          existing.totalSpent += raffle.ticketPrice;
+        } else {
+          byUser.set(ticket.userId, {
+            userId: ticket.userId,
+            displayName: ticket.user.displayName,
+            kickUsername: ticket.user.kickUsername,
+            avatarUrl: ticket.user.avatarUrl,
+            ticketCount: 1,
+            totalSpent: raffle.ticketPrice,
+            firstPurchasedAt: ticket.purchasedAt,
+          });
+        }
+      }
+
+      return [...byUser.values()].sort((a, b) => b.ticketCount - a.ticketCount);
+    } catch (error) {
+      if (error instanceof CustomError) throw error;
+      logger.error('Error getting raffle participants:', error);
+      throw createError.internal('Failed to get raffle participants');
     }
   }
 

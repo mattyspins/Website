@@ -110,5 +110,12 @@ router.get(
   adminMiddleware,
   RaffleController.getAllRaffles
 );
+router.get(
+  '/:raffleId/participants',
+  adminLimiter,
+  authMiddleware,
+  adminMiddleware,
+  RaffleController.getRaffleParticipants
+);
 
 export default router;

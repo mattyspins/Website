@@ -29,6 +29,16 @@ interface RaffleWinner {
   avatarUrl?: string | null;
 }
 
+interface RaffleParticipant {
+  userId: string;
+  displayName: string;
+  kickUsername: string | null;
+  avatarUrl: string | null;
+  ticketCount: number;
+  totalSpent: number;
+  firstPurchasedAt: string;
+}
+
 function authHeaders(): Record<string, string> {
   const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   return token
@@ -357,6 +367,76 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: () 
   );
 }
 
+// ─── Participants Modal ─────────────────────────────────────────────────────────
+function ParticipantsModal({
+  title,
+  participants,
+  loading,
+  onClose,
+}: {
+  title: string;
+  participants: RaffleParticipant[];
+  loading: boolean;
+  onClose: () => void;
+}) {
+  const totalTickets = participants.reduce((s, p) => s + p.ticketCount, 0);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="bg-navy-900 border border-white/10 rounded-xl w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh]">
+        <div className="px-6 pt-5 pb-4 border-b border-white/8">
+          <h3 className="text-lg font-semibold text-white">Participants</h3>
+          <p className="text-white/40 text-sm mt-0.5 truncate">{title}</p>
+          {!loading && (
+            <p className="text-white/30 text-xs mt-1.5">
+              {participants.length} participant{participants.length !== 1 ? "s" : ""} · {totalTickets} ticket{totalTickets !== 1 ? "s" : ""}
+            </p>
+          )}
+        </div>
+
+        <div className="overflow-y-auto flex-1">
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400" />
+            </div>
+          ) : participants.length === 0 ? (
+            <p className="text-white/30 text-sm text-center py-16">No tickets sold yet</p>
+          ) : (
+            <div className="divide-y divide-white/5">
+              {participants.map((p, i) => (
+                <div key={p.userId} className="flex items-center gap-3 px-6 py-3">
+                  <span className="text-white/25 text-xs font-bold w-5 shrink-0">{i + 1}</span>
+                  {p.avatarUrl ? (
+                    <img src={p.avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/50 font-bold text-sm shrink-0">
+                      {(p.kickUsername ?? p.displayName)[0]?.toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-white text-sm font-medium truncate">{p.kickUsername ?? p.displayName}</p>
+                    <p className="text-white/30 text-xs">{p.totalSpent.toLocaleString()} coins spent</p>
+                  </div>
+                  <span className="text-yellow-400 text-sm font-bold shrink-0">{p.ticketCount} 🎟️</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 py-4 border-t border-white/8">
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2.5 border border-white/10 text-white/60 rounded-lg hover:bg-white/5 transition-colors text-sm"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function AdminRafflePage() {
   const router = useRouter();
@@ -370,6 +450,9 @@ export default function AdminRafflePage() {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [showParticipants, setShowParticipants] = useState(false);
+  const [participants, setParticipants] = useState<RaffleParticipant[]>([]);
+  const [participantsLoading, setParticipantsLoading] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -408,6 +491,21 @@ export default function AdminRafflePage() {
       setWinners([]);
     }
   }, []);
+
+  const handleViewParticipants = async () => {
+    if (!selected) return;
+    setShowParticipants(true);
+    setParticipantsLoading(true);
+    try {
+      const res = await fetch(API_ENDPOINTS.RAFFLE_PARTICIPANTS(selected.id), { headers: authHeaders() });
+      const data = await res.json();
+      setParticipants(data.data?.participants ?? []);
+    } catch {
+      setParticipants([]);
+    } finally {
+      setParticipantsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (selected?.status === "ended") loadWinners(selected.id);
@@ -589,6 +687,13 @@ export default function AdminRafflePage() {
 
                 {/* Actions */}
                 <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={handleViewParticipants}
+                    disabled={selected.ticketsSold === 0}
+                    className="px-4 py-2 border border-white/15 text-white/70 rounded-lg hover:bg-white/5 disabled:opacity-40 transition-colors text-sm"
+                  >
+                    👥 View Participants ({selected.ticketsSold})
+                  </button>
                   {selected.status === "active" && (
                     <>
                       <button
@@ -711,6 +816,15 @@ export default function AdminRafflePage() {
             flash("Raffle created!");
             await loadRaffles();
           }}
+        />
+      )}
+
+      {showParticipants && selected && (
+        <ParticipantsModal
+          title={selected.title}
+          participants={participants}
+          loading={participantsLoading}
+          onClose={() => setShowParticipants(false)}
         />
       )}
     </div>
