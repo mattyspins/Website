@@ -25,6 +25,7 @@ type Phase =
   | "intro"
   | "shuffle"
   | "spotlight"
+  | "choose"
   | "glow"
   | "lift"
   | "flip"
@@ -211,23 +212,29 @@ function Card({
   isActive,
   isDimmed,
   isFlipped,
+  isSelectable,
   winner,
   keyframes,
+  onSelect,
 }: {
   index: number;
   phase: Phase;
   isActive: boolean;
   isDimmed: boolean;
   isFlipped: boolean;
+  isSelectable: boolean;
   winner: RevealWinner | null;
   keyframes: { x: number[]; y: number[]; rotateY: number[]; rotateX: number[]; scale: number[] };
+  onSelect: (index: number) => void;
 }) {
   const shuffling = phase === "shuffle";
 
   return (
     <motion.div
-      className="relative aspect-[3/4]"
+      className={`relative aspect-[3/4] ${isSelectable ? "cursor-pointer" : ""}`}
       style={{ perspective: 1000 }}
+      onClick={isSelectable ? () => onSelect(index) : undefined}
+      whileHover={isSelectable ? { scale: 1.06, y: -6 } : undefined}
       animate={{
         opacity: isDimmed ? 0.35 : 1,
         filter: isDimmed ? "blur(3px) brightness(0.5)" : "blur(0px) brightness(1)",
@@ -255,7 +262,11 @@ function Card({
       >
         {/* Front face */}
         <div
-          className="absolute inset-0 rounded-2xl border-2 border-gold-500/50 bg-gradient-to-br from-neutral-900 to-black flex flex-col items-center justify-center gap-2 shadow-[0_0_20px_rgba(250,204,21,0.08)]"
+          className={`absolute inset-0 rounded-2xl border-2 bg-gradient-to-br from-neutral-900 to-black flex flex-col items-center justify-center gap-2 transition-shadow duration-300 ${
+            isSelectable
+              ? "border-gold-400 shadow-[0_0_24px_rgba(250,204,21,0.3)] hover:shadow-[0_0_36px_rgba(250,204,21,0.55)]"
+              : "border-gold-500/50 shadow-[0_0_20px_rgba(250,204,21,0.08)]"
+          }`}
           style={{ backfaceVisibility: "hidden" }}
         >
           <motion.div
@@ -268,7 +279,9 @@ function Card({
             className="absolute inset-0 rounded-2xl pointer-events-none"
           />
           <span className="text-4xl sm:text-5xl text-gold-400/80 font-bold">?</span>
-          <span className="text-[10px] sm:text-xs text-white/30 font-semibold uppercase tracking-widest">Potential Winner</span>
+          <span className="text-[10px] sm:text-xs text-white/30 font-semibold uppercase tracking-widest">
+            {isSelectable ? "Tap to Reveal" : "Potential Winner"}
+          </span>
           {isActive && (phase === "lift" || phase === "flip") && <Sparks active={isActive} />}
         </div>
 
@@ -302,21 +315,26 @@ export default function RaffleDrawReveal({ raffleId, onClose }: RaffleDrawReveal
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const confettiRef = useRef<HTMLCanvasElement>(null);
+  const chooseResolveRef = useRef<((index: number) => void) | null>(null);
 
   const keyframeSets = useShuffleKeyframes(shuffleSeed);
 
   useEffect(() => setMounted(true), []);
 
+  const handleCardSelect = (index: number) => {
+    const resolve = chooseResolveRef.current;
+    if (!resolve) return;
+    chooseResolveRef.current = null;
+    resolve(index);
+  };
+
   useEffect(() => {
     let cancelled = false;
-    const usedIndexes = new Set<number>();
 
-    const pickCardIndex = () => {
-      const available = Array.from({ length: CARD_COUNT }, (_, i) => i).filter((i) => !usedIndexes.has(i));
-      const idx = available[Math.floor(Math.random() * available.length)];
-      usedIndexes.add(idx);
-      return idx;
-    };
+    const waitForCardChoice = (): Promise<number> =>
+      new Promise((resolve) => {
+        chooseResolveRef.current = resolve;
+      });
 
     async function run() {
       setPhase("intro");
@@ -364,7 +382,10 @@ export default function RaffleDrawReveal({ raffleId, onClose }: RaffleDrawReveal
 
       for (let i = 0; i < winners.length; i++) {
         const winner = winners[i];
-        const cardIdx = pickCardIndex();
+
+        setPhase("choose");
+        const cardIdx = await waitForCardChoice();
+        if (cancelled) return;
 
         setActiveCardIndex(cardIdx);
         setCurrentWinner(winner);
@@ -404,6 +425,7 @@ export default function RaffleDrawReveal({ raffleId, onClose }: RaffleDrawReveal
     run();
     return () => {
       cancelled = true;
+      chooseResolveRef.current = null;
     };
   }, [raffleId]);
 
@@ -465,42 +487,60 @@ export default function RaffleDrawReveal({ raffleId, onClose }: RaffleDrawReveal
 
       <canvas ref={confettiRef} className="absolute inset-0 w-full h-full pointer-events-none" />
 
-      {/* Title overlay — absolutely positioned so it never pushes the card grid off-screen */}
-      <div className="absolute top-4 sm:top-8 left-0 right-0 px-4 pointer-events-none">
-        <AnimatePresence>
-          {phase === "reveal" && currentWinner && (
-            <motion.div
-              key="single-winner-title"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="text-center"
-            >
-              <p className="text-2xl sm:text-3xl font-black text-gold-400">🎉 Congratulations!</p>
-              <p className="text-white text-lg sm:text-xl font-bold mt-1">{currentWinner.displayName}</p>
-            </motion.div>
-          )}
-          {phase === "celebrate" && (
-            <motion.div
-              key="celebrate-title"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center"
-            >
-              <p className="text-3xl sm:text-4xl font-black text-gold-400 mb-2">🎉 Congratulations!</p>
-              <div className="flex flex-wrap justify-center gap-2">
-                {allWinners.map((w) => (
-                  <span key={w.id} className="text-white/80 text-sm bg-white/5 border border-white/10 rounded-full px-3 py-1">
-                    #{w.position} {w.displayName}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+      <div className="relative w-full max-w-3xl px-6 flex flex-col items-center">
+        {/* Title zone — a reserved-height flow element (not absolutely positioned) so the
+            grid below always starts clear of it, no matter how many lines the phase's
+            title/subtitle needs (e.g. celebrate's wrapped winner-chip row). */}
+        <div className="min-h-[76px] sm:min-h-[92px] flex flex-col items-center justify-end pb-3 sm:pb-4 pointer-events-none w-full">
+          <AnimatePresence>
+            {phase === "choose" && (
+              <motion.div
+                key="choose-title"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-center"
+              >
+                <p className="text-2xl sm:text-3xl font-black text-gold-400">🎯 Pick a Card</p>
+                <p className="text-white/50 text-sm mt-1">
+                  {allWinners.length > 1
+                    ? `Choose a card to reveal winner #${Object.keys(revealedCards).length + 1} of ${allWinners.length}`
+                    : "Choose a card to reveal the winner"}
+                </p>
+              </motion.div>
+            )}
+            {phase === "reveal" && currentWinner && (
+              <motion.div
+                key="single-winner-title"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-center"
+              >
+                <p className="text-2xl sm:text-3xl font-black text-gold-400">🎉 Congratulations!</p>
+                <p className="text-white text-lg sm:text-xl font-bold mt-1">{currentWinner.displayName}</p>
+              </motion.div>
+            )}
+            {phase === "celebrate" && (
+              <motion.div
+                key="celebrate-title"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center"
+              >
+                <p className="text-3xl sm:text-4xl font-black text-gold-400 mb-2">🎉 Congratulations!</p>
+                <div className="flex flex-wrap justify-center gap-2 max-w-lg">
+                  {allWinners.map((w) => (
+                    <span key={w.id} className="text-white/80 text-sm bg-white/5 border border-white/10 rounded-full px-3 py-1">
+                      #{w.position} {w.displayName}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
-      <div className="relative w-full max-w-4xl px-6">
         {phase === "error" ? (
           <div className="text-center">
             <p className="text-red-400 font-semibold text-lg mb-4">{errorMsg}</p>
@@ -513,7 +553,7 @@ export default function RaffleDrawReveal({ raffleId, onClose }: RaffleDrawReveal
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 sm:gap-4 w-full">
               {Array.from({ length: CARD_COUNT }).map((_, i) => (
                 <Card
                   key={i}
@@ -522,8 +562,10 @@ export default function RaffleDrawReveal({ raffleId, onClose }: RaffleDrawReveal
                   isActive={activeCardIndex === i}
                   isDimmed={dimAll && activeCardIndex !== i && !revealedCards[i]}
                   isFlipped={!!revealedCards[i] || (activeCardIndex === i && (phase === "flip" || phase === "reveal"))}
+                  isSelectable={phase === "choose" && !revealedCards[i]}
                   winner={revealedCards[i] ?? (activeCardIndex === i ? currentWinner : null)}
                   keyframes={keyframeSets[i]}
+                  onSelect={handleCardSelect}
                 />
               ))}
             </div>
