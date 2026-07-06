@@ -348,20 +348,20 @@ export class TournamentService {
 
     const n = participants.length;
     const rounds = TournamentService.totalRounds(n);
+    // `size` is the next power of 2 >= n — the number of virtual bracket slots.
+    // Padding up to size and resolving every bye in round 1 guarantees every later
+    // round is an exact power-of-2 halving with no further byes needed, which is
+    // what lets the simple nextMatchId = ceil(m/2) routing below stay correct.
+    const size = 2 ** rounds;
+    const byes = size - n;
 
     // Randomly shuffle all participants — slot calls already set, matchups are pure luck
     const shuffled = TournamentService.shuffle(participants);
 
-    // Create all match shells first (for nextMatchId links)
-    // Round 1 has ceil(n/2) matches, subsequent rounds halve each time
     const matchesPerRound: number[] = [];
-    let remaining = n;
-    for (let r = 1; r <= rounds; r++) {
-      remaining = Math.ceil(remaining / 2);
-      matchesPerRound.push(remaining);
+    for (let r = 1, count = size / 2; r <= rounds; r++, count /= 2) {
+      matchesPerRound.push(count);
     }
-    // R1 = n/2 matches
-    matchesPerRound[0] = Math.floor(n / 2);
 
     const createdMatches: any[] = [];
     for (let r = 1; r <= rounds; r++) {
@@ -387,11 +387,21 @@ export class TournamentService {
       }
     }
 
-    // Pair shuffled participants sequentially: [0,1], [2,3], [4,5] ...
+    // Round 1: `byes` of the size/2 matches get a single real participant (an automatic
+    // bye-win advancing them immediately); the rest get two and start playable right away.
+    // Which match numbers are byes is randomized too, purely so byes aren't visually
+    // clustered together — it has no effect on fairness since matchups are already random.
     const round1Matches = createdMatches.filter((m) => m.round === 1);
+    const isByeSlot = TournamentService.shuffle([
+      ...Array(byes).fill(true),
+      ...Array(round1Matches.length - byes).fill(false),
+    ]);
+
+    let cursor = 0;
     for (let i = 0; i < round1Matches.length; i++) {
-      const pA = shuffled[i * 2];
-      const pB = shuffled[i * 2 + 1];
+      const pA = shuffled[cursor++];
+      const pB = isByeSlot[i] ? undefined : shuffled[cursor++];
+
       await prisma.tournamentMatchParticipant.createMany({
         data: [
           { matchId: round1Matches[i].id, participantId: pA.id, slotCall: pA.currentSlot },
@@ -399,8 +409,8 @@ export class TournamentService {
         ],
       });
 
-      // If only 1 participant (bye), auto-complete the match
       if (!pB) {
+        // Bye — auto-complete the match and advance the sole participant
         await prisma.tournamentMatch.update({
           where: { id: round1Matches[i].id },
           data: { status: 'COMPLETED', winnerId: pA.id },

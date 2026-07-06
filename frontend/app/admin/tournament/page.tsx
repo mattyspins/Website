@@ -17,6 +17,7 @@ import { getSocket } from "@/lib/socket";
 function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t: Tournament) => void }) {
   const [form, setForm] = useState({ title: "", maxPlayers: 8, slotTimerSeconds: 180 });
   const [customMins, setCustomMins] = useState("");
+  const [customPlayers, setCustomPlayers] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,14 +51,14 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
         />
 
         <label className="block text-sm text-white/60 mb-1">Max Players</label>
-        <div className="grid grid-cols-4 gap-2 mb-4">
+        <div className="grid grid-cols-4 gap-2 mb-2">
           {[4, 8, 16, 32].map((n) => (
             <button
               key={n}
               type="button"
-              onClick={() => setForm({ ...form, maxPlayers: n })}
+              onClick={() => { setForm({ ...form, maxPlayers: n }); setCustomPlayers(""); }}
               className={`py-2.5 rounded-lg text-sm font-semibold border transition-colors ${
-                form.maxPlayers === n
+                form.maxPlayers === n && !customPlayers
                   ? "bg-yellow-400 text-black border-yellow-400"
                   : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
               }`}
@@ -65,6 +66,37 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
               {n}
             </button>
           ))}
+        </div>
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-xs text-white/40 shrink-0">Custom (e.g. 9, 10, 11, 12):</span>
+          <div className="flex items-center gap-1">
+            <button type="button"
+              onClick={() => {
+                const next = Math.max(2, (parseInt(customPlayers) || form.maxPlayers) - 1);
+                setCustomPlayers(String(next));
+                setForm({ ...form, maxPlayers: next });
+              }}
+              className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
+            >−</button>
+            <input
+              type="text" inputMode="numeric" placeholder="players"
+              value={customPlayers}
+              onChange={(e) => {
+                setCustomPlayers(e.target.value);
+                const n = parseInt(e.target.value, 10);
+                if (!isNaN(n) && n >= 2) setForm({ ...form, maxPlayers: n });
+              }}
+              className="w-20 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm text-center focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
+            />
+            <button type="button"
+              onClick={() => {
+                const next = Math.min(64, (parseInt(customPlayers) || form.maxPlayers) + 1);
+                setCustomPlayers(String(next));
+                setForm({ ...form, maxPlayers: next });
+              }}
+              className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
+            >+</button>
+          </div>
         </div>
 
         <label className="block text-sm text-white/60 mb-1">Slot Timer</label>
