@@ -163,9 +163,11 @@ export class GuessTheBalanceService {
       // Calculate winner (excluding disqualified users)
       const winner = await this.calculateWinner(gameId, data.finalBalance);
 
-      // Update game with final balance and winner
-      const updatedGame = await prisma.guessTheBalance.update({
-        where: { id: gameId },
+      // Atomic guard: WHERE status=CLOSED + the transition in one statement means only one
+      // of two concurrent "complete" calls (e.g. an accidental double-click) can succeed —
+      // the loser gets count 0 and bails out before ever awarding points.
+      const claimed = await prisma.guessTheBalance.updateMany({
+        where: { id: gameId, status: GuessTheBalanceStatus.CLOSED },
         data: {
           finalBalance: new Prisma.Decimal(data.finalBalance),
           status: GuessTheBalanceStatus.COMPLETED,
@@ -174,6 +176,14 @@ export class GuessTheBalanceService {
           winnerGuess: winner ? new Prisma.Decimal(winner.guessAmount) : null,
           winnerReward: data.winnerReward || 0,
         },
+      });
+
+      if (claimed.count === 0) {
+        throw createError.badRequest('Game was already completed by another request');
+      }
+
+      const updatedGame = await prisma.guessTheBalance.findUniqueOrThrow({
+        where: { id: gameId },
         include: {
           winner: true,
         },
@@ -265,6 +275,25 @@ export class GuessTheBalanceService {
         );
       }
 
+      // Atomic guard: WHERE winnerId=previousWinnerId + the transition in one statement
+      // means only one of two concurrent disqualify calls (reading the same stale winner)
+      // can succeed — the loser gets count 0 and bails out before refunding/awarding points.
+      const claimed = await prisma.guessTheBalance.updateMany({
+        where: { id: gameId, winnerId: previousWinnerId },
+        data: {
+          winnerId: newWinner.userId,
+          winnerGuess: new Prisma.Decimal(newWinner.guessAmount),
+          metadata: {
+            ...(game.metadata as any),
+            disqualifiedUsers,
+          },
+        },
+      });
+
+      if (claimed.count === 0) {
+        throw createError.badRequest('Winner was already disqualified by another request');
+      }
+
       // Refund points from previous winner if they were awarded
       if (previousReward > 0) {
         await this.refundPoints(
@@ -274,17 +303,8 @@ export class GuessTheBalanceService {
         );
       }
 
-      // Update game with new winner
-      const updatedGame = await prisma.guessTheBalance.update({
+      const updatedGame = await prisma.guessTheBalance.findUniqueOrThrow({
         where: { id: gameId },
-        data: {
-          winnerId: newWinner.userId,
-          winnerGuess: new Prisma.Decimal(newWinner.guessAmount),
-          metadata: {
-            ...(game.metadata as any),
-            disqualifiedUsers,
-          },
-        },
         include: {
           winner: true,
         },

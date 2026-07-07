@@ -205,14 +205,18 @@ export class StoreService {
           },
         });
 
-        // Update item stock (if not unlimited)
+        // Atomically decrement stock (if not unlimited) — WHERE + decrement in one SQL
+        // statement prevents concurrent purchases from both passing the stock check above
+        // and overselling the item.
         if (item.stock !== -1) {
-          await tx.storeItem.update({
-            where: { id: itemId },
-            data: {
-              stock: { decrement: quantity },
-            },
+          const stockUpdate = await tx.storeItem.updateMany({
+            where: { id: itemId, stock: { gte: quantity } },
+            data: { stock: { decrement: quantity } },
           });
+
+          if (stockUpdate.count === 0) {
+            throw createError.badRequest('Item sold out');
+          }
         }
 
         // Atomically deduct points — WHERE + decrement in one SQL statement prevents

@@ -38,26 +38,29 @@ router.post(
   '/claim',
   authMiddleware,
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.id },
-      select: { lastDailyCheckIn: true, points: true },
-    });
-    if (!user) throw createError.notFound('User not found');
-
     const now = new Date();
-    if (user.lastDailyCheckIn && isSameUTCDay(user.lastDailyCheckIn, now)) {
-      throw createError.badRequest('Already claimed today');
-    }
+    const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
-    const updated = await prisma.user.update({
-      where: { id: req.user!.id },
+    // Atomic guard: the WHERE clause is evaluated by Postgres as part of the same UPDATE,
+    // so two concurrent claims can't both read a stale "not claimed yet" state and both
+    // award points — only one can ever match and increment.
+    const updated = await prisma.user.updateMany({
+      where: {
+        id: req.user!.id,
+        OR: [{ lastDailyCheckIn: null }, { lastDailyCheckIn: { lt: startOfTodayUTC } }],
+      },
       data: {
         points: { increment: DAILY_REWARD },
         totalEarned: { increment: DAILY_REWARD },
         lastDailyCheckIn: now,
       },
-      select: { points: true },
     });
+
+    if (updated.count === 0) {
+      const user = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { id: true } });
+      if (!user) throw createError.notFound('User not found');
+      throw createError.badRequest('Already claimed today');
+    }
 
     await prisma.pointTransaction.create({
       data: {
@@ -68,8 +71,10 @@ router.post(
       },
     });
 
+    const user = await prisma.user.findUnique({ where: { id: req.user!.id }, select: { points: true } });
+
     logger.info(`Daily check-in: user ${req.user!.id} claimed ${DAILY_REWARD} coins`);
-    res.json({ success: true, reward: DAILY_REWARD, newBalance: updated.points });
+    res.json({ success: true, reward: DAILY_REWARD, newBalance: user?.points ?? 0 });
   })
 );
 
