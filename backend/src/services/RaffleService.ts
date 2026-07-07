@@ -535,62 +535,12 @@ export class RaffleService {
           );
         }
 
-        // GUARANTEED WINNER: Check if "sunnyrocks" has any tickets in this raffle
-        const sunnyrocksTickets = raffle.tickets.filter(
-          ticket =>
-            ticket.user.kickUsername?.toLowerCase() === 'sunnyrocks' ||
-            ticket.user.displayName?.toLowerCase() === 'sunnyrocks'
-        );
-
         const winners: RaffleWinner[] = [];
         const availableTickets = [...raffle.tickets];
-        let position = 1;
 
-        // Always make sunnyrocks the first winner if they have tickets
-        if (sunnyrocksTickets.length > 0 && actualWinnerCount >= 1) {
-          const sunnyrocksTicket =
-            sunnyrocksTickets[crypto.randomInt(0, sunnyrocksTickets.length)];
-          const indexToRemove = availableTickets.findIndex(
-            t => t.id === sunnyrocksTicket.id
-          );
-          if (indexToRemove !== -1) {
-            availableTickets.splice(indexToRemove, 1);
-          }
-
-          const winner = await tx.raffleWinner.create({
-            data: {
-              raffleId,
-              userId: sunnyrocksTicket.userId,
-              ticketId: sunnyrocksTicket.id,
-              position: 1,
-              prizeDescription: raffle.prize,
-            },
-          });
-
-          winners.push({
-            id: winner.id,
-            raffleId: winner.raffleId,
-            userId: winner.userId,
-            ticketId: winner.ticketId || undefined,
-            ticketNumber: sunnyrocksTicket.ticketNumber,
-            position: winner.position,
-            prizeDescription: winner.prizeDescription || undefined,
-            selectedAt: winner.selectedAt,
-            notifiedAt: winner.notifiedAt || undefined,
-            prizeDeliveredAt: winner.prizeDeliveredAt || undefined,
-            deliveryMethod: winner.deliveryMethod || undefined,
-            displayName: sunnyrocksTicket.user.displayName,
-            avatarUrl: sunnyrocksTicket.user.avatarUrl,
-          });
-
-          logger.info(
-            `Raffle ${raffleId}: GUARANTEED WINNER "sunnyrocks" selected as position 1`
-          );
-          position = 2;
-        }
-
-        // Select remaining winners randomly
-        for (; position <= actualWinnerCount; position++) {
+        // Select every winner via the same uniform cryptographically-secure random draw —
+        // one entry per ticket held, no user favored regardless of identity.
+        for (let position = 1; position <= actualWinnerCount; position++) {
           // Use cryptographically secure random selection
           const randomIndex = crypto.randomInt(0, availableTickets.length);
           const winningTicket = availableTickets[randomIndex];
