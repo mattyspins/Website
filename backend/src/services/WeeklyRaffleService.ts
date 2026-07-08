@@ -46,6 +46,20 @@ export class WeeklyRaffleService {
     });
   }
 
+  // Only while a raffle is still OPEN — once drawn, its requirements are locked in
+  // as part of the historical record.
+  static async updateRequirements(id: string, requirements: WeeklyRaffleRequirement[]) {
+    const raffle = await prisma.weeklyRaffle.findUnique({ where: { id } });
+    if (!raffle) throw createError.notFound('Weekly raffle not found');
+    if (raffle.status !== 'OPEN') {
+      throw createError.conflict('Cannot edit requirements after the raffle has been drawn');
+    }
+    return prisma.weeklyRaffle.update({
+      where: { id },
+      data: { requirements: requirements as unknown as Prisma.InputJsonValue },
+    });
+  }
+
   static async getCurrent() {
     const { weekStart } = this.getCurrentWeekBounds();
     return prisma.weeklyRaffle.findUnique({

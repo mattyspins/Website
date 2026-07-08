@@ -48,6 +48,13 @@ export class WeeklyRaffleController {
     res.json({ success: true, ...result });
   });
 
+  static updateRequirements = asyncHandler(async (req, res) => {
+    if (!req.user?.isAdmin) throw createError.forbidden('Admin access required');
+    const requirements = parseRequirements(req.body.requirements);
+    const raffle = await WeeklyRaffleService.updateRequirements(req.params.id, requirements);
+    res.json({ success: true, raffle });
+  });
+
   // Public
   static getCurrent = asyncHandler(async (_req, res) => {
     const raffle = await WeeklyRaffleService.getCurrent();

@@ -148,10 +148,11 @@ export default function LeaderboardPage() {
     );
   }
 
-  const podium = race?.standings.filter((r) => r.position <= 3) ?? [];
-  const rest = race?.standings.filter((r) => r.position > 3) ?? [];
+  const top10 = race?.standings.filter((r) => r.position <= 10) ?? [];
+  const podium = top10.filter((r) => r.position <= 3);
+  const rest = top10.filter((r) => r.position > 3);
   const myRow = myUserId ? race?.standings.find((r) => r.userId === myUserId) : undefined;
-  const myRowOutsideTop3 = myRow && myRow.position > 3;
+  const myRowOutsideTop3 = myRow && myRow.position > 3 && myRow.position <= 10;
 
   return (
     <div className="min-h-screen pt-20 pb-16 px-4">
@@ -192,22 +193,6 @@ export default function LeaderboardPage() {
             </>
           )}
         </motion.div>
-
-        {/* Prize breakdown */}
-        {race && race.prizes.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="bg-navy-800/60 border border-white/6 rounded-2xl p-5 mb-8">
-            <h2 className="text-white font-bold text-xs uppercase tracking-widest mb-4 text-center">Prize Breakdown</h2>
-            <div className="flex flex-wrap justify-center gap-3">
-              {race.prizes.map((p) => (
-                <div key={p.position} className="flex items-center gap-2 bg-navy-900/60 border border-white/6 rounded-xl px-4 py-2">
-                  <span className="text-lg">{p.position === 1 ? "🥇" : p.position === 2 ? "🥈" : p.position === 3 ? "🥉" : `#${p.position}`}</span>
-                  <span className="text-white font-bold text-sm">£{p.amount}</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
 
         {!race ? (
           <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-12 text-center mb-12">

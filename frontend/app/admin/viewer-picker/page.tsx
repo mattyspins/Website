@@ -171,6 +171,15 @@ export default function AdminViewerPickerPage() {
     } catch { error("Export failed", "Could not export participants."); }
   };
 
+  const handleDeleteHistoryItem = async (id: string) => {
+    if (!(await confirm({ title: "Delete this giveaway?", message: "This permanently deletes it and its entries. This cannot be undone.", confirmText: "Delete" }))) return;
+    try {
+      await pickerApi.delete(id);
+      setHistory((prev) => prev.filter((p) => p.id !== id));
+      success("Deleted", "");
+    } catch (e: any) { error("Failed", e.message || "Could not delete."); }
+  };
+
   if (!authed || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -340,7 +349,16 @@ export default function AdminViewerPickerPage() {
             <div className="space-y-2">
               {history.map((p) => (
                 <div key={p.id} className="bg-[#0a0e17] border border-cyan-500/10 rounded-xl p-4">
-                  <p className="text-gray-500 text-xs mb-2">{p.label || p.keyword} · {timeAgo(p.createdAt)}</p>
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <p className="text-gray-500 text-xs">{p.label || p.keyword} · {timeAgo(p.createdAt)}</p>
+                    <button
+                      onClick={() => handleDeleteHistoryItem(p.id)}
+                      title="Delete this giveaway"
+                      className="text-gray-600 hover:text-red-400 transition-colors shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   {p.winners.length === 0 ? (
                     <p className="text-gray-600 text-sm">No winner drawn</p>
                   ) : (

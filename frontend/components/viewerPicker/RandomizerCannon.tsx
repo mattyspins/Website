@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Volume2, VolumeX, RotateCcw, Trash2, Play } from "lucide-react";
+import { Volume2, VolumeX, RotateCcw, Trash2, Play, X } from "lucide-react";
 import Confetti from "@/components/highRoller/Confetti";
 import Fireworks from "@/components/weeklyRaffle/Fireworks";
 import CannonParticles from "./CannonParticles";
@@ -197,12 +197,23 @@ export default function RandomizerCannon({
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-[#05070d]/95 backdrop-blur-md flex items-center justify-center px-4"
           >
-            <button
-              onClick={toggleMute}
-              className="fixed top-4 right-4 z-[70] p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-            >
-              {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-            </button>
+            <div className="fixed top-4 right-4 z-[70] flex items-center gap-2">
+              <button
+                onClick={toggleMute}
+                className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+              >
+                {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              </button>
+              {phase === "reveal" && onReset && (
+                <button
+                  onClick={onReset}
+                  title="Close"
+                  className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
 
             {(phase === "charging" || phase === "firing") && (
               <div className="text-center">

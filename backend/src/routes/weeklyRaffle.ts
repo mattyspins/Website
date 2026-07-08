@@ -17,5 +17,6 @@ router.get('/:id/my-eligibility', authMiddleware, lim, WeeklyRaffleController.ge
 router.post('/', authMiddleware, adminMiddleware, lim, WeeklyRaffleController.create);
 router.get('/:id/eligible-preview', authMiddleware, adminMiddleware, lim, WeeklyRaffleController.getEligiblePreview);
 router.post('/:id/draw', authMiddleware, adminMiddleware, lim, WeeklyRaffleController.draw);
+router.patch('/:id', authMiddleware, adminMiddleware, lim, WeeklyRaffleController.updateRequirements);
 
 export default router;

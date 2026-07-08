@@ -6,7 +6,7 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { useConfirm } from "@/components/admin/useConfirm";
 import { isoWeekNumber } from "@/lib/weekNumber";
 import EliminationReveal from "@/components/weeklyRaffle/EliminationReveal";
-import { Users, Play, Plus, Trophy } from "lucide-react";
+import { Users, Play, Plus, Trophy, Pencil } from "lucide-react";
 
 export default function AdminWeeklyRafflePage() {
   const { success, error } = useToast();
@@ -22,6 +22,10 @@ export default function AdminWeeklyRafflePage() {
   const [history, setHistory] = useState<WeeklyRaffle[]>([]);
   const [drawing, setDrawing] = useState(false);
   const [drawResult, setDrawResult] = useState<WeeklyRaffleDrawResult | null>(null);
+
+  const [editing, setEditing] = useState(false);
+  const [editWager, setEditWager] = useState("100");
+  const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -63,6 +67,32 @@ export default function AdminWeeklyRafflePage() {
       error("Failed", e.message || "Could not create raffle.");
     } finally {
       setCreating(false);
+    }
+  };
+
+  const startEditing = () => {
+    const current = raffle?.requirements.find((r) => r.type === "MIN_WEEKLY_WAGER")?.value ?? 100;
+    setEditWager(String(current));
+    setEditing(true);
+  };
+
+  const handleSaveRequirements = async () => {
+    if (!raffle) return;
+    const amount = Number(editWager);
+    if (!amount || amount <= 0) {
+      error("Invalid amount", "Enter a minimum wager greater than 0.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const updated = await weeklyRaffleApi.updateRequirements(raffle.id, [{ type: "MIN_WEEKLY_WAGER", value: amount }]);
+      setRaffle(updated);
+      setEditing(false);
+      success("Requirements updated", "");
+    } catch (e: any) {
+      error("Failed", e.message || "Could not update requirements.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -146,14 +176,53 @@ export default function AdminWeeklyRafflePage() {
                 </span>
               </div>
 
-              <div className="space-y-1 mb-4">
-                {raffle.requirements.map((r, i) => (
-                  <p key={i} className="text-gray-400 text-sm">
-                    • Minimum weekly wager under code:{" "}
-                    <span className="text-white font-semibold">${r.value.toLocaleString()}</span>
-                  </p>
-                ))}
-              </div>
+              {!editing ? (
+                <div className="flex items-center justify-between gap-2 mb-4">
+                  <div className="space-y-1">
+                    {raffle.requirements.map((r, i) => (
+                      <p key={i} className="text-gray-400 text-sm">
+                        • Minimum weekly wager under code:{" "}
+                        <span className="text-white font-semibold">${r.value.toLocaleString()}</span>
+                      </p>
+                    ))}
+                  </div>
+                  {raffle.status === "OPEN" && (
+                    <button
+                      onClick={startEditing}
+                      title="Edit requirements"
+                      className="flex items-center gap-1.5 bg-white/6 hover:bg-white/10 text-gray-300 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0"
+                    >
+                      <Pencil className="w-3.5 h-3.5" /> Edit
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="mb-4">
+                  <label className="block text-xs text-gray-500 mb-1">Minimum weekly wager under code ($)</label>
+                  <div className="flex gap-2 max-w-xs">
+                    <input
+                      type="number"
+                      min="1"
+                      value={editWager}
+                      onChange={(e) => setEditWager(e.target.value)}
+                      className="flex-1 bg-navy-900/60 border border-white/8 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-gold-500/40"
+                    />
+                    <button
+                      onClick={handleSaveRequirements}
+                      disabled={saving}
+                      className="bg-gold-500 hover:bg-gold-600 disabled:opacity-50 text-navy-950 font-bold px-3 py-2 rounded-lg text-sm transition-colors"
+                    >
+                      {saving ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      onClick={() => setEditing(false)}
+                      className="bg-white/6 hover:bg-white/10 text-gray-300 font-semibold px-3 py-2 rounded-lg text-sm transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {raffle.status === "OPEN" && (
                 <>

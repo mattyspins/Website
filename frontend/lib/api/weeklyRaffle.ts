@@ -65,4 +65,6 @@ export const weeklyRaffleApi = {
       .get(`/api/weekly-raffle/${id}/eligible-preview`)
       .then((d) => ({ participants: d.participants as WeeklyRaffleParticipant[], count: d.count as number })),
   draw: (id: string) => api.post(`/api/weekly-raffle/${id}/draw`, {}).then((d) => d as WeeklyRaffleDrawResult),
+  updateRequirements: (id: string, requirements: WeeklyRaffleRequirement[]) =>
+    api.patch(`/api/weekly-raffle/${id}`, { requirements }).then((d) => d.raffle as WeeklyRaffle),
 };
