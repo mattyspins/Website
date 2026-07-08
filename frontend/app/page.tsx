@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Hero from "@/components/Hero";
 import StreamScheduleSection from "@/components/StreamScheduleSection";
+import IntroSplash from "@/components/home/IntroSplash";
 
 export default function Home() {
   const searchParams = useSearchParams();
@@ -35,6 +36,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
+      <IntroSplash />
+
       {toast && (
         <motion.div
           initial={{ opacity: 0, y: -40 }}
