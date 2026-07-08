@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { API_ENDPOINTS } from "@/lib/api";
 import RaffleDrawReveal from "@/components/admin/RaffleDrawReveal";
+import { useConfirm } from "@/components/admin/useConfirm";
 
 interface Raffle {
   id: string;
@@ -454,6 +455,7 @@ export default function AdminRafflePage() {
   const [showParticipants, setShowParticipants] = useState(false);
   const [drawingRaffleId, setDrawingRaffleId] = useState<string | null>(null);
   const [participants, setParticipants] = useState<RaffleParticipant[]>([]);
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [participantsLoading, setParticipantsLoading] = useState(false);
 
   useEffect(() => {
@@ -533,7 +535,7 @@ export default function AdminRafflePage() {
 
   const handleCancel = async () => {
     if (!selected) return;
-    if (!confirm(`Cancel "${selected.title}"? Tickets will be refunded.`)) return;
+    if (!(await confirm({ title: "Cancel this raffle?", message: `Cancel "${selected.title}"? All ticket purchases will be refunded.`, confirmText: "Cancel Raffle" }))) return;
     setActionLoading(true);
     setError(null);
     try {
@@ -554,7 +556,7 @@ export default function AdminRafflePage() {
   };
 
   const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Delete "${title}" permanently?`)) return;
+    if (!(await confirm({ title: "Delete this raffle?", message: `Delete "${title}" permanently? This cannot be undone.`, confirmText: "Delete" }))) return;
     setActionLoading(true);
     setError(null);
     try {
@@ -592,7 +594,7 @@ export default function AdminRafflePage() {
 
   return (
     <div className="min-h-screen bg-navy-950 text-white">
-      <div className="max-w-7xl mx-auto px-4 pt-24 pb-10">
+      <div className="max-w-7xl mx-auto px-4 pb-10">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -821,6 +823,7 @@ export default function AdminRafflePage() {
       {drawingRaffleId && (
         <RaffleDrawReveal raffleId={drawingRaffleId} onClose={handleDrawComplete} />
       )}
+      {confirmDialog}
     </div>
   );
 }

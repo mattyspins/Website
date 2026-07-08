@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { pickerApi, ViewerPicker, PickerUser } from "@/lib/api/viewerPicker";
 import { getSocket } from "@/lib/socket";
 import { API_ENDPOINTS } from "@/lib/api";
+import { useConfirm } from "@/components/admin/useConfirm";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -271,6 +272,7 @@ export default function AdminViewerPickerPage() {
   const [manualUsername, setManualUsername] = useState("");
   const [copiedKeyword, setCopiedKeyword] = useState(false);
   const pendingPickerRef = useRef<ViewerPicker | null>(null);
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   const active = pickers.find((p) => p.status === "OPEN") ?? null;
   const past = pickers.filter((p) => p.status === "COMPLETED" || p.status === "CLOSED");
@@ -413,7 +415,7 @@ export default function AdminViewerPickerPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this picker?")) return;
+    if (!(await confirm({ title: "Delete this picker?", message: "This permanently removes the picker and its entries. This cannot be undone." }))) return;
     setActionLoading(true);
     try {
       await pickerApi.delete(id);
@@ -441,7 +443,7 @@ export default function AdminViewerPickerPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <div className="max-w-5xl mx-auto px-4 pt-24 pb-16">
+      <div className="max-w-5xl mx-auto px-4 pb-16">
 
         {/* Header */}
         <div className="mb-8">
@@ -783,6 +785,7 @@ export default function AdminViewerPickerPage() {
           }
         />
       )}
+      {confirmDialog}
     </div>
   );
 }

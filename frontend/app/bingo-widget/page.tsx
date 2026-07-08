@@ -147,7 +147,7 @@ export default function BingoWidget() {
   useEffect(() => {
     if (!game) return;
     const socket = getSocket();
-    socket.emit("bingo:join", game.id);
+    socket.emit("joinBingo", game.id);
     const handleUpdate = (updated: BingoGame) => {
       if (updated.id !== game.id) return;
       if (updated.lineWins.length > prevWinsRef.current) {
@@ -159,7 +159,7 @@ export default function BingoWidget() {
       if (updated.status === "COMPLETED" || updated.status === "CANCELLED") setTimeout(findActiveGame, 8_000);
     };
     socket.on("bingo:updated", handleUpdate);
-    return () => { socket.emit("bingo:leave", game.id); socket.off("bingo:updated", handleUpdate); };
+    return () => { socket.emit("leaveBingo", game.id); socket.off("bingo:updated", handleUpdate); };
   }, [game?.id, findActiveGame]);
 
   if (!game) {

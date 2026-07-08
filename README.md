@@ -45,7 +45,7 @@ A full-stack web application for streaming communities with Discord integration,
 
 ### Deploy to Production
 
-See **[README_DEPLOYMENT.md](README_DEPLOYMENT.md)** for step-by-step instructions to deploy on Railway + Vercel (~$10-20/month).
+Deploys to Railway (backend) + Vercel (frontend). See **[RAILWAY_ENV_SETUP.md](RAILWAY_ENV_SETUP.md)** for the backend environment variables, and `frontend/vercel.json` / `frontend/.env.production.example` for the frontend ones.
 
 ## 📁 Project Structure
 
@@ -79,28 +79,19 @@ See **[README_DEPLOYMENT.md](README_DEPLOYMENT.md)** for step-by-step instructio
 
 ## 📚 Documentation
 
-### Deployment Guides
-
-- **[README_DEPLOYMENT.md](README_DEPLOYMENT.md)** - 🚀 START HERE for deployment
-- **[QUICK_DEPLOY_CHECKLIST.md](QUICK_DEPLOY_CHECKLIST.md)** - Fast 30-min deployment
-- **[RAILWAY_VERCEL_DEPLOYMENT.md](RAILWAY_VERCEL_DEPLOYMENT.md)** - Detailed deployment guide
-- **[DEPLOYMENT_INDEX.md](DEPLOYMENT_INDEX.md)** - Find the right guide for you
-
 ### Configuration Guides
 
 - **[RAILWAY_ENV_SETUP.md](RAILWAY_ENV_SETUP.md)** - Backend environment variables
-- **[VERCEL_ENV_SETUP.md](VERCEL_ENV_SETUP.md)** - Frontend environment variables
-- **[PRE_DEPLOYMENT_CHECKLIST.md](PRE_DEPLOYMENT_CHECKLIST.md)** - Pre-deployment preparation
-
-### Troubleshooting
-
-- **[RAILWAY_DEPLOYMENT_FIX.md](RAILWAY_DEPLOYMENT_FIX.md)** - Fix deployment issues
-- **[DEPLOYMENT_ERROR_FIXED.md](DEPLOYMENT_ERROR_FIXED.md)** - Common error solutions
+- **[CUSTOM_DOMAIN_SETUP.md](CUSTOM_DOMAIN_SETUP.md)** - Pointing a custom domain at the deployment
+- **[START_LOCAL_DATABASE.md](START_LOCAL_DATABASE.md)** - Running Postgres/Redis locally for development
 
 ### Setup Guides
 
 - **[DISCORD_SETUP_GUIDE.md](DISCORD_SETUP_GUIDE.md)** - Setup Discord OAuth application
 - **[SETUP_FOR_NEW_STREAMER.md](SETUP_FOR_NEW_STREAMER.md)** - Configure for your stream
+- **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - Manual testing walkthrough
+
+> Note: a number of other `*_SUMMARY.md` / `*_COMPLETE.md` files in the repo root are point-in-time notes written while shipping specific past features (e.g. Guess the Balance, persistent login). They're kept for history but aren't maintained as ongoing documentation — the guides above are the current, accurate ones.
 
 ## 🔑 Environment Variables
 

@@ -73,6 +73,7 @@ model User {
   kothRounds             KingOfTheHillRound[]
   razedDailyWagers       RazedDailyWager[]
   wagerRacePayouts       WagerRacePayout[]
+  highRollerPlayers      HighRollerPlayer[]
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")
@@ -108,6 +109,7 @@ model PointTransaction {
   admin           User?    @relation("AdminPointTransactions", fields: [adminId], references: [id])
   user            User     @relation("UserPointTransactions", fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, createdAt])
   @@map("point_transactions")
 }
 
@@ -285,6 +287,7 @@ model StorePurchase {
   item         StoreItem @relation(fields: [itemId], references: [id])
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, status])
   @@map("store_purchases")
 }
 
@@ -367,6 +370,7 @@ model Notification {
   metadata  Json?
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, createdAt])
   @@map("notifications")
 }
 
@@ -396,6 +400,8 @@ model AuditLog {
   admin      User?    @relation("AdminAuditLogs", fields: [adminId], references: [id])
   target     User?    @relation("TargetAuditLogs", fields: [targetId], references: [id])
 
+  @@index([adminId, createdAt])
+  @@index([targetId])
   @@map("audit_logs")
 }
 
@@ -677,6 +683,123 @@ model KingOfTheHillRound {
   user         User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("king_of_the_hill_rounds")
+}
+
+// ─── High Roller ───────────────────────────────────────────────────────────────
+
+enum HighRollerStatus {
+  OPEN
+  CLOSED
+}
+
+enum HighRollerPrediction {
+  OVER
+  UNDER
+}
+
+model HighRoller {
+  id                 String                @id @default(uuid())
+  title              String?
+  threshold          Decimal               @db.Decimal(10, 2)
+  status             HighRollerStatus      @default(OPEN)
+  paused             Boolean               @default(false)
+  roundLocked        Boolean               @default(false) @map("round_locked")
+  roundNumber        Int                   @default(0) @map("round_number")
+  finalRound         Boolean               @default(false) @map("final_round")
+  treatMissedAsWrong Boolean               @default(true) @map("treat_missed_as_wrong")
+  joinKeyword        String                @default("!join") @map("join_keyword")
+  leaveKeyword       String                @default("!leave") @map("leave_keyword")
+  overKeyword        String                @default("!over") @map("over_keyword")
+  underKeyword       String                @default("!under") @map("under_keyword")
+  suggestKeyword     String?               @default("!suggest") @map("suggest_keyword")
+  createdAt          DateTime              @default(now()) @map("created_at")
+  closedAt           DateTime?             @map("closed_at")
+  players            HighRollerPlayer[]
+  rounds             HighRollerRound[]
+  suggestionDraws    HighRollerSuggestionDraw[]
+  suggestionEntrants HighRollerSuggestionEntrant[]
+
+  @@map("high_roller_sessions")
+}
+
+// Players are keyed by the raw Kick chat username so anyone who types the join keyword
+// can play, whether or not they've linked Kick or registered on the site — `userId` is an
+// optional bonus link, resolved when the chatter's username happens to match a site account.
+model HighRollerPlayer {
+  id                String                @id @default(uuid())
+  sessionId         String                @map("session_id")
+  kickUsername      String                @map("kick_username")
+  userId            String?               @map("user_id")
+  currentStreak     Int                   @default(0) @map("current_streak")
+  bestStreak        Int                   @default(0) @map("best_streak")
+  roundsPlayed      Int                   @default(0) @map("rounds_played")
+  correctCount      Int                   @default(0) @map("correct_count")
+  currentPrediction HighRollerPrediction? @map("current_prediction")
+  joinedAt          DateTime              @default(now()) @map("joined_at")
+  leftAt            DateTime?             @map("left_at")
+  session           HighRoller                  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user              User?                       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  predictions       HighRollerRoundPrediction[]
+
+  @@unique([sessionId, kickUsername])
+  @@map("high_roller_players")
+}
+
+// Append-only: one row per resolved round, for the round-history view.
+model HighRollerRound {
+  id           String                @id @default(uuid())
+  sessionId    String                @map("session_id")
+  roundNumber  Int                   @map("round_number")
+  threshold    Decimal               @db.Decimal(10, 2)
+  slotResult   Decimal               @db.Decimal(10, 2) @map("slot_result")
+  winningSide  HighRollerPrediction  @map("winning_side")
+  numberOver   Int                   @map("number_over")
+  numberUnder  Int                   @map("number_under")
+  resolvedAt   DateTime              @default(now()) @map("resolved_at")
+  session      HighRoller                  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  predictions  HighRollerRoundPrediction[]
+
+  @@map("high_roller_rounds")
+}
+
+// One row per player per resolved round — needed for accuracy/history since a player's
+// streak alone doesn't tell you what they guessed or whether this specific round hit.
+model HighRollerRoundPrediction {
+  id          String                @id @default(uuid())
+  roundId     String                @map("round_id")
+  playerId    String                @map("player_id")
+  prediction  HighRollerPrediction?
+  correct     Boolean
+  streakAfter Int                   @map("streak_after")
+  round       HighRollerRound  @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  player      HighRollerPlayer @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([roundId, playerId])
+  @@map("high_roller_round_predictions")
+}
+
+// History of "draw a viewer to suggest the next slot" picks, so exclude-previous-winners can be enforced.
+model HighRollerSuggestionDraw {
+  id           String     @id @default(uuid())
+  sessionId    String     @map("session_id")
+  kickUsername String     @map("kick_username")
+  drawnAt      DateTime   @default(now()) @map("drawn_at")
+  session      HighRoller @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("high_roller_suggestion_draws")
+}
+
+// Viewers who opted in via the "!suggest" chat command — the eligible pool for a "suggestion
+// draw" that isn't limited to players who joined the prediction game itself.
+model HighRollerSuggestionEntrant {
+  id           String     @id @default(uuid())
+  sessionId    String     @map("session_id")
+  kickUsername String     @map("kick_username")
+  enteredAt    DateTime   @default(now()) @map("entered_at")
+  session      HighRoller @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, kickUsername])
+  @@map("high_roller_suggestion_entrants")
 }
 
 // ─── Bonus Bingo ─────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit from '@/config/rateLimit';
 import { TournamentController } from '@/controllers/TournamentController';
 import { authMiddleware, adminMiddleware } from '@/middleware/auth';
 

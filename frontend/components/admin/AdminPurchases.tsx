@@ -36,6 +36,8 @@ interface Purchase {
   };
 }
 
+const PAGE_SIZE = 20;
+
 export default function AdminPurchases() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,11 +49,19 @@ export default function AdminPurchases() {
   );
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [refundReason, setRefundReason] = useState("");
+  const [refunding, setRefunding] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const { success, error: showError } = useToast();
 
   useEffect(() => {
-    loadPurchases();
+    setOffset(0);
   }, [statusFilter]);
+
+  useEffect(() => {
+    loadPurchases();
+  }, [statusFilter, offset]);
 
   const loadPurchases = async () => {
     try {
@@ -59,8 +69,8 @@ export default function AdminPurchases() {
       setError(null);
 
       const filters: any = {
-        limit: 100,
-        offset: 0,
+        limit: PAGE_SIZE,
+        offset,
       };
 
       if (statusFilter) {
@@ -69,6 +79,8 @@ export default function AdminPurchases() {
 
       const data = await storeApi.getAllPurchases(filters);
       setPurchases(data.purchases || []);
+      setTotal(data.pagination?.total ?? 0);
+      setHasMore(data.pagination?.hasMore ?? false);
     } catch (err) {
       console.error("Failed to load purchases:", err);
       setError("Failed to load purchases. Please try again.");
@@ -78,11 +90,12 @@ export default function AdminPurchases() {
   };
 
   const handleRefund = async () => {
-    if (!selectedPurchase || !refundReason.trim()) {
-      showError("Refund Error", "Please provide a refund reason");
+    if (!selectedPurchase || !refundReason.trim() || refunding) {
+      if (!refundReason.trim()) showError("Refund Error", "Please provide a refund reason");
       return;
     }
 
+    setRefunding(true);
     try {
       await storeApi.processRefund(selectedPurchase.id, refundReason);
       success("Refund Processed", "Purchase refunded successfully");
@@ -93,6 +106,8 @@ export default function AdminPurchases() {
     } catch (err) {
       console.error("Refund error:", err);
       showError("Refund Failed", "Failed to process refund");
+    } finally {
+      setRefunding(false);
     }
   };
 
@@ -335,6 +350,31 @@ export default function AdminPurchases() {
         </div>
       )}
 
+      {/* Pagination */}
+      {total > PAGE_SIZE && (
+        <div className="flex items-center justify-between mt-6 text-sm">
+          <p className="text-gray-400">
+            Showing {offset + 1}–{Math.min(offset + PAGE_SIZE, total)} of {total}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
+              disabled={offset === 0}
+              className="bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors font-semibold"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setOffset((o) => o + PAGE_SIZE)}
+              disabled={!hasMore}
+              className="bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors font-semibold"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Refund Modal */}
       {showRefundModal && selectedPurchase && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -377,10 +417,10 @@ export default function AdminPurchases() {
             <div className="flex gap-3">
               <button
                 onClick={handleRefund}
-                disabled={!refundReason.trim()}
+                disabled={!refundReason.trim() || refunding}
                 className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold px-4 py-3 rounded-lg transition-colors"
               >
-                Confirm Refund
+                {refunding ? "Processing…" : "Confirm Refund"}
               </button>
               <button
                 onClick={() => {
@@ -388,7 +428,8 @@ export default function AdminPurchases() {
                   setSelectedPurchase(null);
                   setRefundReason("");
                 }}
-                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-3 rounded-lg transition-colors"
+                disabled={refunding}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-4 py-3 rounded-lg transition-colors"
               >
                 Cancel
               </button>

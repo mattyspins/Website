@@ -12,6 +12,7 @@ import {
 } from "@/types/tournament";
 import { API_ENDPOINTS } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
+import { useConfirm } from "@/components/admin/useConfirm";
 
 // ─── Create Modal ─────────────────────────────────────────────────────────────
 function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t: Tournament) => void }) {
@@ -345,6 +346,7 @@ export default function AdminTournamentPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [showDraw, setShowDraw] = useState(false);
   const [winnerMatchId, setWinnerMatchId] = useState<string | null>(null);
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -409,13 +411,13 @@ export default function AdminTournamentPage() {
     withAction(() => tournamentApi.drawWinners(selected!.id, count, guaranteedUserIds));
   };
   const handleStart = () => withAction(() => tournamentApi.startTournament(selected!.id));
-  const handleCancel = () => {
-    if (!confirm("Cancel this tournament?")) return;
+  const handleCancel = async () => {
+    if (!(await confirm({ title: "Cancel this tournament?", message: "This cannot be undone.", confirmText: "Cancel Tournament" }))) return;
     withAction(() => tournamentApi.cancel(selected!.id));
   };
 
   const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Permanently delete "${title}"? This cannot be undone.`)) return;
+    if (!(await confirm({ title: "Delete this tournament?", message: `Permanently delete "${title}"? This cannot be undone.`, confirmText: "Delete" }))) return;
     setActionLoading(true);
     setError(null);
     try {
@@ -436,8 +438,8 @@ export default function AdminTournamentPage() {
     withAction(() => tournamentApi.declareMatchWinner(matchId, winnerId));
   };
 
-  const handleRevertWinner = (matchId: string) => {
-    if (!confirm("Revert this result? The match will go back to Active and the loser will be restored.")) return;
+  const handleRevertWinner = async (matchId: string) => {
+    if (!(await confirm({ title: "Revert this result?", message: "The match will go back to Active and the loser will be restored.", confirmText: "Revert", confirmColor: "yellow" }))) return;
     withAction(() => tournamentApi.revertMatchWinner(matchId));
   };
 
@@ -453,7 +455,7 @@ export default function AdminTournamentPage() {
 
   return (
     <div className="min-h-screen bg-navy-950 text-white">
-      <div className="max-w-7xl mx-auto px-4 pt-24 pb-10">
+      <div className="max-w-7xl mx-auto px-4 pb-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -702,6 +704,7 @@ export default function AdminTournamentPage() {
           onDraw={handleDraw}
         />
       )}
+      {confirmDialog}
     </div>
   );
 }

@@ -1,4 +1,5 @@
-import { PrismaClient, GuessTheBalanceStatus, Prisma } from '@prisma/client';
+import { GuessTheBalanceStatus, Prisma } from '@prisma/client';
+import { prisma } from '@/config/database';
 import { logger } from '@/utils/logger';
 import { createError } from '@/middleware/errorHandler';
 import { NotificationService } from '@/services/NotificationService';
@@ -12,8 +13,6 @@ import {
   WinnerInfo,
   GameFilters,
 } from '@/types/guessTheBalance';
-
-const prisma = new PrismaClient();
 
 export class GuessTheBalanceService {
   // ==================== ADMIN METHODS ====================

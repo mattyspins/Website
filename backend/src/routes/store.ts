@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { StoreController } from '@/controllers/StoreController';
 import { authMiddleware, adminMiddleware } from '@/middleware/auth';
-import rateLimit from 'express-rate-limit';
+import rateLimit from '@/config/rateLimit';
 
 const router = Router();
 

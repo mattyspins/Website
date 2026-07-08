@@ -126,7 +126,7 @@ export default function SocialLinks() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button className="btn-glow bg-gradient-to-r from-neon-blue to-blue-600 hover:from-blue-600 hover:to-neon-gold text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300">
+          <button className="btn-glow bg-gradient-to-r from-gold-500 to-blue-600 hover:from-blue-600 hover:to-neon-gold text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300">
             🔔 Enable Notifications
           </button>
 

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { GuessTheBalanceController } from '@/controllers/GuessTheBalanceController';
 import { authMiddleware, optionalAuthMiddleware } from '@/middleware/auth';
-import rateLimit from 'express-rate-limit';
+import rateLimit from '@/config/rateLimit';
 
 const router = Router();
 

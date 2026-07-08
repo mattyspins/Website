@@ -147,13 +147,13 @@ export default function ManageLeaderboardPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen pt-20 flex items-center justify-center">
+    <div className="flex items-center justify-center py-24">
       <div className="w-8 h-8 border-2 border-gold-500/30 border-t-gold-500 rounded-full animate-spin" />
     </div>
   );
 
   if (!leaderboard) return (
-    <div className="min-h-screen pt-20 flex items-center justify-center">
+    <div className="flex items-center justify-center py-24">
       <div className="text-center">
         <p className="text-gray-400">Leaderboard not found</p>
         <a href="/admin/leaderboards" className="text-gold-400 text-sm mt-2 inline-block">← Back</a>
@@ -171,7 +171,7 @@ export default function ManageLeaderboardPage() {
   const rest = rankings.slice(3);
 
   return (
-    <div className="min-h-screen pt-20 pb-16 px-4">
+    <div className="pb-16 px-4">
       <div className="max-w-5xl mx-auto">
 
         {/* Breadcrumb */}

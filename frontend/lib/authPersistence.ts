@@ -2,6 +2,7 @@
  * Authentication Persistence Module
  * Handles persistent login sessions across browser restarts
  */
+import { API_ENDPOINTS } from "./api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://website-production-ece1.up.railway.app";
 

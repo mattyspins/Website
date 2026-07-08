@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { API_ENDPOINTS } from "@/lib/api";
-import { Users, Coins, Ticket, Clock, UserCheck, AlertTriangle, Activity } from "lucide-react";
+import { Users, Coins, Ticket, Clock, UserCheck, AlertTriangle, Activity, Link2 } from "lucide-react";
 
 interface Stats {
   totalUsers: number;
@@ -11,6 +11,9 @@ interface Stats {
   totalCoinsSpent: number;
   recentSignups: number;
   suspendedUsers: number;
+  verifiedReferrals: number;
+  pendingReferrals: number;
+  unlinkedReferralWagerers: number;
 }
 
 interface StatCardProps {
@@ -77,7 +80,7 @@ export default function AdminStats() {
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {Array.from({ length: 7 }).map((_, i) => (
+        {Array.from({ length: 9 }).map((_, i) => (
           <div key={i} className="bg-navy-800/40 border border-white/5 rounded-xl h-24 animate-pulse" />
         ))}
       </div>
@@ -139,6 +142,21 @@ export default function AdminStats() {
           icon={<AlertTriangle className="w-5 h-5 text-red-400" />}
           accent="bg-red-500/15"
           urgent={stats.suspendedUsers > 0}
+        />
+        <StatCard
+          label="Verified Referrals"
+          value={stats.verifiedReferrals}
+          sub={`${stats.pendingReferrals} pending verification`}
+          icon={<UserCheck className="w-5 h-5 text-cyan-400" />}
+          accent="bg-cyan-500/15"
+        />
+        <StatCard
+          label="Unlinked Wagerers"
+          value={stats.unlinkedReferralWagerers}
+          sub="Razed usernames with no linked account"
+          icon={<Link2 className="w-5 h-5 text-purple-400" />}
+          accent="bg-purple-500/15"
+          urgent={stats.unlinkedReferralWagerers > 0}
         />
       </div>
 

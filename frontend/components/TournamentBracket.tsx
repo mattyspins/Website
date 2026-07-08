@@ -339,7 +339,17 @@ export default function TournamentBracket({
                 )}
                 <div className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-400 mb-1">Champion</div>
                 <div className="text-white font-bold text-sm leading-tight">{winner.displayName}</div>
-                {winner.currentSlot && <div className="text-white/40 text-[10px] mt-1 italic">{winner.currentSlot}</div>}
+                {winner.currentSlot && (() => {
+                  const slotGame = findSlot(winner.currentSlot);
+                  return slotGame ? (
+                    <div className="mt-2 flex flex-col items-center gap-1">
+                      <SlotImage src={slotGame.image} name={slotGame.name} size={48} />
+                      <p className="text-[10px] text-white/50 truncate max-w-[120px]">{slotGame.name}</p>
+                    </div>
+                  ) : (
+                    <div className="text-white/40 text-[10px] mt-1 italic">{winner.currentSlot}</div>
+                  );
+                })()}
               </div>
             ) : (
               <div className="text-center">

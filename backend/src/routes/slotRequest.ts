@@ -1,13 +1,14 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit from '@/config/rateLimit';
 import { SlotRequestController } from '@/controllers/SlotRequestController';
 import { authMiddleware, adminMiddleware } from '@/middleware/auth';
 
 const router = Router();
 const lim = rateLimit({ windowMs: 5 * 60 * 1000, max: 300, standardHeaders: true, legacyHeaders: false });
 
-// Public — anyone can check if requests are open (for a potential OBS widget)
+// Public — for OBS widget (no auth required)
 router.get('/status', lim, SlotRequestController.getStatus);
+router.get('/widget', lim, SlotRequestController.getWidget);
 
 // Admin only
 router.get('/', authMiddleware, adminMiddleware, lim, SlotRequestController.getAll);

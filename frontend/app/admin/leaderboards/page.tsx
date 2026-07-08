@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { Trophy, ExternalLink, Trash2, RefreshCw, Plus, Minus } from "lucide-react";
+import { useConfirm } from "@/components/admin/useConfirm";
 import {
   wagerLeaderboardApi,
   ActiveRace,
@@ -42,6 +43,7 @@ export default function AdminLeaderboardsPage() {
   const [resyncing, setResyncing] = useState(false);
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [wagererSearch, setWagererSearch] = useState("");
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   // Create/edit race form state
   const [editing, setEditing] = useState(false);
@@ -118,7 +120,7 @@ export default function AdminLeaderboardsPage() {
   };
 
   const handleDeleteRace = async (raceId: string) => {
-    if (!confirm("Delete this race? This can only be done before it's paid out.")) return;
+    if (!(await confirm({ title: "Delete this race?", message: "This can only be done before it's paid out. This cannot be undone.", confirmText: "Delete" }))) return;
     setMsg(null);
     try {
       await wagerLeaderboardApi.deleteRace(raceId);
@@ -141,7 +143,7 @@ export default function AdminLeaderboardsPage() {
   };
 
   const handleDeleteOld = async (id: string) => {
-    if (!confirm("Delete this old leaderboard? This removes all associated wagers and prizes.")) return;
+    if (!(await confirm({ title: "Delete this leaderboard?", message: "This removes all associated wagers and prizes. This cannot be undone.", confirmText: "Delete" }))) return;
     try {
       await api.delete(`/api/manual-leaderboards/admin/${id}`);
       setOldLeaderboards((prev) => prev.filter((l) => l.id !== id));
@@ -150,7 +152,7 @@ export default function AdminLeaderboardsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-20 flex items-center justify-center">
+      <div className="flex items-center justify-center py-24">
         <div className="w-10 h-10 border-2 border-gold-500/30 border-t-gold-500 rounded-full animate-spin" />
       </div>
     );
@@ -169,7 +171,7 @@ export default function AdminLeaderboardsPage() {
     : wagerers;
 
   return (
-    <div className="min-h-screen pt-20 pb-16 px-4">
+    <div className="pb-16 px-4">
       <div className="max-w-5xl mx-auto">
 
         {/* Header */}
@@ -470,6 +472,7 @@ export default function AdminLeaderboardsPage() {
           </div>
         )}
       </div>
+      {confirmDialog}
     </div>
   );
 }

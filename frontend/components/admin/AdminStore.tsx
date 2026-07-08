@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ShoppingBag,
@@ -8,9 +9,24 @@ import {
   TrendingUp,
   DollarSign,
 } from "lucide-react";
+import { API_URL } from "@/lib/api";
+
+interface StoreStats {
+  totalItems: number;
+  totalPurchases: number;
+  totalRevenue: number;
+}
 
 export default function AdminStore() {
   const router = useRouter();
+  const [stats, setStats] = useState<StoreStats | null>(null);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/store/stats`)
+      .then(r => r.json())
+      .then(d => { if (d.success && d.data) setStats(d.data); })
+      .catch(() => {/* ignore */});
+  }, []);
 
   return (
     <div className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-6">
@@ -37,7 +53,9 @@ export default function AdminStore() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Store Items</p>
-              <p className="text-2xl font-bold text-white">-</p>
+              <p className="text-2xl font-bold text-white">
+                {stats ? stats.totalItems.toLocaleString() : "—"}
+              </p>
             </div>
             <Package className="w-8 h-8 text-yellow-400" />
           </div>
@@ -47,7 +65,9 @@ export default function AdminStore() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Total Sales</p>
-              <p className="text-2xl font-bold text-white">-</p>
+              <p className="text-2xl font-bold text-white">
+                {stats ? stats.totalPurchases.toLocaleString() : "—"}
+              </p>
             </div>
             <TrendingUp className="w-8 h-8 text-green-400" />
           </div>
@@ -57,7 +77,9 @@ export default function AdminStore() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Revenue</p>
-              <p className="text-2xl font-bold text-white">- pts</p>
+              <p className="text-2xl font-bold text-white">
+                {stats ? `${stats.totalRevenue.toLocaleString()} pts` : "—"}
+              </p>
             </div>
             <DollarSign className="w-8 h-8 text-yellow-400" />
           </div>

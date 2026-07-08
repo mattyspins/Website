@@ -16,6 +16,11 @@ export interface AdminStats {
   totalRaffles: number;
   totalStoreItems: number;
   totalSessions: number;
+  recentSignups: number;
+  suspendedUsers: number;
+  verifiedReferrals: number;
+  pendingReferrals: number;
+  unlinkedReferralWagerers: number;
 }
 
 export interface UserManagement {
@@ -60,6 +65,8 @@ export class AdminService {
   // Get dashboard statistics
   static async getDashboardStats(): Promise<AdminStats> {
     try {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
       const [
         totalUsers,
         activeUsers,
@@ -69,6 +76,11 @@ export class AdminService {
         totalRaffles,
         totalStoreItems,
         totalSessions,
+        recentSignups,
+        suspendedUsers,
+        verifiedReferrals,
+        pendingReferrals,
+        unlinkedReferralWagerers,
       ] = await Promise.all([
         prisma.user.count(),
         prisma.user.count({
@@ -86,6 +98,11 @@ export class AdminService {
         prisma.userSession.count({
           where: { expiresAt: { gt: new Date() } },
         }),
+        prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+        prisma.user.count({ where: { isSuspended: true } }),
+        prisma.user.count({ where: { rainbetVerified: true } }),
+        prisma.user.count({ where: { rainbetUsername: { not: null }, rainbetVerified: false } }),
+        prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'] }),
       ]);
 
       return {
@@ -97,11 +114,85 @@ export class AdminService {
         totalRaffles,
         totalStoreItems,
         totalSessions,
+        recentSignups,
+        suspendedUsers,
+        verifiedReferrals,
+        pendingReferrals,
+        unlinkedReferralWagerers: unlinkedReferralWagerers.length,
       };
     } catch (error) {
       logger.error('Error getting dashboard stats:', error);
       throw createError.internal('Failed to get dashboard statistics');
     }
+  }
+
+  // Daily-bucketed registrations + running total for the dashboard growth chart.
+  static async getUserGrowthTimeseries(
+    days: number = 30
+  ): Promise<Array<{ date: string; newUsers: number; totalUsers: number }>> {
+    const since = new Date();
+    since.setUTCHours(0, 0, 0, 0);
+    since.setUTCDate(since.getUTCDate() - (days - 1));
+
+    const [usersInRange, usersBefore] = await Promise.all([
+      prisma.user.findMany({
+        where: { createdAt: { gte: since } },
+        select: { createdAt: true },
+      }),
+      prisma.user.count({ where: { createdAt: { lt: since } } }),
+    ]);
+
+    const buckets = new Map<string, number>();
+    for (let i = 0; i < days; i++) {
+      const d = new Date(since);
+      d.setUTCDate(d.getUTCDate() + i);
+      buckets.set(d.toISOString().slice(0, 10), 0);
+    }
+    for (const u of usersInRange) {
+      const key = u.createdAt.toISOString().slice(0, 10);
+      if (buckets.has(key)) buckets.set(key, (buckets.get(key) || 0) + 1);
+    }
+
+    let running = usersBefore;
+    const result: Array<{ date: string; newUsers: number; totalUsers: number }> = [];
+    for (const [date, newUsers] of buckets) {
+      running += newUsers;
+      result.push({ date, newUsers, totalUsers: running });
+    }
+    return result;
+  }
+
+  // Daily-bucketed active-user counts for the dashboard activity chart.
+  //
+  // Caveat: `User.lastActiveAt` is a single mutable field, not an activity log, so
+  // this reflects "users whose *most recent* active day falls on X" rather than a
+  // true historical daily-active-users count — a user active on many past days but
+  // not since will only show up on their latest day. This is the closest signal
+  // derivable without a new activity-log table, which is out of scope for this phase.
+  static async getActiveUsersTimeseries(
+    days: number = 30
+  ): Promise<Array<{ date: string; activeUsers: number }>> {
+    const since = new Date();
+    since.setUTCHours(0, 0, 0, 0);
+    since.setUTCDate(since.getUTCDate() - (days - 1));
+
+    const users = await prisma.user.findMany({
+      where: { lastActiveAt: { gte: since } },
+      select: { lastActiveAt: true },
+    });
+
+    const buckets = new Map<string, number>();
+    for (let i = 0; i < days; i++) {
+      const d = new Date(since);
+      d.setUTCDate(d.getUTCDate() + i);
+      buckets.set(d.toISOString().slice(0, 10), 0);
+    }
+    for (const u of users) {
+      const key = u.lastActiveAt.toISOString().slice(0, 10);
+      if (buckets.has(key)) buckets.set(key, (buckets.get(key) || 0) + 1);
+    }
+
+    return Array.from(buckets.entries()).map(([date, activeUsers]) => ({ date, activeUsers }));
   }
 
   // User Management
@@ -111,12 +202,19 @@ export class AdminService {
     query?: string,
     filters?: {
       isAdmin?: boolean;
+      isModerator?: boolean;
+      isVip?: boolean;
+      isDepositor?: boolean;
       isSuspended?: boolean;
+      kickVerified?: boolean;
+      rainbetVerified?: boolean;
       minPoints?: number;
       maxPoints?: number;
     },
     limit: number = 50,
-    offset: number = 0
+    offset: number = 0,
+    sortBy: 'createdAt' | 'lastActiveAt' | 'points' | 'displayName' | 'totalWagered' = 'createdAt',
+    sortOrder: 'asc' | 'desc' = 'desc'
   ): Promise<{ users: UserManagement[]; total: number }> {
     try {
       const where: any = {};
@@ -134,8 +232,23 @@ export class AdminService {
         if (filters.isAdmin !== undefined) {
           where.isAdmin = filters.isAdmin;
         }
+        if (filters.isModerator !== undefined) {
+          where.isModerator = filters.isModerator;
+        }
+        if (filters.isVip !== undefined) {
+          where.isVip = filters.isVip;
+        }
+        if (filters.isDepositor !== undefined) {
+          where.isDepositor = filters.isDepositor;
+        }
         if (filters.isSuspended !== undefined) {
           where.isSuspended = filters.isSuspended;
+        }
+        if (filters.kickVerified !== undefined) {
+          where.kickVerified = filters.kickVerified;
+        }
+        if (filters.rainbetVerified !== undefined) {
+          where.rainbetVerified = filters.rainbetVerified;
         }
         if (filters.minPoints !== undefined) {
           where.points = { ...where.points, gte: filters.minPoints };
@@ -173,7 +286,7 @@ export class AdminService {
             createdAt: true,
             lastActiveAt: true,
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { [sortBy]: sortOrder },
           take: limit,
           skip: offset,
         }),
@@ -214,6 +327,65 @@ export class AdminService {
     }
   }
 
+  // Points-ordinal rank for every user (1 = most points), for the Users table's
+  // "community rank" column. One cheap id+points query, no window-function SQL
+  // needed at this data scale.
+  static async getUserPointsRanks(): Promise<Array<{ id: string; rank: number }>> {
+    const users = await prisma.user.findMany({
+      select: { id: true },
+      orderBy: { points: 'desc' },
+    });
+    return users.map((u, i) => ({ id: u.id, rank: i + 1 }));
+  }
+
+  private static csvEscape(value: unknown): string {
+    if (value === null || value === undefined) return '';
+    const s = String(value);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+
+  // Builds a properly-escaped CSV of the current Users filter/search results
+  // (unlike the manual-leaderboard export, which joins strings with no escaping).
+  static async exportUsersCsv(
+    query?: string,
+    filters?: Parameters<typeof AdminService.searchUsers>[1]
+  ): Promise<string> {
+    const { users } = await this.searchUsers(query, filters, 5000, 0, 'createdAt', 'desc');
+
+    const headers = [
+      'Display Name', 'Discord ID', 'Kick Username', 'Kick Verified',
+      'Razed Username', 'Razed Verified', 'Points', 'Total Earned', 'Total Spent',
+      'Total Wagered', 'Is Admin', 'Is Moderator', 'Is VIP', 'Is Depositor',
+      'Is Suspended', 'Created At', 'Last Active',
+    ];
+
+    const rows = users.map((u) => [
+      u.displayName, u.discordId, u.kickUsername ?? '', u.kickVerified,
+      u.rainbetUsername ?? '', u.rainbetVerified, u.points, u.totalEarned, u.totalSpent,
+      u.totalWagered, u.isAdmin, u.isModerator, u.isVip, u.isDepositor,
+      u.isSuspended, u.createdAt.toISOString(), u.lastActive ? new Date(u.lastActive).toISOString() : '',
+    ].map((v) => this.csvEscape(v)).join(','));
+
+    return [headers.join(','), ...rows].join('\n');
+  }
+
+  // Login/session history for a user's admin profile page.
+  static async getUserSessions(userId: string) {
+    return prisma.userSession.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        ipAddress: true,
+        userAgent: true,
+        createdAt: true,
+        lastUsedAt: true,
+        expiresAt: true,
+      },
+      orderBy: { lastUsedAt: 'desc' },
+      take: 25,
+    });
+  }
+
   // Get user details with full information
   static async getUserDetails(userId: string): Promise<any> {
     try {
@@ -223,7 +395,36 @@ export class AdminService {
       const [user, watchTimeResult, firstSession, todayWager] = await Promise.all([
         prisma.user.findUnique({
           where: { id: userId },
-          include: {
+          // Explicit select (not `include`) so OAuth secrets (kickAccessToken/
+          // kickRefreshToken/kickTokenExpiresAt) never reach the admin frontend.
+          select: {
+            id: true,
+            discordId: true,
+            kickId: true,
+            kickUsername: true,
+            kickVerified: true,
+            displayName: true,
+            avatarUrl: true,
+            points: true,
+            totalEarned: true,
+            totalSpent: true,
+            isAdmin: true,
+            isModerator: true,
+            isVip: true,
+            isDepositor: true,
+            isSuspended: true,
+            suspensionReason: true,
+            suspensionExpiresAt: true,
+            createdAt: true,
+            updatedAt: true,
+            lastActiveAt: true,
+            lastDailyCheckIn: true,
+            rainbetUsername: true,
+            rainbetVerified: true,
+            totalWagered: true,
+            weeklyWagered: true,
+            monthlyWagered: true,
+            totalDeposited: true,
             statistics: true,
             pointTransactions: {
               orderBy: { createdAt: 'desc' },
@@ -278,7 +479,7 @@ export class AdminService {
 
     try {
       await prisma.$transaction(async tx => {
-        // Get user
+        // Get user (for the 404 check and the audit log's "before" snapshot)
         const user = await tx.user.findUnique({
           where: { id: userId },
         });
@@ -287,19 +488,30 @@ export class AdminService {
           throw createError.notFound('User not found');
         }
 
-        // Check if subtraction would result in negative balance
-        if (amount < 0 && user.points + amount < 0) {
-          throw createError.badRequest(
-            'Insufficient points. User only has ' + user.points + ' points.'
-          );
+        if (amount < 0) {
+          // WHERE + decrement in one statement, same pattern as PointsService —
+          // prevents two concurrent admin deductions from both passing a
+          // stale balance check and driving the user's points negative.
+          const deductAmount = Math.abs(amount);
+          const updated = await tx.user.updateMany({
+            where: { id: userId, points: { gte: deductAmount } },
+            data: { points: { decrement: deductAmount } },
+          });
+          if (updated.count === 0) {
+            throw createError.badRequest(
+              'Insufficient points. User only has ' + user.points + ' points.'
+            );
+          }
+        } else {
+          await tx.user.update({
+            where: { id: userId },
+            data: { points: { increment: amount } },
+          });
         }
 
-        // Update user points
-        await tx.user.update({
+        const updatedUser = await tx.user.findUniqueOrThrow({
           where: { id: userId },
-          data: {
-            points: { increment: amount },
-          },
+          select: { points: true },
         });
 
         // Create transaction record
@@ -328,7 +540,7 @@ export class AdminService {
               points: user.points,
             },
             newValues: {
-              points: user.points + amount,
+              points: updatedUser.points,
               amount,
               reason,
             },
@@ -391,9 +603,14 @@ export class AdminService {
   static async suspendUser(
     userId: string,
     reason: string,
-    adminId: string
+    adminId: string,
+    durationHours?: number
   ): Promise<void> {
     try {
+      const suspensionExpiresAt = durationHours
+        ? new Date(Date.now() + durationHours * 60 * 60 * 1000)
+        : null;
+
       await prisma.$transaction(async tx => {
         const user = await tx.user.findUnique({
           where: { id: userId },
@@ -411,6 +628,8 @@ export class AdminService {
           where: { id: userId },
           data: {
             isSuspended: true,
+            suspensionReason: reason,
+            suspensionExpiresAt,
           },
         });
 
@@ -432,11 +651,16 @@ export class AdminService {
             newValues: {
               isSuspended: true,
               reason,
+              suspensionExpiresAt,
               suspendedAt: new Date(),
             },
           },
         });
       });
+
+      // Make the suspension take effect on this user's very next request
+      // instead of waiting for authMiddleware's suspended-status cache to expire.
+      await RedisService.set(`suspended:${userId}`, '1', 3600);
 
       logger.info(`Admin ${adminId} suspended user ${userId}: ${reason}`);
     } catch (error) {
@@ -461,6 +685,8 @@ export class AdminService {
           where: { id: userId },
           data: {
             isSuspended: false,
+            suspensionReason: null,
+            suspensionExpiresAt: null,
           },
         });
 
@@ -481,6 +707,8 @@ export class AdminService {
           },
         });
       });
+
+      await RedisService.set(`suspended:${userId}`, '0', 3600);
 
       logger.info(`Admin ${adminId} unsuspended user ${userId}`);
     } catch (error) {
@@ -1008,11 +1236,11 @@ export class AdminService {
         logs: logs.map(log => ({
           id: log.id,
           adminId: log.adminId,
-          adminName: log.admin.displayName,
+          adminName: log.admin?.displayName || 'System',
           action: log.action,
           targetType: log.targetType,
           targetId: log.targetId,
-          changes: log.changes,
+          changes: { oldValues: log.oldValues, newValues: log.newValues },
           reason: log.reason || undefined,
           timestamp: log.createdAt,
         })),

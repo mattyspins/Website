@@ -297,8 +297,17 @@ export default function PickerWidget() {
 
         {/* ── Closed (drawing) ── */}
         {picker.status === "CLOSED" && (
-          <div style={{ padding: "14px 10px", textAlign: "center", color: "rgba(255,255,255,0.22)", fontSize: 10, letterSpacing: 1 }}>
-            Drawing winner…
+          <div style={{ padding: "16px 10px 14px", textAlign: "center" }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: "50%",
+              border: "2px solid rgba(245,158,11,0.15)",
+              borderTopColor: "#f59e0b",
+              animation: "spin 0.9s linear infinite",
+              margin: "0 auto 8px",
+            }} />
+            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>
+              Drawing winner…
+            </div>
           </div>
         )}
       </div>
@@ -307,6 +316,9 @@ export default function PickerWidget() {
         @keyframes blink {
           0%, 100% { opacity: 1; }
           50%       { opacity: 0.3; }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>

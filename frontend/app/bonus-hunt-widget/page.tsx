@@ -11,6 +11,7 @@ interface HuntBonus {
   payout: number | null;
   badge: string;
   customBadge?: string;
+  requestedBy?: string;
 }
 
 interface LiveHunt {
@@ -22,6 +23,17 @@ interface LiveHunt {
   isCompleted: boolean;
   bonuses: HuntBonus[];
   gtbGameId?: string;
+}
+
+interface SlotRequestEntry {
+  id: string;
+  slotName: string;
+  kickUsername: string;
+}
+
+interface SlotRequests {
+  open: boolean;
+  requests: SlotRequestEntry[];
 }
 
 interface GTBWinner {
@@ -98,6 +110,7 @@ const CONFETTI = [
 export default function BonusHuntWidget() {
   const [hunt, setHunt] = useState<LiveHunt | null>(null);
   const [gtbGame, setGtbGame] = useState<GTBGame | null>(null);
+  const [slotReqs, setSlotReqs] = useState<SlotRequests | null>(null);
 
   // Transparent OBS background + CSS keyframes
   useEffect(() => {
@@ -147,6 +160,21 @@ export default function BonusHuntWidget() {
     const id = setInterval(load, 8_000);
     return () => clearInterval(id);
   }, [hunt?.gtbGameId]);
+
+  // Poll slot requests (public widget endpoint)
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/slot-requests/widget`, { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.success) setSlotReqs({ open: data.open, requests: data.requests ?? [] });
+      } catch { /* ignore */ }
+    };
+    load();
+    const id = setInterval(load, 6_000);
+    return () => clearInterval(id);
+  }, []);
 
   const showWinner = hunt?.isCompleted && gtbGame?.status === "COMPLETED" && !!gtbGame?.winner;
 
@@ -404,9 +432,58 @@ export default function BonusHuntWidget() {
         </div>
       )}
 
+      {/* ── Slot Requests ── */}
+      {slotReqs && (slotReqs.open || slotReqs.requests.length > 0) && (
+        <div style={{ ...panel, padding: "6px 10px", marginBottom: 6, borderColor: "rgba(99,102,241,0.25)" }}>
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: slotReqs.requests.length > 0 ? 5 : 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <span style={{ fontSize: 10 }}>📨</span>
+              <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                Slot Requests
+              </span>
+            </div>
+            {slotReqs.open ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 5px #4ade80" }} />
+                <span style={{ color: "#4ade80", fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Open</span>
+              </div>
+            ) : (
+              <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 8, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Closed</span>
+            )}
+          </div>
+
+          {/* Request list */}
+          {slotReqs.requests.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {slotReqs.requests.slice(0, 6).map((r) => (
+                <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ color: "#818cf8", fontSize: 9, fontWeight: 700, flexShrink: 0, minWidth: 60, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    @{r.kickUsername}
+                  </span>
+                  <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 8, flexShrink: 0 }}>→</span>
+                  <span style={{ color: "rgba(255,255,255,0.65)", fontSize: 9, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {r.slotName}
+                  </span>
+                </div>
+              ))}
+              {slotReqs.requests.length > 6 && (
+                <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 8, marginTop: 1 }}>
+                  +{slotReqs.requests.length - 6} more
+                </span>
+              )}
+            </div>
+          ) : slotReqs.open ? (
+            <div style={{ color: "rgba(255,255,255,0.2)", fontSize: 8, marginTop: 2 }}>
+              Type !sr &lt;slot name&gt; in chat to request
+            </div>
+          ) : null}
+        </div>
+      )}
+
       {/* ── Bonus list ── */}
       {hunt.bonuses.length > 0 && (
-        <div style={{ ...panel, padding: "6px 0", maxHeight: 340, overflow: "hidden" }}>
+        <div style={{ ...panel, padding: "6px 0" }}>
           {hunt.bonuses.map((b, i) => {
             const isOpen = b.payout !== null;
             const mult = isOpen && b.betSize > 0 ? b.payout! / b.betSize : null;
@@ -427,7 +504,7 @@ export default function BonusHuntWidget() {
                 {/* Image */}
                 <SlotImage src={b.image} alt={b.slotName} />
 
-                {/* Name + provider */}
+                {/* Name + provider / requester */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
                     color: isOpen ? "#fff" : "rgba(255,255,255,0.55)",
@@ -436,7 +513,13 @@ export default function BonusHuntWidget() {
                   }}>
                     {b.slotName}
                   </div>
-                  <div style={{ color: "rgba(255,255,255,0.25)", fontSize: 9 }}>{b.provider}</div>
+                  <div style={{ fontSize: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {b.requestedBy ? (
+                      <span style={{ color: "#818cf8", fontWeight: 700 }}>@{b.requestedBy}</span>
+                    ) : (
+                      <span style={{ color: "rgba(255,255,255,0.25)" }}>{b.provider}</span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Bet size */}

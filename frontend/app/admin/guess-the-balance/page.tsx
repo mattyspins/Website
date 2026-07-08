@@ -49,7 +49,6 @@ export default function AdminGuessTheBalancePage() {
       if (response.ok) {
         const data = await response.json();
         if (!data.user?.isAdmin) {
-          alert("Access denied. Admin privileges required.");
           router.push("/");
         } else {
           loadGames();
@@ -57,8 +56,7 @@ export default function AdminGuessTheBalancePage() {
       } else {
         router.push("/");
       }
-    } catch (error) {
-      console.error("Admin check failed:", error);
+    } catch {
       router.push("/");
     }
   };
@@ -74,8 +72,7 @@ export default function AdminGuessTheBalancePage() {
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
       setGames(allGames);
-    } catch (err) {
-      console.error("Failed to load games:", err);
+    } catch {
       setError("Failed to load games. Please try again later.");
     } finally {
       setLoading(false);
@@ -97,7 +94,7 @@ export default function AdminGuessTheBalancePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen  flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-500"></div>
       </div>
     );
@@ -114,7 +111,7 @@ export default function AdminGuessTheBalancePage() {
   };
 
   return (
-    <div className="min-h-screen  p-3 sm:p-6 pt-20 sm:pt-24">
+    <div className="min-h-screen p-3 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -243,7 +240,7 @@ export default function AdminGuessTheBalancePage() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-12 text-center"
           >
-            <div className="text-6xl mb-6">ðŸŽ¯</div>
+            <div className="text-6xl mb-6">🎯</div>
             <h2 className="text-3xl font-bold text-white mb-4">
               {statusFilter === "ALL"
                 ? "No Games Yet"

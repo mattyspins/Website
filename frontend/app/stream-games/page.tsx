@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Ticket, Swords, Zap, Trophy, Skull, Users, Grid3X3, ExternalLink, Clock, X, Radio } from "lucide-react";
+import { Crown, Ticket, Swords, Zap, Trophy, Skull, Users, Grid3X3, ExternalLink, Clock, X, Radio, Dices } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -35,6 +35,17 @@ const GAMES: Game[] = [
     rewards: ["Website points", "Giveaway entries", "Community rewards", "Special roles / events"],
     note: "Make sure you're in stream when live for your chance to play 👊",
     link: "/king-of-the-hill", linkLabel: "View Live King of the Hill",
+  },
+  {
+    id: "high-roller", name: "High Roller",
+    tagline: "Predict Over/Under and build the longest streak",
+    icon: <Dices className="w-6 h-6" />, color: "text-red-400", iconBg: "bg-red-500/15", border: "border-red-500/20",
+    badge: "NEW", badgeColor: "bg-red-500/15 text-red-400 border-red-500/30",
+    description: "Every round, Matty sets an Over/Under line on the next slot's multiplier. Predict correctly to build your streak — guess wrong and only your streak resets, nobody gets eliminated. Longest streak by the end wins.",
+    howItWorks: ["Join with the chat command shown on stream", "Each round, predict Over or Under the current line", "Matty spins the slot and the result is revealed", "Correct guess → your streak grows 🔥", "Wrong guess → your streak resets, but you're still in it", "Longest streak when Matty ends the game wins 👑"],
+    rewards: ["Website points", "Giveaway entries", "Community rewards", "Bragging rights"],
+    note: "No elimination — every round is a fresh shot at a new streak 👊",
+    link: "/high-roller", linkLabel: "View Live High Roller",
   },
   {
     id: "bonus-bingo", name: "Bonus Bingo",

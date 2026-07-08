@@ -1,5 +1,5 @@
 import { randomInt } from 'crypto';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/config/database';
 import createError from 'http-errors';
 import { Server as SocketIOServer } from 'socket.io';
 import {
@@ -10,8 +10,6 @@ import {
   ParticipantResponse,
   MatchResponse,
 } from '@/types/tournament';
-
-const prisma = new PrismaClient();
 
 export class TournamentService {
   // ─── Helpers ───────────────────────────────────────────────────────────────

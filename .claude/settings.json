@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -v \"^$\")",
+      "Bash(git commit -m ' *)",
+      "Bash(mkdir -p \"c:/Users/lenovo/OneDrive/Desktop/Personal project/Website/frontend/app/admin/users/[userId]\" && echo \"done\")",
+      "Bash(railway --version)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\lenovo\\\\OneDrive\\\\Desktop\\\\Personal project\\\\Website\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(npx prisma *)",
+      "Bash(node -e ' *)",
+      "Bash(findstr widget *)",
+      "Bash(git stash *)",
+      "Bash(git checkout *)",
+      "Bash(git restore *)",
+      "Bash(ls backend/railway*)",
+      "Bash(ls railway*)",
+      "Bash(cat backend/railway.json)",
+      "Bash(cat backend/railway.toml)",
+      "Bash(xargs grep -l \"command.*handle\\\\|processCommand\\\\|handleCommand\")",
+      "Bash(git -C \"c:/Users/lenovo/OneDrive/Desktop/Personal project/Website\" status)",
+      "Bash(git -C \"c:/Users/lenovo/OneDrive/Desktop/Personal project/Website\" log --oneline -5)",
+      "Bash(git -C \"c:/Users/lenovo/OneDrive/Desktop/Personal project/Website\" add backend/src/services/PointsService.ts backend/src/services/StoreService.ts backend/src/services/ViewerPickerService.ts)",
+      "Bash(powershell -Command \"Stop-Process -Id 19164,30544,15140,31512 -Force -ErrorAction SilentlyContinue\")",
+      "Bash(powershell -Command 'Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '\\\\''*ts-node-dev*'\\\\'' -or \\($_.CommandLine -like '\\\\''*next dev*'\\\\''\\) } | Select-Object ProcessId')",
+      "Bash(powershell -Command \"Get-CimInstance Win32_Process -Filter \\\\\"ProcessId=6804 or ProcessId=20132 or ProcessId=8096 or ProcessId=3948\\\\\" | Select-Object ProcessId,CommandLine\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3000,3001 -ErrorAction SilentlyContinue | Select-Object LocalPort,State,OwningProcess\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\lenovo\\OneDrive\\Desktop\\Personal project\\Website\\frontend\\app\\admin\\users"
+    ]
+  }
+}

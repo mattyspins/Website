@@ -12,7 +12,8 @@ import {
 } from "@/types/tournament";
 import { getSocket } from "@/lib/socket";
 import { API_ENDPOINTS } from "@/lib/api";
-import SlotPicker from "@/components/SlotPicker";
+import SlotPicker, { SlotImage, VolatilityBadge } from "@/components/SlotPicker";
+import { findSlot } from "@/lib/slotGames";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -26,6 +27,7 @@ function SlotModal({
 }) {
   const [slot, setSlot] = useState(currentSlot ?? "");
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const selectedGame = findSlot(slot);
 
   useEffect(() => {
     if (!deadline) return;
@@ -47,9 +49,19 @@ function SlotModal({
           </p>
         )}
         <label className="block text-sm text-white/60 mb-1">Your slot call</label>
-        <div className="mb-4">
+        <div className="mb-3">
           <SlotPicker value={slot} onChange={setSlot} disabled={isLoading} />
         </div>
+        {selectedGame && (
+          <div className="flex items-center gap-3 mb-4 px-3 py-2.5 rounded-lg bg-white/5 border border-white/8">
+            <SlotImage src={selectedGame.image} name={selectedGame.name} size={52} />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white truncate">{selectedGame.name}</p>
+              <p className="text-xs text-white/40 truncate">{selectedGame.provider}</p>
+            </div>
+            <VolatilityBadge volatility={selectedGame.volatility} />
+          </div>
+        )}
         <div className="flex gap-2">
           <button onClick={() => onSubmit(slot.trim())} disabled={!slot.trim() || isLoading}
             className="flex-1 bg-yellow-400 text-black font-semibold py-2.5 rounded-lg hover:bg-yellow-300 disabled:opacity-40 transition-colors">
@@ -441,8 +453,19 @@ export default function TournamentPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {visiblePast.map((t) => (
-                <div key={t.id} onClick={() => { setSelected(t); setViewingPastId(t.id); }}
-                  className="bg-white/3 border border-white/8 rounded-xl p-5 cursor-pointer hover:bg-white/5 hover:border-white/15 transition-all group">
+                <div key={t.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`View past tournament: ${t.title}`}
+                  onClick={() => { setSelected(t); setViewingPastId(t.id); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelected(t);
+                      setViewingPastId(t.id);
+                    }
+                  }}
+                  className="bg-white/3 border border-white/8 rounded-xl p-5 cursor-pointer hover:bg-white/5 hover:border-white/15 focus:outline-none focus:ring-2 focus:ring-yellow-400/60 transition-all group">
                   <p className="text-white/35 text-xs mb-2 font-medium">
                     {new Date(t.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase()}
                   </p>

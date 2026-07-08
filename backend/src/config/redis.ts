@@ -32,6 +32,8 @@ const redisConfig = {
 
 let redisReady = false;
 
+export const isRedisReady = (): boolean => redisReady;
+
 export const redis = env.REDIS_URL
   ? new Redis(env.REDIS_URL, redisConfig)
   : null;

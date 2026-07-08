@@ -43,6 +43,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const isObs = headers().get("x-obs-route") === "1";
+  const isAdmin = headers().get("x-admin-route") === "1";
 
   if (isObs) {
     return (
@@ -52,6 +53,21 @@ export default function RootLayout({
         </head>
         <body className={inter.className} style={{ background: "transparent" }}>
           {children}
+        </body>
+      </html>
+    );
+  }
+
+  // Admin gets its own shell (sidebar + top nav, built per-page) instead of the
+  // public site's Navbar/ParticleBackground/Footer chrome.
+  if (isAdmin) {
+    return (
+      <html lang="en">
+        <head>
+          <link rel="icon" href="/favicon.ico" />
+        </head>
+        <body className={inter.className}>
+          <ToastProvider>{children}</ToastProvider>
         </body>
       </html>
     );

@@ -4,10 +4,9 @@ import { validateEnv } from '../config/env';
 import { logger } from '../utils/logger';
 import { getEncryptionService } from './EncryptionService';
 import { RedisService } from '../config/redis';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../config/database';
 
 const env = validateEnv();
-const prisma = new PrismaClient();
 const encryptionService = getEncryptionService();
 
 export interface KickTokens {

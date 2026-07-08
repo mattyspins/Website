@@ -27,7 +27,7 @@ export default function MattySpinsAvatar({
       {/* Animated border ring */}
       {showGlow && (
         <div
-          className="absolute inset-0 rounded-full bg-gradient-to-r from-neon-blue via-neon-gold to-neon-blue opacity-75 animate-spin-slow -z-10 blur-sm"
+          className="absolute inset-0 rounded-full bg-gradient-to-r from-gold-500 via-neon-gold to-gold-500 opacity-75 animate-spin-slow -z-10 blur-sm"
           style={{
             width: size + 8,
             height: size + 8,

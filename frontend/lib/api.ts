@@ -118,6 +118,8 @@ export const API_ENDPOINTS = {
 
   // Admin
   ADMIN_USERS_SEARCH: `${API_URL}/api/admin/users/search`,
+  ADMIN_USERS_RANKS: `${API_URL}/api/admin/users/ranks`,
+  ADMIN_USERS_BULK_POINTS: `${API_URL}/api/admin/users/bulk/points`,
   ADMIN_USER_POINTS: (userId: string) =>
     `${API_URL}/api/admin/users/${userId}/points`,
   ADMIN_USER: (userId: string) =>
@@ -143,8 +145,13 @@ export const API_ENDPOINTS = {
   ADMIN_RECHECK_RAZED: (userId: string) =>
     `${API_URL}/api/admin/users/${userId}/recheck-razed`,
   ADMIN_STATS: `${API_URL}/api/admin/dashboard/stats`,
+  ADMIN_GROWTH: `${API_URL}/api/admin/dashboard/growth`,
+  ADMIN_ACTIVE_TIMESERIES: `${API_URL}/api/admin/dashboard/active-timeseries`,
   ADMIN_AUDIT_LOGS: `${API_URL}/api/admin/audit-logs`,
   ADMIN_ACTIVITY: `${API_URL}/api/admin/activity`,
+  ADMIN_USERS_EXPORT: `${API_URL}/api/admin/users/export`,
+  ADMIN_USER_SESSIONS: (userId: string) =>
+    `${API_URL}/api/admin/users/${userId}/sessions`,
 
   // Users
   USERS_KICK: `${API_URL}/api/auth/kick-username`,

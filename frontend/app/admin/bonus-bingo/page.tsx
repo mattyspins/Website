@@ -7,6 +7,7 @@ import { API_ENDPOINTS } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import SlotPicker from "@/components/SlotPicker";
 import { kickName, lineLabel, getLineWinners } from "@/lib/bingoUtils";
+import { useConfirm } from "@/components/admin/useConfirm";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -251,6 +252,7 @@ export default function AdminBingoPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [lineAlert, setLineAlert] = useState<{ lineType: string; lineIndex: number; points: number } | null>(null);
   const [includeWinners, setIncludeWinners] = useState(false);
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   // Auth check
   useEffect(() => {
@@ -300,8 +302,13 @@ export default function AdminBingoPage() {
   const handleStart = () => withAction(() => bingoApi.startGame(selected!.id));
   const handleSpin = () => withAction(() => bingoApi.spinCell(selected!.id));
   const handleDraw = () => withAction(() => bingoApi.drawPlayer(selected!.id, includeWinners));
-  const handleResult = (won: boolean) => {
-    if (!confirm(won ? "Mark this bonus as WON (cell turns green)?" : "Mark this bonus as LOST (cell resets and can be spun again)?")) return;
+  const handleResult = async (won: boolean) => {
+    if (!(await confirm({
+      title: won ? "Mark bonus as WON?" : "Mark bonus as LOST?",
+      message: won ? "The cell will turn green." : "The cell resets and can be spun again.",
+      confirmText: "Confirm",
+      confirmColor: won ? "green" : "yellow",
+    }))) return;
     setActionLoading(true); setError(null);
     bingoApi.markResult(selected!.id, won)
       .then(({ game, newLineWins }) => {
@@ -315,24 +322,24 @@ export default function AdminBingoPage() {
       .catch(e => setError(e.message))
       .finally(() => setActionLoading(false));
   };
-  const handleComplete = () => {
-    if (!confirm("Mark this game as Completed? It will move to Past Games on the viewer page. This cannot be undone.")) return;
+  const handleComplete = async () => {
+    if (!(await confirm({ title: "Complete this game?", message: "It will move to Past Games on the viewer page. This cannot be undone.", confirmText: "Complete Game" }))) return;
     withAction(() => bingoApi.completeGame(selected!.id));
   };
-  const handleUnlive = () => {
-    if (!confirm("Revert this game back to Registration? The current active cell will be reset and the draw cycle cleared.")) return;
+  const handleUnlive = async () => {
+    if (!(await confirm({ title: "Revert to Registration?", message: "The current active cell will be reset and the draw cycle cleared.", confirmText: "Revert", confirmColor: "yellow" }))) return;
     withAction(() => bingoApi.unlive(selected!.id));
   };
-  const handleCancel = () => {
-    if (!confirm("Cancel this bingo game?")) return;
+  const handleCancel = async () => {
+    if (!(await confirm({ title: "Cancel this bingo game?", message: "This cannot be undone.", confirmText: "Cancel Game" }))) return;
     withAction(() => bingoApi.cancel(selected!.id));
   };
-  const handleRemoveParticipant = (userId: string, name: string) => {
-    if (!confirm(`Remove ${name} from the game?`)) return;
+  const handleRemoveParticipant = async (userId: string, name: string) => {
+    if (!(await confirm({ title: "Remove participant?", message: `Remove ${name} from the game?`, confirmText: "Remove" }))) return;
     withAction(() => bingoApi.removeParticipant(selected!.id, userId));
   };
   const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Delete "${title}" permanently?`)) return;
+    if (!(await confirm({ title: "Delete this game?", message: `Delete "${title}" permanently? This cannot be undone.`, confirmText: "Delete" }))) return;
     setActionLoading(true); setError(null);
     try {
       await bingoApi.deleteGame(id);
@@ -358,7 +365,7 @@ export default function AdminBingoPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <div className="max-w-7xl mx-auto px-4 pt-24 pb-10">
+      <div className="max-w-7xl mx-auto px-4 pb-10">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -678,6 +685,7 @@ export default function AdminBingoPage() {
           onDone={() => setLineAlert(null)}
         />
       )}
+      {confirmDialog}
     </div>
   );
 }

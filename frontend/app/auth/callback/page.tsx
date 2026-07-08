@@ -33,12 +33,13 @@ export default function AuthCallback() {
           const displayName = searchParams.get("display_name");
           const isAdmin = searchParams.get("is_admin");
           const isModerator = searchParams.get("is_moderator");
+          const avatar = searchParams.get("avatar");
 
           if (userId && displayName) {
             const userInfo = {
               id: userId,
               displayName: decodeURIComponent(displayName),
-              avatar: "",
+              avatar: avatar ? decodeURIComponent(avatar) : "",
               points: 0,
               isAdmin: isAdmin === "true",
               isModerator: isModerator === "true",

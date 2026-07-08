@@ -32,7 +32,73 @@ export class AdminController {
     }
   );
 
+  static getUserGrowth = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) {
+        throw createError.forbidden('Admin access required');
+      }
+      const days = Math.min(Math.max(parseInt((req.query.days as string) || '30', 10), 1), 180);
+      const data = await AdminService.getUserGrowthTimeseries(days);
+      res.json({ success: true, data });
+    }
+  );
+
+  static getActiveUsersTimeseries = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) {
+        throw createError.forbidden('Admin access required');
+      }
+      const days = Math.min(Math.max(parseInt((req.query.days as string) || '30', 10), 1), 180);
+      const data = await AdminService.getActiveUsersTimeseries(days);
+      res.json({ success: true, data });
+    }
+  );
+
+  static exportUsers = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) {
+        throw createError.forbidden('Admin access required');
+      }
+      const { query, isAdmin, isSuspended, isVip, isDepositor, isModerator, rainbetVerified, kickVerified } = req.query;
+      const filters: any = {};
+      if (isAdmin !== undefined) filters.isAdmin = isAdmin === 'true';
+      if (isModerator !== undefined) filters.isModerator = isModerator === 'true';
+      if (isVip !== undefined) filters.isVip = isVip === 'true';
+      if (isDepositor !== undefined) filters.isDepositor = isDepositor === 'true';
+      if (isSuspended !== undefined) filters.isSuspended = isSuspended === 'true';
+      if (kickVerified !== undefined) filters.kickVerified = kickVerified === 'true';
+      if (rainbetVerified !== undefined) filters.rainbetVerified = rainbetVerified === 'true';
+
+      const csv = await AdminService.exportUsersCsv(query as string, filters);
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="users-${Date.now()}.csv"`);
+      res.send(csv);
+    }
+  );
+
+  static getUserSessions = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) {
+        throw createError.forbidden('Admin access required');
+      }
+      const { userId } = req.params;
+      if (!userId) throw createError.badRequest('User ID is required');
+      const sessions = await AdminService.getUserSessions(userId);
+      res.json({ success: true, data: { sessions } });
+    }
+  );
+
   // User Management
+
+  static getUserPointsRanks = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) {
+        throw createError.forbidden('Admin access required');
+      }
+      const ranks = await AdminService.getUserPointsRanks();
+      res.json({ success: true, data: { ranks } });
+    }
+  );
 
   static searchUsers = asyncHandler(
     async (req: AuthenticatedRequest, res: Response) => {
@@ -43,29 +109,46 @@ export class AdminController {
       const {
         query,
         isAdmin,
+        isModerator,
+        isVip,
+        isDepositor,
         isSuspended,
+        kickVerified,
+        rainbetVerified,
         minPoints,
         maxPoints,
         limit = '50',
         offset = '0',
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
       } = req.query;
 
       const filters: any = {};
       if (isAdmin !== undefined) filters.isAdmin = isAdmin === 'true';
+      if (isModerator !== undefined) filters.isModerator = isModerator === 'true';
+      if (isVip !== undefined) filters.isVip = isVip === 'true';
+      if (isDepositor !== undefined) filters.isDepositor = isDepositor === 'true';
       if (isSuspended !== undefined)
         filters.isSuspended = isSuspended === 'true';
+      if (kickVerified !== undefined) filters.kickVerified = kickVerified === 'true';
+      if (rainbetVerified !== undefined) filters.rainbetVerified = rainbetVerified === 'true';
       if (minPoints) filters.minPoints = parseInt(minPoints as string);
       if (maxPoints) filters.maxPoints = parseInt(maxPoints as string);
 
       const limitNum = Math.min(parseInt(limit as string) || 50, 100);
       const offsetNum = Math.max(parseInt(offset as string) || 0, 0);
+      const allowedSort = ['createdAt', 'lastActiveAt', 'points', 'displayName', 'totalWagered'];
+      const sortByValue = allowedSort.includes(sortBy as string) ? (sortBy as any) : 'createdAt';
+      const sortOrderValue = sortOrder === 'asc' ? 'asc' : 'desc';
 
       try {
         const result = await AdminService.searchUsers(
           query as string,
           filters,
           limitNum,
-          offsetNum
+          offsetNum,
+          sortByValue,
+          sortOrderValue
         );
 
         res.json({
@@ -207,7 +290,7 @@ export class AdminController {
       }
 
       const { userId } = req.params;
-      const { reason } = req.body;
+      const { reason, durationHours } = req.body;
 
       if (!userId) {
         throw createError.badRequest('User ID is required');
@@ -218,7 +301,14 @@ export class AdminController {
       }
 
       try {
-        await AdminService.suspendUser(userId, reason, req.user.id);
+        await AdminService.suspendUser(
+          userId,
+          reason,
+          req.user.id,
+          durationHours !== undefined && durationHours !== null && durationHours !== ''
+            ? Number(durationHours)
+            : undefined
+        );
 
         logger.info(`Admin ${req.user.id} suspended user ${userId}`);
 

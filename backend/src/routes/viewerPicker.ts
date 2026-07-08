@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit from '@/config/rateLimit';
 import { ViewerPickerController } from '@/controllers/ViewerPickerController';
 import { authMiddleware, adminMiddleware } from '@/middleware/auth';
 

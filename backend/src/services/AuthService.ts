@@ -1,4 +1,3 @@
-// @ts-nocheck
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { prisma } from '@/config/database';
@@ -65,11 +64,11 @@ export class AuthService {
     };
 
     const accessToken = jwt.sign(payload, env.JWT_SECRET, {
-      expiresIn: env.JWT_EXPIRES_IN,
+      expiresIn: env.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'],
     });
 
     const refreshToken = jwt.sign(payload, env.JWT_REFRESH_SECRET, {
-      expiresIn: env.JWT_REFRESH_EXPIRES_IN,
+      expiresIn: env.JWT_REFRESH_EXPIRES_IN as jwt.SignOptions['expiresIn'],
     });
 
     // Parse expiration time
@@ -207,6 +206,8 @@ export class AuthService {
         points: updatedUser.points,
         isAdmin: updatedUser.isAdmin,
         isModerator: updatedUser.isModerator,
+        isVip: updatedUser.isVip,
+        isDepositor: updatedUser.isDepositor,
         kickUsername: updatedUser.kickUsername || undefined,
       };
     } catch (error) {
@@ -295,6 +296,8 @@ export class AuthService {
         points: session.user.points,
         isAdmin: session.user.isAdmin,
         isModerator: session.user.isModerator,
+        isVip: session.user.isVip,
+        isDepositor: session.user.isDepositor,
         kickUsername: session.user.kickUsername || undefined,
         kickVerified: session.user.kickVerified,
         rainbetUsername: session.user.rainbetUsername || undefined,
@@ -339,21 +342,27 @@ export class AuthService {
   }
 
   // Logout user (invalidate all sessions)
-  static async logout(userId: string): Promise<void> {
+  static async logout(userId: string, accessToken?: string): Promise<void> {
     try {
-      // Get all user sessions
-      const sessions = await prisma.userSession.findMany({
-        where: { userId },
-      });
+      if (accessToken) {
+        // Clear the cached session (stored under the access token itself by
+        // storeSession/getUserSession — session:${session.id} was never the
+        // right key here, so this delete used to be a silent no-op).
+        await RedisService.deleteSession(accessToken);
 
-      // Remove from Redis
-      for (const session of sessions) {
-        // We can't easily get the original token from hash, so we'll use a pattern
-        // In a real implementation, you might store session IDs in Redis
-        await RedisService.del(`session:${session.id}`);
+        // Block this specific token for whatever time it had left, so a
+        // logged-out (or leaked) token can't keep being used until it
+        // naturally expires.
+        const decoded = jwt.decode(accessToken) as { exp?: number } | null;
+        const remainingSeconds = decoded?.exp
+          ? decoded.exp - Math.floor(Date.now() / 1000)
+          : 0;
+        if (remainingSeconds > 0) {
+          await RedisService.set(`revoked:${accessToken}`, '1', remainingSeconds);
+        }
       }
 
-      // Remove from database
+      // Remove from database (also invalidates refresh tokens)
       await prisma.userSession.deleteMany({
         where: { userId },
       });

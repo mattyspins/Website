@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { kothApi, KothSession, KothEntry, KothRound, KothUser } from "@/lib/api/kingOfTheHill";
 import { getSocket } from "@/lib/socket";
 import { API_ENDPOINTS } from "@/lib/api";
+import { useConfirm } from "@/components/admin/useConfirm";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -73,6 +74,7 @@ export default function AdminKingOfTheHillPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [crownReveal, setCrownReveal] = useState<{ entry: KothEntry; round: KothRound } | null>(null);
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   // Auth check
   useEffect(() => {
@@ -175,7 +177,7 @@ export default function AdminKingOfTheHillPage() {
   };
 
   const handleDeleteSession = async (id: string) => {
-    if (!confirm("Delete this session?")) return;
+    if (!(await confirm({ title: "Delete this session?", message: "This permanently removes the session and its history. This cannot be undone." }))) return;
     setActionLoading(true);
     try {
       await kothApi.delete(id);
@@ -206,7 +208,7 @@ export default function AdminKingOfTheHillPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <div className="max-w-5xl mx-auto px-4 pt-24 pb-16">
+      <div className="max-w-5xl mx-auto px-4 pb-16">
 
         {/* Header */}
         <div className="mb-8">
@@ -504,6 +506,7 @@ export default function AdminKingOfTheHillPage() {
           onClose={() => setCrownReveal(null)}
         />
       )}
+      {confirmDialog}
     </div>
   );
 }

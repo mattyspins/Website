@@ -67,14 +67,14 @@ export default function AdminStorePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen  flex items-center justify-center pt-20">
+      <div className="flex items-center justify-center py-24">
         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen  p-3 sm:p-6 pt-20 sm:pt-24">
+    <div className="min-h-screen  p-3 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div

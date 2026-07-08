@@ -15,6 +15,18 @@ export class SlotRequestController {
     res.json({ success: true, open });
   });
 
+  static getWidget = wrap(async (_req, res) => {
+    const [open, requests] = await Promise.all([
+      SlotRequestService.isOpen(),
+      SlotRequestService.getPending(),
+    ]);
+    res.json({
+      success: true,
+      open,
+      requests: requests.map((r) => ({ id: r.id, slotName: r.slotName, kickUsername: r.kickUsername })),
+    });
+  });
+
   static getAll = wrap(async (_req, res) => {
     const requests = await SlotRequestService.getAll();
     res.json({ success: true, requests });

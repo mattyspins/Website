@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AdminController } from '@/controllers/AdminController';
 import { authMiddleware, adminMiddleware } from '@/middleware/auth';
-import rateLimit from 'express-rate-limit';
+import rateLimit from '@/config/rateLimit';
 
 const router = Router();
 
@@ -34,10 +34,16 @@ router.use(adminLimiter);
 
 // Dashboard
 router.get('/dashboard/stats', AdminController.getDashboardStats);
+router.get('/dashboard/growth', AdminController.getUserGrowth);
+router.get('/dashboard/active-timeseries', AdminController.getActiveUsersTimeseries);
 
 // User Management
 router.get('/users/search', AdminController.searchUsers);
+// Must come before the `:userId` param route below, or "export"/"ranks" would be parsed as a userId.
+router.get('/users/export', AdminController.exportUsers);
+router.get('/users/ranks', AdminController.getUserPointsRanks);
 router.get('/users/:userId', AdminController.getUserDetails);
+router.get('/users/:userId/sessions', AdminController.getUserSessions);
 router.patch('/users/:userId/profile', AdminController.updateUserProfile);
 router.post(
   '/users/:userId/moderator',

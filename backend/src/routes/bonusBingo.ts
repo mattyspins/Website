@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit from '@/config/rateLimit';
 import { BingoBoardController } from '@/controllers/BingoBoardController';
 import { authMiddleware, adminMiddleware, optionalAuthMiddleware } from '@/middleware/auth';
 

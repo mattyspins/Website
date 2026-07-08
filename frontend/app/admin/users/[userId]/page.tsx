@@ -5,10 +5,21 @@ import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Coins, Trophy, Wallet, Clock, Check,
-  Shield, Star, UserCheck, Ban, TrendingUp, ShoppingCart
+  Shield, Star, UserCheck, Ban, TrendingUp, ShoppingCart, Monitor
 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/api";
 import { useToast } from "@/components/ui/ToastProvider";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import SuspendUserModal from "@/components/admin/SuspendUserModal";
+
+interface UserSession {
+  id: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+  lastUsedAt: string;
+  expiresAt: string;
+}
 
 interface UserDetail {
   id: string;
@@ -34,6 +45,8 @@ interface UserDetail {
   isVip: boolean;
   isDepositor: boolean;
   isSuspended: boolean;
+  suspensionReason?: string;
+  suspensionExpiresAt?: string;
   createdAt: string;
   lastActiveAt: string;
   pointTransactions: Array<{
@@ -71,9 +84,16 @@ export default function AdminUserPage() {
 
   // Suspend
   const [suspendSaving, setSuspendSaving] = useState(false);
+  const [showSuspendConfirm, setShowSuspendConfirm] = useState(false);
+
+  // Moderator grant confirmation (revoking needs no confirmation)
+  const [showModConfirm, setShowModConfirm] = useState(false);
 
   // Razed recheck
   const [razedChecking, setRazedChecking] = useState(false);
+
+  // Login sessions
+  const [sessions, setSessions] = useState<UserSession[] | null>(null);
 
   const { success, error: toastError } = useToast();
   const token = () => localStorage.getItem("access_token") ?? "";
@@ -94,6 +114,13 @@ export default function AdminUserPage() {
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
+
+    fetch(API_ENDPOINTS.ADMIN_USER_SESSIONS(userId), {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setSessions(d.data.sessions); })
+      .catch(() => setSessions([]));
   }, [userId]);
 
   const toggleRole = async (field: string, current: boolean) => {
@@ -156,7 +183,7 @@ export default function AdminUserPage() {
     } catch { setWagerMsg("Network error."); } finally { setWagerSaving(false); }
   };
 
-  const handleSuspend = async () => {
+  const handleSuspend = async (reason?: string, durationHours?: number) => {
     if (!user) return;
     setSuspendSaving(true);
     const endpoint = user.isSuspended
@@ -166,6 +193,7 @@ export default function AdminUserPage() {
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+        body: user.isSuspended ? undefined : JSON.stringify({ reason, durationHours }),
       });
       if (res.ok) {
         setUser((u) => u ? { ...u, isSuspended: !u.isSuspended } : u);
@@ -206,13 +234,13 @@ export default function AdminUserPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen pt-20 flex items-center justify-center">
+    <div className="flex items-center justify-center py-24">
       <div className="w-8 h-8 border-2 border-yellow-500/40 border-t-yellow-500 rounded-full animate-spin" />
     </div>
   );
 
   if (notFound || !user) return (
-    <div className="min-h-screen pt-20 flex items-center justify-center">
+    <div className="flex items-center justify-center py-24">
       <div className="text-center">
         <p className="text-gray-400 text-lg font-semibold mb-2">User not found</p>
         <button onClick={() => router.back()} className="text-yellow-400 text-sm hover:text-yellow-300 transition-colors">← Back</button>
@@ -221,7 +249,7 @@ export default function AdminUserPage() {
   );
 
   return (
-    <div className="min-h-screen pt-20 pb-16 px-3 sm:px-4">
+    <div>
       <div className="max-w-4xl mx-auto">
 
         {/* Breadcrumb */}
@@ -369,6 +397,35 @@ export default function AdminUserPage() {
                 </div>
               </motion.div>
             )}
+
+            {/* Login sessions */}
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+              className="bg-navy-800/60 border border-white/6 rounded-2xl p-5">
+              <h2 className="text-white font-bold text-sm uppercase tracking-widest mb-4">Login Sessions</h2>
+              {!sessions ? (
+                <div className="flex justify-center py-6">
+                  <div className="w-6 h-6 border-2 border-yellow-500/40 border-t-yellow-500 rounded-full animate-spin" />
+                </div>
+              ) : sessions.length === 0 ? (
+                <p className="text-gray-600 text-sm">No active sessions.</p>
+              ) : (
+                <div className="space-y-1">
+                  {sessions.map((s) => (
+                    <div key={s.id} className="flex items-center gap-3 py-2.5 border-b border-white/4 last:border-0">
+                      <Monitor className="w-4 h-4 text-gray-500 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-gray-300 text-sm truncate">{s.ipAddress || "Unknown IP"}</p>
+                        <p className="text-gray-600 text-xs truncate">{s.userAgent || "Unknown device"}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-gray-400 text-xs">Active {new Date(s.lastUsedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+                        <p className="text-gray-600 text-[10px]">Expires {new Date(s.expiresAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
           </div>
 
           {/* RIGHT: admin controls */}
@@ -380,7 +437,17 @@ export default function AdminUserPage() {
               <h2 className="text-white font-bold text-sm uppercase tracking-widest mb-4">Roles</h2>
               <div className="space-y-2">
                 {!user.isAdmin && (
-                  <RoleToggle label="Moderator" icon={<Shield className="w-3.5 h-3.5" />} active={user.isModerator} color="blue" onToggle={() => toggleRole("isModerator", user.isModerator)} />
+                  <RoleToggle
+                    label="Moderator"
+                    icon={<Shield className="w-3.5 h-3.5" />}
+                    active={user.isModerator}
+                    color="blue"
+                    onToggle={() =>
+                      user.isModerator
+                        ? toggleRole("isModerator", user.isModerator)
+                        : setShowModConfirm(true)
+                    }
+                  />
                 )}
                 <RoleToggle label="VIP" icon={<Star className="w-3.5 h-3.5" />} active={user.isVip} color="yellow" onToggle={() => toggleRole("isVip", user.isVip)} />
                 <RoleToggle label="Depositor" icon={<UserCheck className="w-3.5 h-3.5" />} active={user.isDepositor} color="green" onToggle={() => toggleRole("isDepositor", user.isDepositor)} />
@@ -438,8 +505,18 @@ export default function AdminUserPage() {
                     ? "This account is currently suspended. Users cannot log in while suspended."
                     : "Suspending will immediately invalidate all sessions."}
                 </p>
+                {user.isSuspended && user.suspensionReason && (
+                  <div className="bg-red-500/5 border border-red-500/15 rounded-lg p-3">
+                    <p className="text-red-300 text-xs">{user.suspensionReason}</p>
+                    {user.suspensionExpiresAt && (
+                      <p className="text-red-400/60 text-[10px] mt-1">
+                        Expires {new Date(user.suspensionExpiresAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </p>
+                    )}
+                  </div>
+                )}
                 <button
-                  onClick={handleSuspend}
+                  onClick={() => (user.isSuspended ? handleSuspend() : setShowSuspendConfirm(true))}
                   disabled={suspendSaving}
                   className={`w-full flex items-center justify-center gap-2 font-bold py-2.5 rounded-xl text-sm transition-colors disabled:opacity-40 ${
                     user.isSuspended
@@ -451,6 +528,31 @@ export default function AdminUserPage() {
                   {suspendSaving ? "Saving…" : user.isSuspended ? "Unsuspend Account" : "Suspend Account"}
                 </button>
               </motion.div>
+            )}
+
+            {showSuspendConfirm && (
+              <SuspendUserModal
+                displayName={user.displayName}
+                onClose={() => setShowSuspendConfirm(false)}
+                onConfirm={async (reason, durationHours) => {
+                  await handleSuspend(reason, durationHours);
+                  setShowSuspendConfirm(false);
+                }}
+              />
+            )}
+
+            {showModConfirm && (
+              <ConfirmDialog
+                title="Grant moderator access?"
+                message={`${user.displayName} will gain access to moderator-only tools and endpoints. Only grant this to someone you trust.`}
+                confirmText="Grant Moderator"
+                confirmColor="yellow"
+                onCancel={() => setShowModConfirm(false)}
+                onConfirm={async () => {
+                  await toggleRole("isModerator", user.isModerator);
+                  setShowModConfirm(false);
+                }}
+              />
             )}
 
           </div>

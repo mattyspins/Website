@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { prisma } from '@/config/database';
 import { RedisService } from '@/config/redis';
 import { logger } from '@/utils/logger';
@@ -328,7 +327,7 @@ export class StoreService {
           refundedAt: purchase.refundedAt || undefined,
           refundReason: purchase.refundReason || undefined,
           metadata: {
-            ...purchase.metadata,
+            ...(purchase.metadata as Record<string, unknown> | null),
             itemName: purchase.item.name,
             itemCategory: purchase.item.category,
           },
@@ -841,7 +840,7 @@ export class StoreService {
           refundedAt: purchase.refundedAt || undefined,
           refundReason: purchase.refundReason || undefined,
           metadata: {
-            ...purchase.metadata,
+            ...(purchase.metadata as Record<string, unknown> | null),
             itemName: purchase.item.name,
             itemCategory: purchase.item.category,
             userName: purchase.user.displayName,

@@ -22,12 +22,6 @@ module.exports = {
           900: "#0a0810",  // deep surface
           950: "#070509",  // near black
         },
-        // Primary accent = gold
-        accent: {
-          blue: "#f59e0b",   // main gold — used as primary CTA colour
-          cyan: "#fbbf24",   // bright gold — used for highlights/labels
-          sky:  "#f97316",   // orange — used for special accents
-        },
         gold: {
           300: "#fde68a",
           400: "#fbbf24",
@@ -37,15 +31,7 @@ module.exports = {
         },
         prize: "#22c55e",   // always green for prize / positive amounts
         neon: {
-          blue:       "#f59e0b",
-          gold:       "#fbbf24",
-          darkBlue:   "#0a0810",
-          lightGold:  "#fef3c7",
-          accent:     "#f97316",
-          deepBlue:   "#070509",
-          brightGold: "#fbbf24",
-          royalBlue:  "#f59e0b",
-          amber:      "#d97706",
+          gold: "#fbbf24",
         },
         dark: {
           100: "#18161f",
@@ -98,7 +84,6 @@ module.exports = {
         "card-hover":"0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(245,158,11,0.25)",
         gold:       "0 0 20px rgba(245,158,11,0.35)",
         "gold-lg":  "0 0 40px rgba(245,158,11,0.3)",
-        blue:       "0 0 20px rgba(245,158,11,0.2)",
       },
     },
   },

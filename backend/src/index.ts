@@ -1,13 +1,18 @@
+// Must run before any other local import — several modules (e.g. config/redis,
+// config/env) read process.env at import time via validateEnv(), and CommonJS
+// require() calls execute in the order they're written, not hoisted like ESM.
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
-import rateLimit from 'express-rate-limit';
+import rateLimit from '@/config/rateLimit';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
-import dotenv from 'dotenv';
 
 import { logger } from '@/utils/logger';
 import { errorHandler } from '@/middleware/errorHandler';
@@ -19,9 +24,6 @@ import jwt from 'jsonwebtoken';
 import { LeaderboardExpirationJob } from '@/jobs/leaderboardExpiration';
 import { RazedWagerSyncJob } from '@/jobs/razedWagerSync';
 import { KickChatService } from '@/services/KickChatService';
-
-// Load environment variables
-dotenv.config();
 
 // Validate environment variables
 const env = validateEnv();
@@ -158,6 +160,8 @@ import slotRequestRoutes from '@/routes/slotRequest';
 import { setSlotRequestIO } from '@/controllers/SlotRequestController';
 import kingOfTheHillRoutes from '@/routes/kingOfTheHill';
 import { setKothIO } from '@/controllers/KingOfTheHillController';
+import highRollerRoutes from '@/routes/highRoller';
+import { setHighRollerIO } from '@/controllers/HighRollerController';
 import wagerLeaderboardRoutes from '@/routes/wagerLeaderboard';
 
 app.use('/api/auth', authRoutes);
@@ -183,6 +187,7 @@ app.use('/api/bonus-bingo', bonusBingoRoutes);
 app.use('/api/viewer-picker', viewerPickerRoutes);
 app.use('/api/slot-requests', slotRequestRoutes);
 app.use('/api/king-of-the-hill', kingOfTheHillRoutes);
+app.use('/api/high-roller', highRollerRoutes);
 app.use('/api/wager-leaderboard', wagerLeaderboardRoutes);
 
 // Wire up tournament real-time events
@@ -191,6 +196,7 @@ setBingoIO(io);
 setPickerIO(io);
 setSlotRequestIO(io);
 setKothIO(io);
+setHighRollerIO(io);
 
 // Socket.IO connection handling
 io.on('connection', socket => {
@@ -240,6 +246,14 @@ io.on('connection', socket => {
   });
   socket.on('leaveKoth', (sessionId: string) => {
     socket.leave(`koth:${sessionId}`);
+  });
+
+  // High Roller rooms
+  socket.on('joinHighRoller', (sessionId: string) => {
+    socket.join(`highroller:${sessionId}`);
+  });
+  socket.on('leaveHighRoller', (sessionId: string) => {
+    socket.leave(`highroller:${sessionId}`);
   });
 
   socket.on('disconnect', () => {

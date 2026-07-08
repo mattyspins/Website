@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { BonusHuntController } from '@/controllers/BonusHuntController';
 import { authMiddleware, optionalAuthMiddleware } from '@/middleware/auth';
-import rateLimit from 'express-rate-limit';
+import rateLimit from '@/config/rateLimit';
 
 const router = Router();
 

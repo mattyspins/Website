@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit from '@/config/rateLimit';
 import { KingOfTheHillController } from '@/controllers/KingOfTheHillController';
 import { authMiddleware, adminMiddleware } from '@/middleware/auth';
 

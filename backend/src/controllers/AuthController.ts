@@ -121,7 +121,7 @@ export class AuthController {
         const corsOrigins =
           process.env['CORS_ORIGIN'] || 'http://localhost:3000';
         const frontendUrl = corsOrigins.split(',')[0].trim();
-        const callbackUrl = `${frontendUrl}/auth/callback?access_token=${encodeURIComponent(tokens.accessToken)}&refresh_token=${encodeURIComponent(tokens.refreshToken)}&user_id=${encodeURIComponent(user.id)}&display_name=${encodeURIComponent(user.displayName)}&is_admin=${user.isAdmin}&is_moderator=${user.isModerator}`;
+        const callbackUrl = `${frontendUrl}/auth/callback?access_token=${encodeURIComponent(tokens.accessToken)}&refresh_token=${encodeURIComponent(tokens.refreshToken)}&user_id=${encodeURIComponent(user.id)}&display_name=${encodeURIComponent(user.displayName)}&is_admin=${user.isAdmin}&is_moderator=${user.isModerator}&avatar=${encodeURIComponent(user.avatar || '')}`;
 
         res.redirect(callbackUrl);
       } catch (error) {
@@ -416,7 +416,8 @@ export class AuthController {
       }
 
       try {
-        await AuthService.logout(req.user.id);
+        const accessToken = req.headers.authorization?.substring(7);
+        await AuthService.logout(req.user.id, accessToken);
 
         logger.info(`User logged out: ${req.user.discordId}`);
 

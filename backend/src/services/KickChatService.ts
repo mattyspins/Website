@@ -11,7 +11,8 @@ import { SlotRequestService } from '@/services/SlotRequestService';
 import { GuessTheBalanceService } from '@/services/GuessTheBalanceService';
 import { KingOfTheHillService } from '@/services/KingOfTheHillService';
 import { TournamentService } from '@/services/TournamentService';
-import { BingoStatus, TournamentStatus } from '@prisma/client';
+import { HighRollerService } from '@/services/HighRollerService';
+import { BingoStatus, TournamentStatus, HighRollerPrediction, HighRollerStatus } from '@prisma/client';
 
 const KICK_CHANNEL_NAME = process.env['KICK_CHANNEL_NAME'] || 'mattyspins';
 // Set KICK_CHATROOM_ID in .env — find it by opening kick.com/mattyspins and checking the chatroom ID in network tab
@@ -160,6 +161,10 @@ export class KickChatService {
     if (content.trim().toLowerCase() === '!king') {
       await this.processKothJoin(kickUsername);
     }
+
+    // High Roller: commands are admin-configurable per session (unlike the hardcoded ones
+    // above), so fetch the active session once and compare against its own keyword fields.
+    await this.processHighRollerCommand(kickUsername, content);
 
     // Check for tournament join command: !jointourney
     if (content.trim().toLowerCase() === '!jointourney') {
@@ -374,6 +379,49 @@ export class KickChatService {
       }
     } catch (err) {
       logger.warn(`KickChatService: koth !slot failed for ${kickUsername}`, { error: (err as Error).message });
+    }
+  }
+
+  // High Roller's join/leave/over/under/suggest commands are admin-configurable per session
+  // (the only other precedent for this in the codebase is ViewerPicker.keyword), so — unlike
+  // every other game's hardcoded command check above — this looks up the active session first
+  // and compares the message against its own keyword fields.
+  private static async processHighRollerCommand(kickUsername: string, content: string): Promise<void> {
+    try {
+      const session = await prisma.highRoller.findFirst({ where: { status: HighRollerStatus.OPEN } });
+      if (!session) return;
+
+      const normalizedContent = content.trim().toLowerCase();
+      const io = this.io ?? undefined;
+
+      if (normalizedContent === session.joinKeyword.toLowerCase()) {
+        const joined = await HighRollerService.joinByKeyword(kickUsername, io);
+        if (joined) await this.sendChatMessage(`🎲 ${kickUsername} is in the game! Predict Over/Under ${Number(session.threshold)}x with ${session.overKeyword}/${session.underKeyword}`);
+        return;
+      }
+
+      if (normalizedContent === session.leaveKeyword.toLowerCase()) {
+        const left = await HighRollerService.leaveByKeyword(kickUsername, io);
+        if (left) await this.sendChatMessage(`${kickUsername} has left High Roller.`);
+        return;
+      }
+
+      if (normalizedContent === session.overKeyword.toLowerCase()) {
+        await HighRollerService.submitPrediction(kickUsername, HighRollerPrediction.OVER, io);
+        return;
+      }
+
+      if (normalizedContent === session.underKeyword.toLowerCase()) {
+        await HighRollerService.submitPrediction(kickUsername, HighRollerPrediction.UNDER, io);
+        return;
+      }
+
+      if (session.suggestKeyword && normalizedContent === session.suggestKeyword.toLowerCase()) {
+        const entered = await HighRollerService.suggestEntryByKeyword(kickUsername, io);
+        if (entered) await this.sendChatMessage(`🎰 ${kickUsername} is in the running to suggest the next slot!`);
+      }
+    } catch (err) {
+      logger.warn(`KickChatService: High Roller command failed for ${kickUsername}`, { error: (err as Error).message });
     }
   }
 
