@@ -175,6 +175,7 @@ export class KickChatService {
     const srMatch = content.match(/^!sr\s+(.+)/i);
     if (srMatch) {
       await SlotRequestService.handleChatRequest(kickUsername, srMatch[1].trim(), this.io ?? undefined);
+      await HighRollerService.submitSuggestedSlot(kickUsername, srMatch[1].trim(), this.io ?? undefined);
     }
 
     // Check for GTB guess command: !guess <amount>

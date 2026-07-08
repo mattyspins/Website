@@ -804,6 +804,8 @@ model HighRollerSuggestionDraw {
   id           String     @id @default(uuid())
   sessionId    String     @map("session_id")
   kickUsername String     @map("kick_username")
+  slotName     String?    @map("slot_name")
+  slotCalledAt DateTime?  @map("slot_called_at")
   drawnAt      DateTime   @default(now()) @map("drawn_at")
   session      HighRoller @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 

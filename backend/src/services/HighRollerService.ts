@@ -557,6 +557,34 @@ export class HighRollerService {
     return { session: session2, winner };
   }
 
+  // Called on "!sr <slot name>" — lets whoever was most recently drawn to suggest the next
+  // slot name it, by matching the sender against that draw's kickUsername. Ignored for
+  // anyone else so a random chatter's "!sr" (the separate, general Slot Request queue)
+  // doesn't get misattributed as the suggestion pick's answer.
+  static async submitSuggestedSlot(kickUsername: string, slotName: string, io?: SocketIOServer): Promise<boolean> {
+    const session = await prisma.highRoller.findFirst({ where: { status: HighRollerStatus.OPEN } });
+    if (!session) return false;
+
+    const normalized = kickUsername.trim().toLowerCase();
+    const lastDraw = await prisma.highRollerSuggestionDraw.findFirst({
+      where: { sessionId: session.id },
+      orderBy: { drawnAt: 'desc' },
+    });
+    if (!lastDraw || lastDraw.kickUsername.toLowerCase() !== normalized) return false;
+
+    await prisma.highRollerSuggestionDraw.update({
+      where: { id: lastDraw.id },
+      data: { slotName: slotName.trim(), slotCalledAt: new Date() },
+    });
+
+    const payload = { sessionId: session.id, kickUsername: lastDraw.kickUsername, slotName: slotName.trim() };
+    io?.to(`highroller:${session.id}`).emit('highroller:suggestion-slot', payload);
+    io?.emit('highroller:suggestion-slot', payload);
+
+    logger.info(`HighRoller ${session.id}: ${kickUsername} called slot "${slotName}" via !sr`);
+    return true;
+  }
+
   // ─── End game / Hall of Fame ───────────────────────────────────────────────
 
   static async endGame(sessionId: string, io?: SocketIOServer) {

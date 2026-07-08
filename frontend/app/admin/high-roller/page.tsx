@@ -125,6 +125,7 @@ export default function AdminHighRollerPage() {
   const [drawPool, setDrawPool] = useState<"joined" | "suggested">("joined");
   const [excludePrevious, setExcludePrevious] = useState(true);
   const [lastSuggestionWinner, setLastSuggestionWinner] = useState<string | null>(null);
+  const [lastSuggestionSlot, setLastSuggestionSlot] = useState<string | null>(null);
   const [hallOfFame, setHallOfFame] = useState<HighRollerHallOfFame | null>(null);
   const [drawing, setDrawing] = useState<{ current: string; settled: boolean } | null>(null);
 
@@ -169,9 +170,18 @@ export default function AdminHighRollerPage() {
     };
     socket.on("highroller:updated", handle);
 
+    const handleSuggestionSlot = (payload: { sessionId: string; kickUsername: string; slotName: string }) => {
+      if (session && payload.sessionId === session.id) {
+        setLastSuggestionWinner(payload.kickUsername);
+        setLastSuggestionSlot(payload.slotName);
+      }
+    };
+    socket.on("highroller:suggestion-slot", handleSuggestionSlot);
+
     return () => {
       if (session) { socket.emit("leaveHighRoller", session.id); socket.off("connect", joinRoom); }
       socket.off("highroller:updated", handle);
+      socket.off("highroller:suggestion-slot", handleSuggestionSlot);
     };
   }, [session?.id]);
 
@@ -253,6 +263,7 @@ export default function AdminHighRollerPage() {
     // instead of instantly revealing the winner — same suspense beat viewers get.
     const candidates = drawPool === "joined" ? session.players.filter((p) => p.active).map((p) => name(p)) : [];
     setDrawing({ current: candidates[0] ?? "…", settled: false });
+    setLastSuggestionSlot(null);
 
     const cycle = new Promise<void>((resolve) => {
       if (candidates.length === 0) { resolve(); return; }
@@ -576,7 +587,14 @@ export default function AdminHighRollerPage() {
                   🎲 Draw Slot Suggestion
                 </button>
                 {lastSuggestionWinner && (
-                  <p className="text-center text-red-300 text-sm mt-3">🎉 {lastSuggestionWinner} picks the next slot!</p>
+                  <div className="text-center mt-3">
+                    <p className="text-red-300 text-sm">🎉 {lastSuggestionWinner} picks the next slot!</p>
+                    {lastSuggestionSlot ? (
+                      <p className="text-white font-bold text-sm mt-1">🎰 {lastSuggestionSlot}</p>
+                    ) : (
+                      <p className="text-white/30 text-xs mt-1">Waiting for {`!sr <slot name>`}…</p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
