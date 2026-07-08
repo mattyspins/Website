@@ -11,9 +11,6 @@ CREATE TYPE "HighRollerStatus" AS ENUM ('OPEN', 'CLOSED');
 -- CreateEnum
 CREATE TYPE "HighRollerPrediction" AS ENUM ('OVER', 'UNDER');
 
--- AlterEnum
-ALTER TYPE "CellStatus" ADD VALUE 'RED';
-
 -- DropForeignKey
 ALTER TABLE "Notification" DROP CONSTRAINT "Notification_userId_fkey";
 
