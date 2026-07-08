@@ -49,4 +49,16 @@ export class ViewerPickerController {
     await ViewerPickerService.delete(req.params.id);
     res.json({ success: true });
   });
+
+  static removeEntry = asyncHandler(async (req, res) => {
+    const picker = await ViewerPickerService.removeEntry(req.params.entryId, _io);
+    res.json({ success: true, picker });
+  });
+
+  static exportParticipants = asyncHandler(async (req, res) => {
+    const csv = await ViewerPickerService.exportParticipants(req.params.id);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="giveaway-${req.params.id}.csv"`);
+    res.send(csv);
+  });
 }

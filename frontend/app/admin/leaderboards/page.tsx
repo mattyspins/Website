@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
-import { Trophy, ExternalLink, Trash2, RefreshCw, Plus, Minus } from "lucide-react";
+import { Trophy, ExternalLink, Trash2, RefreshCw, Plus, Minus, AlertTriangle } from "lucide-react";
 import { useConfirm } from "@/components/admin/useConfirm";
+import { londonInputToUtc, utcToLondonInputParts, formatLondon } from "@/lib/londonTime";
 import {
   wagerLeaderboardApi,
   ActiveRace,
@@ -22,11 +23,13 @@ interface OldLeaderboard {
   endDate: string;
 }
 
-const DEFAULT_PRIZE_AMOUNTS = [200, 100, 70, 30, 30, 20, 20, 10, 10, 10];
-
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+// Sensible defaults for a brand-new race form — matches this cycle's real schedule
+// (1 Jul 00:00 – 31 Jul 18:30 Europe/London) and a round £500 pool, both fully editable.
+const DEFAULT_PRIZE_AMOUNTS = [250, 150, 75, 25];
+const DEFAULT_START_DATE = "2026-07-01";
+const DEFAULT_START_TIME = "00:00";
+const DEFAULT_END_DATE = "2026-07-31";
+const DEFAULT_END_TIME = "18:30";
 
 function makeDefaultPrizes(): RacePrize[] {
   return DEFAULT_PRIZE_AMOUNTS.map((amount, i) => ({ position: i + 1, amount }));
@@ -45,10 +48,14 @@ export default function AdminLeaderboardsPage() {
   const [wagererSearch, setWagererSearch] = useState("");
   const { confirm, dialog: confirmDialog } = useConfirm();
 
-  // Create/edit race form state
+  // Create/edit race form state — dates/times are entered as Europe/London wall-clock
+  // values and converted to UTC just before hitting the API.
   const [editing, setEditing] = useState(false);
-  const [formStart, setFormStart] = useState(todayISO());
-  const [formEnd, setFormEnd] = useState(todayISO());
+  const [formStartDate, setFormStartDate] = useState(DEFAULT_START_DATE);
+  const [formStartTime, setFormStartTime] = useState(DEFAULT_START_TIME);
+  const [formEndDate, setFormEndDate] = useState(DEFAULT_END_DATE);
+  const [formEndTime, setFormEndTime] = useState(DEFAULT_END_TIME);
+  const [formTotalPool, setFormTotalPool] = useState(String(DEFAULT_PRIZE_AMOUNTS.reduce((s, a) => s + a, 0)));
   const [formPrizes, setFormPrizes] = useState<RacePrize[]>(makeDefaultPrizes());
 
   const load = async () => {
@@ -74,12 +81,20 @@ export default function AdminLeaderboardsPage() {
 
   const startEditing = () => {
     if (currentActiveMeta) {
-      setFormStart(currentActiveMeta.startDate);
-      setFormEnd(currentActiveMeta.endDate);
+      const start = utcToLondonInputParts(currentActiveMeta.startDate);
+      const end = utcToLondonInputParts(currentActiveMeta.endDate);
+      setFormStartDate(start.date);
+      setFormStartTime(start.time);
+      setFormEndDate(end.date);
+      setFormEndTime(end.time);
+      setFormTotalPool(String(currentActiveMeta.totalPrizePool));
       setFormPrizes(currentActiveMeta.prizes.length > 0 ? currentActiveMeta.prizes : makeDefaultPrizes());
     } else {
-      setFormStart(todayISO());
-      setFormEnd(todayISO());
+      setFormStartDate(DEFAULT_START_DATE);
+      setFormStartTime(DEFAULT_START_TIME);
+      setFormEndDate(DEFAULT_END_DATE);
+      setFormEndTime(DEFAULT_END_TIME);
+      setFormTotalPool(String(DEFAULT_PRIZE_AMOUNTS.reduce((s, a) => s + a, 0)));
       setFormPrizes(makeDefaultPrizes());
     }
     setMsg(null);
@@ -99,17 +114,28 @@ export default function AdminLeaderboardsPage() {
   };
 
   const handleSaveRace = async () => {
+    const totalPrizePool = parseInt(formTotalPool, 10) || 0;
+    const prizeSum = formPrizes.reduce((s, p) => s + p.amount, 0);
+    if (prizeSum !== totalPrizePool) {
+      setMsg({ type: "error", text: `Prize positions sum to £${prizeSum}, which doesn't match the total pool of £${totalPrizePool}.` });
+      return;
+    }
+
     setSaving(true); setMsg(null);
     try {
+      const startDate = londonInputToUtc(formStartDate, formStartTime).toISOString();
+      const endDate = londonInputToUtc(formEndDate, formEndTime).toISOString();
+
       if (currentActiveMeta) {
         await wagerLeaderboardApi.updateRace(currentActiveMeta.id, {
-          startDate: formStart,
-          endDate: formEnd,
+          startDate,
+          endDate,
+          totalPrizePool,
           prizes: formPrizes,
         }).then((r: any) => { if (r?.error) throw new Error(r.error); });
         setMsg({ type: "success", text: "Race updated." });
       } else {
-        await wagerLeaderboardApi.createRace({ startDate: formStart, endDate: formEnd, prizes: formPrizes });
+        await wagerLeaderboardApi.createRace({ startDate, endDate, totalPrizePool, prizes: formPrizes });
         setMsg({ type: "success", text: "Race created." });
       }
       setEditing(false);
@@ -213,7 +239,7 @@ export default function AdminLeaderboardsPage() {
               </h2>
               {!editing && (
                 <span className="text-gold-400 text-xs font-bold">
-                  {currentActiveMeta ? `$${currentActiveMeta.prizes.reduce((s, p) => s + p.amount, 0)} total` : ""}
+                  {currentActiveMeta ? `£${currentActiveMeta.totalPrizePool} total` : ""}
                 </span>
               )}
             </div>
@@ -223,16 +249,23 @@ export default function AdminLeaderboardsPage() {
                 {currentActiveMeta ? (
                   <>
                     <p className="text-gray-500 text-xs mb-4">
-                      {new Date(currentActiveMeta.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
+                      {formatLondon(currentActiveMeta.startDate, "d MMM")}
                       {" – "}
-                      {new Date(currentActiveMeta.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}
+                      {formatLondon(currentActiveMeta.endDate, "d MMM yyyy, HH:mm")}
                       {" · "}{currentActiveMeta.prizes.length} paid position{currentActiveMeta.prizes.length !== 1 ? "s" : ""}
+                      {" · "}
+                      <span className={
+                        currentActiveMeta.phase === "upcoming" ? "text-blue-400" :
+                        currentActiveMeta.phase === "active" ? "text-green-400" : "text-gray-500"
+                      }>
+                        {currentActiveMeta.phase}
+                      </span>
                     </p>
                     <div className="space-y-1 mb-4">
                       {currentActiveMeta.prizes.map((p) => (
                         <div key={p.position} className="flex items-center gap-3 text-sm">
                           <span className="text-gray-500 w-8 shrink-0">#{p.position}</span>
-                          <span className="text-white font-semibold">${p.amount}</span>
+                          <span className="text-white font-semibold">£{p.amount}</span>
                         </div>
                       ))}
                     </div>
@@ -251,18 +284,41 @@ export default function AdminLeaderboardsPage() {
               </>
             ) : (
               <>
+                <div className="mb-4">
+                  <label className="text-gray-400 text-xs mb-1 block">Total Prize Pool (£)</label>
+                  <input
+                    type="number" min={0} value={formTotalPool} onChange={(e) => setFormTotalPool(e.target.value)}
+                    className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-gold-500/30"
+                  />
+                </div>
+
+                <p className="text-gray-500 text-[11px] mb-1.5">Schedule (Europe/London time)</p>
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div>
                     <label className="text-gray-400 text-xs mb-1 block">Start Date</label>
                     <input
-                      type="date" value={formStart} onChange={(e) => setFormStart(e.target.value)}
+                      type="date" value={formStartDate} onChange={(e) => setFormStartDate(e.target.value)}
+                      className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-gold-500/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-gray-400 text-xs mb-1 block">Start Time</label>
+                    <input
+                      type="time" value={formStartTime} onChange={(e) => setFormStartTime(e.target.value)}
                       className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-gold-500/30"
                     />
                   </div>
                   <div>
                     <label className="text-gray-400 text-xs mb-1 block">End Date</label>
                     <input
-                      type="date" value={formEnd} onChange={(e) => setFormEnd(e.target.value)}
+                      type="date" value={formEndDate} onChange={(e) => setFormEndDate(e.target.value)}
+                      className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-gold-500/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-gray-400 text-xs mb-1 block">End Time</label>
+                    <input
+                      type="time" value={formEndTime} onChange={(e) => setFormEndTime(e.target.value)}
                       className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-gold-500/30"
                     />
                   </div>
@@ -270,13 +326,16 @@ export default function AdminLeaderboardsPage() {
 
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-gray-400 text-xs">Prize Positions</label>
-                  <span className="text-gold-400 text-xs font-bold">${formTotal} total</span>
+                  <span className={`text-xs font-bold flex items-center gap-1 ${formTotal === (parseInt(formTotalPool, 10) || 0) ? "text-gold-400" : "text-red-400"}`}>
+                    {formTotal !== (parseInt(formTotalPool, 10) || 0) && <AlertTriangle className="w-3 h-3" />}
+                    £{formTotal} of £{formTotalPool || 0}
+                  </span>
                 </div>
                 <div className="space-y-1.5 mb-3 max-h-60 overflow-y-auto pr-1">
                   {formPrizes.map((p, i) => (
                     <div key={p.position} className="flex items-center gap-3">
                       <span className="text-gray-500 text-xs w-10 shrink-0">#{p.position}</span>
-                      <span className="text-gray-600 text-xs shrink-0">$</span>
+                      <span className="text-gray-600 text-xs shrink-0">£</span>
                       <input
                         type="number" min={0}
                         value={p.amount}
@@ -332,7 +391,7 @@ export default function AdminLeaderboardsPage() {
                   <div key={row.userId ?? row.displayName} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-white/3">
                     <span className="text-gray-600 text-xs w-5 shrink-0 text-right">{row.position}</span>
                     <span className="text-gray-200 text-sm flex-1 truncate">{row.kickUsername ?? row.displayName}</span>
-                    {row.prizeAmount !== null && <span className="text-gold-400 text-[10px] font-bold shrink-0">${row.prizeAmount}</span>}
+                    {row.prizeAmount !== null && <span className="text-gold-400 text-[10px] font-bold shrink-0">£{row.prizeAmount}</span>}
                     <span className="text-white text-xs font-semibold shrink-0">${Number(row.wagered).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 ))}
@@ -352,11 +411,11 @@ export default function AdminLeaderboardsPage() {
                     {r.status === "active" ? "ACTIVE" : "ENDED"}
                   </span>
                   <span className="text-gray-300 text-sm flex-1">
-                    {new Date(r.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
+                    {formatLondon(r.startDate, "d MMM")}
                     {" – "}
-                    {new Date(r.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}
+                    {formatLondon(r.endDate, "d MMM yyyy, HH:mm")}
                   </span>
-                  <span className="text-gray-500 text-xs shrink-0">{r.prizes.length} position{r.prizes.length !== 1 ? "s" : ""} · ${r.prizes.reduce((s, p) => s + p.amount, 0)}</span>
+                  <span className="text-gray-500 text-xs shrink-0">{r.prizes.length} position{r.prizes.length !== 1 ? "s" : ""} · £{r.totalPrizePool}</span>
                   {r.status === "active" && (
                     <button onClick={() => handleDeleteRace(r.id)} className="text-gray-600 hover:text-red-400 transition-colors shrink-0">
                       <Trash2 className="w-3.5 h-3.5" />
@@ -376,14 +435,14 @@ export default function AdminLeaderboardsPage() {
               {history.map((entry) => (
                 <div key={entry.id} className="bg-navy-800/50 border border-white/6 rounded-xl p-4">
                   <p className="text-gray-400 text-xs font-semibold mb-2">
-                    {new Date(entry.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
+                    {formatLondon(entry.startDate, "d MMM")}
                     {" – "}
-                    {new Date(entry.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}
+                    {formatLondon(entry.endDate, "d MMM yyyy, HH:mm")}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {entry.winners.map((w) => (
                       <span key={w.userId} className="text-xs text-gray-300 bg-navy-900/60 border border-white/5 rounded-lg px-2.5 py-1">
-                        #{w.position} {w.kickUsername ?? w.displayName} — ${w.prizeAmount}
+                        #{w.position} {w.kickUsername ?? w.displayName} — £{w.prizeAmount}
                       </span>
                     ))}
                   </div>

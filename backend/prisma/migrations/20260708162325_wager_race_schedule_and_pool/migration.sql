@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "wager_races" ADD COLUMN     "total_prize_pool" INTEGER NOT NULL DEFAULT 0,
+ALTER COLUMN "start_date" SET DATA TYPE TIMESTAMP(3),
+ALTER COLUMN "end_date" SET DATA TYPE TIMESTAMP(3);

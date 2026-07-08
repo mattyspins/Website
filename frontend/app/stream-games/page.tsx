@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Ticket, Swords, Zap, Trophy, Skull, Users, Grid3X3, ExternalLink, Clock, X, Radio, Dices } from "lucide-react";
+import { Crown, Ticket, Swords, Zap, Trophy, Skull, Users, Grid3X3, ExternalLink, Clock, X, Radio, Dices, Gift } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -143,6 +143,17 @@ const GAMES: Game[] = [
     rewards: ["Cash prizes", "Community rewards", "Special event prizes"],
     note: "Active raffles are shown below 👊",
     link: "/raffle", linkLabel: "View Active Raffles",
+  },
+  {
+    id: "weekly-raffle", name: "Weekly Raffle",
+    tagline: "Wager under the code, get entered automatically",
+    icon: <Gift className="w-6 h-6" />, color: "text-purple-400", iconBg: "bg-purple-500/15", border: "border-purple-500/20",
+    badge: "NEW", badgeColor: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+    description: "Every week, anyone who meets that week's wagering requirement under the Razed affiliate code is automatically entered — no tickets to buy. One winner is drawn live every Monday with a suspenseful elimination reveal.",
+    howItWorks: ["Connect and verify your Razed account", "Wager at least the week's minimum under the affiliate code", "You're automatically entered — no purchase needed", "Every Monday, Matty draws the winner live", "Miss this week? A new raffle opens for the next week"],
+    rewards: ["Cash prizes", "Community rewards"],
+    note: "Check your eligibility and progress anytime on the Weekly Raffle page 👊",
+    link: "/weekly-raffle", linkLabel: "View Weekly Raffle",
   },
 ];
 

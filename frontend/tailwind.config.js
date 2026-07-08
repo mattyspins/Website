@@ -69,9 +69,6 @@ module.exports = {
         "glow-pulse":  "glowPulse 3s ease-in-out infinite",
         "pop-in":      "popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
         "ring-rotate": "ringRotate 3s linear infinite",
-        "mesh-drift":  "meshDrift 18s ease-in-out infinite",
-        "ray-sweep":   "raySweep 14s ease-in-out infinite",
-        "particle-drift": "particleDrift 12s ease-in-out infinite",
       },
       keyframes: {
         popIn: {
@@ -97,19 +94,6 @@ module.exports = {
         ringRotate: {
           "0%":   { transform: "rotate(0deg)" },
           "100%": { transform: "rotate(360deg)" },
-        },
-        meshDrift: {
-          "0%, 100%": { transform: "translate(0%, 0%) scale(1)" },
-          "33%":      { transform: "translate(-3%, 2%) scale(1.05)" },
-          "66%":      { transform: "translate(2%, -3%) scale(1.02)" },
-        },
-        raySweep: {
-          "0%, 100%": { transform: "translateX(-4%) rotate(-2deg)", opacity: "0.5" },
-          "50%":      { transform: "translateX(4%) rotate(2deg)",   opacity: "0.85" },
-        },
-        particleDrift: {
-          "0%, 100%": { transform: "translateY(0px) translateX(0px)" },
-          "50%":      { transform: "translateY(-16px) translateX(6px)" },
         },
       },
       fontFamily: {

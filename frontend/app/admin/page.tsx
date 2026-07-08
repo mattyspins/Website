@@ -15,6 +15,7 @@ import {
   FileText,
   Monitor,
   ExternalLink,
+  Gift,
 } from "lucide-react";
 
 const QUICK_ACCESS = [
@@ -22,6 +23,7 @@ const QUICK_ACCESS = [
   { href: "/admin/guess-the-balance", icon: <Target className="w-5 h-5 text-pink-400" />, bg: "bg-pink-500/10", title: "Guess the Balance", desc: "Create games, open/close guessing, award winners" },
   { href: "/admin/tournament", icon: <Trophy className="w-5 h-5 text-yellow-400" />, bg: "bg-yellow-500/10", title: "Tournament", desc: "Create tournaments, draw participants, manage bracket & declare winners" },
   { href: "/admin/raffle", icon: <Ticket className="w-5 h-5 text-purple-400" />, bg: "bg-purple-500/10", title: "Raffles", desc: "Create raffles, manage tickets, draw winners" },
+  { href: "/admin/weekly-raffle", icon: <Gift className="w-5 h-5 text-violet-400" />, bg: "bg-violet-500/10", title: "Weekly Raffle", desc: "Configure eligibility, preview entrants, draw the weekly winner" },
   { href: "/hunt-tracker", icon: <Zap className="w-5 h-5 text-gold-400" />, bg: "bg-gold-500/10", title: "Bonus Hunt", desc: "Create hunts, add slots, go live for viewers to watch the reveal" },
   { href: "/admin/bonus-bingo", icon: <Grid3X3 className="w-5 h-5 text-green-400" />, bg: "bg-green-500/10", title: "Bonus Bingo", desc: "Create bingo games, spin cells, draw players, mark results" },
   { href: "/admin/viewer-picker", icon: <Users className="w-5 h-5 text-cyan-400" />, bg: "bg-cyan-500/10", title: "Viewer Picker", desc: "Set a keyword, viewers type it in Kick chat to enter, spin to draw a winner" },

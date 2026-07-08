@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Trophy, Crown } from "lucide-react";
-import { wagerLeaderboardApi, ActiveRace, RaceHistoryEntry } from "@/lib/api/wagerLeaderboard";
+import { Trophy, Crown, Calendar, Users } from "lucide-react";
+import { wagerLeaderboardApi, ActiveRace, RaceHistoryEntry, RaceStandingRow } from "@/lib/api/wagerLeaderboard";
+import { formatLondon } from "@/lib/londonTime";
+import { API_ENDPOINTS } from "@/lib/api";
 
 function maskUsername(username: string): string {
   if (username.length <= 3) return username;
@@ -17,43 +19,28 @@ function fmtMoney(v: string): string {
   return `$${Number(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function fmtDate(d: string): string {
-  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-}
-
-/** Races stay active through the end of endDate (UTC) — payouts run early the next day. */
-function raceEndTimestamp(endDate: string): number {
-  return new Date(`${endDate}T00:00:00Z`).getTime() + 24 * 60 * 60 * 1000;
-}
-
-function CountdownTimer({ endDate }: { endDate: string }) {
+function useCountdown(target: number | null) {
   const [now, setNow] = useState(() => Date.now());
-
   useEffect(() => {
+    if (target === null) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [target]);
+  return target === null ? 0 : Math.max(0, target - now);
+}
 
-  const msRemaining = Math.max(0, raceEndTimestamp(endDate) - now);
-  const totalSeconds = Math.floor(msRemaining / 1000);
+function CountdownUnits({ ms }: { ms: number }) {
+  const totalSeconds = Math.floor(ms / 1000);
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-
-  if (msRemaining <= 0) {
-    return (
-      <p className="text-gray-500 text-sm font-semibold uppercase tracking-widest">Race ended — payouts processing</p>
-    );
-  }
-
   const segments = [
     { label: "Days", value: days },
     { label: "Hours", value: hours },
     { label: "Mins", value: minutes },
     { label: "Secs", value: seconds },
   ];
-
   return (
     <div className="flex items-center justify-center gap-3">
       {segments.map((seg) => (
@@ -66,31 +53,53 @@ function CountdownTimer({ endDate }: { endDate: string }) {
   );
 }
 
-function rankBadgeClasses(position: number): string {
-  if (position === 1) return "bg-gold-400 text-navy-950";
-  if (position === 2) return "bg-gray-300 text-navy-950";
-  if (position === 3) return "bg-orange-400 text-navy-950";
-  return "bg-navy-900/80 border border-white/8 text-gray-400";
-}
-
-function rowTintClasses(position: number): string {
-  if (position === 1) return "bg-gradient-to-r from-gold-500/10 via-transparent to-transparent";
-  if (position === 2) return "bg-gradient-to-r from-gray-400/8 via-transparent to-transparent";
-  if (position === 3) return "bg-gradient-to-r from-orange-500/8 via-transparent to-transparent";
-  return "";
-}
-
-function AvatarCircle({ row }: { row: { displayName: string; kickUsername: string | null; avatarUrl: string | null } }) {
+function AvatarCircle({ row, size = 36 }: { row: { displayName: string; kickUsername: string | null; avatarUrl: string | null }; size?: number }) {
   const name = row.kickUsername ?? row.displayName;
   if (row.avatarUrl) {
-    return <img src={row.avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />;
+    return <img src={row.avatarUrl} alt="" style={{ width: size, height: size }} className="rounded-full object-cover flex-shrink-0" />;
   }
   const colors = ["from-blue-500 to-blue-700", "from-yellow-500 to-yellow-700", "from-cyan-500 to-cyan-700", "from-indigo-500 to-indigo-700"];
   const color = colors[name.charCodeAt(0) % colors.length];
   return (
-    <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${color} flex items-center justify-center font-bold text-white text-sm flex-shrink-0`}>
+    <div style={{ width: size, height: size }} className={`rounded-full bg-gradient-to-br ${color} flex items-center justify-center font-bold text-white flex-shrink-0`}>
       {name.charAt(0).toUpperCase()}
     </div>
+  );
+}
+
+const PODIUM_STYLES: Record<number, { ring: string; badge: string; height: string; order: string }> = {
+  1: { ring: "ring-2 ring-gold-400/60 shadow-gold-lg", badge: "bg-gold-400 text-navy-950", height: "pt-0", order: "order-2" },
+  2: { ring: "ring-2 ring-gray-300/40", badge: "bg-gray-300 text-navy-950", height: "pt-6 sm:pt-10", order: "order-1" },
+  3: { ring: "ring-2 ring-orange-400/40", badge: "bg-orange-400 text-navy-950", height: "pt-6 sm:pt-10", order: "order-3" },
+};
+
+function PodiumCard({ row }: { row: RaceStandingRow }) {
+  const style = PODIUM_STYLES[row.position];
+  const isFirst = row.position === 1;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: row.position * 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      className={`${style.order} ${style.height} flex-1 min-w-0`}
+    >
+      <div className={`bg-navy-800/70 border border-white/8 rounded-2xl ${style.ring} p-4 sm:p-6 text-center backdrop-blur-sm relative overflow-hidden`}>
+        {isFirst && <Crown className="w-6 h-6 text-gold-400 mx-auto mb-1" />}
+        <div className={`mx-auto mb-3 flex items-center justify-center rounded-full ${style.badge} font-black shrink-0`} style={{ width: isFirst ? 32 : 26, height: isFirst ? 32 : 26 }}>
+          {row.position}
+        </div>
+        <div className="flex justify-center mb-3">
+          <AvatarCircle row={row} size={isFirst ? 76 : 56} />
+        </div>
+        <p className={`text-white font-bold truncate ${isFirst ? "text-base" : "text-sm"}`}>
+          {maskUsername(row.kickUsername ?? row.displayName)}
+        </p>
+        <p className="text-gray-400 text-xs mt-1 font-semibold tabular-nums">{fmtMoney(row.wagered)}</p>
+        {row.prizeAmount !== null && (
+          <p className="text-gold-400 font-black text-lg mt-2">£{row.prizeAmount}</p>
+        )}
+      </div>
+    </motion.div>
   );
 }
 
@@ -98,6 +107,7 @@ export default function LeaderboardPage() {
   const [race, setRace] = useState<ActiveRace | null>(null);
   const [history, setHistory] = useState<RaceHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [myUserId, setMyUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -113,6 +123,20 @@ export default function LeaderboardPage() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => setMyUserId(d.user?.id ?? null))
+      .catch(() => {});
+  }, []);
+
+  const startMs = race ? new Date(race.startDate).getTime() : null;
+  const endMs = race ? new Date(race.endDate).getTime() : null;
+  const countdownTarget = race?.phase === "upcoming" ? startMs : race?.phase === "active" ? endMs : null;
+  const remainingMs = useCountdown(countdownTarget);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center pt-16">
@@ -124,34 +148,65 @@ export default function LeaderboardPage() {
     );
   }
 
-  const totalPrize = race?.prizes.reduce((s, p) => s + p.amount, 0) ?? 0;
+  const podium = race?.standings.filter((r) => r.position <= 3) ?? [];
+  const rest = race?.standings.filter((r) => r.position > 3) ?? [];
+  const myRow = myUserId ? race?.standings.find((r) => r.userId === myUserId) : undefined;
+  const myRowOutsideTop3 = myRow && myRow.position > 3;
 
   return (
-    <div className="min-h-screen pt-20 pb-16 px-4 flex flex-col justify-center">
-      <div className="max-w-3xl mx-auto w-full">
+    <div className="min-h-screen pt-20 pb-16 px-4">
+      <div className="max-w-4xl mx-auto">
 
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
+        {/* Hero */}
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
           <span className="inline-flex items-center gap-2 bg-gold-500/10 border border-gold-500/30 text-gold-400 text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded mb-4">
             <Trophy className="w-3.5 h-3.5" />
-            {race && totalPrize > 0 ? "Live Prize Pool" : "Wager Race"}
+            Wager Race
           </span>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-gaming text-white mb-3 tracking-wide">
-            {race && totalPrize > 0 ? (
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-gaming text-white mb-4 tracking-wide">
+            {race ? (
               <>
-                <span className="text-gold-400">${totalPrize.toLocaleString("en-US")}</span> WAGER RACE
+                <span className="text-gold-400">£{race.totalPrizePool}</span> LEADERBOARD ON RAZED
               </>
             ) : (
               <>WAGER <span className="text-gold-400">LEADERBOARD</span></>
             )}
           </h1>
+
+          {race && (
+            <>
+              <p className="text-gray-500 text-xs font-semibold uppercase tracking-widest mb-3">
+                {race.phase === "upcoming" ? "Starts In" : race.phase === "active" ? "Ends In" : "Leaderboard Finished"}
+              </p>
+              {race.phase !== "ended" ? (
+                <CountdownUnits ms={remainingMs} />
+              ) : (
+                <p className="text-gray-400 text-sm">This leaderboard has finished — check below for the winners.</p>
+              )}
+
+              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-6 text-xs text-gray-500">
+                <span className="flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5 text-gold-400" /> £{race.totalPrizePool} prize pool</span>
+                <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-gold-400" /> {race.prizes.length} paid position{race.prizes.length !== 1 ? "s" : ""}</span>
+                <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-gold-400" /> {formatLondon(race.startDate)} – {formatLondon(race.endDate)}</span>
+              </div>
+            </>
+          )}
         </motion.div>
 
-        {race && (
-          <div className="mb-10">
-            <p className="text-gray-500 text-xs font-semibold uppercase tracking-widest text-center mb-3">Race Ends In</p>
-            <CountdownTimer endDate={race.endDate} />
-          </div>
+        {/* Prize breakdown */}
+        {race && race.prizes.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+            className="bg-navy-800/60 border border-white/6 rounded-2xl p-5 mb-8">
+            <h2 className="text-white font-bold text-xs uppercase tracking-widest mb-4 text-center">Prize Breakdown</h2>
+            <div className="flex flex-wrap justify-center gap-3">
+              {race.prizes.map((p) => (
+                <div key={p.position} className="flex items-center gap-2 bg-navy-900/60 border border-white/6 rounded-xl px-4 py-2">
+                  <span className="text-lg">{p.position === 1 ? "🥇" : p.position === 2 ? "🥈" : p.position === 3 ? "🥉" : `#${p.position}`}</span>
+                  <span className="text-white font-bold text-sm">£{p.amount}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
         )}
 
         {!race ? (
@@ -167,46 +222,55 @@ export default function LeaderboardPage() {
             <p className="text-gray-600 text-sm mt-1">Wagers sync automatically from Razed — check back soon</p>
           </div>
         ) : (
-          <div className="bg-navy-800/60 border border-white/6 rounded-2xl overflow-hidden mb-12 shadow-card">
-            <div className="grid grid-cols-12 px-5 py-3 border-b border-white/6 text-gray-500 text-xs font-semibold uppercase tracking-wider">
-              <div className="col-span-1">#</div>
-              <div className="col-span-6">Player</div>
-              <div className="col-span-3 text-right">Wagered</div>
-              <div className="col-span-2 text-right">Prize</div>
-            </div>
-            {race.standings.map((row, i) => (
-              <motion.div
-                key={row.userId ?? row.displayName}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i, 10) * 0.03 }}
-                className={`grid grid-cols-12 px-5 py-3.5 items-center border-b border-white/4 last:border-0 hover:bg-white/3 transition-colors ${rowTintClasses(row.position)}`}
-              >
-                <div className="col-span-1">
-                  <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${rankBadgeClasses(row.position)}`}>
-                    {row.position}
-                  </span>
-                </div>
-                <div className="col-span-6 flex items-center gap-3 min-w-0">
-                  <AvatarCircle row={row} />
-                  <span className="text-white font-medium text-sm truncate">{maskUsername(row.kickUsername ?? row.displayName)}</span>
-                </div>
-                <div className="col-span-3 text-right">
-                  <span className="text-gray-300 text-sm font-semibold tabular-nums">{fmtMoney(row.wagered)}</span>
-                </div>
-                <div className="col-span-2 text-right">
-                  {row.prizeAmount !== null ? (
-                    <>
-                      <span className="text-gold-400 font-bold text-sm">${row.prizeAmount}</span>
-                      {!row.linked && <p className="text-gray-600 text-[10px] mt-0.5">link account to receive</p>}
-                    </>
-                  ) : (
-                    <span className="text-gray-600 text-sm">—</span>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          <>
+            {/* Podium */}
+            {podium.length > 0 && (
+              <div className="flex items-end gap-3 sm:gap-4 mb-8">
+                {podium.map((row) => <PodiumCard key={row.userId ?? row.displayName} row={row} />)}
+              </div>
+            )}
+
+            {/* Your rank, if outside top 3 */}
+            {myRowOutsideTop3 && myRow && (
+              <div className="bg-gold-500/8 border border-gold-500/25 rounded-xl px-5 py-3 mb-4 flex items-center gap-3">
+                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-navy-900/80 border border-white/8 text-gold-400 text-xs font-bold shrink-0">
+                  {myRow.position}
+                </span>
+                <p className="text-gold-300 text-sm font-semibold">This is your current position</p>
+              </div>
+            )}
+
+            {/* List, 4th+ */}
+            {rest.length > 0 && (
+              <div className="bg-navy-800/60 border border-white/6 rounded-2xl overflow-hidden mb-12 shadow-card max-h-[520px] overflow-y-auto">
+                {rest.map((row, i) => (
+                  <motion.div
+                    key={row.userId ?? row.displayName}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(i, 10) * 0.03 }}
+                    className={`flex items-center gap-3 px-5 py-3 border-b border-white/4 last:border-0 hover:bg-white/3 transition-colors ${
+                      row.userId && row.userId === myUserId ? "bg-gold-500/8" : ""
+                    }`}
+                  >
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-navy-900/80 border border-white/8 text-gray-400 text-xs font-bold shrink-0">
+                      {row.position}
+                    </span>
+                    <AvatarCircle row={row} />
+                    <span className="text-white font-medium text-sm truncate flex-1 min-w-0">{maskUsername(row.kickUsername ?? row.displayName)}</span>
+                    <span className="text-gray-300 text-sm font-semibold tabular-nums shrink-0">{fmtMoney(row.wagered)}</span>
+                    <span className="w-14 text-right shrink-0">
+                      {row.prizeAmount !== null ? (
+                        <span className="text-gold-400 font-bold text-sm">£{row.prizeAmount}</span>
+                      ) : (
+                        <span className="text-gray-600 text-sm">—</span>
+                      )}
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         {/* Past winners */}
@@ -220,16 +284,16 @@ export default function LeaderboardPage() {
               {history.map((entry) => (
                 <div key={entry.id} className="bg-navy-800/50 border border-white/6 rounded-xl p-4">
                   <p className="text-gray-400 text-xs font-semibold mb-3">
-                    {fmtDate(entry.startDate)} – {new Date(entry.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}
+                    {formatLondon(entry.startDate, "d MMM")} – {formatLondon(entry.endDate, "d MMM yyyy")} · £{entry.totalPrizePool} pool
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {entry.winners.map((w) => (
                       <div key={w.userId} className="flex items-center gap-2 bg-navy-900/60 border border-white/5 rounded-lg pl-1.5 pr-3 py-1.5">
-                        <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${rankBadgeClasses(w.position)}`}>
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold bg-gold-400 text-navy-950">
                           {w.position}
                         </span>
                         <span className="text-gray-200 text-xs">{maskUsername(w.kickUsername ?? w.displayName)}</span>
-                        <span className="text-gold-400 text-xs font-bold">${w.prizeAmount}</span>
+                        <span className="text-gold-400 text-xs font-bold">£{w.prizeAmount}</span>
                       </div>
                     ))}
                   </div>

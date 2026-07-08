@@ -16,10 +16,14 @@ export interface RacePrize {
   amount: number;
 }
 
+export type RacePhase = "upcoming" | "active" | "ended";
+
 export interface ActiveRace {
   id: string;
   startDate: string;
   endDate: string;
+  totalPrizePool: number;
+  phase: RacePhase;
   prizes: RacePrize[];
   standings: RaceStandingRow[];
 }
@@ -38,6 +42,7 @@ export interface RaceHistoryEntry {
   id: string;
   startDate: string;
   endDate: string;
+  totalPrizePool: number;
   winners: RaceHistoryWinner[];
 }
 
@@ -45,7 +50,9 @@ export interface AdminRace {
   id: string;
   startDate: string;
   endDate: string;
+  totalPrizePool: number;
   status: "active" | "ended";
+  phase: RacePhase;
   prizes: RacePrize[];
 }
 
@@ -79,9 +86,9 @@ export const wagerLeaderboardApi = {
   getAllWagerers: () =>
     api.get("/api/wager-leaderboard/admin/all-wagerers").then((d) => d.wagerers as AllWagererRow[]),
   listRaces: () => api.get("/api/wager-leaderboard/admin/races").then((d) => d.races as AdminRace[]),
-  createRace: (race: { startDate: string; endDate: string; prizes: RacePrize[] }) =>
+  createRace: (race: { startDate: string; endDate: string; totalPrizePool: number; prizes: RacePrize[] }) =>
     api.post("/api/wager-leaderboard/admin/races", race).then((d) => d.race as AdminRace),
-  updateRace: (raceId: string, race: { startDate?: string; endDate?: string; prizes?: RacePrize[] }) =>
+  updateRace: (raceId: string, race: { startDate?: string; endDate?: string; totalPrizePool?: number; prizes?: RacePrize[] }) =>
     api.put(`/api/wager-leaderboard/admin/races/${raceId}`, race).then((d) => d.race as AdminRace),
   deleteRace: (raceId: string) => api.delete(`/api/wager-leaderboard/admin/races/${raceId}`),
   resync: () => api.post("/api/wager-leaderboard/admin/resync", {}),

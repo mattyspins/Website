@@ -9,15 +9,16 @@ interface Particle {
   vy: number;
   size: number;
   opacity: number;
+  color: string;
   pulse: number;
   pulseSpeed: number;
 }
 
-const BLUE_SHADES = ["#5CA0F2", "#3C7DE0", "#8FBBFA", "#1565D8"];
+const COLORS = ["#22d3ee", "#a855f7", "#38bdf8", "#c084fc"];
 
-// Subtle blue floating particles, contained to the hero section (not a fixed
-// viewport-wide layer like ParticleBackground) — no connecting lines, slower drift.
-export default function HeroParticles() {
+// Ambient drifting particle field for the Randomizer Cannon scene — continuous, subtle,
+// no connecting lines (distinct from the site-wide gold ParticleBackground convention).
+export default function CannonParticles() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const animRef = useRef<number>();
@@ -37,16 +38,17 @@ export default function HeroParticles() {
     };
 
     const init = () => {
-      const count = Math.min(46, Math.floor((canvas.width * canvas.height) / 32000));
+      const count = Math.min(70, Math.floor((canvas.width * canvas.height) / 22000));
       particlesRef.current = Array.from({ length: count }, () => ({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.12,
-        vy: (Math.random() - 0.5) * 0.12,
-        size: Math.random() * 2 + 0.6,
-        opacity: Math.random() * 0.35 + 0.1,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+        size: Math.random() * 2.2 + 0.6,
+        opacity: Math.random() * 0.5 + 0.15,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
         pulse: Math.random() * Math.PI * 2,
-        pulseSpeed: Math.random() * 0.015 + 0.004,
+        pulseSpeed: Math.random() * 0.02 + 0.006,
       }));
     };
 
@@ -56,10 +58,13 @@ export default function HeroParticles() {
         const pulsedOpacity = p.opacity * (0.6 + 0.4 * Math.sin(p.pulse));
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = BLUE_SHADES[Math.floor(p.pulse) % BLUE_SHADES.length];
+        ctx.fillStyle = p.color;
         ctx.globalAlpha = pulsedOpacity;
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = p.color;
         ctx.fill();
       });
+      ctx.shadowBlur = 0;
       ctx.globalAlpha = 1;
     };
 
@@ -81,11 +86,7 @@ export default function HeroParticles() {
 
     resize();
     init();
-    if (reduceMotion) {
-      draw();
-    } else {
-      animate();
-    }
+    if (reduceMotion) draw(); else animate();
 
     window.addEventListener("resize", handleResize);
     return () => {

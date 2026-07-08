@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Play, ExternalLink, Users, Trophy, Coins, Target } from "lucide-react";
 import Link from "next/link";
-import HeroParticles from "./home/HeroParticles";
 
 // Cinematic "expo-out" curve — matches IntroSplash, no bounce.
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -12,90 +10,13 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 const REVEAL_DELAY = 0.9;
 
 export default function Hero() {
-  const glowRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduceMotion) return;
-
-    let raf = 0;
-    const handlePointerMove = (e: PointerEvent) => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const el = glowRef.current;
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        el.style.setProperty("--mx", `${e.clientX - rect.left}px`);
-        el.style.setProperty("--my", `${e.clientY - rect.top}px`);
-      });
-    };
-
-    window.addEventListener("pointermove", handlePointerMove);
-    return () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      cancelAnimationFrame(raf);
-    };
-  }, []);
-
   return (
     <motion.section
       initial={{ clipPath: "inset(0% 50% 0% 50%)" }}
       animate={{ clipPath: "inset(0% 0% 0% 0%)" }}
       transition={{ duration: 0.6, delay: REVEAL_DELAY, ease: EASE }}
-      className="min-h-screen flex items-center justify-center relative overflow-hidden pt-16 bg-ink"
+      className="min-h-screen flex items-center justify-center relative overflow-hidden pt-16"
     >
-      {/* Animated mesh gradient */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-1/4 -left-1/4 w-[70vw] h-[70vw] rounded-full bg-accent-blue/12 blur-[120px] animate-mesh-drift" />
-        <div
-          className="absolute -bottom-1/4 -right-1/4 w-[60vw] h-[60vw] rounded-full bg-accent-blue/8 blur-[130px] animate-mesh-drift"
-          style={{ animationDelay: "-6s" }}
-        />
-        <div
-          className="absolute top-1/3 right-1/4 w-[30vw] h-[30vw] rounded-full bg-accent-gold/5 blur-[100px] animate-mesh-drift"
-          style={{ animationDelay: "-11s" }}
-        />
-      </div>
-
-      {/* Light rays */}
-      <div className="absolute inset-0 overflow-hidden opacity-60">
-        <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-[140%] h-[60%] animate-ray-sweep"
-          style={{
-            background:
-              "conic-gradient(from 200deg at 50% 0%, transparent 0deg, rgba(21,101,216,0.10) 10deg, transparent 24deg, transparent 336deg, rgba(21,101,216,0.10) 350deg, transparent 360deg)",
-          }}
-        />
-      </div>
-
-      {/* Faint geometric dot pattern, fading toward edges */}
-      <div
-        className="absolute inset-0 opacity-[0.15]"
-        style={{
-          backgroundImage: "radial-gradient(rgba(216,216,221,0.5) 1px, transparent 1px)",
-          backgroundSize: "34px 34px",
-          maskImage: "radial-gradient(ellipse 70% 60% at 50% 40%, black 0%, transparent 75%)",
-          WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 40%, black 0%, transparent 75%)",
-        }}
-      />
-
-      {/* Soft floating particles */}
-      <HeroParticles />
-
-      {/* Mouse-following radial glow */}
-      <div
-        ref={glowRef}
-        className="absolute inset-0 pointer-events-none"
-        style={
-          {
-            "--mx": "50%",
-            "--my": "40%",
-            background:
-              "radial-gradient(500px circle at var(--mx) var(--my), rgba(21,101,216,0.14), transparent 65%)",
-          } as React.CSSProperties
-        }
-      />
-
       <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
         {/* Partner badge */}
         <motion.div

@@ -16,13 +16,34 @@ interface RacePrize {
   amount: number;
 }
 
+type RacePhase = 'upcoming' | 'active' | 'ended';
+
+/**
+ * `startDate`/`endDate` carry exact times (e.g. 18:30 BST) for display/countdown/status
+ * purposes, but the underlying wager data (`RazedDailyWager`/`RazedUnlinkedWager`) is only
+ * ever stored at whole-UTC-day granularity — so standings always aggregate by the whole
+ * UTC calendar days the race's exact window overlaps, not sub-day precision.
+ */
+function getPhase(startDate: Date, endDate: Date, status: string): RacePhase {
+  if (status === 'ended') return 'ended';
+  const now = Date.now();
+  if (now < startDate.getTime()) return 'upcoming';
+  if (now >= endDate.getTime()) return 'ended';
+  return 'active';
+}
+
 export class WagerLeaderboardService {
   /** Ranks every wagerer under our Razed code within [startDate, endDate] — linked site accounts and unlinked Razed usernames alike. */
   static async computeStandings(startDate: Date, endDate: Date, prizes: RacePrize[], limit = 50) {
+    // Wager rows are date-only, so the query window snaps to whole UTC days that the
+    // race's exact [startDate, endDate) window overlaps.
+    const queryStart = toDateOnly(startDate);
+    const queryEnd = toDateOnly(endDate);
+
     const [linkedSums, allLinkedUsers, unlinkedSums] = await Promise.all([
       prisma.razedDailyWager.groupBy({
         by: ['userId'],
-        where: { date: { gte: startDate, lte: endDate } },
+        where: { date: { gte: queryStart, lte: queryEnd } },
         _sum: { amount: true },
       }),
       prisma.user.findMany({
@@ -31,7 +52,7 @@ export class WagerLeaderboardService {
       }),
       prisma.razedUnlinkedWager.groupBy({
         by: ['razedUsername'],
-        where: { date: { gte: startDate, lte: endDate } },
+        where: { date: { gte: queryStart, lte: queryEnd } },
         _sum: { amount: true },
       }),
     ]);
@@ -96,8 +117,10 @@ export class WagerLeaderboardService {
     const standings = await WagerLeaderboardService.computeStandings(race.startDate, race.endDate, race.prizes, 50);
     return {
       id: race.id,
-      startDate: race.startDate.toISOString().slice(0, 10),
-      endDate: race.endDate.toISOString().slice(0, 10),
+      startDate: race.startDate.toISOString(),
+      endDate: race.endDate.toISOString(),
+      totalPrizePool: race.totalPrizePool,
+      phase: getPhase(race.startDate, race.endDate, race.status),
       prizes: race.prizes.map((p) => ({ position: p.position, amount: p.amount })),
       standings,
     };
@@ -118,8 +141,9 @@ export class WagerLeaderboardService {
 
     return races.map((race) => ({
       id: race.id,
-      startDate: race.startDate.toISOString().slice(0, 10),
-      endDate: race.endDate.toISOString().slice(0, 10),
+      startDate: race.startDate.toISOString(),
+      endDate: race.endDate.toISOString(),
+      totalPrizePool: race.totalPrizePool,
       winners: race.payouts.map((p) => ({
         position: p.position,
         userId: p.userId,
@@ -224,14 +248,16 @@ export class WagerLeaderboardService {
     });
     return races.map((r) => ({
       id: r.id,
-      startDate: r.startDate.toISOString().slice(0, 10),
-      endDate: r.endDate.toISOString().slice(0, 10),
+      startDate: r.startDate.toISOString(),
+      endDate: r.endDate.toISOString(),
+      totalPrizePool: r.totalPrizePool,
       status: r.status,
+      phase: getPhase(r.startDate, r.endDate, r.status),
       prizes: r.prizes.map((p) => ({ position: p.position, amount: p.amount })),
     }));
   }
 
-  private static validatePrizes(prizes: RacePrize[]) {
+  private static validatePrizes(prizes: RacePrize[], totalPrizePool: number) {
     if (!Array.isArray(prizes) || prizes.length === 0) {
       throw new Error('At least one prize position is required');
     }
@@ -247,18 +273,25 @@ export class WagerLeaderboardService {
         throw new Error('Prize amounts must be zero or greater');
       }
     }
+    if (!Number.isFinite(totalPrizePool) || totalPrizePool < 0) {
+      throw new Error('Total prize pool must be zero or greater');
+    }
+    const sum = prizes.reduce((s, p) => s + p.amount, 0);
+    if (sum !== totalPrizePool) {
+      throw new Error(`Prize positions sum to ${sum}, which doesn't match the total prize pool of ${totalPrizePool}`);
+    }
   }
 
-  static async createRace(input: { startDate: string; endDate: string; prizes: RacePrize[] }) {
-    const startDate = toDateOnly(new Date(input.startDate));
-    const endDate = toDateOnly(new Date(input.endDate));
+  static async createRace(input: { startDate: string; endDate: string; totalPrizePool: number; prizes: RacePrize[] }) {
+    const startDate = new Date(input.startDate);
+    const endDate = new Date(input.endDate);
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
       throw new Error('Invalid start or end date');
     }
-    if (endDate.getTime() < startDate.getTime()) {
-      throw new Error('End date must be on or after the start date');
+    if (endDate.getTime() <= startDate.getTime()) {
+      throw new Error('End date must be after the start date');
     }
-    WagerLeaderboardService.validatePrizes(input.prizes);
+    WagerLeaderboardService.validatePrizes(input.prizes, input.totalPrizePool);
 
     const existingActive = await prisma.wagerRace.findFirst({ where: { status: 'active' } });
     if (existingActive) {
@@ -269,6 +302,7 @@ export class WagerLeaderboardService {
       data: {
         startDate,
         endDate,
+        totalPrizePool: input.totalPrizePool,
         prizes: { create: input.prizes.map((p) => ({ position: p.position, amount: p.amount })) },
       },
       include: { prizes: { orderBy: { position: 'asc' } } },
@@ -276,30 +310,39 @@ export class WagerLeaderboardService {
 
     return {
       id: race.id,
-      startDate: race.startDate.toISOString().slice(0, 10),
-      endDate: race.endDate.toISOString().slice(0, 10),
+      startDate: race.startDate.toISOString(),
+      endDate: race.endDate.toISOString(),
+      totalPrizePool: race.totalPrizePool,
       status: race.status,
+      phase: getPhase(race.startDate, race.endDate, race.status),
       prizes: race.prizes.map((p) => ({ position: p.position, amount: p.amount })),
     };
   }
 
-  static async updateRace(raceId: string, input: { startDate?: string; endDate?: string; prizes?: RacePrize[] }) {
+  static async updateRace(raceId: string, input: { startDate?: string; endDate?: string; totalPrizePool?: number; prizes?: RacePrize[] }) {
     const race = await prisma.wagerRace.findUnique({ where: { id: raceId } });
     if (!race) throw new Error('Race not found');
     if (race.status !== 'active') throw new Error('Cannot edit a race that has already ended and been paid out');
 
-    const startDate = input.startDate ? toDateOnly(new Date(input.startDate)) : race.startDate;
-    const endDate = input.endDate ? toDateOnly(new Date(input.endDate)) : race.endDate;
+    const startDate = input.startDate ? new Date(input.startDate) : race.startDate;
+    const endDate = input.endDate ? new Date(input.endDate) : race.endDate;
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
       throw new Error('Invalid start or end date');
     }
-    if (endDate.getTime() < startDate.getTime()) {
-      throw new Error('End date must be on or after the start date');
+    if (endDate.getTime() <= startDate.getTime()) {
+      throw new Error('End date must be after the start date');
     }
-    if (input.prizes) WagerLeaderboardService.validatePrizes(input.prizes);
+    const totalPrizePool = input.totalPrizePool ?? race.totalPrizePool;
+    if (input.prizes) {
+      WagerLeaderboardService.validatePrizes(input.prizes, totalPrizePool);
+    } else if (input.totalPrizePool !== undefined) {
+      // totalPrizePool changed without new prizes — re-validate against the existing ones.
+      const existingPrizes = await prisma.wagerRacePrize.findMany({ where: { raceId } });
+      WagerLeaderboardService.validatePrizes(existingPrizes, totalPrizePool);
+    }
 
     await prisma.$transaction(async (tx) => {
-      await tx.wagerRace.update({ where: { id: raceId }, data: { startDate, endDate } });
+      await tx.wagerRace.update({ where: { id: raceId }, data: { startDate, endDate, totalPrizePool } });
       if (input.prizes) {
         await tx.wagerRacePrize.deleteMany({ where: { raceId } });
         await tx.wagerRacePrize.createMany({
@@ -319,9 +362,11 @@ export class WagerLeaderboardService {
     if (!race) throw new Error('Race not found');
     return {
       id: race.id,
-      startDate: race.startDate.toISOString().slice(0, 10),
-      endDate: race.endDate.toISOString().slice(0, 10),
+      startDate: race.startDate.toISOString(),
+      endDate: race.endDate.toISOString(),
+      totalPrizePool: race.totalPrizePool,
       status: race.status,
+      phase: getPhase(race.startDate, race.endDate, race.status),
       prizes: race.prizes.map((p) => ({ position: p.position, amount: p.amount })),
     };
   }

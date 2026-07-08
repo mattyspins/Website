@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   LayoutDashboard, Users, ClipboardList, ShoppingBag, Calendar, Medal,
-  Trophy, Target, Ticket, Zap, Grid3X3, Dices, FileText, Activity, Shield, X,
+  Trophy, Target, Ticket, Zap, Grid3X3, Dices, FileText, Activity, Shield, X, Gift,
 } from "lucide-react";
 
 interface NavItem {
@@ -28,6 +28,7 @@ const OPERATIONS_NAV: NavItem[] = [
 
 const GAMES_NAV: NavItem[] = [
   { href: "/admin/raffle", label: "Raffles", icon: Ticket },
+  { href: "/admin/weekly-raffle", label: "Weekly Raffle", icon: Gift },
   { href: "/admin/leaderboards", label: "Leaderboards", icon: Trophy },
   { href: "/admin/tournament", label: "Tournament", icon: Trophy },
   { href: "/admin/guess-the-balance", label: "Guess the Balance", icon: Target },

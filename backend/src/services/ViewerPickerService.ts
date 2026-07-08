@@ -15,14 +15,19 @@ const INCLUDE = {
   winningEntry: {
     include: { user: { select: USER_SELECT } },
   },
+  winners: {
+    include: { user: { select: USER_SELECT } },
+    orderBy: { wonAt: 'asc' as const },
+  },
 } satisfies Prisma.ViewerPickerInclude;
 
 type PickerWithRelations = Prisma.ViewerPickerGetPayload<{ include: typeof INCLUDE }>;
 type EntryWithUser = PickerWithRelations['entries'][number];
+type WinnerWithUser = PickerWithRelations['winners'][number];
 
 // A viewer who hasn't linked Kick or registered on the site has no `user` row — fall back
 // to the raw kick_username captured from chat so they can still enter and be displayed.
-function entryUserShape(entry: EntryWithUser) {
+function entryUserShape(entry: EntryWithUser | WinnerWithUser) {
   if (entry.user) return entry.user;
   return { id: entry.kickUsername, displayName: entry.kickUsername, kickUsername: entry.kickUsername, avatarUrl: null };
 }
@@ -50,6 +55,13 @@ function toPickerResponse(picker: PickerWithRelations) {
       user: entryUserShape(e),
     })),
     winner: picker.winningEntry ? entryUserShape(picker.winningEntry) : null,
+    // Full history of every winner drawn this giveaway (supports "Pick Another Winner"
+    // without losing earlier picks — unlike `winner`, which only ever reflects the latest).
+    winners: picker.winners.map((w) => ({
+      id: w.id,
+      wonAt: w.wonAt,
+      user: entryUserShape(w),
+    })),
   };
 }
 
@@ -110,9 +122,10 @@ export class ViewerPickerService {
     if (!picker) throw createError.notFound('Picker not found');
     if (picker.entries.length === 0) throw createError.badRequest('No entries to pick from');
 
-    // Exclude the previous winner plus any session winners passed by the client
-    const prevWinnerIdentity = picker.winningEntry ? entryIdentity(picker.winningEntry) : null;
-    const allExcluded = new Set([...excludeUserIds, ...(prevWinnerIdentity ? [prevWinnerIdentity] : [])]);
+    // Every winner already drawn this giveaway is always excluded (from the persisted
+    // history, not just the client's own session state), plus any manual exclusions passed in.
+    const wonIdentities = picker.winners.map((w) => w.userId ?? w.kickUsername);
+    const allExcluded = new Set([...excludeUserIds, ...wonIdentities]);
     const pool = allExcluded.size > 0
       ? picker.entries.filter((e) => !allExcluded.has(entryIdentity(e)))
       : picker.entries;
@@ -120,10 +133,15 @@ export class ViewerPickerService {
 
     const pick = pool[randomInt(0, pool.length)];
 
-    const updated = await prisma.viewerPicker.update({
-      where: { id },
-      data: { status: ViewerPickerStatus.COMPLETED, winningEntryId: pick.id, closedAt: new Date() },
-      include: INCLUDE,
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.viewerPickerWinner.create({
+        data: { pickerId: id, kickUsername: pick.kickUsername, userId: pick.userId },
+      });
+      return tx.viewerPicker.update({
+        where: { id },
+        data: { status: ViewerPickerStatus.COMPLETED, winningEntryId: pick.id, closedAt: new Date() },
+        include: INCLUDE,
+      });
     });
 
     const response = toPickerResponse(updated);
@@ -131,6 +149,40 @@ export class ViewerPickerService {
     io?.emit('picker:updated', response);
     logger.info(`ViewerPicker ${id}: winner=${entryIdentity(pick)}`);
     return response;
+  }
+
+  // Removes a single participant (e.g. admin cleanup, or "remove winner and continue").
+  static async removeEntry(entryId: string, io?: SocketIOServer) {
+    const entry = await prisma.viewerPickerEntry.findUnique({ where: { id: entryId } });
+    if (!entry) throw createError.notFound('Entry not found');
+
+    await prisma.viewerPickerEntry.delete({ where: { id: entryId } });
+
+    const updated = await prisma.viewerPicker.findUnique({ where: { id: entry.pickerId }, include: INCLUDE });
+    if (!updated) return null;
+    const response = toPickerResponse(updated);
+    io?.to(`picker:${entry.pickerId}`).emit('picker:updated', response);
+    io?.emit('picker:updated', response);
+    return response;
+  }
+
+  static async exportParticipants(id: string): Promise<string> {
+    const picker = await prisma.viewerPicker.findUnique({ where: { id }, include: INCLUDE });
+    if (!picker) throw createError.notFound('Picker not found');
+
+    const escape = (v: unknown): string => {
+      if (v === null || v === undefined) return '';
+      const s = String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+
+    const header = ['Kick Username', 'Site Account', 'Entered At'];
+    const rows = picker.entries.map((e) => [
+      e.kickUsername,
+      e.user?.displayName ?? '',
+      e.enteredAt.toISOString(),
+    ]);
+    return [header, ...rows].map((r) => r.map(escape).join(',')).join('\n');
   }
 
   static async addEntryByUsername(id: string, kickUsername: string, io?: SocketIOServer) {

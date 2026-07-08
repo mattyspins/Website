@@ -12,6 +12,8 @@ router.post('/', authMiddleware, adminMiddleware, lim, ViewerPickerController.cr
 router.post('/:id/close', authMiddleware, adminMiddleware, lim, ViewerPickerController.close);
 router.post('/:id/draw', authMiddleware, adminMiddleware, lim, ViewerPickerController.drawWinner);
 router.post('/:id/add-entry', authMiddleware, adminMiddleware, lim, ViewerPickerController.addEntry);
+router.get('/:id/export', authMiddleware, adminMiddleware, lim, ViewerPickerController.exportParticipants);
+router.delete('/entries/:entryId', authMiddleware, adminMiddleware, lim, ViewerPickerController.removeEntry);
 router.delete('/:id', authMiddleware, adminMiddleware, lim, ViewerPickerController.deletePicker);
 
 export default router;

@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ParticleBackground from "@/components/ParticleBackground";
+import AuroraBackground from "@/components/AuroraBackground";
 import ToastProvider from "@/components/ui/ToastProvider";
 import ViewingSessionTracker from "@/components/ViewingSessionTracker";
 
@@ -59,7 +59,7 @@ export default function RootLayout({
   }
 
   // Admin gets its own shell (sidebar + top nav, built per-page) instead of the
-  // public site's Navbar/ParticleBackground/Footer chrome.
+  // public site's Navbar/AuroraBackground/Footer chrome.
   if (isAdmin) {
     return (
       <html lang="en">
@@ -98,7 +98,7 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ToastProvider>
-          <ParticleBackground />
+          <AuroraBackground />
           <Navbar />
           <ViewingSessionTracker />
           <main className="relative z-10 min-h-screen">{children}</main>

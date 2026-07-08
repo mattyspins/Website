@@ -33,13 +33,13 @@ export class WagerLeaderboardController {
   });
 
   static createRace = asyncHandler(async (req, res) => {
-    const { startDate, endDate, prizes } = req.body;
-    if (!startDate || !endDate || !Array.isArray(prizes)) {
-      res.status(400).json({ error: 'startDate, endDate, and prizes are required' });
+    const { startDate, endDate, totalPrizePool, prizes } = req.body;
+    if (!startDate || !endDate || totalPrizePool === undefined || !Array.isArray(prizes)) {
+      res.status(400).json({ error: 'startDate, endDate, totalPrizePool, and prizes are required' });
       return;
     }
     try {
-      const race = await WagerLeaderboardService.createRace({ startDate, endDate, prizes });
+      const race = await WagerLeaderboardService.createRace({ startDate, endDate, totalPrizePool: Number(totalPrizePool), prizes });
       res.json({ success: true, race });
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });

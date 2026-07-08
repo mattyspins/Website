@@ -224,10 +224,13 @@ export class RazedWagerSyncService {
    * Razed wagerers who'd otherwise place in the money are skipped.
    */
   static async processRacePayoutsIfDue(): Promise<void> {
-    const today = startOfDayUTC(new Date());
+    // Races now carry an exact end time (e.g. 18:30 BST) rather than a whole UTC day, so
+    // "due" is judged against the precise instant, not day-truncated — otherwise a race
+    // ending mid-day wouldn't pay out until the next UTC midnight.
+    const now = new Date();
 
     const dueRaces = await prisma.wagerRace.findMany({
-      where: { status: 'active', endDate: { lt: today } },
+      where: { status: 'active', endDate: { lt: now } },
       include: { prizes: { orderBy: { position: 'asc' } } },
     });
 

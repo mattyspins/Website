@@ -68,12 +68,16 @@ model User {
   bingoParticipations    BingoParticipant[]    @relation("BingoParticipants")
   bingoClaimedCells      BingoCell[]           @relation("BingoCellClaimer")
   viewerPickerEntries    ViewerPickerEntry[]
+  viewerPickerWinners    ViewerPickerWinner[]
   slotRequests           SlotRequest[]
   kothEntries            KingOfTheHillEntry[]
   kothRounds             KingOfTheHillRound[]
   razedDailyWagers       RazedDailyWager[]
   wagerRacePayouts       WagerRacePayout[]
   highRollerPlayers      HighRollerPlayer[]
+  weeklyRaffleWins       WeeklyRaffle[]        @relation("WeeklyRaffleWinner")
+  weeklyRafflesCreated   WeeklyRaffle[]        @relation("WeeklyRaffleCreator")
+  weeklyRafflesDrawn     WeeklyRaffle[]        @relation("WeeklyRaffleDrawnBy")
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")
@@ -599,6 +603,7 @@ model ViewerPicker {
   closedAt       DateTime?           @map("closed_at")
   entries        ViewerPickerEntry[] @relation("PickerEntries")
   winningEntry   ViewerPickerEntry?  @relation("PickerWinningEntry", fields: [winningEntryId], references: [id], onDelete: SetNull)
+  winners        ViewerPickerWinner[]
 
   @@map("viewer_pickers")
 }
@@ -618,6 +623,22 @@ model ViewerPickerEntry {
 
   @@unique([pickerId, kickUsername])
   @@map("viewer_picker_entries")
+}
+
+// Persists every winner drawn for a giveaway (supports "Pick Another Winner" without
+// losing earlier picks — `ViewerPicker.winningEntryId` above only ever points at the
+// single most recent draw).
+model ViewerPickerWinner {
+  id           String       @id @default(uuid())
+  pickerId     String       @map("picker_id")
+  kickUsername String       @map("kick_username")
+  userId       String?      @map("user_id")
+  wonAt        DateTime     @default(now()) @map("won_at")
+  picker       ViewerPicker @relation(fields: [pickerId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([pickerId])
+  @@map("viewer_picker_winners")
 }
 
 // ─── King of the Hill ─────────────────────────────────────────────────────────
@@ -941,11 +962,12 @@ model RazedUnlinkedWager {
 // with its own start/end date and however many paid positions they want.
 
 model WagerRace {
-  id        String   @id @default(uuid())
-  startDate DateTime @map("start_date") @db.Date
-  endDate   DateTime @map("end_date") @db.Date
-  status    String   @default("active") // "active" (running or awaiting payout) | "ended" (paid out)
-  createdAt DateTime @default(now()) @map("created_at")
+  id             String   @id @default(uuid())
+  startDate      DateTime @map("start_date")
+  endDate        DateTime @map("end_date")
+  totalPrizePool Int      @default(0) @map("total_prize_pool")
+  status         String   @default("active") // "active" (running or awaiting payout) | "ended" (paid out)
+  createdAt      DateTime @default(now()) @map("created_at")
 
   prizes  WagerRacePrize[]
   payouts WagerRacePayout[]
@@ -996,5 +1018,38 @@ model Hunt {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("hunts")
+}
+
+// ─── Weekly Raffle (eligibility-based, separate from the ticket-purchase Raffle) ──
+
+enum WeeklyRaffleStatus {
+  OPEN
+  DRAWN
+}
+
+model WeeklyRaffle {
+  id               String             @id @default(uuid())
+  weekStart        DateTime           @map("week_start")
+  weekEnd          DateTime           @map("week_end")
+  status           WeeklyRaffleStatus @default(OPEN)
+  // Array of typed requirement objects, e.g. [{ "type": "MIN_WEEKLY_WAGER", "value": 500 }]
+  // — kept as JSON so new requirement types don't need a schema migration.
+  requirements     Json               @default("[]")
+  winnerUserId     String?            @map("winner_user_id")
+  // Ordered array of eligible userIds as eliminated (last entry = winner) — the
+  // provably-fair record the reveal animation replays.
+  eliminationOrder Json?              @map("elimination_order")
+  eligibleCount    Int?               @map("eligible_count")
+  drawnAt          DateTime?          @map("drawn_at")
+  drawnBy          String?            @map("drawn_by")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  createdBy        String?            @map("created_by")
+
+  winner      User? @relation("WeeklyRaffleWinner", fields: [winnerUserId], references: [id])
+  creator     User? @relation("WeeklyRaffleCreator", fields: [createdBy], references: [id])
+  drawnByUser User? @relation("WeeklyRaffleDrawnBy", fields: [drawnBy], references: [id])
+
+  @@unique([weekStart])
+  @@map("weekly_raffles")
 }
 

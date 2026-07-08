@@ -163,6 +163,8 @@ import { setKothIO } from '@/controllers/KingOfTheHillController';
 import highRollerRoutes from '@/routes/highRoller';
 import { setHighRollerIO } from '@/controllers/HighRollerController';
 import wagerLeaderboardRoutes from '@/routes/wagerLeaderboard';
+import weeklyRaffleRoutes from '@/routes/weeklyRaffle';
+import { setWeeklyRaffleIO } from '@/controllers/WeeklyRaffleController';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
@@ -189,6 +191,7 @@ app.use('/api/slot-requests', slotRequestRoutes);
 app.use('/api/king-of-the-hill', kingOfTheHillRoutes);
 app.use('/api/high-roller', highRollerRoutes);
 app.use('/api/wager-leaderboard', wagerLeaderboardRoutes);
+app.use('/api/weekly-raffle', weeklyRaffleRoutes);
 
 // Wire up tournament real-time events
 setTournamentIO(io);
@@ -197,6 +200,7 @@ setPickerIO(io);
 setSlotRequestIO(io);
 setKothIO(io);
 setHighRollerIO(io);
+setWeeklyRaffleIO(io);
 
 // Socket.IO connection handling
 io.on('connection', socket => {
