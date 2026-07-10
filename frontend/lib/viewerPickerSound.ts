@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 
 // Lightweight, dependency-free sound effects for the Randomizer Cannon, generated
 // with the Web Audio API — same approach as highRollerSound.ts / weeklyRaffleSound.ts.
-type SoundName = "entrance" | "powerup" | "blip" | "lockon" | "fire" | "winner";
+type SoundName = "powerup" | "fire" | "winner";
 
 const MUTE_KEY = "vp_sound_muted";
 
@@ -57,16 +57,7 @@ function sweep(c: AudioContext, from: number, to: number, start: number, dur: nu
 }
 
 const SEQUENCES: Record<SoundName, (c: AudioContext) => void> = {
-  // Cannon thuds into place, then a quick mechanical settle.
-  entrance: (c) => {
-    tone(c, 85, 0, 0.28, "square", 0.18);
-    sweep(c, 220, 90, 0.05, 0.18, "square", 0.1);
-  },
   powerup: (c) => sweep(c, 120, 900, 0, 0.9, "sawtooth", 0.12),
-  // Short laser-scan blip as the cannon visits a candidate bubble.
-  blip: (c) => tone(c, 500 + Math.random() * 250, 0, 0.05, "square", 0.08),
-  // Rising tension chime as the cannon locks onto the winner.
-  lockon: (c) => sweep(c, 400, 1100, 0, 0.35, "sine", 0.14),
   fire: (c) => {
     sweep(c, 1200, 200, 0, 0.25, "sawtooth", 0.2);
     tone(c, 80, 0.05, 0.3, "square", 0.15);
