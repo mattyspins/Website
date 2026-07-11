@@ -30,23 +30,37 @@ export interface SyncResult {
 }
 
 export class RazedWagerSyncService {
+  /** Razed's API rejects ranges longer than 45 days, so the fixed anchor below has to roll forward before then. */
+  private static readonly RAZED_MAX_RANGE_DAYS = 44;
+
+  private static syncAnchorFor(dayStart: Date): Date {
+    const maxLookback = new Date(dayStart);
+    maxLookback.setUTCDate(maxLookback.getUTCDate() - RazedWagerSyncService.RAZED_MAX_RANGE_DAYS);
+    return maxLookback.getTime() > RazedWagerSyncService.TRACKING_START.getTime()
+      ? maxLookback
+      : RazedWagerSyncService.TRACKING_START;
+  }
+
   /**
    * Syncs one calendar day's wagers for every verified Razed user, incrementing totalWagered by the observed delta.
    *
-   * Razed's `/referrals/leaderboard` endpoint returns unreliable, near-empty results when queried with
-   * `from === to` (a single day) — confirmed by direct testing against their API. Real multi-day ranges
-   * are accurate, so we always fetch a 2-day window `[yesterday, date]` and derive `date`'s own amount by
-   * subtracting yesterday's already-recorded amount from that window's total.
+   * Derives `date`'s amount as (cumulative wagered from a fixed anchor through `date`) minus (the sum of
+   * what we've already recorded for every day before `date`). This is deliberately NOT a sliding
+   * `[yesterday, date]` window subtracting yesterday's *derived* amount — Razed's API returns slightly
+   * inconsistent totals for different `(from, to)` pairs, and chaining subtractions off a moving window
+   * lets that noise push a day negative, which then gets floor-clamped to zero and silently destroys real
+   * wagers (confirmed by direct reproduction: bazdy123's July wagers landed at $10,302 instead of the real
+   * $16,159 this way). Anchoring `from` at a constant and diffing against our own stored running total
+   * means one noisy day can't cascade into every day after it.
    */
   static async syncDay(date: Date): Promise<void> {
     if (!RazedService.isConfigured()) return;
 
     const dayStart = startOfDayUTC(date);
-    const prevDayStart = new Date(dayStart);
-    prevDayStart.setUTCDate(prevDayStart.getUTCDate() - 1);
+    const anchor = RazedWagerSyncService.syncAnchorFor(dayStart);
 
-    const windowMap = await RazedService.fetchAllReferrals(toDateStr(prevDayStart), toDateStr(dayStart));
-    if (windowMap.size === 0) return;
+    const cumMap = await RazedService.fetchAllReferrals(toDateStr(anchor), toDateStr(dayStart));
+    if (cumMap.size === 0) return;
 
     const users = await prisma.user.findMany({
       where: { rainbetUsername: { not: null } },
@@ -56,14 +70,12 @@ export class RazedWagerSyncService {
     const userIds = users.map((u) => u.id);
 
     // Read every row this sync could touch up front (instead of one round trip per user)
-    // so the writes below can go out as a couple of bulk statements. Each user's delta only
-    // depends on their own previous rows, never another user's, so batching the reads changes
-    // nothing about the result — it's the same computation, just without N sequential round trips.
-    const [prevLinkedRows, existingDayRows] = await Promise.all([
-      prisma.razedDailyWager.findMany({ where: { date: prevDayStart, userId: { in: userIds } } }),
+    // so the writes below can go out as a couple of bulk statements.
+    const [priorLinkedSums, existingDayRows] = await Promise.all([
+      prisma.razedDailyWager.groupBy({ by: ['userId'], where: { date: { lt: dayStart }, userId: { in: userIds } }, _sum: { amount: true } }),
       prisma.razedDailyWager.findMany({ where: { date: dayStart, userId: { in: userIds } } }),
     ]);
-    const prevLinkedMap = new Map(prevLinkedRows.map((r) => [r.userId, Number(r.amount)]));
+    const priorLinkedMap = new Map(priorLinkedSums.map((r) => [r.userId, Number(r._sum.amount ?? 0)]));
     const existingDayMap = new Map(existingDayRows.map((r) => [r.userId, Number(r.amount)]));
 
     const now = new Date();
@@ -71,11 +83,11 @@ export class RazedWagerSyncService {
     const totalWageredDeltaRows: Prisma.Sql[] = [];
 
     for (const user of users) {
-      const windowTotal = windowMap.get(user.rainbetUsername!.toLowerCase());
-      if (windowTotal === undefined) continue;
+      const cumToDate = cumMap.get(user.rainbetUsername!.toLowerCase());
+      if (cumToDate === undefined) continue;
 
-      const prevDayAmount = prevLinkedMap.get(user.id) ?? 0;
-      const wagered = Math.max(0, windowTotal - prevDayAmount);
+      const priorCumulative = priorLinkedMap.get(user.id) ?? 0;
+      const wagered = Math.max(0, cumToDate - priorCumulative);
 
       const previous = existingDayMap.get(user.id) ?? 0;
       const delta = wagered - previous;
@@ -105,15 +117,19 @@ export class RazedWagerSyncService {
 
     // Persist every other referred wagerer under our code too, even though they haven't
     // linked a site account yet, so admins can see who's wagering under our affiliate code.
-    const prevUnlinkedRows = await prisma.razedUnlinkedWager.findMany({ where: { date: prevDayStart } });
-    const prevUnlinkedMap = new Map(prevUnlinkedRows.map((r) => [r.razedUsername, Number(r.amount)]));
+    const priorUnlinkedSums = await prisma.razedUnlinkedWager.groupBy({
+      by: ['razedUsername'],
+      where: { date: { lt: dayStart } },
+      _sum: { amount: true },
+    });
+    const priorUnlinkedMap = new Map(priorUnlinkedSums.map((r) => [r.razedUsername, Number(r._sum.amount ?? 0)]));
 
     const unlinkedWagerRows: Prisma.Sql[] = [];
-    for (const [username, windowTotal] of windowMap) {
+    for (const [username, cumToDate] of cumMap) {
       if (linkedUsernames.has(username)) continue;
 
-      const prevDayAmount = prevUnlinkedMap.get(username) ?? 0;
-      const wagered = Math.max(0, windowTotal - prevDayAmount);
+      const priorCumulative = priorUnlinkedMap.get(username) ?? 0;
+      const wagered = Math.max(0, cumToDate - priorCumulative);
 
       unlinkedWagerRows.push(Prisma.sql`(${randomUUID()}::text, ${username}::text, ${dayStart}::date, ${wagered}::numeric, ${now}::timestamp)`);
     }
