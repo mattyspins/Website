@@ -42,9 +42,6 @@ model User {
   auditLogsAsTarget      AuditLog[]            @relation("TargetAuditLogs")
   bonusHuntPredictions   BonusHuntPrediction[]
   bonusHuntSessions      BonusHuntSession[]
-  leaderboardEntries     LeaderboardEntry[]
-  leaderboardWagers      LeaderboardWager[]
-  createdLeaderboards    Leaderboard[]
   notifications          Notification[]
   adminPointTransactions PointTransaction[]    @relation("AdminPointTransactions")
   pointTransactions      PointTransaction[]    @relation("UserPointTransactions")
@@ -131,73 +128,6 @@ model UserStatistics {
   user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_statistics")
-}
-
-model Leaderboard {
-  id          String             @id @default(uuid())
-  title       String
-  description String?
-  prizePool   String             @map("prize_pool")
-  status      String             @default("active")
-  startDate   DateTime           @map("start_date")
-  endDate     DateTime           @map("end_date")
-  createdBy   String?            @map("created_by")
-  createdAt   DateTime           @default(now()) @map("created_at")
-  updatedAt   DateTime           @updatedAt @map("updated_at")
-  metadata    Json?
-  prizes      LeaderboardPrize[]
-  wagers      LeaderboardWager[]
-  creator     User?              @relation(fields: [createdBy], references: [id])
-
-  @@index([status, startDate, endDate], map: "idx_leaderboards_status_dates")
-  @@map("leaderboards")
-}
-
-model LeaderboardPrize {
-  id               String      @id @default(uuid())
-  leaderboardId    String      @map("leaderboard_id")
-  position         Int
-  prizeAmount      String      @map("prize_amount")
-  prizeDescription String?     @map("prize_description")
-  createdAt        DateTime    @default(now()) @map("created_at")
-  leaderboard      Leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
-
-  @@unique([leaderboardId, position])
-  @@map("leaderboard_prizes")
-}
-
-model LeaderboardWager {
-  id               String      @id @default(uuid())
-  leaderboardId    String      @map("leaderboard_id")
-  userId           String?     @map("user_id")
-  externalUsername String?     @map("external_username")
-  wagerAmount      Decimal     @map("wager_amount") @db.Decimal(12, 2)
-  submittedAt      DateTime    @default(now()) @map("submitted_at")
-  verifiedBy       String?     @map("verified_by")
-  verifiedAt       DateTime?   @map("verified_at")
-  notes            String?
-  leaderboard      Leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
-  user             User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([leaderboardId, userId], map: "idx_leaderboard_wagers_leaderboard_user")
-  @@map("leaderboard_wagers")
-}
-
-model LeaderboardEntry {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  periodType  String   @map("period_type")
-  periodStart DateTime @map("period_start")
-  scoreType   String   @map("score_type")
-  score       Int
-  rank        Int?
-  manualRank  Int?     @map("manual_rank")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, periodType, periodStart, scoreType])
-  @@map("leaderboard_entries")
 }
 
 model Raffle {

@@ -21,7 +21,6 @@ import { authMiddleware } from '@/middleware/auth';
 import type { JWTPayload } from '@/middleware/auth';
 import { validateEnv } from '@/config/env';
 import jwt from 'jsonwebtoken';
-import { LeaderboardExpirationJob } from '@/jobs/leaderboardExpiration';
 import { RazedWagerSyncJob } from '@/jobs/razedWagerSync';
 import { KickChatService } from '@/services/KickChatService';
 
@@ -133,8 +132,6 @@ app.get('/health', (req, res) => {
 
 // API routes
 import authRoutes from '@/routes/auth';
-import leaderboardRoutes from '@/routes/leaderboard';
-import manualLeaderboardRoutes from '@/routes/manualLeaderboard';
 import adminRoutes from '@/routes/admin';
 import moderatorRoutes from '@/routes/moderator';
 import scheduleRoutes from '@/routes/schedule';
@@ -167,8 +164,6 @@ import weeklyRaffleRoutes from '@/routes/weeklyRaffle';
 import { setWeeklyRaffleIO } from '@/controllers/WeeklyRaffleController';
 
 app.use('/api/auth', authRoutes);
-app.use('/api/leaderboard', leaderboardRoutes);
-app.use('/api/manual-leaderboards', manualLeaderboardRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/moderator', moderatorRoutes);
 app.use('/api/schedule', scheduleRoutes);
@@ -205,20 +200,6 @@ setWeeklyRaffleIO(io);
 // Socket.IO connection handling
 io.on('connection', socket => {
   logger.info(`Client connected: ${socket.id}`);
-
-  // Join leaderboard room
-  socket.on('joinLeaderboard', (leaderboardId: string) => {
-    socket.join(`leaderboard:${leaderboardId}`);
-    logger.info(
-      `Socket ${socket.id} joined leaderboard room: ${leaderboardId}`
-    );
-  });
-
-  // Leave leaderboard room
-  socket.on('leaveLeaderboard', (leaderboardId: string) => {
-    socket.leave(`leaderboard:${leaderboardId}`);
-    logger.info(`Socket ${socket.id} left leaderboard room: ${leaderboardId}`);
-  });
 
   // Tournament rooms
   socket.on('joinTournament', (tournamentId: string) => {
@@ -286,7 +267,6 @@ app.use(errorHandler);
 // Graceful shutdown
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
-  LeaderboardExpirationJob.stop();
   RazedWagerSyncJob.stop();
   KickChatService.stop();
   server.close(() => {
@@ -297,7 +277,6 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
   logger.info('SIGINT received, shutting down gracefully');
-  LeaderboardExpirationJob.stop();
   RazedWagerSyncJob.stop();
   KickChatService.stop();
   server.close(() => {
@@ -315,7 +294,6 @@ server.listen(PORT, HOST, () => {
   logger.info(`🌍 Environment PORT: ${process.env.PORT}`);
 
   // Start background jobs
-  LeaderboardExpirationJob.start();
   RazedWagerSyncJob.start();
   logger.info('✅ Background jobs started');
 

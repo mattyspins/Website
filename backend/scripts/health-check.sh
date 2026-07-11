@@ -50,16 +50,16 @@ fi
 # Check API endpoints
 print_info "Checking API endpoints..."
 
-# Test leaderboards endpoint
-if curl -s -f "$API_URL/api/manual-leaderboards" > /dev/null; then
-    print_success "Leaderboards endpoint working"
+# Test leaderboard endpoint
+if curl -s -f "$API_URL/api/wager-leaderboard/active" > /dev/null; then
+    print_success "Leaderboard endpoint working"
 else
-    print_error "Leaderboards endpoint failed"
+    print_error "Leaderboard endpoint failed"
 fi
 
 # Check database connectivity (indirect)
 print_info "Checking database connectivity..."
-DB_RESPONSE=$(curl -s "$API_URL/api/manual-leaderboards" | grep -o '"success":[^,]*' || echo "")
+DB_RESPONSE=$(curl -s "$API_URL/api/wager-leaderboard/active" | grep -o '"success":[^,]*' || echo "")
 if [[ $DB_RESPONSE == *"true"* ]]; then
     print_success "Database connectivity confirmed"
 else
@@ -146,7 +146,7 @@ print_info "Health check completed!"
 echo ""
 echo "📊 Quick Test Commands:"
 echo "   API Health: curl $API_URL/health"
-echo "   Leaderboards: curl $API_URL/api/manual-leaderboards"
+echo "   Leaderboard: curl $API_URL/api/wager-leaderboard/active"
 if command -v pm2 &> /dev/null; then
     echo "   PM2 Status: pm2 status"
     echo "   View Logs: pm2 logs mattyspins-api"

@@ -59,10 +59,11 @@ function AvatarCircle({ row, size = 36 }: { row: { displayName: string; kickUser
     return <img src={row.avatarUrl} alt="" style={{ width: size, height: size }} className="rounded-full object-cover flex-shrink-0" />;
   }
   const colors = ["from-blue-500 to-blue-700", "from-yellow-500 to-yellow-700", "from-cyan-500 to-cyan-700", "from-indigo-500 to-indigo-700"];
-  const color = colors[name.charCodeAt(0) % colors.length];
+  const initial = name.charAt(0) || "?";
+  const color = colors[initial.charCodeAt(0) % colors.length];
   return (
     <div style={{ width: size, height: size }} className={`rounded-full bg-gradient-to-br ${color} flex items-center justify-center font-bold text-white flex-shrink-0`}>
-      {name.charAt(0).toUpperCase()}
+      {initial.toUpperCase()}
     </div>
   );
 }
@@ -152,7 +153,7 @@ export default function LeaderboardPage() {
   const podium = top10.filter((r) => r.position <= 3);
   const rest = top10.filter((r) => r.position > 3);
   const myRow = myUserId ? race?.standings.find((r) => r.userId === myUserId) : undefined;
-  const myRowOutsideTop3 = myRow && myRow.position > 3 && myRow.position <= 10;
+  const showMyRankBanner = myRow && myRow.position > 3;
 
   return (
     <div className="min-h-screen pt-20 pb-16 px-4">
@@ -182,7 +183,10 @@ export default function LeaderboardPage() {
               {race.phase !== "ended" ? (
                 <CountdownUnits ms={remainingMs} />
               ) : (
-                <p className="text-gray-400 text-sm">This leaderboard has finished — check below for the winners.</p>
+                <p className="text-gray-400 text-sm">
+                  This leaderboard has finished — check below for the winners. Standings can shift slightly for a
+                  short while after this as the last day's wagers are confirmed.
+                </p>
               )}
 
               <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-6 text-xs text-gray-500">
@@ -211,12 +215,12 @@ export default function LeaderboardPage() {
             {/* Podium */}
             {podium.length > 0 && (
               <div className="flex items-end gap-3 sm:gap-4 mb-8">
-                {podium.map((row) => <PodiumCard key={row.userId ?? row.displayName} row={row} />)}
+                {podium.map((row) => <PodiumCard key={row.position} row={row} />)}
               </div>
             )}
 
             {/* Your rank, if outside top 3 */}
-            {myRowOutsideTop3 && myRow && (
+            {showMyRankBanner && myRow && (
               <div className="bg-gold-500/8 border border-gold-500/25 rounded-xl px-5 py-3 mb-4 flex items-center gap-3">
                 <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-navy-900/80 border border-white/8 text-gold-400 text-xs font-bold shrink-0">
                   {myRow.position}
@@ -230,7 +234,7 @@ export default function LeaderboardPage() {
               <div className="bg-navy-800/60 border border-white/6 rounded-2xl overflow-hidden mb-12 shadow-card max-h-[520px] overflow-y-auto">
                 {rest.map((row, i) => (
                   <motion.div
-                    key={row.userId ?? row.displayName}
+                    key={row.position}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(i, 10) * 0.03 }}

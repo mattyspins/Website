@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '@/config/database';
 import { AdminService } from '@/services/AdminService';
-import { LeaderboardService } from '@/services/LeaderboardService';
 import { RaffleService } from '@/services/RaffleService';
 import { StoreService } from '@/services/StoreService';
 import { asyncHandler, createError } from '@/middleware/errorHandler';
@@ -962,7 +961,6 @@ export class AdminController {
     }
   );
 
-  // Leaderboard Management (delegated to LeaderboardController but accessible via admin routes)
   // Store Management (delegated to StoreController but accessible via admin routes)
   // Raffle Management (delegated to RaffleController but accessible via admin routes)
 }

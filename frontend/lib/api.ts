@@ -157,19 +157,6 @@ export const API_ENDPOINTS = {
   USERS_KICK: `${API_URL}/api/auth/kick-username`,
   USERS_RAINBET: `${API_URL}/api/auth/rainbet-username`,
 
-  // Leaderboards (Manual)
-  LEADERBOARDS_ACTIVE: `${API_URL}/api/manual-leaderboards?status=active`,
-  LEADERBOARDS_CREATE: `${API_URL}/api/manual-leaderboards`,
-  LEADERBOARDS_GET: (id: string) => `${API_URL}/api/manual-leaderboards/${id}`,
-  LEADERBOARDS_UPDATE: (id: string) =>
-    `${API_URL}/api/manual-leaderboards/${id}`,
-  LEADERBOARDS_DELETE: (id: string) =>
-    `${API_URL}/api/manual-leaderboards/admin/${id}`,
-  LEADERBOARDS_ADD_WAGER: (id: string) =>
-    `${API_URL}/api/manual-leaderboards/admin/${id}/wagers`,
-  LEADERBOARDS_EXPORT_CSV: (id: string) =>
-    `${API_URL}/api/manual-leaderboards/admin/${id}/export`,
-
   // Milestones
   MILESTONES: `${API_URL}/api/milestones`,
   MILESTONES_CLAIM: `${API_URL}/api/milestones/claim`,
@@ -220,9 +207,6 @@ export const API_ENDPOINTS = {
 
   // Public profiles
   USER_PUBLIC_PROFILE: (userId: string) => `${API_URL}/api/users/${userId}/profile`,
-
-  // Leaderboard archive
-  LEADERBOARDS_COMPLETED: `${API_URL}/api/manual-leaderboards?status=completed`,
 
   // Bonus Bingo
   BONUS_BINGO: `${API_URL}/api/bonus-bingo`,
