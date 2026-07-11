@@ -16,6 +16,7 @@ import {
   Monitor,
   ExternalLink,
   Gift,
+  Swords,
 } from "lucide-react";
 
 const QUICK_ACCESS = [
@@ -29,6 +30,7 @@ const QUICK_ACCESS = [
   { href: "/admin/viewer-picker", icon: <Users className="w-5 h-5 text-cyan-400" />, bg: "bg-cyan-500/10", title: "Viewer Picker", desc: "Set a keyword, viewers type it in Kick chat to enter, spin to draw a winner" },
   { href: "/admin/king-of-the-hill", icon: <Trophy className="w-5 h-5 text-amber-400" />, bg: "bg-amber-500/10", title: "King of the Hill", desc: "Viewers join with !king, draw a challenger, record their slot result, crown the king" },
   { href: "/admin/high-roller", icon: <Dices className="w-5 h-5 text-red-400" />, bg: "bg-red-500/10", title: "High Roller", desc: "Viewers predict Over/Under a multiplier line each round and build a correct-guess streak" },
+  { href: "/admin/boss-raid", icon: <Swords className="w-5 h-5 text-orange-400" />, bg: "bg-orange-500/10", title: "Boss Raid", desc: "Viewers join with a keyword, take turns picking slots, and deal damage to a shared boss" },
   { href: "/admin/audit-log", icon: <FileText className="w-5 h-5 text-blue-400" />, bg: "bg-blue-500/10", title: "Audit Log", desc: "Full history of all admin actions with before/after values" },
 ];
 
@@ -38,6 +40,7 @@ const OBS_WIDGETS = [
   { href: "/bingo-widget", label: "Bonus Bingo", desc: "Bingo grid overlay" },
   { href: "/tournament-widget", label: "Tournament", desc: "Bracket display overlay" },
   { href: "/high-roller-widget", label: "High Roller", desc: "Round/streak overlay" },
+  { href: "/boss-raid-widget", label: "Boss Raid", desc: "Boss arena + leaderboard overlay" },
 ];
 
 export default function AdminDashboard() {

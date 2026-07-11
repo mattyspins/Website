@@ -75,6 +75,9 @@ model User {
   weeklyRaffleWins       WeeklyRaffle[]        @relation("WeeklyRaffleWinner")
   weeklyRafflesCreated   WeeklyRaffle[]        @relation("WeeklyRaffleCreator")
   weeklyRafflesDrawn     WeeklyRaffle[]        @relation("WeeklyRaffleDrawnBy")
+  bossRaidsCreated       BossRaid[]            @relation("BossRaidCreator")
+  bossRaidEntries        BossRaidEntry[]
+  bossRaidRounds         BossRaidRound[]
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")

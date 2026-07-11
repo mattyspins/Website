@@ -12,6 +12,7 @@ import { GuessTheBalanceService } from '@/services/GuessTheBalanceService';
 import { KingOfTheHillService } from '@/services/KingOfTheHillService';
 import { TournamentService } from '@/services/TournamentService';
 import { HighRollerService } from '@/services/HighRollerService';
+import { BossRaidService } from '@/services/BossRaidService';
 import { BingoStatus, TournamentStatus, HighRollerPrediction, HighRollerStatus } from '@prisma/client';
 
 const KICK_CHANNEL_NAME = process.env['KICK_CHANNEL_NAME'] || 'mattyspins';
@@ -155,6 +156,7 @@ export class KickChatService {
     if (slotMatch) {
       await this.processBingoSlot(kickUsername, slotMatch[1].trim());
       await this.processKothSlot(kickUsername, slotMatch[1].trim());
+      await BossRaidService.submitSlotCall(kickUsername, slotMatch[1].trim(), this.io ?? undefined);
     }
 
     // Check for King of the Hill join command: !king
@@ -206,6 +208,9 @@ export class KickChatService {
 
     // Check for viewer picker keyword
     await ViewerPickerService.handleKeyword(kickUsername, content, this.io ?? undefined);
+
+    // Check for Boss Raid entry keyword (e.g. "!monster")
+    await BossRaidService.handleKeyword(kickUsername, content, this.io ?? undefined);
 
     // Award points for chatting (verified users only)
     await this.awardChatPoints(kickUsername);

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   LayoutDashboard, Users, ClipboardList, ShoppingBag, Calendar, Medal,
-  Trophy, Target, Ticket, Zap, Grid3X3, Dices, FileText, Activity, Shield, X, Gift,
+  Trophy, Target, Ticket, Zap, Grid3X3, Dices, FileText, Activity, Shield, X, Gift, Swords,
 } from "lucide-react";
 
 interface NavItem {
@@ -37,6 +37,7 @@ const GAMES_NAV: NavItem[] = [
   { href: "/admin/viewer-picker", label: "Viewer Picker", icon: Users },
   { href: "/admin/king-of-the-hill", label: "King of the Hill", icon: Trophy },
   { href: "/admin/high-roller", label: "High Roller", icon: Dices },
+  { href: "/admin/boss-raid", label: "Boss Raid", icon: Swords },
 ];
 
 function isActive(pathname: string, href: string) {

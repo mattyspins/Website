@@ -162,6 +162,8 @@ import { setHighRollerIO } from '@/controllers/HighRollerController';
 import wagerLeaderboardRoutes from '@/routes/wagerLeaderboard';
 import weeklyRaffleRoutes from '@/routes/weeklyRaffle';
 import { setWeeklyRaffleIO } from '@/controllers/WeeklyRaffleController';
+import bossRaidRoutes from '@/routes/bossRaid';
+import { setBossRaidIO } from '@/controllers/BossRaidController';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
@@ -187,6 +189,7 @@ app.use('/api/king-of-the-hill', kingOfTheHillRoutes);
 app.use('/api/high-roller', highRollerRoutes);
 app.use('/api/wager-leaderboard', wagerLeaderboardRoutes);
 app.use('/api/weekly-raffle', weeklyRaffleRoutes);
+app.use('/api/boss-raid', bossRaidRoutes);
 
 // Wire up tournament real-time events
 setTournamentIO(io);
@@ -196,6 +199,7 @@ setSlotRequestIO(io);
 setKothIO(io);
 setHighRollerIO(io);
 setWeeklyRaffleIO(io);
+setBossRaidIO(io);
 
 // Socket.IO connection handling
 io.on('connection', socket => {
@@ -239,6 +243,14 @@ io.on('connection', socket => {
   });
   socket.on('leaveHighRoller', (sessionId: string) => {
     socket.leave(`highroller:${sessionId}`);
+  });
+
+  // Boss Raid rooms
+  socket.on('joinBossRaid', (raidId: string) => {
+    socket.join(`bossraid:${raidId}`);
+  });
+  socket.on('leaveBossRaid', (raidId: string) => {
+    socket.leave(`bossraid:${raidId}`);
   });
 
   socket.on('disconnect', () => {
