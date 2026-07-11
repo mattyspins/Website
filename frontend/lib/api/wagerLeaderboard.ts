@@ -91,5 +91,8 @@ export const wagerLeaderboardApi = {
   updateRace: (raceId: string, race: { startDate?: string; endDate?: string; totalPrizePool?: number; prizes?: RacePrize[] }) =>
     api.put(`/api/wager-leaderboard/admin/races/${raceId}`, race).then((d) => d.race as AdminRace),
   deleteRace: (raceId: string) => api.delete(`/api/wager-leaderboard/admin/races/${raceId}`),
-  resync: () => api.post("/api/wager-leaderboard/admin/resync", {}),
+  resync: () =>
+    api
+      .post("/api/wager-leaderboard/admin/resync", {})
+      .then((d) => d as { success: boolean; syncedDays: number; failedDays: string[] }),
 };

@@ -10,6 +10,10 @@ function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export class RazedAPIError extends Error {
   constructor(
     public statusCode: number,
@@ -40,17 +44,34 @@ export class RazedService {
     return RAZED_REFERRAL_KEY.length > 0;
   }
 
+  private static readonly MAX_ATTEMPTS = 4;
+  private static readonly PAGE_DELAY_MS = 750;
+
+  /** Retries on rate-limit/5xx responses (Razed's Cloudflare front door 429s under bursty traffic) with exponential backoff. */
   private static async fetchPage(from: string, to: string, page: number): Promise<RazedReferralPage> {
-    try {
-      const response = await axios.get<RazedReferralPage>(`${RAZED_API_BASE_URL}/referrals/leaderboard`, {
-        headers: { 'X-Referral-Key': RAZED_REFERRAL_KEY },
-        params: { referral_code: RAZED_REFERRAL_CODE, from, to, top: PAGE_SIZE, page },
-        timeout: 15000,
-      });
-      return response.data;
-    } catch (error) {
-      throw RazedService.handleError(error);
+    let lastError: RazedAPIError | undefined;
+    for (let attempt = 1; attempt <= RazedService.MAX_ATTEMPTS; attempt++) {
+      try {
+        const response = await axios.get<RazedReferralPage>(`${RAZED_API_BASE_URL}/referrals/leaderboard`, {
+          headers: { 'X-Referral-Key': RAZED_REFERRAL_KEY },
+          params: { referral_code: RAZED_REFERRAL_CODE, from, to, top: PAGE_SIZE, page },
+          timeout: 15000,
+        });
+        return response.data;
+      } catch (error) {
+        lastError = RazedService.handleError(error);
+        if (!lastError.retryable || attempt === RazedService.MAX_ATTEMPTS) throw lastError;
+        const backoffMs = 2000 * 2 ** (attempt - 1);
+        logger.warn(`Razed API request failed (attempt ${attempt}/${RazedService.MAX_ATTEMPTS}), retrying in ${backoffMs}ms`, {
+          status: lastError.statusCode,
+          from,
+          to,
+          page,
+        });
+        await sleep(backoffMs);
+      }
     }
+    throw lastError;
   }
 
   /** Fetches every referred player's wagered amount for an inclusive date range (max 45 days per Razed's API). */
@@ -62,6 +83,7 @@ export class RazedService {
     }
 
     for (let page = 2; page <= first.last_page; page++) {
+      await sleep(RazedService.PAGE_DELAY_MS);
       const next = await RazedService.fetchPage(from, to, page);
       for (const row of next.data) {
         result.set(row.username.toLowerCase(), parseFloat(row.wagered));

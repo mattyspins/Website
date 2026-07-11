@@ -67,7 +67,7 @@ export class WagerLeaderboardController {
   });
 
   static resync = asyncHandler(async (_req, res) => {
-    await RazedWagerSyncService.syncSinceLaunch();
-    res.json({ success: true });
+    const result = await RazedWagerSyncService.syncSinceLaunch();
+    res.json({ success: result.failedDays.length === 0, syncedDays: result.syncedDays, failedDays: result.failedDays });
   });
 }

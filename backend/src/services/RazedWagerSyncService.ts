@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/config/database';
 import { logger } from '@/utils/logger';
 import { RazedService } from '@/services/RazedService';
@@ -13,6 +15,18 @@ function startOfDayUTC(d: Date): Date {
 
 function startOfMonthUTC(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Gap between per-day Razed API calls in a backfill loop, so a multi-day walk doesn't itself trip Razed's rate limiting. */
+const DAY_SYNC_DELAY_MS = 1500;
+
+export interface SyncResult {
+  syncedDays: number;
+  failedDays: string[];
 }
 
 export class RazedWagerSyncService {
@@ -39,11 +53,22 @@ export class RazedWagerSyncService {
       select: { id: true, rainbetUsername: true },
     });
     const linkedUsernames = new Set(users.map((u) => u.rainbetUsername!.toLowerCase()));
+    const userIds = users.map((u) => u.id);
 
-    const prevLinkedRows = await prisma.razedDailyWager.findMany({
-      where: { date: prevDayStart, userId: { in: users.map((u) => u.id) } },
-    });
+    // Read every row this sync could touch up front (instead of one round trip per user)
+    // so the writes below can go out as a couple of bulk statements. Each user's delta only
+    // depends on their own previous rows, never another user's, so batching the reads changes
+    // nothing about the result — it's the same computation, just without N sequential round trips.
+    const [prevLinkedRows, existingDayRows] = await Promise.all([
+      prisma.razedDailyWager.findMany({ where: { date: prevDayStart, userId: { in: userIds } } }),
+      prisma.razedDailyWager.findMany({ where: { date: dayStart, userId: { in: userIds } } }),
+    ]);
     const prevLinkedMap = new Map(prevLinkedRows.map((r) => [r.userId, Number(r.amount)]));
+    const existingDayMap = new Map(existingDayRows.map((r) => [r.userId, Number(r.amount)]));
+
+    const now = new Date();
+    const dailyWagerRows: Prisma.Sql[] = [];
+    const totalWageredDeltaRows: Prisma.Sql[] = [];
 
     for (const user of users) {
       const windowTotal = windowMap.get(user.rainbetUsername!.toLowerCase());
@@ -52,24 +77,30 @@ export class RazedWagerSyncService {
       const prevDayAmount = prevLinkedMap.get(user.id) ?? 0;
       const wagered = Math.max(0, windowTotal - prevDayAmount);
 
-      const existing = await prisma.razedDailyWager.findUnique({
-        where: { userId_date: { userId: user.id, date: dayStart } },
-      });
-      const previous = existing ? Number(existing.amount) : 0;
+      const previous = existingDayMap.get(user.id) ?? 0;
       const delta = wagered - previous;
 
-      await prisma.razedDailyWager.upsert({
-        where: { userId_date: { userId: user.id, date: dayStart } },
-        create: { userId: user.id, date: dayStart, amount: wagered },
-        update: { amount: wagered },
-      });
-
+      dailyWagerRows.push(Prisma.sql`(${randomUUID()}::text, ${user.id}::text, ${dayStart}::date, ${wagered}::numeric, ${now}::timestamp)`);
       if (delta !== 0) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { totalWagered: { increment: delta } },
-        });
+        totalWageredDeltaRows.push(Prisma.sql`(${user.id}::text, ${delta}::numeric)`);
       }
+    }
+
+    if (dailyWagerRows.length > 0) {
+      await prisma.$executeRaw`
+        INSERT INTO razed_daily_wagers (id, user_id, date, amount, updated_at)
+        VALUES ${Prisma.join(dailyWagerRows)}
+        ON CONFLICT (user_id, date) DO UPDATE SET amount = EXCLUDED.amount, updated_at = EXCLUDED.updated_at
+      `;
+    }
+
+    if (totalWageredDeltaRows.length > 0) {
+      await prisma.$executeRaw`
+        UPDATE users AS u
+        SET total_wagered = u.total_wagered + v.delta
+        FROM (VALUES ${Prisma.join(totalWageredDeltaRows)}) AS v(id, delta)
+        WHERE u.id = v.id
+      `;
     }
 
     // Persist every other referred wagerer under our code too, even though they haven't
@@ -77,17 +108,22 @@ export class RazedWagerSyncService {
     const prevUnlinkedRows = await prisma.razedUnlinkedWager.findMany({ where: { date: prevDayStart } });
     const prevUnlinkedMap = new Map(prevUnlinkedRows.map((r) => [r.razedUsername, Number(r.amount)]));
 
+    const unlinkedWagerRows: Prisma.Sql[] = [];
     for (const [username, windowTotal] of windowMap) {
       if (linkedUsernames.has(username)) continue;
 
       const prevDayAmount = prevUnlinkedMap.get(username) ?? 0;
       const wagered = Math.max(0, windowTotal - prevDayAmount);
 
-      await prisma.razedUnlinkedWager.upsert({
-        where: { razedUsername_date: { razedUsername: username, date: dayStart } },
-        create: { razedUsername: username, date: dayStart, amount: wagered },
-        update: { amount: wagered },
-      });
+      unlinkedWagerRows.push(Prisma.sql`(${randomUUID()}::text, ${username}::text, ${dayStart}::date, ${wagered}::numeric, ${now}::timestamp)`);
+    }
+
+    if (unlinkedWagerRows.length > 0) {
+      await prisma.$executeRaw`
+        INSERT INTO razed_unlinked_wagers (id, razed_username, date, amount, updated_at)
+        VALUES ${Prisma.join(unlinkedWagerRows)}
+        ON CONFLICT (razed_username, date) DO UPDATE SET amount = EXCLUDED.amount, updated_at = EXCLUDED.updated_at
+      `;
     }
   }
 
@@ -129,13 +165,14 @@ export class RazedWagerSyncService {
   }
 
   /** Syncs today plus the last `daysBack` days (catches late corrections from Razed), then refreshes rolling stats. */
-  static async syncRecentDays(daysBack = 2): Promise<void> {
+  static async syncRecentDays(daysBack = 2): Promise<SyncResult> {
     if (!RazedService.isConfigured()) {
       logger.warn('RazedWagerSyncService: RAZED_REFERRAL_KEY not set — skipping sync');
-      return;
+      return { syncedDays: 0, failedDays: [] };
     }
 
     const now = new Date();
+    const failedDays: string[] = [];
     // Oldest day first — each day's amount is derived from the day before it, so that
     // dependency must already be recorded before we can compute the next one correctly.
     for (let i = daysBack; i >= 0; i--) {
@@ -145,11 +182,14 @@ export class RazedWagerSyncService {
         await RazedWagerSyncService.syncDay(day);
       } catch (err) {
         logger.error(`RazedWagerSyncService: failed to sync ${toDateStr(day)}`, { error: (err as Error).message });
+        failedDays.push(toDateStr(day));
       }
+      if (i > 0) await sleep(DAY_SYNC_DELAY_MS);
     }
 
     await RazedWagerSyncService.recomputeRollingStats();
     await RazedWagerSyncService.processRacePayoutsIfDue();
+    return { syncedDays: daysBack + 1 - failedDays.length, failedDays };
   }
 
   /** First day the Razed referral code went live — the manual resync walks back to here. */
@@ -161,14 +201,15 @@ export class RazedWagerSyncService {
    * picked up — this is for the manual "Resync" action, so an admin can pull in everyone who's
    * wagered under the code at any point since launch, on demand.
    */
-  static async syncSinceLaunch(): Promise<void> {
+  static async syncSinceLaunch(): Promise<SyncResult> {
     if (!RazedService.isConfigured()) {
       logger.warn('RazedWagerSyncService: RAZED_REFERRAL_KEY not set — skipping sync');
-      return;
+      return { syncedDays: 0, failedDays: [] };
     }
 
     const now = new Date();
     const daysSinceLaunch = Math.floor((startOfDayUTC(now).getTime() - RazedWagerSyncService.TRACKING_START.getTime()) / 86400000);
+    const failedDays: string[] = [];
     // Oldest day first — see the comment in syncRecentDays for why order matters here.
     for (let i = daysSinceLaunch; i >= 0; i--) {
       const day = new Date(now);
@@ -177,11 +218,14 @@ export class RazedWagerSyncService {
         await RazedWagerSyncService.syncDay(day);
       } catch (err) {
         logger.error(`RazedWagerSyncService: failed to sync ${toDateStr(day)}`, { error: (err as Error).message });
+        failedDays.push(toDateStr(day));
       }
+      if (i > 0) await sleep(DAY_SYNC_DELAY_MS);
     }
 
     await RazedWagerSyncService.recomputeRollingStats();
     await RazedWagerSyncService.processRacePayoutsIfDue();
+    return { syncedDays: daysSinceLaunch + 1 - failedDays.length, failedDays };
   }
 
   /** Recomputes weeklyWagered (trailing 7 days) and monthlyWagered (current calendar month) for every tracked user. */
@@ -195,6 +239,7 @@ export class RazedWagerSyncService {
       distinct: ['userId'],
       select: { userId: true },
     });
+    if (trackedUserIds.length === 0) return;
 
     const [weeklySums, monthlySums] = await Promise.all([
       prisma.razedDailyWager.groupBy({ by: ['userId'], where: { date: { gte: weekStart } }, _sum: { amount: true } }),
@@ -203,15 +248,16 @@ export class RazedWagerSyncService {
     const weeklyMap = new Map(weeklySums.map((r) => [r.userId, Number(r._sum.amount ?? 0)]));
     const monthlyMap = new Map(monthlySums.map((r) => [r.userId, Number(r._sum.amount ?? 0)]));
 
-    for (const { userId } of trackedUserIds) {
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          weeklyWagered: weeklyMap.get(userId) ?? 0,
-          monthlyWagered: monthlyMap.get(userId) ?? 0,
-        },
-      });
-    }
+    const rows = trackedUserIds.map(({ userId }) =>
+      Prisma.sql`(${userId}::text, ${weeklyMap.get(userId) ?? 0}::numeric, ${monthlyMap.get(userId) ?? 0}::numeric)`
+    );
+
+    await prisma.$executeRaw`
+      UPDATE users AS u
+      SET weekly_wagered = v.weekly, monthly_wagered = v.monthly
+      FROM (VALUES ${Prisma.join(rows)}) AS v(id, weekly, monthly)
+      WHERE u.id = v.id
+    `;
   }
 
   /**

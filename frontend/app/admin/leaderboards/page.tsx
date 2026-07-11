@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { api } from "@/lib/api";
-import { Trophy, ExternalLink, Trash2, RefreshCw, Plus, Minus, AlertTriangle } from "lucide-react";
+import { ExternalLink, Trash2, RefreshCw, Plus, Minus, AlertTriangle } from "lucide-react";
 import { useConfirm } from "@/components/admin/useConfirm";
 import { londonInputToUtc, utcToLondonInputParts, formatLondon } from "@/lib/londonTime";
 import {
@@ -13,15 +12,6 @@ import {
   RacePrize,
   AllWagererRow,
 } from "@/lib/api/wagerLeaderboard";
-
-interface OldLeaderboard {
-  id: string;
-  title: string;
-  status: string;
-  prizePool: string;
-  startDate: string;
-  endDate: string;
-}
 
 // Sensible defaults for a brand-new race form — matches this cycle's real schedule
 // (1 Jul 00:00 – 31 Jul 18:30 Europe/London) and a round £500 pool, both fully editable.
@@ -39,7 +29,6 @@ export default function AdminLeaderboardsPage() {
   const [activeRace, setActiveRace] = useState<ActiveRace | null>(null);
   const [races, setRaces] = useState<AdminRace[]>([]);
   const [history, setHistory] = useState<RaceHistoryEntry[]>([]);
-  const [oldLeaderboards, setOldLeaderboards] = useState<OldLeaderboard[]>([]);
   const [wagerers, setWagerers] = useState<AllWagererRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -60,17 +49,15 @@ export default function AdminLeaderboardsPage() {
 
   const load = async () => {
     try {
-      const [active, races, h, old, w] = await Promise.all([
+      const [active, races, h, w] = await Promise.all([
         wagerLeaderboardApi.getActive(),
         wagerLeaderboardApi.listRaces(),
         wagerLeaderboardApi.getHistory(),
-        api.get("/api/manual-leaderboards?limit=50").catch(() => ({ leaderboards: [] })),
         wagerLeaderboardApi.getAllWagerers().catch(() => []),
       ]);
       setActiveRace(active);
       setRaces(races);
       setHistory(h);
-      setOldLeaderboards(old.leaderboards ?? []);
       setWagerers(w);
     } catch { /* ignore */ } finally { setLoading(false); }
   };
@@ -160,20 +147,19 @@ export default function AdminLeaderboardsPage() {
   const handleResync = async () => {
     setResyncing(true); setMsg(null);
     try {
-      await wagerLeaderboardApi.resync();
+      const result = await wagerLeaderboardApi.resync();
       await load();
-      setMsg({ type: "success", text: "Resynced from Razed." });
+      if (result.failedDays.length > 0) {
+        setMsg({
+          type: "error",
+          text: `Resynced ${result.syncedDays} day(s), but ${result.failedDays.length} failed (Razed API rate-limited or unreachable): ${result.failedDays.join(", ")}. Try again in a minute.`,
+        });
+      } else {
+        setMsg({ type: "success", text: `Resynced from Razed (${result.syncedDays} day(s)).` });
+      }
     } catch {
       setMsg({ type: "error", text: "Resync failed." });
     } finally { setResyncing(false); }
-  };
-
-  const handleDeleteOld = async (id: string) => {
-    if (!(await confirm({ title: "Delete this leaderboard?", message: "This removes all associated wagers and prizes. This cannot be undone.", confirmText: "Delete" }))) return;
-    try {
-      await api.delete(`/api/manual-leaderboards/admin/${id}`);
-      setOldLeaderboards((prev) => prev.filter((l) => l.id !== id));
-    } catch { setMsg({ type: "error", text: "Failed to delete." }); }
   };
 
   if (loading) {
@@ -505,28 +491,6 @@ export default function AdminLeaderboardsPage() {
                   </tbody>
                 </table>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Old manual races, read-only */}
-        {oldLeaderboards.length > 0 && (
-          <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Past Manual Races (legacy)</p>
-            <div className="space-y-2">
-              {oldLeaderboards.map((lb) => (
-                <div key={lb.id} className="bg-navy-800/40 border border-white/5 rounded-xl p-3 flex items-center gap-3">
-                  <Trophy className="w-4 h-4 text-gray-600 shrink-0" />
-                  <span className="text-gray-300 text-sm flex-1 truncate">{lb.title}</span>
-                  <span className="text-gray-600 text-xs shrink-0">{lb.prizePool}</span>
-                  <a href={`/leaderboard/${lb.id}`} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white transition-colors shrink-0">
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                  <button onClick={() => handleDeleteOld(lb.id)} className="text-gray-600 hover:text-red-400 transition-colors shrink-0">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
             </div>
           </div>
         )}
