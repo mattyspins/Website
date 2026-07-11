@@ -48,6 +48,17 @@ const GAMES: Game[] = [
     link: "/high-roller", linkLabel: "View Live High Roller",
   },
   {
+    id: "boss-raid", name: "Community Boss Raid",
+    tagline: "Team up to take down a raid boss together",
+    icon: <span className="text-xl leading-none">🐉</span>, color: "text-amber-400", iconBg: "bg-amber-500/15", border: "border-amber-500/20",
+    badge: "NEW", badgeColor: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    description: "A cooperative community stream game. Viewers join the raid, take turns picking a slot, and every multiplier lands as damage on a shared boss with real HP and unique abilities. Land the most damage to top the leaderboard and earn rewards when the boss falls 🐉",
+    howItWorks: ["Type the raid keyword shown on stream to join", "One viewer is drawn at a time to pick a slot with !slot <name>", "The streamer plays it — the multiplier becomes damage to the boss", "Different bosses have unique passive abilities that change the fight", "Top 3 damage dealers earn coin rewards when the boss is defeated 🏆"],
+    rewards: ["Website coins", "Community rewards", "Bragging rights on the leaderboard"],
+    note: "Only one raid boss is active at a time — watch stream for the keyword 👊",
+    link: "/boss-raid", linkLabel: "View Live Boss Raid",
+  },
+  {
     id: "bonus-bingo", name: "Bonus Bingo",
     tagline: "Complete a line on the bingo board to win",
     icon: <Grid3X3 className="w-6 h-6" />, color: "text-green-400", iconBg: "bg-green-500/15", border: "border-green-500/20",
