@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   LayoutDashboard, Users, ClipboardList, ShoppingBag, Calendar, Medal,
-  Trophy, Target, Ticket, Zap, Grid3X3, Dices, FileText, Activity, Shield, X, Gift, Swords,
+  Trophy, Target, Ticket, Zap, Grid3X3, Dices, FileText, Activity, Shield, X, Gift, Swords, Coins,
 } from "lucide-react";
 
 interface NavItem {
@@ -15,6 +15,7 @@ interface NavItem {
 const MAIN_NAV: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/razed-users", label: "Razed Users", icon: Coins },
 ];
 
 const OPERATIONS_NAV: NavItem[] = [

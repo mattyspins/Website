@@ -33,13 +33,13 @@ export default function RewardsPage() {
           className="text-center mb-10"
         >
           <span className="inline-block bg-gold-500/10 border border-gold-500/30 text-gold-400 text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded mb-4">
-            This Month Only
+            🎉 Live Now — This Month Only
           </span>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-gaming text-white mb-3 tracking-wide">
             JULY <span className="text-gold-400">DEPOSIT BONUS</span>
           </h1>
           <p className="text-gray-400 text-sm max-w-xl mx-auto">
-            As a thank you for everyone supporting me, get 10% back on your deposit — this month only.
+            As a thank you for everyone supporting me, I'm running a THIS MONTH ONLY deposit bonus — get 10% back on your deposit! 💚
           </p>
           <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold tracking-widest uppercase px-4 py-2 rounded-full mt-4">
             <AlertCircle className="w-3.5 h-3.5" />
@@ -160,8 +160,7 @@ export default function RewardsPage() {
             How to Claim
           </h2>
           <p className="text-gray-400 text-sm">
-            Once you've completed the 5x wagering requirement on your deposit, send proof in a DM
-            and your bonus will be sorted.
+            Once you've completed the 5x wagering requirement, send me proof in a DM and I'll sort your bonus.
           </p>
         </motion.div>
 

@@ -10,7 +10,6 @@ import {
   RaceHistoryEntry,
   AdminRace,
   RacePrize,
-  AllWagererRow,
 } from "@/lib/api/wagerLeaderboard";
 
 // Sensible defaults for a brand-new race form — matches this cycle's real schedule
@@ -29,12 +28,10 @@ export default function AdminLeaderboardsPage() {
   const [activeRace, setActiveRace] = useState<ActiveRace | null>(null);
   const [races, setRaces] = useState<AdminRace[]>([]);
   const [history, setHistory] = useState<RaceHistoryEntry[]>([]);
-  const [wagerers, setWagerers] = useState<AllWagererRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [resyncing, setResyncing] = useState(false);
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [wagererSearch, setWagererSearch] = useState("");
   const { confirm, dialog: confirmDialog } = useConfirm();
 
   // Create/edit race form state — dates/times are entered as Europe/London wall-clock
@@ -49,16 +46,14 @@ export default function AdminLeaderboardsPage() {
 
   const load = async () => {
     try {
-      const [active, races, h, w] = await Promise.all([
+      const [active, races, h] = await Promise.all([
         wagerLeaderboardApi.getActive(),
         wagerLeaderboardApi.listRaces(),
         wagerLeaderboardApi.getHistory(),
-        wagerLeaderboardApi.getAllWagerers().catch(() => []),
       ]);
       setActiveRace(active);
       setRaces(races);
       setHistory(h);
-      setWagerers(w);
     } catch { /* ignore */ } finally { setLoading(false); }
   };
 
@@ -171,16 +166,6 @@ export default function AdminLeaderboardsPage() {
   }
 
   const formTotal = formPrizes.reduce((sum, p) => sum + p.amount, 0);
-  const filteredWagerers = wagererSearch.trim()
-    ? wagerers.filter((w) => {
-        const q = wagererSearch.trim().toLowerCase();
-        return (
-          w.razedUsername.toLowerCase().includes(q) ||
-          w.displayName?.toLowerCase().includes(q) ||
-          w.kickUsername?.toLowerCase().includes(q)
-        );
-      })
-    : wagerers;
 
   return (
     <div className="pb-16 px-4">
@@ -438,62 +423,7 @@ export default function AdminLeaderboardsPage() {
           </div>
         )}
 
-        {/* All Razed wagerers, linked or not */}
-        {wagerers.length > 0 && (
-          <div className="mb-10">
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                All Wagerers Under Our Code ({filteredWagerers.length}{filteredWagerers.length !== wagerers.length ? ` of ${wagerers.length}` : ""})
-              </p>
-              <input
-                type="text"
-                value={wagererSearch}
-                onChange={(e) => setWagererSearch(e.target.value)}
-                placeholder="Search username…"
-                className="bg-navy-900/60 border border-white/8 rounded-lg px-3 py-1.5 text-white text-sm w-56 focus:outline-none focus:border-gold-500/30 placeholder:text-gray-600"
-              />
-            </div>
-            <div className="bg-navy-800/60 border border-white/6 rounded-2xl overflow-hidden">
-              <div className="max-h-96 overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-navy-800 text-gray-500 text-[10px] uppercase tracking-widest">
-                    <tr>
-                      <th className="text-left font-semibold px-4 py-2.5">Razed Username</th>
-                      <th className="text-left font-semibold px-4 py-2.5">Site Account</th>
-                      <th className="text-right font-semibold px-4 py-2.5">Weekly</th>
-                      <th className="text-right font-semibold px-4 py-2.5">Monthly</th>
-                      <th className="text-right font-semibold px-4 py-2.5">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredWagerers.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-4 py-6 text-center text-gray-600">No wagerers match "{wagererSearch}"</td>
-                      </tr>
-                    ) : filteredWagerers.map((w) => (
-                      <tr key={w.razedUsername} className="border-t border-white/4 hover:bg-white/3">
-                        <td className="px-4 py-2.5 text-gray-300">{w.razedUsername}</td>
-                        <td className="px-4 py-2.5">
-                          {w.linked ? (
-                            <a href={`/admin/users/${w.userId}`} className="text-gold-400 hover:underline">
-                              {w.kickUsername ?? w.displayName}
-                              {!w.verified && <span className="text-yellow-400 text-[10px] font-bold ml-1.5">PENDING</span>}
-                            </a>
-                          ) : (
-                            <span className="text-gray-600">Not linked</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-2.5 text-right text-gray-300">${Number(w.weeklyWagered).toLocaleString()}</td>
-                        <td className="px-4 py-2.5 text-right text-gray-300">${Number(w.monthlyWagered).toLocaleString()}</td>
-                        <td className="px-4 py-2.5 text-right text-white font-semibold">${Number(w.totalWagered).toLocaleString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Full "who's under our Razed code" list now lives at /admin/razed-users */}
       </div>
       {confirmDialog}
     </div>
