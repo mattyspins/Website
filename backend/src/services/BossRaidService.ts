@@ -37,15 +37,16 @@ type RoundWithUser = RaidWithRelations['rounds'][number];
 
 const REWARD_COINS = [250, 125, 125];
 
-// A viewer who hasn't linked Kick or registered on the site has no `user` row — fall back
-// to the raw kick_username captured from chat so they can still play and be displayed.
+// Boss Raid entries are keyed by Kick chat activity, so always display the Kick username
+// captured on the entry itself — not a linked site account's Discord displayName — even
+// when the player has also linked a site account (which keeps their avatar).
 function entryUserShape(entry: EntryWithUser) {
-  if (entry.user) return entry.user;
+  if (entry.user) return { ...entry.user, displayName: entry.kickUsername };
   return { id: entry.kickUsername, displayName: entry.kickUsername, kickUsername: entry.kickUsername, avatarUrl: null };
 }
 
 function roundUserShape(round: RoundWithUser) {
-  if (round.user) return round.user;
+  if (round.user) return { ...round.user, displayName: round.entry.kickUsername };
   return { id: round.entry.kickUsername, displayName: round.entry.kickUsername, kickUsername: round.entry.kickUsername, avatarUrl: null };
 }
 

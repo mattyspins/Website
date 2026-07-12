@@ -97,7 +97,7 @@ function PodiumCard({ row }: { row: RaceStandingRow }) {
         </p>
         <p className="text-gray-400 text-xs mt-1 font-semibold tabular-nums">{fmtMoney(row.wagered)}</p>
         {row.prizeAmount !== null && (
-          <p className="text-gold-400 font-black text-lg mt-2">£{row.prizeAmount}</p>
+          <p className="text-gold-400 font-black text-lg mt-2">${row.prizeAmount}</p>
         )}
       </div>
     </motion.div>
@@ -168,7 +168,7 @@ export default function LeaderboardPage() {
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-gaming text-white mb-4 tracking-wide">
             {race ? (
               <>
-                <span className="text-gold-400">£{race.totalPrizePool}</span> LEADERBOARD ON RAZED
+                <span className="text-gold-400">${race.totalPrizePool}</span> LEADERBOARD ON RAZED
               </>
             ) : (
               <>WAGER <span className="text-gold-400">LEADERBOARD</span></>
@@ -190,7 +190,7 @@ export default function LeaderboardPage() {
               )}
 
               <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-6 text-xs text-gray-500">
-                <span className="flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5 text-gold-400" /> £{race.totalPrizePool} prize pool</span>
+                <span className="flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5 text-gold-400" /> ${race.totalPrizePool} prize pool</span>
                 <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-gold-400" /> {race.prizes.length} paid position{race.prizes.length !== 1 ? "s" : ""}</span>
                 <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-gold-400" /> {formatLondon(race.startDate)} – {formatLondon(race.endDate)}</span>
               </div>
@@ -250,7 +250,7 @@ export default function LeaderboardPage() {
                     <span className="text-gray-300 text-sm font-semibold tabular-nums shrink-0">{fmtMoney(row.wagered)}</span>
                     <span className="w-14 text-right shrink-0">
                       {row.prizeAmount !== null ? (
-                        <span className="text-gold-400 font-bold text-sm">£{row.prizeAmount}</span>
+                        <span className="text-gold-400 font-bold text-sm">${row.prizeAmount}</span>
                       ) : (
                         <span className="text-gray-600 text-sm">—</span>
                       )}
@@ -273,7 +273,7 @@ export default function LeaderboardPage() {
               {history.map((entry) => (
                 <div key={entry.id} className="bg-navy-800/50 border border-white/6 rounded-xl p-4">
                   <p className="text-gray-400 text-xs font-semibold mb-3">
-                    {formatLondon(entry.startDate, "d MMM")} – {formatLondon(entry.endDate, "d MMM yyyy")} · £{entry.totalPrizePool} pool
+                    {formatLondon(entry.startDate, "d MMM")} – {formatLondon(entry.endDate, "d MMM yyyy")} · ${entry.totalPrizePool} pool
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {entry.winners.map((w) => (
@@ -282,7 +282,7 @@ export default function LeaderboardPage() {
                           {w.position}
                         </span>
                         <span className="text-gray-200 text-xs">{maskUsername(w.kickUsername ?? w.displayName)}</span>
-                        <span className="text-gold-400 text-xs font-bold">£{w.prizeAmount}</span>
+                        <span className="text-gold-400 text-xs font-bold">${w.prizeAmount}</span>
                       </div>
                     ))}
                   </div>

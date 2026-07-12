@@ -13,7 +13,7 @@ import {
 } from "@/lib/api/wagerLeaderboard";
 
 // Sensible defaults for a brand-new race form — matches this cycle's real schedule
-// (1 Jul 00:00 – 31 Jul 18:30 Europe/London) and a round £500 pool, both fully editable.
+// (1 Jul 00:00 – 31 Jul 18:30 Europe/London) and a round $500 pool, both fully editable.
 const DEFAULT_PRIZE_AMOUNTS = [250, 150, 75, 25];
 const DEFAULT_START_DATE = "2026-07-01";
 const DEFAULT_START_TIME = "00:00";
@@ -99,7 +99,7 @@ export default function AdminLeaderboardsPage() {
     const totalPrizePool = parseInt(formTotalPool, 10) || 0;
     const prizeSum = formPrizes.reduce((s, p) => s + p.amount, 0);
     if (prizeSum !== totalPrizePool) {
-      setMsg({ type: "error", text: `Prize positions sum to £${prizeSum}, which doesn't match the total pool of £${totalPrizePool}.` });
+      setMsg({ type: "error", text: `Prize positions sum to $${prizeSum}, which doesn't match the total pool of $${totalPrizePool}.` });
       return;
     }
 
@@ -210,7 +210,7 @@ export default function AdminLeaderboardsPage() {
               </h2>
               {!editing && (
                 <span className="text-gold-400 text-xs font-bold">
-                  {currentActiveMeta ? `£${currentActiveMeta.totalPrizePool} total` : ""}
+                  {currentActiveMeta ? `$${currentActiveMeta.totalPrizePool} total` : ""}
                 </span>
               )}
             </div>
@@ -236,7 +236,7 @@ export default function AdminLeaderboardsPage() {
                       {currentActiveMeta.prizes.map((p) => (
                         <div key={p.position} className="flex items-center gap-3 text-sm">
                           <span className="text-gray-500 w-8 shrink-0">#{p.position}</span>
-                          <span className="text-white font-semibold">£{p.amount}</span>
+                          <span className="text-white font-semibold">${p.amount}</span>
                         </div>
                       ))}
                     </div>
@@ -256,7 +256,7 @@ export default function AdminLeaderboardsPage() {
             ) : (
               <>
                 <div className="mb-4">
-                  <label className="text-gray-400 text-xs mb-1 block">Total Prize Pool (£)</label>
+                  <label className="text-gray-400 text-xs mb-1 block">Total Prize Pool ($)</label>
                   <input
                     type="number" min={0} value={formTotalPool} onChange={(e) => setFormTotalPool(e.target.value)}
                     className="w-full bg-navy-900/60 border border-white/8 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-gold-500/30"
@@ -299,14 +299,14 @@ export default function AdminLeaderboardsPage() {
                   <label className="text-gray-400 text-xs">Prize Positions</label>
                   <span className={`text-xs font-bold flex items-center gap-1 ${formTotal === (parseInt(formTotalPool, 10) || 0) ? "text-gold-400" : "text-red-400"}`}>
                     {formTotal !== (parseInt(formTotalPool, 10) || 0) && <AlertTriangle className="w-3 h-3" />}
-                    £{formTotal} of £{formTotalPool || 0}
+                    ${formTotal} of ${formTotalPool || 0}
                   </span>
                 </div>
                 <div className="space-y-1.5 mb-3 max-h-60 overflow-y-auto pr-1">
                   {formPrizes.map((p, i) => (
                     <div key={p.position} className="flex items-center gap-3">
                       <span className="text-gray-500 text-xs w-10 shrink-0">#{p.position}</span>
-                      <span className="text-gray-600 text-xs shrink-0">£</span>
+                      <span className="text-gray-600 text-xs shrink-0">$</span>
                       <input
                         type="number" min={0}
                         value={p.amount}
@@ -362,7 +362,7 @@ export default function AdminLeaderboardsPage() {
                   <div key={row.userId ?? row.displayName} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-white/3">
                     <span className="text-gray-600 text-xs w-5 shrink-0 text-right">{row.position}</span>
                     <span className="text-gray-200 text-sm flex-1 truncate">{row.kickUsername ?? row.displayName}</span>
-                    {row.prizeAmount !== null && <span className="text-gold-400 text-[10px] font-bold shrink-0">£{row.prizeAmount}</span>}
+                    {row.prizeAmount !== null && <span className="text-gold-400 text-[10px] font-bold shrink-0">${row.prizeAmount}</span>}
                     <span className="text-white text-xs font-semibold shrink-0">${Number(row.wagered).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 ))}
@@ -386,7 +386,7 @@ export default function AdminLeaderboardsPage() {
                     {" – "}
                     {formatLondon(r.endDate, "d MMM yyyy, HH:mm")}
                   </span>
-                  <span className="text-gray-500 text-xs shrink-0">{r.prizes.length} position{r.prizes.length !== 1 ? "s" : ""} · £{r.totalPrizePool}</span>
+                  <span className="text-gray-500 text-xs shrink-0">{r.prizes.length} position{r.prizes.length !== 1 ? "s" : ""} · ${r.totalPrizePool}</span>
                   {r.status === "active" && (
                     <button onClick={() => handleDeleteRace(r.id)} className="text-gray-600 hover:text-red-400 transition-colors shrink-0">
                       <Trash2 className="w-3.5 h-3.5" />
@@ -413,7 +413,7 @@ export default function AdminLeaderboardsPage() {
                   <div className="flex flex-wrap gap-2">
                     {entry.winners.map((w) => (
                       <span key={w.userId} className="text-xs text-gray-300 bg-navy-900/60 border border-white/5 rounded-lg px-2.5 py-1">
-                        #{w.position} {w.kickUsername ?? w.displayName} — £{w.prizeAmount}
+                        #{w.position} {w.kickUsername ?? w.displayName} — ${w.prizeAmount}
                       </span>
                     ))}
                   </div>
