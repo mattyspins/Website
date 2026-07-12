@@ -26,6 +26,31 @@ export default function BossRaidStyles() {
       @media (prefers-reduced-motion: reduce) {
         .boss-anim { animation: none !important; }
       }
+
+      /* Responsive overrides — the page/components set desktop layout via inline
+         styles, so these use !important to win over them at narrower widths
+         rather than duplicating the whole style objects as classes. */
+      @media (max-width: 1100px) {
+        .boss-raid-grid { grid-template-columns: 1fr !important; }
+      }
+      @media (max-width: 640px) {
+        .boss-header { padding: 10px 14px !important; flex-wrap: wrap !important; gap: 10px !important; }
+        .boss-header-title { font-size: 13px !important; letter-spacing: 1px !important; }
+        .boss-main { padding: 14px !important; }
+        .boss-panel { padding: 14px !important; }
+        .boss-arena-circle-outer { height: auto !important; padding: 20px 0 !important; }
+        .boss-arena-circle { width: min(320px, 84vw) !important; height: min(320px, 84vw) !important; }
+        .boss-bet-row { flex-direction: column !important; gap: 8px !important; }
+        .boss-bet-divider { display: none !important; }
+        .boss-stats-row { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+        .boss-stats-row > div:last-child { text-align: left !important; }
+        .boss-slot-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        .boss-victory-card { padding: 24px 18px !important; }
+        .boss-victory-stats { grid-template-columns: repeat(2, 1fr) !important; }
+      }
+      @media (max-width: 400px) {
+        .boss-arena-circle { width: min(280px, 88vw) !important; height: min(280px, 88vw) !important; }
+      }
     `}</style>
   );
 }

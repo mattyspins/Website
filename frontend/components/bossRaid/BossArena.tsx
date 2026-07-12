@@ -61,8 +61,8 @@ export default function BossArena({ raid, effect }: BossArenaProps) {
         </div>
       </div>
 
-      <div style={{ position: "relative", width: "100%", height: 400, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ position: "relative", width: 420, height: 400, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="boss-arena-circle-outer" style={{ position: "relative", width: "100%", height: 400, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="boss-arena-circle" style={{ position: "relative", width: 420, height: 400, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ position: "absolute", inset: 60, borderRadius: "50%", background: `radial-gradient(circle, ${coreColor} 0%, transparent 68%)`, opacity: 0.22, filter: "blur(24px)" }} />
           {raid.bossKey === "mecha" && (
             <>

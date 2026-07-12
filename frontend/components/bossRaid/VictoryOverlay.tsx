@@ -14,7 +14,7 @@ export default function VictoryOverlay({ raid, onClose }: { raid: BossRaid; onCl
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "oklch(0.08 0.01 260 / 0.93)", backdropFilter: "blur(6px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div className="boss-anim" style={{ animation: "bossVictoryIn 0.6s ease-out", textAlign: "center", background: "oklch(0.16 0.02 260)", border: "1px solid oklch(0.75 0.15 85 / 0.6)", borderRadius: 18, padding: "40px 50px", boxShadow: "0 0 80px oklch(0.75 0.15 85 / 0.35)", maxWidth: 640, width: "100%", position: "relative" }}>
+      <div className="boss-anim boss-victory-card" style={{ animation: "bossVictoryIn 0.6s ease-out", textAlign: "center", background: "oklch(0.16 0.02 260)", border: "1px solid oklch(0.75 0.15 85 / 0.6)", borderRadius: 18, padding: "40px 50px", boxShadow: "0 0 80px oklch(0.75 0.15 85 / 0.35)", maxWidth: 640, width: "100%", position: "relative" }}>
         <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 13, letterSpacing: 4, color: "oklch(0.8 0.14 85)" }}>
           {raid.defeated ? "BOSS DEFEATED" : "RAID ENDED"}
         </div>
@@ -49,7 +49,7 @@ export default function VictoryOverlay({ raid, onClose }: { raid: BossRaid; onCl
           ))}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, textAlign: "left", marginBottom: 24 }}>
+        <div className="boss-victory-stats" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, textAlign: "left", marginBottom: 24 }}>
           <div style={{ background: "oklch(0.13 0.01 260)", borderRadius: 10, padding: 12 }}>
             <div style={{ fontSize: 10, color: "oklch(0.6 0.02 260)", letterSpacing: 1 }}>TOTAL DMG</div>
             <div style={{ fontSize: 18, fontWeight: 800, fontFamily: "'Orbitron',sans-serif" }}>{stats.totalDamage.toLocaleString()}</div>

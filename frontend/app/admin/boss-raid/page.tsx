@@ -224,19 +224,19 @@ export default function AdminBossRaidPage() {
     <div style={{ fontFamily: "'Rajdhani',sans-serif", minHeight: "100vh", background: "radial-gradient(ellipse at 50% -10%, oklch(0.22 0.03 250) 0%, oklch(0.13 0.015 260) 55%)", color: "oklch(0.93 0.01 260)" }}>
       <BossRaidStyles />
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 28px", background: "oklch(0.16 0.02 260 / 0.9)", backdropFilter: "blur(10px)", borderBottom: "1px solid oklch(0.35 0.05 220 / 0.4)" }}>
+      <div className="boss-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 28px", background: "oklch(0.16 0.02 260 / 0.9)", backdropFilter: "blur(10px)", borderBottom: "1px solid oklch(0.35 0.05 220 / 0.4)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 34, height: 34, background: "linear-gradient(135deg, oklch(0.75 0.15 220), oklch(0.5 0.15 250))", clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)", boxShadow: "0 0 14px oklch(0.75 0.15 220 / 0.6)" }} />
-          <div style={{ fontFamily: "'Orbitron',sans-serif", fontWeight: 800, fontSize: 16, letterSpacing: 1.5, color: "oklch(0.95 0.01 260)" }}>COMMUNITY BOSS RAID</div>
+          <div style={{ width: 34, height: 34, flexShrink: 0, background: "linear-gradient(135deg, oklch(0.75 0.15 220), oklch(0.5 0.15 250))", clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)", boxShadow: "0 0 14px oklch(0.75 0.15 220 / 0.6)" }} />
+          <div className="boss-header-title" style={{ fontFamily: "'Orbitron',sans-serif", fontWeight: 800, fontSize: 16, letterSpacing: 1.5, color: "oklch(0.95 0.01 260)" }}>COMMUNITY BOSS RAID</div>
         </div>
-        <a href="/boss-raid-widget" target="_blank" rel="noopener noreferrer" style={{ ...primaryBtnStyle, display: "flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
+        <a href="/boss-raid-widget" target="_blank" rel="noopener noreferrer" style={{ ...primaryBtnStyle, display: "flex", alignItems: "center", gap: 6, textDecoration: "none", whiteSpace: "nowrap" }}>
           <ExternalLink size={14} /> OBS Widget
         </a>
       </div>
 
-      <div style={{ maxWidth: 1480, margin: "0 auto", padding: 24 }}>
+      <div className="boss-main" style={{ maxWidth: 1480, margin: "0 auto", padding: 24 }}>
         {!raid ? (
-          <div style={panelStyle}>
+          <div className="boss-panel" style={panelStyle}>
             <div style={panelTitleStyle}>START A NEW RAID</div>
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 12, color: "oklch(0.6 0.02 260)", marginBottom: 8 }}>Choose a boss</div>
@@ -280,10 +280,10 @@ export default function AdminBossRaidPage() {
             </button>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "320px 1fr 340px", gap: 20, alignItems: "start" }}>
+          <div className="boss-raid-grid" style={{ display: "grid", gridTemplateColumns: "320px 1fr 340px", gap: 20, alignItems: "start" }}>
             {/* Column 1: registration + participants */}
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <div style={panelStyle}>
+              <div className="boss-panel" style={panelStyle}>
                 <div style={panelTitleStyle}>REGISTRATION</div>
                 <div style={{ fontSize: 12, color: "oklch(0.6 0.02 260)", marginBottom: 6 }}>Entry keyword</div>
                 <div style={{ width: "100%", padding: "10px 12px", background: "oklch(0.1 0.01 260)", border: "1px solid oklch(0.35 0.04 250 / 0.6)", borderRadius: 8, color: "oklch(0.9 0.01 260)", fontWeight: 700, marginBottom: 12, fontFamily: "'Rajdhani',sans-serif" }}>
@@ -350,7 +350,7 @@ export default function AdminBossRaidPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               <BossArena raid={raid} effect={arenaEffect} />
 
-              <div style={panelStyle}>
+              <div className="boss-panel" style={panelStyle}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                   <div style={{ ...panelTitleStyle, marginBottom: 0 }}>CURRENT TURN</div>
                 </div>
@@ -388,7 +388,7 @@ export default function AdminBossRaidPage() {
                           <div style={{ fontSize: 12, color: "oklch(0.6 0.02 260)", marginBottom: 8 }}>
                             Slot choice — <span style={{ color: "oklch(0.85 0.01 260)" }}>!slot &lt;name&gt;</span> in chat (or pick for them):
                           </div>
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, marginBottom: 12 }}>
+                          <div className="boss-slot-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, marginBottom: 12 }}>
                             {QUICK_SLOTS.map((opt) => (
                               <button
                                 key={opt.id}
@@ -415,19 +415,19 @@ export default function AdminBossRaidPage() {
                             Playing: <span style={{ color: "oklch(0.85 0.13 220)", fontWeight: 700 }}>{activeSlot ?? "waiting for slot choice…"}</span>
                           </div>
 
-                          <div style={{ display: "flex", gap: 14, marginBottom: 16, opacity: activeSlot ? 1 : 0.4, pointerEvents: activeSlot ? "auto" : "none" }}>
+                          <div className="boss-bet-row" style={{ display: "flex", gap: 14, marginBottom: 16, opacity: activeSlot ? 1 : 0.4, pointerEvents: activeSlot ? "auto" : "none" }}>
                             <div style={{ flex: 1 }}>
                               <label style={{ fontSize: 12, color: "oklch(0.6 0.02 260)", display: "block", marginBottom: 6 }}>Base Bet</label>
                               <input value={baseBet} onChange={(e) => setBaseBet(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="0.20" style={numInputStyle} />
                             </div>
-                            <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: 10, fontSize: 20, color: "oklch(0.5 0.02 260)" }}>÷</div>
+                            <div className="boss-bet-divider" style={{ display: "flex", alignItems: "flex-end", paddingBottom: 10, fontSize: 20, color: "oklch(0.5 0.02 260)" }}>÷</div>
                             <div style={{ flex: 1 }}>
                               <label style={{ fontSize: 12, color: "oklch(0.6 0.02 260)", display: "block", marginBottom: 6 }}>Final Win</label>
                               <input value={finalWin} onChange={(e) => setFinalWin(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="20.00" style={numInputStyle} />
                             </div>
                           </div>
 
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "oklch(0.11 0.01 260)", border: "1px solid oklch(0.35 0.05 220 / 0.4)", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
+                          <div className="boss-stats-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "oklch(0.11 0.01 260)", border: "1px solid oklch(0.35 0.05 220 / 0.4)", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
                             <div>
                               <div style={{ fontSize: 11, color: "oklch(0.6 0.02 260)", letterSpacing: 1 }}>CALCULATED MULTIPLIER</div>
                               <div style={{ fontFamily: "'Orbitron',sans-serif", fontWeight: 800, fontSize: 28, color: mult >= 1000 ? "oklch(0.85 0.15 85)" : mult >= 500 ? "oklch(0.8 0.15 260)" : "oklch(0.9 0.01 260)" }}>{mult}×</div>
@@ -463,7 +463,7 @@ export default function AdminBossRaidPage() {
 
             {/* Column 3: boss status + leaderboard + history */}
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <div style={panelStyle}>
+              <div className="boss-panel" style={panelStyle}>
                 <button onClick={handleEndRaid} style={{ ...primaryBtnStyle, background: "transparent", border: "1px solid oklch(0.5 0.15 25 / 0.5)", color: "oklch(0.7 0.15 25)", width: "100%" }}>
                   End Raid
                 </button>
@@ -471,7 +471,7 @@ export default function AdminBossRaidPage() {
 
               <Leaderboard rows={leaderboard} lastScoredEntryId={lastScoredEntryId} />
 
-              <div style={panelStyle}>
+              <div className="boss-panel" style={panelStyle}>
                 <div style={panelTitleStyle}>RAID HISTORY</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 200, overflowY: "auto" }}>
                   {history.length === 0 && <div style={{ fontSize: 12, color: "oklch(0.5 0.02 260)" }}>No raids completed yet.</div>}

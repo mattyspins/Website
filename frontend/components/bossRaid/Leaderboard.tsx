@@ -20,7 +20,7 @@ function rowBg(rank: number) {
 
 export function Leaderboard({ rows, lastScoredEntryId }: { rows: LeaderboardRow[]; lastScoredEntryId?: string | null }) {
   return (
-    <div style={{ background: "oklch(0.16 0.02 260 / 0.8)", backdropFilter: "blur(10px)", border: "1px solid oklch(0.35 0.05 220 / 0.35)", borderRadius: 14, padding: 18 }}>
+    <div className="boss-panel" style={{ background: "oklch(0.16 0.02 260 / 0.8)", backdropFilter: "blur(10px)", border: "1px solid oklch(0.35 0.05 220 / 0.35)", borderRadius: 14, padding: 18 }}>
       <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 13, letterSpacing: 2, color: "oklch(0.8 0.13 85)", marginBottom: 4 }}>🏆 BOSS RAID LEADERBOARD</div>
       <div style={{ fontSize: 11, color: "oklch(0.55 0.02 260)", marginBottom: 14 }}>Ranked by total boss damage dealt</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
