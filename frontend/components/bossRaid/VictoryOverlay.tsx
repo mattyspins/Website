@@ -3,6 +3,7 @@
 import type { BossRaid } from "@/lib/api/bossRaid";
 import { computeLeaderboard, raidStats } from "@/lib/bossRaidVisuals";
 import { avColor } from "./Leaderboard";
+import { X } from "lucide-react";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 const REWARD_COINS = [250, 125, 125];
@@ -15,6 +16,15 @@ export default function VictoryOverlay({ raid, onClose }: { raid: BossRaid; onCl
   return (
     <div style={{ position: "fixed", inset: 0, background: "oklch(0.08 0.01 260 / 0.93)", backdropFilter: "blur(6px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div className="boss-anim boss-victory-card" style={{ animation: "bossVictoryIn 0.6s ease-out", textAlign: "center", background: "oklch(0.16 0.02 260)", border: "1px solid oklch(0.75 0.15 85 / 0.6)", borderRadius: 18, padding: "40px 50px", boxShadow: "0 0 80px oklch(0.75 0.15 85 / 0.35)", maxWidth: 640, width: "100%", position: "relative" }}>
+        {onClose && (
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{ position: "absolute", top: 14, right: 14, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, border: "1px solid oklch(0.4 0.04 260 / 0.5)", background: "oklch(0.13 0.01 260 / 0.7)", color: "oklch(0.65 0.02 260)", cursor: "pointer" }}
+          >
+            <X size={16} />
+          </button>
+        )}
         <div style={{ fontFamily: "'Orbitron',sans-serif", fontSize: 13, letterSpacing: 4, color: "oklch(0.8 0.14 85)" }}>
           {raid.defeated ? "BOSS DEFEATED" : "RAID ENDED"}
         </div>

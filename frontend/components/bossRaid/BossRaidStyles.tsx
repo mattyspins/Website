@@ -30,7 +30,12 @@ export default function BossRaidStyles() {
       /* Responsive overrides — the page/components set desktop layout via inline
          styles, so these use !important to win over them at narrower widths
          rather than duplicating the whole style objects as classes. */
-      @media (max-width: 1100px) {
+      @media (max-width: 1550px) {
+        /* This page renders inside the admin shell, which has its own ~240px
+           left sidebar eating into the viewport — the 320px/1fr/340px grid
+           plus the arena's 420px-min middle column needs ~1550px of total
+           window width to fit both without clipping the right column, not
+           just ~1100px of its own content width. */
         .boss-raid-grid { grid-template-columns: 1fr !important; }
       }
       @media (max-width: 640px) {
