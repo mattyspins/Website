@@ -154,9 +154,11 @@ export class KickChatService {
     // Check for slot selection command: !slot <name>
     const slotMatch = content.match(/^!slot\s+(.+)/i);
     if (slotMatch) {
-      await this.processBingoSlot(kickUsername, slotMatch[1].trim());
-      await this.processKothSlot(kickUsername, slotMatch[1].trim());
-      await BossRaidService.submitSlotCall(kickUsername, slotMatch[1].trim(), this.io ?? undefined);
+      const slotName = slotMatch[1].trim();
+      await this.processBingoSlot(kickUsername, slotName);
+      await this.processKothSlot(kickUsername, slotName);
+      const bossSlotSet = await BossRaidService.submitSlotCall(kickUsername, slotName, this.io ?? undefined);
+      if (bossSlotSet) await this.sendChatMessage(`🎰 ${kickUsername} locked in "${slotName}" for the Boss Raid!`);
     }
 
     // Check for King of the Hill join command: !king
@@ -176,8 +178,10 @@ export class KickChatService {
     // Check for slot request command: !sr <slot name>
     const srMatch = content.match(/^!sr\s+(.+)/i);
     if (srMatch) {
-      await SlotRequestService.handleChatRequest(kickUsername, srMatch[1].trim(), this.io ?? undefined);
-      await HighRollerService.submitSuggestedSlot(kickUsername, srMatch[1].trim(), this.io ?? undefined);
+      const srSlotName = srMatch[1].trim();
+      await SlotRequestService.handleChatRequest(kickUsername, srSlotName, this.io ?? undefined);
+      const suggested = await HighRollerService.submitSuggestedSlot(kickUsername, srSlotName, this.io ?? undefined);
+      if (suggested) await this.sendChatMessage(`🎰 ${kickUsername} called "${srSlotName}" as the next slot!`);
     }
 
     // Check for GTB guess command: !guess <amount>
@@ -207,10 +211,12 @@ export class KickChatService {
     }
 
     // Check for viewer picker keyword
-    await ViewerPickerService.handleKeyword(kickUsername, content, this.io ?? undefined);
+    const enteredPicker = await ViewerPickerService.handleKeyword(kickUsername, content, this.io ?? undefined);
+    if (enteredPicker) await this.sendChatMessage(`🎯 ${kickUsername} has entered the Viewer Picker!`);
 
     // Check for Boss Raid entry keyword (e.g. "!monster")
-    await BossRaidService.handleKeyword(kickUsername, content, this.io ?? undefined);
+    const joinedRaid = await BossRaidService.handleKeyword(kickUsername, content, this.io ?? undefined);
+    if (joinedRaid) await this.sendChatMessage(`⚔️ ${kickUsername} has joined the Boss Raid!`);
 
     // Award points for chatting (verified users only)
     await this.awardChatPoints(kickUsername);
@@ -413,12 +419,14 @@ export class KickChatService {
       }
 
       if (normalizedContent === session.overKeyword.toLowerCase()) {
-        await HighRollerService.submitPrediction(kickUsername, HighRollerPrediction.OVER, io);
+        const predicted = await HighRollerService.submitPrediction(kickUsername, HighRollerPrediction.OVER, io);
+        if (predicted) await this.sendChatMessage(`📈 ${kickUsername} predicted OVER ${Number(session.threshold)}x!`);
         return;
       }
 
       if (normalizedContent === session.underKeyword.toLowerCase()) {
-        await HighRollerService.submitPrediction(kickUsername, HighRollerPrediction.UNDER, io);
+        const predicted = await HighRollerService.submitPrediction(kickUsername, HighRollerPrediction.UNDER, io);
+        if (predicted) await this.sendChatMessage(`📉 ${kickUsername} predicted UNDER ${Number(session.threshold)}x!`);
         return;
       }
 
@@ -456,6 +464,7 @@ export class KickChatService {
     // Signal for frontend polling (5-min TTL)
     await RedisService.set(`kick_verified_signal:${userId}`, pending.kickUsername, 300);
 
+    await this.sendChatMessage(`✅ @${pending.kickUsername} your Kick account is now verified!`);
     logger.info(`KickChatService: verified ${pending.kickUsername} for user ${userId}`);
   }
 
