@@ -988,3 +988,89 @@ model WeeklyRaffle {
   @@map("weekly_raffles")
 }
 
+// ─── Community Boss Raid (chat-driven co-op slot event) ────────────────────
+
+enum BossRaidStatus {
+  REGISTRATION
+  ACTIVE
+  COMPLETED
+}
+
+enum BossRaidEntryStatus {
+  WAITING
+  DRAWN
+  DONE
+}
+
+model BossRaid {
+  id                     String         @id @default(uuid())
+  bossKey                String         @map("boss_key")
+  keyword                String
+  status                 BossRaidStatus @default(REGISTRATION)
+  maxHp                  Int            @default(10000) @map("max_hp")
+  currentHp              Int            @default(10000) @map("current_hp")
+  phase                  Int            @default(1)
+  rage                   Int            @default(0)
+  roundCount             Int            @default(0) @map("round_count")
+  consecutiveBucket      String?        @map("consecutive_bucket")
+  consecutiveCount       Int            @default(0) @map("consecutive_count")
+  legendaryBuffRounds    Int            @default(0) @map("legendary_buff_rounds")
+  soulShields            Int            @default(3) @map("soul_shields")
+  voidModifier           String?        @map("void_modifier")
+  voidModifierRoundsLeft Int            @default(0) @map("void_modifier_rounds_left")
+  defeated               Boolean        @default(false)
+  createdAt              DateTime       @default(now()) @map("created_at")
+  closedAt               DateTime?      @map("closed_at")
+  createdById            String         @map("created_by_id")
+
+  creator User            @relation("BossRaidCreator", fields: [createdById], references: [id])
+  entries BossRaidEntry[]
+  rounds  BossRaidRound[]
+
+  @@map("boss_raids")
+}
+
+model BossRaidEntry {
+  id           String              @id @default(uuid())
+  raidId       String              @map("raid_id")
+  kickUsername String              @map("kick_username")
+  userId       String?             @map("user_id")
+  status       BossRaidEntryStatus @default(WAITING)
+  joinedAt     DateTime            @default(now()) @map("joined_at")
+  drawnAt      DateTime?           @map("drawn_at")
+
+  raid   BossRaid        @relation(fields: [raidId], references: [id], onDelete: Cascade)
+  user   User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  rounds BossRaidRound[]
+
+  @@unique([raidId, kickUsername])
+  @@map("boss_raid_entries")
+}
+
+model BossRaidRound {
+  id            String    @id @default(uuid())
+  raidId        String    @map("raid_id")
+  entryId       String    @map("entry_id")
+  userId        String?   @map("user_id")
+  slotName      String?   @map("slot_name")
+  betAmount     Decimal?  @map("bet_amount") @db.Decimal(10, 2)
+  payoutAmount  Decimal?  @map("payout_amount") @db.Decimal(10, 2)
+  multiplier    Decimal?  @db.Decimal(8, 2)
+  damageDealt   Int       @default(0) @map("damage_dealt")
+  healApplied   Int       @default(0) @map("heal_applied")
+  isDeadBonus   Boolean   @default(false) @map("is_dead_bonus")
+  isRetrigger   Boolean   @default(false) @map("is_retrigger")
+  isCrit        Boolean   @default(false) @map("is_crit")
+  isLegendary   Boolean   @default(false) @map("is_legendary")
+  skipped       Boolean   @default(false)
+  drawnAt       DateTime  @default(now()) @map("drawn_at")
+  slotCalledAt  DateTime? @map("slot_called_at")
+  playedAt      DateTime? @map("played_at")
+
+  raid  BossRaid      @relation(fields: [raidId], references: [id], onDelete: Cascade)
+  entry BossRaidEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  user  User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("boss_raid_rounds")
+}
+
