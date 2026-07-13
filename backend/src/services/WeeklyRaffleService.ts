@@ -86,6 +86,17 @@ export class WeeklyRaffleService {
     });
   }
 
+  // Past weeks that rolled over without being drawn — invisible to getCurrent()
+  // (wrong week) and getHistory() (not DRAWN), so they'd otherwise sit forever
+  // undrawn once a newer week's raffle is created.
+  static async getPendingDraws() {
+    const { weekStart: currentWeekStart } = this.getCurrentWeekBounds();
+    return prisma.weeklyRaffle.findMany({
+      where: { status: 'OPEN', weekStart: { lt: currentWeekStart } },
+      orderBy: { weekStart: 'desc' },
+    });
+  }
+
   static async getEligibleParticipants(raffleId: string): Promise<EligibleUser[]> {
     const raffle = await this.getById(raffleId);
     const requirements = (raffle.requirements as unknown as WeeklyRaffleRequirement[]) ?? [];

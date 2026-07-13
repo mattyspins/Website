@@ -54,6 +54,7 @@ export const weeklyRaffleApi = {
   getById: (id: string) => api.get(`/api/weekly-raffle/${id}`).then((d) => d.raffle as WeeklyRaffle),
   getHistory: (limit = 20) =>
     api.get(`/api/weekly-raffle/history?limit=${limit}`).then((d) => d.history as WeeklyRaffle[]),
+  getPendingDraws: () => api.get(`/api/weekly-raffle/pending-draws`).then((d) => d.pending as WeeklyRaffle[]),
   getMyEligibility: (id: string) =>
     api.get(`/api/weekly-raffle/${id}/my-eligibility`).then((d) => d.eligibility as WeeklyRaffleEligibility),
   getEligibleCount: (id: string) => api.get(`/api/weekly-raffle/${id}/eligible-count`).then((d) => d.count as number),

@@ -9,6 +9,7 @@ const lim = rateLimit({ windowMs: 5 * 60 * 1000, max: 200, standardHeaders: true
 // Public — static paths first so they aren't swallowed by `/:id`.
 router.get('/current', lim, WeeklyRaffleController.getCurrent);
 router.get('/history', lim, WeeklyRaffleController.getHistory);
+router.get('/pending-draws', authMiddleware, adminMiddleware, lim, WeeklyRaffleController.getPendingDraws);
 router.get('/:id', lim, WeeklyRaffleController.getById);
 router.get('/:id/eligible-count', lim, WeeklyRaffleController.getEligibleCount);
 router.get('/:id/my-eligibility', authMiddleware, lim, WeeklyRaffleController.getMyEligibility);

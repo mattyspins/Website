@@ -42,6 +42,12 @@ export class WeeklyRaffleController {
     res.json({ success: true, history });
   });
 
+  static getPendingDraws = asyncHandler(async (req, res) => {
+    if (!req.user?.isAdmin) throw createError.forbidden('Admin access required');
+    const pending = await WeeklyRaffleService.getPendingDraws();
+    res.json({ success: true, pending });
+  });
+
   static draw = asyncHandler(async (req, res) => {
     if (!req.user?.isAdmin) throw createError.forbidden('Admin access required');
     const result = await WeeklyRaffleService.draw(req.params.id, req.user.id, _io);

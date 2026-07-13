@@ -20,7 +20,9 @@ export default function AdminWeeklyRafflePage() {
   const [loadingPreview, setLoadingPreview] = useState(false);
 
   const [history, setHistory] = useState<WeeklyRaffle[]>([]);
+  const [pendingDraws, setPendingDraws] = useState<WeeklyRaffle[]>([]);
   const [drawing, setDrawing] = useState(false);
+  const [drawingId, setDrawingId] = useState<string | null>(null);
   const [drawResult, setDrawResult] = useState<WeeklyRaffleDrawResult | null>(null);
 
   const [editing, setEditing] = useState(false);
@@ -29,9 +31,14 @@ export default function AdminWeeklyRafflePage() {
 
   const load = useCallback(async () => {
     try {
-      const [current, hist] = await Promise.all([weeklyRaffleApi.getCurrent(), weeklyRaffleApi.getHistory(10)]);
+      const [current, hist, pending] = await Promise.all([
+        weeklyRaffleApi.getCurrent(),
+        weeklyRaffleApi.getHistory(10),
+        weeklyRaffleApi.getPendingDraws(),
+      ]);
       setRaffle(current);
       setHistory(hist);
+      setPendingDraws(pending);
     } catch {
       setRaffle(null);
     }
@@ -116,6 +123,26 @@ export default function AdminWeeklyRafflePage() {
     }
   };
 
+  const handleDrawPending = async (pending: WeeklyRaffle) => {
+    const ok = await confirm({
+      title: `Draw the winner for Week ${isoWeekNumber(pending.weekStart)}?`,
+      message: "This week already ended without being drawn. This permanently selects and locks in the winner. This cannot be undone.",
+      confirmText: "Start Draw",
+      confirmColor: "yellow",
+    });
+    if (!ok) return;
+    setDrawingId(pending.id);
+    try {
+      const result = await weeklyRaffleApi.draw(pending.id);
+      setPendingDraws((prev) => prev.filter((p) => p.id !== pending.id));
+      setDrawResult(result);
+    } catch (e: any) {
+      error("Draw failed", e.message || "Could not draw a winner.");
+    } finally {
+      setDrawingId(null);
+    }
+  };
+
   if (raffle === undefined) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -132,6 +159,37 @@ export default function AdminWeeklyRafflePage() {
           One eligibility-based raffle per calendar week, drawn every Monday
         </p>
       </div>
+
+      {pendingDraws.length > 0 && (
+        <div className="bg-red-500/8 border border-red-500/25 rounded-xl p-5">
+          <h2 className="text-white font-semibold mb-1">Needs Draw</h2>
+          <p className="text-gray-400 text-sm mb-4">
+            These weeks ended without a winner being drawn. Draw them now — eligibility is still based on that
+            week's wager data, so this is safe to do late.
+          </p>
+          <div className="space-y-2">
+            {pendingDraws.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center justify-between gap-2 bg-navy-900/40 border border-white/6 rounded-lg px-3 py-2"
+              >
+                <span className="text-gray-300 text-sm">
+                  Week {isoWeekNumber(p.weekStart)} ·{" "}
+                  {new Date(p.weekStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })} –{" "}
+                  {new Date(p.weekEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </span>
+                <button
+                  onClick={() => handleDrawPending(p)}
+                  disabled={drawingId === p.id}
+                  className="flex items-center gap-1.5 bg-gold-500 hover:bg-gold-600 disabled:opacity-50 text-navy-950 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors"
+                >
+                  <Play className="w-3.5 h-3.5" /> {drawingId === p.id ? "Drawing…" : "Draw"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {!raffle && (
         <div className="bg-navy-800/60 border border-white/6 rounded-xl p-6">
