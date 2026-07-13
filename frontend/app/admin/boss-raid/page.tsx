@@ -149,6 +149,7 @@ export default function AdminBossRaidPage() {
   const handleDraw = () => raid && withAction(async () => setRaid(await bossRaidApi.draw(raid.id)));
 
   const currentEntry = useMemo(() => raid?.entries.find((e) => e.status === "DRAWN") ?? null, [raid]);
+  const hasWaitingEntries = useMemo(() => raid?.entries.some((e) => e.status === "WAITING") ?? false, [raid]);
 
   const handlePickSlot = (slotName: string) => currentEntry && withAction(async () => setRaid(await bossRaidApi.setSlot(currentEntry.id, slotName)));
   const handleAutoSelectSlot = () => handlePickSlot(QUICK_SLOTS[Math.floor(Math.random() * QUICK_SLOTS.length)].name);
@@ -358,9 +359,9 @@ export default function AdminBossRaidPage() {
                 {!currentEntry ? (
                   <div style={{ textAlign: "center", padding: "16px 0" }}>
                     <div style={{ fontSize: 14, color: "oklch(0.6 0.02 260)", marginBottom: 16 }}>
-                      {raid.status === "REGISTRATION" ? "Close registration to begin drawing players." : "No active player. Draw the next viewer to continue the raid."}
+                      {hasWaitingEntries ? "Draw the next viewer to continue the raid." : "No eligible viewers left — waiting for more entries."}
                     </div>
-                    <button onClick={handleDraw} disabled={actionLoading || raid.status !== "ACTIVE"} style={{ ...primaryBtnStyle, padding: "12px 28px", fontSize: 16, fontFamily: "'Orbitron',sans-serif", letterSpacing: 1, opacity: raid.status !== "ACTIVE" ? 0.4 : 1 }}>
+                    <button onClick={handleDraw} disabled={actionLoading || !hasWaitingEntries} style={{ ...primaryBtnStyle, padding: "12px 28px", fontSize: 16, fontFamily: "'Orbitron',sans-serif", letterSpacing: 1, opacity: !hasWaitingEntries ? 0.4 : 1 }}>
                       🎲 Draw Next Player
                     </button>
                   </div>

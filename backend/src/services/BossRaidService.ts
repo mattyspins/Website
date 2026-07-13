@@ -37,6 +37,11 @@ type RoundWithUser = RaidWithRelations['rounds'][number];
 
 const REWARD_COINS = [250, 125, 125];
 
+// Drawing/playing a turn no longer requires registration to be closed first —
+// admins can draw and resolve players while viewers keep joining via keyword.
+// Only a COMPLETED raid blocks these actions.
+const OPEN_STATUSES: BossRaidStatus[] = [BossRaidStatus.REGISTRATION, BossRaidStatus.ACTIVE];
+
 // Boss Raid entries are keyed by Kick chat activity, so always display the Kick username
 // captured on the entry itself — not a linked site account's Discord displayName — even
 // when the player has also linked a site account (which keeps their avatar).
@@ -270,7 +275,7 @@ export class BossRaidService {
   static async draw(raidId: string, io?: SocketIOServer) {
     const raid = await prisma.bossRaid.findUnique({ where: { id: raidId }, include: INCLUDE });
     if (!raid) throw createError.notFound('Raid not found');
-    if (raid.status !== BossRaidStatus.ACTIVE) throw createError.badRequest('Raid is not active — close registration first');
+    if (!OPEN_STATUSES.includes(raid.status)) throw createError.badRequest('Raid has already ended');
 
     if (raid.entries.some((e) => e.status === BossRaidEntryStatus.DRAWN)) {
       throw createError.badRequest('A viewer is already drawn — resolve or skip that turn first');
@@ -304,7 +309,7 @@ export class BossRaidService {
   static async submitSlotCall(kickUsername: string, slotName: string, io?: SocketIOServer): Promise<boolean> {
     const normalized = kickUsername.trim().toLowerCase();
     const entry = await prisma.bossRaidEntry.findFirst({
-      where: { kickUsername: normalized, status: BossRaidEntryStatus.DRAWN, raid: { status: BossRaidStatus.ACTIVE } },
+      where: { kickUsername: normalized, status: BossRaidEntryStatus.DRAWN, raid: { status: { in: OPEN_STATUSES } } },
     });
     if (!entry) return false;
 
@@ -364,7 +369,7 @@ export class BossRaidService {
 
     const raid = await prisma.bossRaid.findUnique({ where: { id: entry.raidId } });
     if (!raid) throw createError.notFound('Raid not found');
-    if (raid.status !== BossRaidStatus.ACTIVE) throw createError.badRequest('Raid is not active');
+    if (!OPEN_STATUSES.includes(raid.status)) throw createError.badRequest('Raid has already ended');
 
     const round = await this.pendingRoundFor(entryId);
     if (!round) throw createError.notFound('No pending round for this entry');
@@ -401,7 +406,7 @@ export class BossRaidService {
 
     const raid = await prisma.bossRaid.findUnique({ where: { id: entry.raidId } });
     if (!raid) throw createError.notFound('Raid not found');
-    if (raid.status !== BossRaidStatus.ACTIVE) throw createError.badRequest('Raid is not active');
+    if (!OPEN_STATUSES.includes(raid.status)) throw createError.badRequest('Raid has already ended');
 
     const round = await this.pendingRoundFor(entryId);
     if (!round) throw createError.notFound('No pending round for this entry');
