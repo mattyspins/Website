@@ -183,11 +183,15 @@ export class WagerLeaderboardService {
   /** Every player who has wagered under our Razed affiliate code, whether or not they've linked a site account. */
   static async getAllWagerers() {
     const now = new Date();
+    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const weekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     weekStart.setUTCDate(weekStart.getUTCDate() - 6);
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
-    const [linkedUsers, unlinkedTotals, unlinkedWeekly, unlinkedMonthly] = await Promise.all([
+    // Unlike weekly/monthly, there's no precomputed "today" column on User (those are
+    // refreshed every 5 min by the sync job) — today's figure is cheap enough to sum live
+    // for both linked and unlinked wagerers from the same daily ledger tables.
+    const [linkedUsers, linkedToday, unlinkedTotals, unlinkedToday, unlinkedWeekly, unlinkedMonthly] = await Promise.all([
       prisma.user.findMany({
         where: { rainbetUsername: { not: null } },
         select: {
@@ -201,12 +205,16 @@ export class WagerLeaderboardService {
           totalWagered: true,
         },
       }),
+      prisma.razedDailyWager.groupBy({ by: ['userId'], where: { date: { gte: todayStart } }, _sum: { amount: true } }),
       prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'], _sum: { amount: true } }),
+      prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'], where: { date: { gte: todayStart } }, _sum: { amount: true } }),
       prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'], where: { date: { gte: weekStart } }, _sum: { amount: true } }),
       prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'], where: { date: { gte: monthStart } }, _sum: { amount: true } }),
     ]);
 
     const linkedUsernames = new Set(linkedUsers.map((u) => u.rainbetUsername!.toLowerCase()));
+    const linkedTodayMap = new Map(linkedToday.map((r) => [r.userId, Number(r._sum.amount ?? 0)]));
+    const todayMap = new Map(unlinkedToday.map((r) => [r.razedUsername, Number(r._sum.amount ?? 0)]));
     const weeklyMap = new Map(unlinkedWeekly.map((r) => [r.razedUsername, Number(r._sum.amount ?? 0)]));
     const monthlyMap = new Map(unlinkedMonthly.map((r) => [r.razedUsername, Number(r._sum.amount ?? 0)]));
 
@@ -217,6 +225,7 @@ export class WagerLeaderboardService {
       displayName: u.displayName,
       kickUsername: u.kickUsername,
       verified: u.rainbetVerified,
+      todayWagered: (linkedTodayMap.get(u.id) ?? 0).toString(),
       weeklyWagered: u.weeklyWagered.toString(),
       monthlyWagered: u.monthlyWagered.toString(),
       totalWagered: u.totalWagered.toString(),
@@ -231,12 +240,55 @@ export class WagerLeaderboardService {
         displayName: null,
         kickUsername: null,
         verified: false,
+        todayWagered: (todayMap.get(r.razedUsername) ?? 0).toString(),
         weeklyWagered: (weeklyMap.get(r.razedUsername) ?? 0).toString(),
         monthlyWagered: (monthlyMap.get(r.razedUsername) ?? 0).toString(),
         totalWagered: (r._sum.amount ?? 0).toString(),
       }));
 
     return [...linked, ...unlinked].sort((a, b) => Number(b.totalWagered) - Number(a.totalWagered));
+  }
+
+  /** Combined wagered total across every wagerer under our Razed code — today / this week / this month / all-time. */
+  static async getWagerTotals() {
+    const now = new Date();
+    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const weekStart = new Date(todayStart);
+    weekStart.setUTCDate(weekStart.getUTCDate() - 6);
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
+    const [linkedUsers, linkedAgg, linkedTodayAgg, unlinkedToday, unlinkedWeekly, unlinkedMonthly, unlinkedAllTime] = await Promise.all([
+      prisma.user.findMany({ where: { rainbetUsername: { not: null } }, select: { rainbetUsername: true } }),
+      prisma.user.aggregate({
+        where: { rainbetUsername: { not: null } },
+        _sum: { weeklyWagered: true, monthlyWagered: true, totalWagered: true },
+      }),
+      prisma.razedDailyWager.aggregate({ where: { date: { gte: todayStart } }, _sum: { amount: true } }),
+      prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'], where: { date: { gte: todayStart } }, _sum: { amount: true } }),
+      prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'], where: { date: { gte: weekStart } }, _sum: { amount: true } }),
+      prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'], where: { date: { gte: monthStart } }, _sum: { amount: true } }),
+      prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'], _sum: { amount: true } }),
+    ]);
+
+    // Same dedup rule as getAllWagerers() — once a razedUsername is linked to a site account
+    // it's excluded from the unlinked side, whether or not its history has been migrated yet.
+    const linkedUsernames = new Set(linkedUsers.map((u) => u.rainbetUsername!.toLowerCase()));
+    const sumUnlinked = (rows: { razedUsername: string; _sum: { amount: unknown } }[]) =>
+      rows
+        .filter((r) => !linkedUsernames.has(r.razedUsername))
+        .reduce((sum, r) => sum + Number(r._sum.amount ?? 0), 0);
+
+    const today = Number(linkedTodayAgg._sum.amount ?? 0) + sumUnlinked(unlinkedToday);
+    const weekly = Number(linkedAgg._sum.weeklyWagered ?? 0) + sumUnlinked(unlinkedWeekly);
+    const monthly = Number(linkedAgg._sum.monthlyWagered ?? 0) + sumUnlinked(unlinkedMonthly);
+    const allTime = Number(linkedAgg._sum.totalWagered ?? 0) + sumUnlinked(unlinkedAllTime);
+
+    return {
+      today: today.toString(),
+      weekly: weekly.toString(),
+      monthly: monthly.toString(),
+      allTime: allTime.toString(),
+    };
   }
 
   // ── Admin: race management ──────────────────────────────────────────────

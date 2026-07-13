@@ -79,12 +79,21 @@ export interface AllWagererRow {
   totalWagered: string;
 }
 
+export interface WagererTotals {
+  today: string;
+  weekly: string;
+  monthly: string;
+  allTime: string;
+}
+
 export const wagerLeaderboardApi = {
   getActive: () => api.get("/api/wager-leaderboard/active").then((d) => d.race as ActiveRace | null),
   getHistory: () => api.get("/api/wager-leaderboard/history").then((d) => d.races as RaceHistoryEntry[]),
   getAdminWagers: () => api.get("/api/wager-leaderboard/admin/wagers").then((d) => d.users as AdminWagerRow[]),
   getAllWagerers: () =>
     api.get("/api/wager-leaderboard/admin/all-wagerers").then((d) => d.wagerers as AllWagererRow[]),
+  getWagerTotals: () =>
+    api.get("/api/wager-leaderboard/admin/wager-totals").then((d) => d.totals as WagererTotals),
   listRaces: () => api.get("/api/wager-leaderboard/admin/races").then((d) => d.races as AdminRace[]),
   createRace: (race: { startDate: string; endDate: string; totalPrizePool: number; prizes: RacePrize[] }) =>
     api.post("/api/wager-leaderboard/admin/races", race).then((d) => d.race as AdminRace),

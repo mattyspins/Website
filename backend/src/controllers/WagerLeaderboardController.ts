@@ -27,6 +27,11 @@ export class WagerLeaderboardController {
     res.json({ success: true, wagerers });
   });
 
+  static getWagerTotals = asyncHandler(async (_req, res) => {
+    const totals = await WagerLeaderboardService.getWagerTotals();
+    res.json({ success: true, totals });
+  });
+
   static listRaces = asyncHandler(async (_req, res) => {
     const races = await WagerLeaderboardService.listRaces();
     res.json({ success: true, races });

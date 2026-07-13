@@ -1,10 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { wagerLeaderboardApi, AllWagererRow } from "@/lib/api/wagerLeaderboard";
+import { wagerLeaderboardApi, AllWagererRow, WagererTotals } from "@/lib/api/wagerLeaderboard";
+
+const TOTAL_TILES: { key: keyof WagererTotals; label: string }[] = [
+  { key: "today", label: "Wagered Today" },
+  { key: "weekly", label: "Wagered This Week" },
+  { key: "monthly", label: "Wagered This Month" },
+  { key: "allTime", label: "Wagered All-Time" },
+];
 
 export default function AdminRazedUsersPage() {
   const [wagerers, setWagerers] = useState<AllWagererRow[]>([]);
+  const [totals, setTotals] = useState<WagererTotals | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -14,6 +22,7 @@ export default function AdminRazedUsersPage() {
       .then(setWagerers)
       .catch(() => setWagerers([]))
       .finally(() => setLoading(false));
+    wagerLeaderboardApi.getWagerTotals().then(setTotals).catch(() => setTotals(null));
   }, []);
 
   const filtered = search.trim()
@@ -32,6 +41,17 @@ export default function AdminRazedUsersPage() {
       <div>
         <h1 className="text-2xl font-gaming font-bold text-white tracking-wide">Razed Users</h1>
         <p className="text-gray-500 text-sm mt-0.5">Every player wagering under our Razed referral code, linked to a site account or not</p>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {TOTAL_TILES.map((tile) => (
+          <div key={tile.key} className="bg-navy-800/60 border border-white/6 rounded-2xl p-4">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{tile.label}</p>
+            <p className="text-2xl font-bold text-white mt-1.5">
+              {totals ? `$${Number(totals[tile.key]).toLocaleString()}` : "—"}
+            </p>
+          </div>
+        ))}
       </div>
 
       {loading ? (

@@ -10,6 +10,7 @@ router.get('/active', lim, WagerLeaderboardController.getActive);
 router.get('/history', lim, WagerLeaderboardController.getHistory);
 router.get('/admin/wagers', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.getAdminWagers);
 router.get('/admin/all-wagerers', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.getAllWagerers);
+router.get('/admin/wager-totals', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.getWagerTotals);
 router.get('/admin/races', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.listRaces);
 router.post('/admin/races', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.createRace);
 router.put('/admin/races/:raceId', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.updateRace);
