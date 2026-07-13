@@ -16,7 +16,7 @@ export default function MattySpinsAvatar({
   return (
     <div className={`relative ${className}`}>
       <Image
-        src="/mattyspins-avatar.png"
+        src="/mattyspins-logo.png"
         alt="MattySpins"
         width={size}
         height={size}

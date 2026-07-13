@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ExternalLink } from "lucide-react";
 
 const PLATFORM_LINKS = [
@@ -37,9 +38,18 @@ export default function Footer() {
 
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <span className="font-gaming text-lg font-bold text-white tracking-wider">
-              MATTY<span className="text-gold-400">SPINS</span>
-            </span>
+            <div className="flex items-center gap-2.5">
+              <Image
+                src="/mattyspins-logo.png"
+                alt="MattySpins"
+                width={32}
+                height={32}
+                className="rounded-full"
+              />
+              <span className="font-gaming text-lg font-bold text-white tracking-wider">
+                MATTY<span className="text-gold-400">SPINS</span>
+              </span>
+            </div>
             <p className="text-gray-500 text-sm mt-3 leading-relaxed">
               Official Razed partner. Live leaderboards, bonus hunts, stream games and exclusive community rewards.
             </p>

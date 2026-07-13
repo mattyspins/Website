@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import AuthButtons from "./AuthButtons";
@@ -47,7 +48,15 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center space-x-2 group">
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <Image
+                src="/mattyspins-logo.png"
+                alt="MattySpins"
+                width={36}
+                height={36}
+                className="rounded-full"
+                priority
+              />
               <span className="text-lg font-gaming font-bold text-white tracking-wider group-hover:text-gold-400 transition-colors">
                 MATTY<span className="text-gold-400">SPINS</span>
               </span>
