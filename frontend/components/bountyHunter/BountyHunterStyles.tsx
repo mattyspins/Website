@@ -37,7 +37,6 @@ export default function BountyHunterStyles() {
         .bounty-reticle { width: min(300px, 84vw) !important; height: min(300px, 84vw) !important; }
         .bounty-bet-row { flex-direction: column !important; gap: 8px !important; }
         .bounty-bet-divider { display: none !important; }
-        .bounty-slot-grid { grid-template-columns: repeat(2, 1fr) !important; }
         .bounty-claim-card { padding: 24px 18px !important; }
         .bounty-claim-stats { grid-template-columns: repeat(2, 1fr) !important; }
       }

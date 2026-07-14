@@ -14,6 +14,7 @@ router.post('/:id/draw', authMiddleware, adminMiddleware, lim, KingOfTheHillCont
 router.post('/:id/cancel-draw', authMiddleware, adminMiddleware, lim, KingOfTheHillController.cancelDraw);
 router.post('/:id/add-entry', authMiddleware, adminMiddleware, lim, KingOfTheHillController.addEntry);
 router.delete('/entries/:entryId', authMiddleware, adminMiddleware, lim, KingOfTheHillController.removeEntry);
+router.post('/entries/:entryId/slot', authMiddleware, adminMiddleware, lim, KingOfTheHillController.setSlot);
 router.post('/entries/:entryId/round', authMiddleware, adminMiddleware, lim, KingOfTheHillController.submitRound);
 router.delete('/:id', authMiddleware, adminMiddleware, lim, KingOfTheHillController.deleteSession);
 

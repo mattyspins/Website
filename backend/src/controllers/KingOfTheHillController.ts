@@ -53,6 +53,13 @@ export class KingOfTheHillController {
     res.json({ success: true, session });
   });
 
+  static setSlot = asyncHandler(async (req, res) => {
+    const { slotName } = req.body;
+    if (!slotName?.trim()) { res.status(400).json({ error: 'slotName is required' }); return; }
+    const session = await KingOfTheHillService.setSlotByAdmin(req.params.entryId, slotName, _io);
+    res.json({ success: true, session });
+  });
+
   static submitRound = asyncHandler(async (req, res) => {
     const { betAmount, payoutAmount } = req.body;
     const session = await KingOfTheHillService.submitRound(

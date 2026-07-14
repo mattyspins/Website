@@ -6,6 +6,7 @@ import { kothApi, KothSession, KothEntry, KothRound, KothUser } from "@/lib/api/
 import { getSocket } from "@/lib/socket";
 import { API_ENDPOINTS } from "@/lib/api";
 import { useConfirm } from "@/components/admin/useConfirm";
+import SlotPicker from "@/components/SlotPicker";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -156,6 +157,8 @@ export default function AdminKingOfTheHillPage() {
   };
 
   const handleRemoveEntry = (entryId: string) => withAction(() => kothApi.removeEntry(entryId));
+
+  const handleSetSlot = (slotName: string) => drawnEntry && withAction(() => kothApi.setSlot(drawnEntry.id, slotName));
 
   const handleSubmitRound = async () => {
     if (!drawnEntry) return;
@@ -329,15 +332,20 @@ export default function AdminKingOfTheHillPage() {
                       </div>
                     </div>
 
-                    {!drawnRound?.slotName ? (
-                      <p className="text-center text-white/40 text-sm py-3">
-                        Waiting for <code className="bg-white/10 text-yellow-300 px-1.5 py-0.5 rounded font-mono">!slot &lt;name&gt;</code> in chat…
+                    <div>
+                      <p className="text-xs text-white/40 mb-1.5">
+                        Slot from <code className="bg-white/10 text-yellow-300 px-1 py-0.5 rounded font-mono">!slot &lt;name&gt;</code> in chat — or pick for them:
                       </p>
-                    ) : (
+                      <SlotPicker
+                        value={drawnRound?.slotName ?? ""}
+                        onChange={(name) => name && handleSetSlot(name)}
+                        placeholder="Search or type a slot…"
+                        disabled={actionLoading}
+                      />
+                    </div>
+
+                    {drawnRound?.slotName && (
                       <>
-                        <p className="text-center text-white/70 text-sm">
-                          Called: <span className="text-yellow-300 font-semibold">{drawnRound.slotName}</span>
-                        </p>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <label className="block text-xs text-white/50 mb-1 uppercase tracking-widest">Bet</label>

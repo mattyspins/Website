@@ -7,11 +7,12 @@ import { getSocket } from "@/lib/socket";
 import { bountyHunterApi, BountyHunter } from "@/lib/api/bountyHunter";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useConfirm } from "@/components/admin/useConfirm";
-import { QUICK_SLOTS, computeBoard, heatInfo } from "@/lib/bountyHunterVisuals";
+import { computeBoard, heatInfo } from "@/lib/bountyHunterVisuals";
 import BountyHunterStyles from "@/components/bountyHunter/BountyHunterStyles";
 import BountyArena, { ArenaEffect } from "@/components/bountyHunter/BountyArena";
 import { BountyBoard } from "@/components/bountyHunter/BountyBoard";
 import ClaimOverlay from "@/components/bountyHunter/ClaimOverlay";
+import SlotPicker from "@/components/SlotPicker";
 import { ExternalLink, Trash2 } from "lucide-react";
 
 const panelStyle: CSSProperties = { background: "oklch(0.17 0.02 70 / 0.7)", backdropFilter: "blur(8px)", border: "1px solid oklch(0.32 0.04 75 / 0.35)", borderRadius: 14, padding: 20 };
@@ -172,7 +173,6 @@ export default function AdminBountyHunterPage() {
   const currentRound = useMemo(() => hunt?.rounds.find((r) => r.entryId === currentEntry?.id && !r.playedAt) ?? null, [hunt, currentEntry]);
 
   const handlePickSlot = (slotName: string) => currentEntry && withAction(async () => setHunt(await bountyHunterApi.setSlot(currentEntry.id, slotName)));
-  const handleAutoSelectSlot = () => handlePickSlot(QUICK_SLOTS[Math.floor(Math.random() * QUICK_SLOTS.length)].name);
   const handleSkipPlayer = () => currentEntry && withAction(async () => {
     const updated = await bountyHunterApi.skipPlayer(currentEntry.id);
     setHunt(updated);
@@ -401,25 +401,11 @@ export default function AdminBountyHunterPage() {
                     <div style={{ fontSize: 12, color: "oklch(0.6 0.03 70)", marginBottom: 8 }}>
                       Slot from <span style={{ color: "oklch(0.85 0.01 70)" }}>!bounty &lt;slot&gt;</span> or <span style={{ color: "oklch(0.85 0.01 70)" }}>!slot &lt;name&gt;</span> — override if needed:
                     </div>
-                    <div className="bounty-slot-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, marginBottom: 12 }}>
-                      {QUICK_SLOTS.map((opt) => (
-                        <button
-                          key={opt.id}
-                          onClick={() => handlePickSlot(opt.name)}
-                          style={{
-                            padding: "9px 6px", borderRadius: 8,
-                            border: `1px solid ${currentRound?.slotName === opt.name ? "oklch(0.75 0.14 80 / 0.8)" : "oklch(0.35 0.05 75 / 0.5)"}`,
-                            background: currentRound?.slotName === opt.name ? "oklch(0.3 0.08 80 / 0.5)" : "oklch(0.11 0.01 70)",
-                            color: "oklch(0.88 0.05 80)", fontWeight: 600, cursor: "pointer", fontFamily: "'Rajdhani',sans-serif", fontSize: 12,
-                          }}
-                        >
-                          {opt.icon} {opt.name}
-                        </button>
-                      ))}
+                    <div style={{ marginBottom: 12 }}>
+                      <SlotPicker value={currentRound?.slotName ?? ""} onChange={(name) => name && handlePickSlot(name)} placeholder="Search or type a slot…" />
                     </div>
                     <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
-                      <button onClick={handleAutoSelectSlot} style={ghostBtnStyle}>Auto-Select Slot</button>
-                      <button onClick={handleSkipPlayer} style={ghostBtnStyleRed}>Skip Hunter</button>
+                      <button onClick={handleSkipPlayer} style={{ ...ghostBtnStyleRed, flex: 1 }}>Skip Hunter</button>
                     </div>
 
                     <div style={{ height: 1, background: "oklch(0.3 0.03 70 / 0.4)", margin: "16px 0" }} />

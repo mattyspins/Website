@@ -1,14 +1,5 @@
 import type { BossConfig, BossRaid, BossRaidUser } from "@/lib/api/bossRaid";
 
-export const QUICK_SLOTS = [
-  { id: "sweetbonanza", name: "Sweet Bonanza", icon: "🍬" },
-  { id: "gatesofolympus", name: "Gates of Olympus", icon: "⚡" },
-  { id: "wanted", name: "Wanted", icon: "🤠" },
-  { id: "sugarrush1000", name: "Sugar Rush 1000", icon: "🍭" },
-  { id: "bigbass", name: "Big Bass Bonanza", icon: "🎣" },
-  { id: "starlight", name: "Starlight Princess", icon: "✨" },
-] as const;
-
 export const PHASE_LABELS: Record<number, string> = { 1: "STABLE", 2: "AWAKENED", 3: "ENRAGED", 4: "FINAL PHASE" };
 
 // Boss + phase driven palette — matches the approved reference design exactly: chroma/

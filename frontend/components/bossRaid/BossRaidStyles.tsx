@@ -49,7 +49,6 @@ export default function BossRaidStyles() {
         .boss-bet-divider { display: none !important; }
         .boss-stats-row { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
         .boss-stats-row > div:last-child { text-align: left !important; }
-        .boss-slot-grid { grid-template-columns: repeat(2, 1fr) !important; }
         .boss-victory-card { padding: 24px 18px !important; }
         .boss-victory-stats { grid-template-columns: repeat(2, 1fr) !important; }
       }

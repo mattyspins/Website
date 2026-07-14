@@ -290,6 +290,27 @@ export class KingOfTheHillService {
     return true;
   }
 
+  // Admin-set slot name — lets the admin dashboard override or supply the slot when
+  // chat's "!slot <name>" doesn't land, mirroring BossRaidService.setSlotByAdmin.
+  static async setSlotByAdmin(entryId: string, slotName: string, io?: SocketIOServer) {
+    const entry = await prisma.kingOfTheHillEntry.findUnique({ where: { id: entryId } });
+    if (!entry) throw createError.notFound('Entry not found');
+    if (entry.status !== KothEntryStatus.DRAWN) throw createError.badRequest('Entry is not currently drawn');
+
+    const round = await prisma.kingOfTheHillRound.findFirst({
+      where: { entryId, playedAt: null },
+      orderBy: { drawnAt: 'desc' },
+    });
+    if (!round) throw createError.notFound('No pending round for this entry');
+
+    await prisma.kingOfTheHillRound.update({
+      where: { id: round.id },
+      data: { slotName: slotName.trim().slice(0, 100), slotCalledAt: new Date() },
+    });
+
+    return this.emitSession(entry.sessionId, io);
+  }
+
   static async submitRound(entryId: string, betAmount: number, payoutAmount: number, io?: SocketIOServer) {
     if (!(betAmount > 0)) throw createError.badRequest('Bet amount must be greater than 0');
     if (payoutAmount < 0) throw createError.badRequest('Payout amount cannot be negative');

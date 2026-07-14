@@ -1,14 +1,5 @@
 import type { BountyHunter, BountyHunterRound, BountyHunterUser } from "@/lib/api/bountyHunter";
 
-export const QUICK_SLOTS = [
-  { id: "sweetbonanza", name: "Sweet Bonanza", icon: "🍬" },
-  { id: "gatesofolympus", name: "Gates of Olympus", icon: "⚡" },
-  { id: "wanted", name: "Wanted", icon: "🤠" },
-  { id: "sugarrush1000", name: "Sugar Rush 1000", icon: "🍭" },
-  { id: "bigbass", name: "Big Bass Bonanza", icon: "🎣" },
-  { id: "starlight", name: "Starlight Princess", icon: "✨" },
-] as const;
-
 export interface HeatInfo {
   label: string;
   tier: number;

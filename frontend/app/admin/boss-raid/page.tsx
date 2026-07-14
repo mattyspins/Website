@@ -7,11 +7,12 @@ import { getSocket } from "@/lib/socket";
 import { bossRaidApi, BossRaid, BossConfig, BossKey } from "@/lib/api/bossRaid";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useConfirm } from "@/components/admin/useConfirm";
-import { QUICK_SLOTS, computeLeaderboard } from "@/lib/bossRaidVisuals";
+import { computeLeaderboard } from "@/lib/bossRaidVisuals";
 import BossRaidStyles from "@/components/bossRaid/BossRaidStyles";
 import BossArena, { ArenaEffect } from "@/components/bossRaid/BossArena";
 import { Leaderboard } from "@/components/bossRaid/Leaderboard";
 import VictoryOverlay from "@/components/bossRaid/VictoryOverlay";
+import SlotPicker from "@/components/SlotPicker";
 import { ExternalLink, Trash2 } from "lucide-react";
 
 const panelStyle: CSSProperties = { background: "oklch(0.17 0.02 260 / 0.7)", backdropFilter: "blur(8px)", border: "1px solid oklch(0.32 0.04 220 / 0.35)", borderRadius: 14, padding: 20 };
@@ -152,7 +153,6 @@ export default function AdminBossRaidPage() {
   const hasWaitingEntries = useMemo(() => raid?.entries.some((e) => e.status === "WAITING") ?? false, [raid]);
 
   const handlePickSlot = (slotName: string) => currentEntry && withAction(async () => setRaid(await bossRaidApi.setSlot(currentEntry.id, slotName)));
-  const handleAutoSelectSlot = () => handlePickSlot(QUICK_SLOTS[Math.floor(Math.random() * QUICK_SLOTS.length)].name);
   const handleSkipPlayer = () => currentEntry && withAction(async () => {
     const updated = await bossRaidApi.skipPlayer(currentEntry.id);
     setRaid(updated);
@@ -389,25 +389,11 @@ export default function AdminBossRaidPage() {
                           <div style={{ fontSize: 12, color: "oklch(0.6 0.02 260)", marginBottom: 8 }}>
                             Slot choice — <span style={{ color: "oklch(0.85 0.01 260)" }}>!slot &lt;name&gt;</span> in chat (or pick for them):
                           </div>
-                          <div className="boss-slot-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, marginBottom: 12 }}>
-                            {QUICK_SLOTS.map((opt) => (
-                              <button
-                                key={opt.id}
-                                onClick={() => handlePickSlot(opt.name)}
-                                style={{
-                                  padding: "9px 6px", borderRadius: 8,
-                                  border: `1px solid ${activeSlot === opt.name ? "oklch(0.7 0.14 220 / 0.8)" : "oklch(0.35 0.04 250 / 0.5)"}`,
-                                  background: activeSlot === opt.name ? "oklch(0.28 0.08 220 / 0.5)" : "oklch(0.11 0.01 260)",
-                                  color: "oklch(0.88 0.03 220)", fontWeight: 600, cursor: "pointer", fontFamily: "'Rajdhani',sans-serif", fontSize: 12,
-                                }}
-                              >
-                                {opt.icon} {opt.name}
-                              </button>
-                            ))}
+                          <div style={{ marginBottom: 12 }}>
+                            <SlotPicker value={activeSlot ?? ""} onChange={(name) => name && handlePickSlot(name)} placeholder="Search or type a slot…" />
                           </div>
                           <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
-                            <button onClick={handleAutoSelectSlot} style={ghostBtnStyle}>Auto-Select Slot</button>
-                            <button onClick={handleSkipPlayer} style={ghostBtnStyleRed}>Skip Player</button>
+                            <button onClick={handleSkipPlayer} style={{ ...ghostBtnStyleRed, flex: 1 }}>Skip Player</button>
                           </div>
 
                           <div style={{ height: 1, background: "oklch(0.3 0.03 260 / 0.4)", margin: "16px 0" }} />

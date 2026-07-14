@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -12,11 +12,12 @@ import {
   getHunt, upsertHunt, calcHuntStats, fmt, fmtMulti,
   fetchHuntFromServer, pushHuntToServer,
 } from "@/lib/huntTracker";
-import { SLOT_GAMES, type SlotGame } from "@/lib/slotGames";
+import { SLOT_GAMES, findSlot, type SlotGame } from "@/lib/slotGames";
 import { API_ENDPOINTS } from "@/lib/api";
 import { slotRequestApi, SlotRequest } from "@/lib/api/slotRequests";
 import { gtbApi, type GTBGame } from "@/lib/api/gtb";
 import { getSocket } from "@/lib/socket";
+import SlotPicker from "@/components/SlotPicker";
 
 /* ── helpers ─────────────────────────────────────────────── */
 function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
@@ -89,7 +90,6 @@ function AddBonusModal({
   onSave: (b: HuntBonus) => void;
 }) {
   const sym = CURRENCY_SYMBOLS[currency as keyof typeof CURRENCY_SYMBOLS] ?? "$";
-  const [query, setQuery] = useState("");
   const prefilled = prefillSlotName
     ? SLOT_GAMES.find((g) => g.name.toLowerCase() === prefillSlotName.toLowerCase()) ??
       SLOT_GAMES.find((g) => g.name.toLowerCase().includes(prefillSlotName.toLowerCase())) ?? null
@@ -102,14 +102,11 @@ function AddBonusModal({
   const [badge, setBadge] = useState<BadgeType>(initial?.badge ?? "none");
   const [customBadge, setCustomBadge] = useState(initial?.customBadge ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const searchRef = useRef<HTMLInputElement>(null);
 
-  const results = query.length >= 1
-    ? SLOT_GAMES.filter((s) =>
-        s.name.toLowerCase().includes(query.toLowerCase()) ||
-        s.provider.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 12)
-    : [];
+  const handleSlotChange = (name: string) => {
+    if (!name) { setSelected(null); return; }
+    setSelected(findSlot(name) ?? { name, provider: "Custom", image: "", volatility: "High" });
+  };
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -159,59 +156,11 @@ function AddBonusModal({
 
         <div className="space-y-5">
           {/* Slot search / selected */}
-          {selected ? (
-            <div>
-              <label className="text-sm text-gray-400 mb-2 block">Selected Slot</label>
-              <div className="flex items-center gap-3 bg-[#1a1535] border border-white/10 rounded-xl px-4 py-3">
-                <SlotImg src={selected.image} alt={selected.name} size={10} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-semibold text-sm truncate">{selected.name}</p>
-                  <p className="text-gray-500 text-xs">{selected.provider}</p>
-                </div>
-                <button
-                  onClick={() => { setSelected(null); setQuery(""); setTimeout(() => searchRef.current?.focus(), 50); }}
-                  className="text-gold-400 hover:text-gold-300 text-xs font-semibold transition-colors"
-                >
-                  Change
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <label className="text-sm text-gray-400 mb-2 block">
-                Search for Slot <span className="text-gray-600">(Type to search)</span>
-              </label>
-              <div className={`relative bg-[#1a1535] border rounded-xl focus-within:border-gold-500 transition-colors ${errors.slot ? "border-red-500" : "border-white/10"}`}>
-                <Search className="absolute left-4 top-3.5 w-4 h-4 text-gray-600" />
-                <input
-                  ref={searchRef}
-                  autoFocus
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search for a slot game…"
-                  className="w-full bg-transparent pl-11 pr-4 py-3 text-white placeholder-gray-600 focus:outline-none"
-                />
-              </div>
-              {errors.slot && <p className="text-red-400 text-xs mt-1">{errors.slot}</p>}
-              {results.length > 0 && (
-                <div className="mt-1 bg-[#1a1535] border border-white/10 rounded-xl overflow-hidden max-h-52 overflow-y-auto">
-                  {results.map((slot) => (
-                    <button
-                      key={`${slot.provider}-${slot.name}`}
-                      onClick={() => { setSelected(slot); setQuery(""); }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors text-left"
-                    >
-                      <SlotImg src={slot.image} alt={slot.name} size={8} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-medium truncate">{slot.name}</p>
-                        <p className="text-gray-500 text-xs">{slot.provider}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          <div>
+            <label className="text-sm text-gray-400 mb-2 block">Slot</label>
+            <SlotPicker value={selected?.name ?? ""} onChange={handleSlotChange} placeholder="Search for a slot game…" />
+            {errors.slot && <p className="text-red-400 text-xs mt-1">{errors.slot}</p>}
+          </div>
 
           {/* Bet Size */}
           <div>

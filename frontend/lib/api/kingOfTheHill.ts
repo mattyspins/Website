@@ -57,6 +57,8 @@ export const kothApi = {
     api.post(`/api/king-of-the-hill/${id}/add-entry`, { kickUsername }).then((d) => d.session as KothSession),
   removeEntry: (entryId: string) =>
     api.delete(`/api/king-of-the-hill/entries/${entryId}`).then((d) => d.session as KothSession),
+  setSlot: (entryId: string, slotName: string) =>
+    api.post(`/api/king-of-the-hill/entries/${entryId}/slot`, { slotName }).then((d) => d.session as KothSession),
   submitRound: (entryId: string, betAmount: number, payoutAmount: number) =>
     api
       .post(`/api/king-of-the-hill/entries/${entryId}/round`, { betAmount, payoutAmount })
