@@ -7,7 +7,7 @@
  * Run: node scripts/sync-slots.mjs
  */
 
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -17,6 +17,22 @@ const SLOT_GAMES_PATH = join(__dirname, '../frontend/lib/slotGames.ts');
 const CONCURRENT_HEAD  = 20;  // parallel HEAD checks against slot.report
 const CONCURRENT_SCRAPE = 5;  // parallel slotcatalog page scrapes
 const SCRAPE_DELAY_MS   = 150; // ms between scrape batches
+
+// ─── Load SLOT_REPORT_API_KEY from the repo-root .env (gitignored) ───────────
+// slot.report's API requires a domain-bound key (kept permanently active by the
+// dofollow backlink in Footer.tsx) — see https://slot.report/api/#access.
+function loadRootEnv() {
+  const envPath = join(__dirname, '../.env');
+  if (!existsSync(envPath)) return;
+  for (const line of readFileSync(envPath, 'utf-8').split('\n')) {
+    const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim();
+  }
+}
+loadRootEnv();
+
+const SLOT_REPORT_API_KEY = process.env.SLOT_REPORT_API_KEY;
+const slotReportHeaders = SLOT_REPORT_API_KEY ? { 'X-API-Key': SLOT_REPORT_API_KEY } : {};
 
 // ─── Volatility mapping ───────────────────────────────────────────────────────
 const VOL_MAP = {
@@ -83,8 +99,8 @@ async function runBatched(items, concurrency, fn, delayMs = 0) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
   console.log('📡 Fetching slots from slot.report…');
-  const res = await fetch('https://slot.report/api/v1/slots.json');
-  if (!res.ok) throw new Error(`slot.report returned ${res.status}`);
+  const res = await fetch('https://slot.report/api/v1/slots.json', { headers: slotReportHeaders });
+  if (!res.ok) throw new Error(`slot.report returned ${res.status}: ${await res.text()}`);
   const body = await res.json();
   const apiSlots = body.results ?? body;
   console.log(`✅ Got ${apiSlots.length} slots`);
