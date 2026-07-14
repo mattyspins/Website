@@ -610,6 +610,7 @@ model KingOfTheHillEntry {
   sessionId    String            @map("session_id")
   kickUsername String            @map("kick_username")
   userId       String?           @map("user_id")
+  slotName     String?           @map("slot_name")
   status       KothEntryStatus   @default(WAITING)
   joinedAt     DateTime          @default(now()) @map("joined_at")
   drawnAt      DateTime?         @map("drawn_at")
@@ -822,13 +823,18 @@ model BingoCell {
 // userId resolved as an optional bonus link) — so anyone watching in chat can play
 // bingo whether or not they've linked Kick or registered on the site.
 model BingoParticipant {
-  id           String     @id @default(uuid())
-  gameId       String     @map("game_id")
-  userId       String?    @map("user_id")
-  kickUsername String?    @map("kick_username")
-  joinedAt     DateTime   @default(now()) @map("joined_at")
-  game         BonusBingo @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  user         User?      @relation("BingoParticipants", fields: [userId], references: [id], onDelete: SetNull)
+  id            String     @id @default(uuid())
+  gameId        String     @map("game_id")
+  userId        String?    @map("user_id")
+  kickUsername  String?    @map("kick_username")
+  // Locked in via "!join <slot>" — unlike Boss Raid/Bounty Hunter/King of the Hill,
+  // a bingo participant can be drawn for several different cells over one game, so this
+  // is only a *default* pre-fill applied on each draw, not a one-time commitment; it's
+  // still overridable per cell via "!slot <name>" or the admin picker.
+  preferredSlot String?    @map("preferred_slot")
+  joinedAt      DateTime   @default(now()) @map("joined_at")
+  game          BonusBingo @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user          User?      @relation("BingoParticipants", fields: [userId], references: [id], onDelete: SetNull)
 
   @@unique([gameId, userId])
   @@unique([gameId, kickUsername])
@@ -1038,6 +1044,7 @@ model BossRaidEntry {
   raidId       String              @map("raid_id")
   kickUsername String              @map("kick_username")
   userId       String?             @map("user_id")
+  slotName     String?             @map("slot_name")
   status       BossRaidEntryStatus @default(WAITING)
   joinedAt     DateTime            @default(now()) @map("joined_at")
   drawnAt      DateTime?           @map("drawn_at")

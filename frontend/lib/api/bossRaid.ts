@@ -23,6 +23,7 @@ export interface BossRaidEntry {
   id: string;
   raidId: string;
   userId: string;
+  slotName: string | null;
   status: "WAITING" | "DRAWN" | "DONE";
   joinedAt: string;
   drawnAt: string | null;

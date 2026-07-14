@@ -260,8 +260,8 @@ function RulesModal({ onClose }: { onClose: () => void }) {
           <div className="bg-white/5 border border-white/8 rounded-xl p-4 space-y-2">
             <p className="text-white font-bold text-xs uppercase tracking-widest mb-3">💬 Kick Chat Commands</p>
             {[
-              { cmd: "!join", desc: "Join the game during registration (must have Kick verified on site)" },
-              { cmd: "!slot <name>", desc: "Set your slot when you're the selected player" },
+              { cmd: "!join <slot>", desc: "Join the game — the slot is optional and just sets your default pick for whenever you're drawn" },
+              { cmd: "!slot <name>", desc: "Set (or change) your slot when you're the selected player" },
             ].map(({ cmd, desc }) => (
               <div key={cmd} className="flex items-start gap-3">
                 <code className="bg-green-500/15 text-green-300 px-2 py-0.5 rounded text-xs font-mono shrink-0 mt-0.5">{cmd}</code>

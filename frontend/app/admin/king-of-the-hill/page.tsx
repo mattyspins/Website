@@ -227,7 +227,7 @@ export default function AdminKingOfTheHillPage() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-white">King of the Hill</h1>
-              <p className="text-white/40 text-sm mt-0.5">Viewers type !king to join — draw a challenger, record their slot result, crown the king</p>
+              <p className="text-white/40 text-sm mt-0.5">Viewers type !king (optionally with a slot) to join — draw a challenger, record their slot result, crown the king</p>
             </div>
             <a
               href="/king-of-the-hill-widget"
@@ -288,7 +288,7 @@ export default function AdminKingOfTheHillPage() {
                   </button>
                 </div>
                 <p className="text-white/40 text-xs mt-1">
-                  Type <code className="bg-white/10 text-yellow-300 px-1.5 py-0.5 rounded font-mono">!king</code> in Kick chat to join · {entries.length} {entries.length === 1 ? "viewer" : "viewers"}
+                  Type <code className="bg-white/10 text-yellow-300 px-1.5 py-0.5 rounded font-mono">!king</code> (or <code className="bg-white/10 text-yellow-300 px-1.5 py-0.5 rounded font-mono">!king &lt;slot&gt;</code>) in Kick chat to join · {entries.length} {entries.length === 1 ? "viewer" : "viewers"}
                 </p>
               </div>
 
@@ -334,7 +334,7 @@ export default function AdminKingOfTheHillPage() {
 
                     <div>
                       <p className="text-xs text-white/40 mb-1.5">
-                        Slot from <code className="bg-white/10 text-yellow-300 px-1 py-0.5 rounded font-mono">!slot &lt;name&gt;</code> in chat — or pick for them:
+                        Slot from <code className="bg-white/10 text-yellow-300 px-1 py-0.5 rounded font-mono">!king &lt;slot&gt;</code> or <code className="bg-white/10 text-yellow-300 px-1 py-0.5 rounded font-mono">!slot &lt;name&gt;</code> in chat — or pick for them:
                       </p>
                       <SlotPicker
                         value={drawnRound?.slotName ?? ""}

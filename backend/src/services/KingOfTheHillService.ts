@@ -54,6 +54,7 @@ function toSessionResponse(session: SessionWithRelations) {
       id: e.id,
       sessionId: e.sessionId,
       userId: entryIdentity(e),
+      slotName: e.slotName,
       status: e.status,
       joinedAt: e.joinedAt,
       drawnAt: e.drawnAt,
@@ -147,10 +148,12 @@ export class KingOfTheHillService {
     return response;
   }
 
-  // Called from KickChatService on exact "!king" match. The chatter is identified by their
-  // Kick username directly from the chat event, so joining never depends on having linked
-  // Kick or registered on the site.
-  static async joinByKeyword(kickUsername: string, io?: SocketIOServer): Promise<boolean> {
+  // Called from KickChatService on "!king" (or "!king <slot name>"). The chatter is
+  // identified by their Kick username directly from the chat event, so joining never
+  // depends on having linked Kick or registered on the site. The optional trailing slot
+  // name is locked in at signup — same as Bounty Hunter's "!bounty <slot>" — and can
+  // still be overridden later via the shared "!slot <name>" command or by the admin.
+  static async joinByKeyword(kickUsername: string, slotName: string | null, io?: SocketIOServer): Promise<boolean> {
     const session = await prisma.kingOfTheHill.findFirst({ where: { status: KingOfTheHillStatus.OPEN } });
     if (!session) return false;
 
@@ -168,11 +171,11 @@ export class KingOfTheHillService {
     });
 
     await prisma.kingOfTheHillEntry.create({
-      data: { sessionId: session.id, kickUsername: normalized, userId: user?.id ?? null },
+      data: { sessionId: session.id, kickUsername: normalized, userId: user?.id ?? null, slotName: slotName?.slice(0, 100) ?? null },
     });
     await this.emitSession(session.id, io);
 
-    logger.info(`KingOfTheHill ${session.id}: ${kickUsername} joined via !king${user ? '' : ' (unlinked)'}`);
+    logger.info(`KingOfTheHill ${session.id}: ${kickUsername} joined via !king${slotName ? ` (slot: ${slotName})` : ''}${user ? '' : ' (unlinked)'}`);
     return true;
   }
 
@@ -239,7 +242,7 @@ export class KingOfTheHillService {
         data: { status: KothEntryStatus.DRAWN, drawnAt: new Date() },
       }),
       prisma.kingOfTheHillRound.create({
-        data: { sessionId, entryId: pick.id, userId: pick.userId },
+        data: { sessionId, entryId: pick.id, userId: pick.userId, slotName: pick.slotName, slotCalledAt: pick.slotName ? new Date() : null },
       }),
     ]);
 

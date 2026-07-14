@@ -147,9 +147,11 @@ export class KickChatService {
       await this.processVerification(kickUsername, match[1].toUpperCase());
     }
 
-    // Check for bingo join command: !join
-    if (content.trim().toLowerCase() === '!join') {
-      await this.processBingoJoin(kickUsername);
+    // Check for bingo join command: !join (optionally "!join <slot name>" as a default
+    // slot pre-filled whenever this viewer is next drawn — still overridable per cell)
+    const joinMatch = content.match(/^!join(?:\s+(.+))?$/i);
+    if (joinMatch) {
+      await this.processBingoJoin(kickUsername, joinMatch[1]?.trim() || null);
     }
 
     // Check for slot selection command: !slot <name>
@@ -164,9 +166,11 @@ export class KickChatService {
       if (bountySlotSet) await this.sendChatMessage(`🎯 ${kickUsername} locked in "${slotName}" for the Bounty Hunter!`);
     }
 
-    // Check for King of the Hill join command: !king
-    if (content.trim().toLowerCase() === '!king') {
-      await this.processKothJoin(kickUsername);
+    // Check for King of the Hill join command: !king (optionally "!king <slot name>",
+    // locking in a slot at signup the same way Bounty Hunter's "!bounty <slot>" does)
+    const kingMatch = content.match(/^!king(?:\s+(.+))?$/i);
+    if (kingMatch) {
+      await this.processKothJoin(kickUsername, kingMatch[1]?.trim() || null);
     }
 
     // High Roller: commands are admin-configurable per session (unlike the hardcoded ones
@@ -251,8 +255,11 @@ export class KickChatService {
 
   // Called on "!join" — the chatter is identified by their Kick username directly from
   // the chat event, so joining never depends on having linked Kick or registered on the
-  // site. A matching site account (if any) is linked as an optional bonus.
-  private static async processBingoJoin(kickUsername: string): Promise<void> {
+  // site. A matching site account (if any) is linked as an optional bonus. A repeat
+  // "!join <slot>" from someone already in the pool updates their default slot for
+  // future draws (BingoBoardService.join handles that — including refusing it if
+  // they're mid-turn right now, since "!slot" is the right command for that).
+  private static async processBingoJoin(kickUsername: string, preferredSlot: string | null): Promise<void> {
     const normalized = kickUsername.trim().toLowerCase();
 
     // Find the bingo game open for registration or already active
@@ -261,11 +268,9 @@ export class KickChatService {
     });
     if (!game) return;
 
-    // Check not already joined
     const existing = await prisma.bingoParticipant.findUnique({
       where: { gameId_kickUsername: { gameId: game.id, kickUsername: normalized } },
     });
-    if (existing) return;
 
     const user = await prisma.user.findFirst({
       where: { kickUsername: { equals: normalized, mode: 'insensitive' } },
@@ -273,10 +278,17 @@ export class KickChatService {
     });
 
     try {
-      await BingoBoardService.join(game.id, { userId: user?.id, kickUsername: normalized }, this.io ?? undefined);
-      logger.info(`KickChatService: ${kickUsername} joined bingo ${game.id} via !join${user ? '' : ' (unlinked)'}`);
-      await this.sendChatMessage(`${kickUsername} has joined Bonus Bingo! 🎉`);
+      await BingoBoardService.join(game.id, { userId: user?.id, kickUsername: normalized }, preferredSlot, this.io ?? undefined);
+      if (existing) {
+        logger.info(`KickChatService: ${kickUsername} updated their bingo preferred slot to "${preferredSlot}"`);
+        await this.sendChatMessage(`🎰 ${kickUsername} updated their default slot to "${preferredSlot}"!`);
+      } else {
+        logger.info(`KickChatService: ${kickUsername} joined bingo ${game.id} via !join${preferredSlot ? ` (preferred slot: ${preferredSlot})` : ''}${user ? '' : ' (unlinked)'}`);
+        await this.sendChatMessage(`${kickUsername} has joined Bonus Bingo! 🎉`);
+      }
     } catch (err) {
+      // Expected/benign failures (not registered yet, bare repeat "!join" with nothing
+      // to update, or mid-turn) just get logged — no chat spam for those.
       logger.warn(`KickChatService: !join failed for ${kickUsername}`, { error: (err as Error).message });
     }
   }
@@ -304,11 +316,11 @@ export class KickChatService {
     }
   }
 
-  private static async processKothJoin(kickUsername: string): Promise<void> {
+  private static async processKothJoin(kickUsername: string, slotName: string | null): Promise<void> {
     try {
-      const joined = await KingOfTheHillService.joinByKeyword(kickUsername, this.io ?? undefined);
+      const joined = await KingOfTheHillService.joinByKeyword(kickUsername, slotName, this.io ?? undefined);
       if (joined) {
-        logger.info(`KickChatService: ${kickUsername} joined King of the Hill via !king`);
+        logger.info(`KickChatService: ${kickUsername} joined King of the Hill via !king${slotName ? ` (slot: ${slotName})` : ''}`);
         await this.sendChatMessage(`👑 ${kickUsername} has joined King of the Hill!`);
       }
     } catch (err) {

@@ -99,6 +99,7 @@ function toRaidResponse(raid: RaidWithRelations) {
       id: e.id,
       raidId: e.raidId,
       userId: entryIdentity(e),
+      slotName: e.slotName,
       status: e.status,
       joinedAt: e.joinedAt,
       drawnAt: e.drawnAt,
@@ -210,12 +211,19 @@ export class BossRaidService {
   // Called from KickChatService when a chatter's message matches this raid's own
   // entry keyword — identical "identify by raw kick username" convention as every
   // other keyword-join feature, so linking/verifying an account is never required.
+  // An optional trailing slot name (e.g. "!monster sweet bonanza") is locked in at
+  // signup — same as Bounty Hunter's "!bounty <slot>" and King of the Hill's
+  // "!king <slot>" — and can still be overridden later via "!slot <name>" or the admin.
   static async handleKeyword(kickUsername: string, message: string, io?: SocketIOServer): Promise<boolean> {
     const raid = await prisma.bossRaid.findFirst({ where: { status: BossRaidStatus.REGISTRATION } });
     if (!raid) return false;
 
-    const trimmed = message.trim().toLowerCase();
-    if (trimmed !== raid.keyword.toLowerCase()) return false;
+    const trimmed = message.trim();
+    const lowerKeyword = raid.keyword.toLowerCase();
+    const lower = trimmed.toLowerCase();
+    if (lower !== lowerKeyword && !lower.startsWith(lowerKeyword + ' ')) return false;
+
+    const slotName = trimmed.slice(raid.keyword.length).trim() || null;
 
     const normalized = kickUsername.trim().toLowerCase();
     const existing = await prisma.bossRaidEntry.findUnique({
@@ -229,11 +237,11 @@ export class BossRaidService {
     });
 
     await prisma.bossRaidEntry.create({
-      data: { raidId: raid.id, kickUsername: normalized, userId: user?.id ?? null },
+      data: { raidId: raid.id, kickUsername: normalized, userId: user?.id ?? null, slotName: slotName?.slice(0, 100) ?? null },
     });
     await this.emitRaid(raid.id, io);
 
-    logger.info(`BossRaid ${raid.id}: ${kickUsername} joined via keyword${user ? '' : ' (unlinked)'}`);
+    logger.info(`BossRaid ${raid.id}: ${kickUsername} joined via keyword${slotName ? ` (slot: ${slotName})` : ''}${user ? '' : ' (unlinked)'}`);
     return true;
   }
 
@@ -292,7 +300,7 @@ export class BossRaidService {
         data: { status: BossRaidEntryStatus.DRAWN, drawnAt: new Date() },
       }),
       prisma.bossRaidRound.create({
-        data: { raidId, entryId: pick.id, userId: pick.userId },
+        data: { raidId, entryId: pick.id, userId: pick.userId, slotName: pick.slotName, slotCalledAt: pick.slotName ? new Date() : null },
       }),
     ]);
 

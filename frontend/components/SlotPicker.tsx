@@ -68,6 +68,8 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
   const [provider, setProvider] = useState("");
+  const [providerQuery, setProviderQuery] = useState("");
+  const [providerListOpen, setProviderListOpen] = useState(false);
   const [sortAZ, setSortAZ] = useState(false);
   const [volFilter, setVolFilter] = useState<"" | "Low" | "Medium" | "High" | "Very High">("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -91,12 +93,24 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
   }, [query, provider, volFilter, sortAZ]);
 
   // Every provider in the catalogue (not just the curated quick-pick chips below),
-  // alphabetical so the native select's type-ahead-by-letter jumps somewhere useful.
+  // alphabetical so browsing the unfiltered list still reads naturally.
   const providerCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const g of SLOT_GAMES) counts.set(g.provider, (counts.get(g.provider) ?? 0) + 1);
     return Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, []);
+
+  const filteredProviders = useMemo(() => {
+    const q = providerQuery.trim().toLowerCase();
+    if (!q) return providerCounts;
+    return providerCounts.filter(([name]) => name.toLowerCase().includes(q));
+  }, [providerCounts, providerQuery]);
+
+  const selectProvider = (name: string) => {
+    setProvider(name);
+    setProviderQuery("");
+    setProviderListOpen(false);
+  };
 
   const selectedGame = useMemo(
     () => SLOT_GAMES.find((s) => s.name === value),
@@ -158,27 +172,19 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
       {open && (
         <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: 340 }}>
 
-          {/* Provider filter: full-catalogue dropdown + curated quick-pick chips */}
+          {/* Provider filter: searchable full catalogue + curated quick-pick chips */}
           <div className="flex items-center gap-1.5 px-3 pt-2.5 pb-2 shrink-0">
-            <div className="relative shrink-0">
-              <select
-                value={provider}
-                onChange={(e) => setProvider(e.target.value)}
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Filter by provider"
-                title="Filter by provider"
-                style={{ colorScheme: "dark" }}
-                className="appearance-none max-w-[132px] truncate text-[11px] font-semibold pl-2.5 pr-6 py-1 rounded-full border transition-colors cursor-pointer focus:outline-none focus:border-yellow-400/50 !bg-white/8 text-white/70 border-white/10 hover:!bg-white/15 hover:text-white"
-              >
-                <option value="" className="bg-[#111] text-white">All Providers</option>
-                {providerCounts.map(([name, count]) => (
-                  <option key={name} value={name} className="bg-[#111] text-white">{name} ({count})</option>
-                ))}
-              </select>
-              <svg className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-white/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </div>
+            <input
+              type="text"
+              value={providerQuery}
+              onChange={(e) => { setProviderQuery(e.target.value); setProviderListOpen(true); }}
+              onFocus={() => setProviderListOpen(true)}
+              onBlur={() => setTimeout(() => setProviderListOpen(false), 120)}
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Search providers"
+              placeholder={provider || "Search providers…"}
+              className="shrink-0 w-[112px] text-[11px] font-semibold pl-2.5 pr-2 py-1 rounded-full border transition-colors bg-white/8 text-white placeholder:text-white/50 placeholder:font-semibold placeholder:truncate border-white/10 hover:bg-white/15 focus:outline-none focus:border-yellow-400/50 focus:bg-white/15"
+            />
             <div
               className="flex gap-1.5 overflow-x-auto min-w-0 [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-track]:bg-transparent"
               style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.2) transparent" }}
@@ -186,7 +192,7 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
               {PROVIDERS.map((p) => (
                 <button
                   key={p.value}
-                  onClick={(e) => { e.stopPropagation(); setProvider(p.value); }}
+                  onClick={(e) => { e.stopPropagation(); setProvider(p.value); setProviderListOpen(false); }}
                   className={`shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full transition-colors ${
                     provider === p.value
                       ? "bg-yellow-400 text-black"
@@ -198,6 +204,40 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
               ))}
             </div>
           </div>
+
+          {/* Provider search results — inline (not an overlay) so it can never get
+              clipped by this panel's own overflow:hidden. */}
+          {providerListOpen && (
+            <div
+              onMouseDown={(e) => e.preventDefault()}
+              className="mx-3 mb-2 max-h-28 overflow-y-auto rounded-lg border border-white/10 bg-white/5 shrink-0"
+            >
+              <button
+                onClick={() => selectProvider("")}
+                className={`w-full flex items-center justify-between gap-2 text-left px-3 py-1.5 text-[11px] font-semibold transition-colors ${
+                  !provider ? "text-yellow-300 bg-white/5" : "text-white/70 hover:bg-white/8"
+                }`}
+              >
+                All Providers
+              </button>
+              {filteredProviders.length === 0 ? (
+                <div className="px-3 py-1.5 text-[11px] text-white/30">No matching providers</div>
+              ) : (
+                filteredProviders.map(([name, count]) => (
+                  <button
+                    key={name}
+                    onClick={() => selectProvider(name)}
+                    className={`w-full flex items-center justify-between gap-2 text-left px-3 py-1.5 text-[11px] font-medium transition-colors ${
+                      provider === name ? "text-yellow-300 bg-white/5" : "text-white/70 hover:bg-white/8"
+                    }`}
+                  >
+                    <span className="truncate">{name}</span>
+                    <span className="text-white/30 shrink-0">{count}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
 
           {/* Volatility filter row */}
           <div className="flex gap-1.5 px-3 pb-1.5 shrink-0">

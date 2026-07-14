@@ -17,6 +17,7 @@ export interface BingoParticipant {
   id: string;
   gameId: string;
   userId: string;
+  preferredSlot: string | null;
   joinedAt: string;
   user: { id: string; displayName: string; kickUsername: string | null; avatarUrl: string | null };
 }

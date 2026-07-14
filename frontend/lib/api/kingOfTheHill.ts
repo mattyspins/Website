@@ -28,6 +28,7 @@ export interface KothEntry {
   id: string;
   sessionId: string;
   userId: string;
+  slotName: string | null;
   status: "WAITING" | "DRAWN" | "KING";
   joinedAt: string;
   drawnAt: string | null;

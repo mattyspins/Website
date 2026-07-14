@@ -178,7 +178,7 @@ export class BingoBoardService {
 
   // identity.userId is set for the authenticated website "Join" button; identity.kickUsername
   // is set (and userId optionally resolved) for the "!join" Kick chat command.
-  static async join(gameId: string, identity: Identity, io?: SocketIOServer) {
+  static async join(gameId: string, identity: Identity, preferredSlot?: string | null, io?: SocketIOServer) {
     const game = await prisma.bonusBingo.findUnique({ where: { id: gameId } });
     if (!game) throw createError.notFound('Bingo game not found');
     if (
@@ -202,11 +202,24 @@ export class BingoBoardService {
         ],
       },
     });
-    if (existing) throw createError.badRequest('Already joined');
 
-    await prisma.bingoParticipant.create({
-      data: { gameId, userId, kickUsername },
-    });
+    if (existing) {
+      // Already in the pool — a repeat "!join <slot>" updates their default pick for
+      // future draws (a bare repeat "!join" with nothing to update is still a no-op
+      // error, same as before). Mid-turn, direct them to "!slot" for this cell instead.
+      if (!preferredSlot) throw createError.badRequest('Already joined');
+      const isCurrentPlayer = (userId && game.currentUserId === userId) || (kickUsername && game.currentKickUsername === kickUsername);
+      if (isCurrentPlayer) throw createError.badRequest('Already your turn — use "!slot <name>" to set this cell\'s slot');
+
+      await prisma.bingoParticipant.update({
+        where: { id: existing.id },
+        data: { preferredSlot: preferredSlot.slice(0, 100) },
+      });
+    } else {
+      await prisma.bingoParticipant.create({
+        data: { gameId, userId, kickUsername, preferredSlot: preferredSlot?.slice(0, 100) || null },
+      });
+    }
 
     const updated = await prisma.bonusBingo.findUnique({
       where: { id: gameId },
@@ -360,16 +373,31 @@ export class BingoBoardService {
       await RedisService.set(key, JSON.stringify(drawnThisCycle), 86400);
     }
 
-    const updated = await prisma.bonusBingo.update({
-      where: { id },
-      data: {
-        currentUserId: pick.userId,
-        currentKickUsername: pick.kickUsername,
-      },
-      include: BINGO_INCLUDE,
-    });
+    // Pre-fill this cell from the drawn player's "!join <slot>" preference, same as
+    // Boss Raid/Bounty Hunter/King of the Hill's signup-time slot capture — but since a
+    // bingo participant can be drawn for several different cells across one game, this
+    // is only ever a default applied fresh on each draw (a blank cell), not a one-time
+    // commitment; it stays fully overridable via "!slot <name>" or the admin picker.
+    await prisma.$transaction([
+      prisma.bonusBingo.update({
+        where: { id },
+        data: {
+          currentUserId: pick.userId,
+          currentKickUsername: pick.kickUsername,
+        },
+      }),
+      ...(pick.preferredSlot
+        ? [
+            prisma.bingoCell.updateMany({
+              where: { id: game.currentCellId, slotName: null },
+              data: { slotName: pick.preferredSlot },
+            }),
+          ]
+        : []),
+    ]);
 
-    return this.broadcastAndReturn(io, id, updated);
+    const updated = await prisma.bonusBingo.findUnique({ where: { id }, include: BINGO_INCLUDE });
+    return this.broadcastAndReturn(io, id, updated!);
   }
 
   // requester is null when called from a context that's already been authorized

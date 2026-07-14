@@ -287,8 +287,11 @@ export default function AdminBossRaidPage() {
               <div className="boss-panel" style={panelStyle}>
                 <div style={panelTitleStyle}>REGISTRATION</div>
                 <div style={{ fontSize: 12, color: "oklch(0.6 0.02 260)", marginBottom: 6 }}>Entry keyword</div>
-                <div style={{ width: "100%", padding: "10px 12px", background: "oklch(0.1 0.01 260)", border: "1px solid oklch(0.35 0.04 250 / 0.6)", borderRadius: 8, color: "oklch(0.9 0.01 260)", fontWeight: 700, marginBottom: 12, fontFamily: "'Rajdhani',sans-serif" }}>
+                <div style={{ width: "100%", padding: "10px 12px", background: "oklch(0.1 0.01 260)", border: "1px solid oklch(0.35 0.04 250 / 0.6)", borderRadius: 8, color: "oklch(0.9 0.01 260)", fontWeight: 700, marginBottom: 6, fontFamily: "'Rajdhani',sans-serif" }}>
                   {raid.keyword}
+                </div>
+                <div style={{ fontSize: 11, color: "oklch(0.55 0.02 260)", marginBottom: 12 }}>
+                  Viewers join with <span style={{ color: "oklch(0.82 0.1 220)" }}>{raid.keyword} &lt;slot&gt;</span> — slot is optional at signup.
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -387,7 +390,7 @@ export default function AdminBossRaidPage() {
                       return (
                         <>
                           <div style={{ fontSize: 12, color: "oklch(0.6 0.02 260)", marginBottom: 8 }}>
-                            Slot choice — <span style={{ color: "oklch(0.85 0.01 260)" }}>!slot &lt;name&gt;</span> in chat (or pick for them):
+                            Slot from <span style={{ color: "oklch(0.85 0.01 260)" }}>{raid.keyword} &lt;slot&gt;</span> or <span style={{ color: "oklch(0.85 0.01 260)" }}>!slot &lt;name&gt;</span> in chat — or pick for them:
                           </div>
                           <div style={{ marginBottom: 12 }}>
                             <SlotPicker value={activeSlot ?? ""} onChange={(name) => name && handlePickSlot(name)} placeholder="Search or type a slot…" />

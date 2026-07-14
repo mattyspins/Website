@@ -105,7 +105,7 @@ export class BingoBoardController {
   // ─── Viewer (auth required) ──────────────────────────────────────────────────
 
   static join = asyncHandler(async (req, res) => {
-    const game = await BingoBoardService.join(req.params.id, await identityFor(req.user!.id), _io);
+    const game = await BingoBoardService.join(req.params.id, await identityFor(req.user!.id), null, _io);
     res.json({ success: true, game });
   });
 
