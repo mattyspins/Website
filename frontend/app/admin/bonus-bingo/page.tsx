@@ -524,6 +524,7 @@ export default function AdminBingoPage() {
                           >
                             {p.user.avatarUrl && <img src={p.user.avatarUrl} alt="" className="w-5 h-5 rounded-full" />}
                             <span>{kickName(p.user)}</span>
+                            {p.preferredSlot && <span className="text-white/40 text-xs">🎰 {p.preferredSlot}</span>}
                             {hasGreenCell && <span className="text-green-400 text-xs">🟩</span>}
                             <button
                               onClick={() => handleRemoveParticipant(p.userId, kickName(p.user))}
