@@ -13,6 +13,7 @@ import { KingOfTheHillService } from '@/services/KingOfTheHillService';
 import { TournamentService } from '@/services/TournamentService';
 import { HighRollerService } from '@/services/HighRollerService';
 import { BossRaidService } from '@/services/BossRaidService';
+import { BountyHunterService } from '@/services/BountyHunterService';
 import { BingoStatus, TournamentStatus, HighRollerPrediction, HighRollerStatus } from '@prisma/client';
 
 const KICK_CHANNEL_NAME = process.env['KICK_CHANNEL_NAME'] || 'mattyspins';
@@ -159,6 +160,8 @@ export class KickChatService {
       await this.processKothSlot(kickUsername, slotName);
       const bossSlotSet = await BossRaidService.submitSlotCall(kickUsername, slotName, this.io ?? undefined);
       if (bossSlotSet) await this.sendChatMessage(`🎰 ${kickUsername} locked in "${slotName}" for the Boss Raid!`);
+      const bountySlotSet = await BountyHunterService.submitSlotCall(kickUsername, slotName, this.io ?? undefined);
+      if (bountySlotSet) await this.sendChatMessage(`🎯 ${kickUsername} locked in "${slotName}" for the Bounty Hunter!`);
     }
 
     // Check for King of the Hill join command: !king
@@ -217,6 +220,10 @@ export class KickChatService {
     // Check for Boss Raid entry keyword (e.g. "!monster")
     const joinedRaid = await BossRaidService.handleKeyword(kickUsername, content, this.io ?? undefined);
     if (joinedRaid) await this.sendChatMessage(`⚔️ ${kickUsername} has joined the Boss Raid!`);
+
+    // Check for Bounty Hunter entry keyword (e.g. "!bounty" or "!bounty sweetbonanza")
+    const joinedBounty = await BountyHunterService.handleKeyword(kickUsername, content, this.io ?? undefined);
+    if (joinedBounty) await this.sendChatMessage(`🎯 ${kickUsername} has joined the Bounty Hunter!`);
 
     // Award points for chatting (verified users only)
     await this.awardChatPoints(kickUsername);

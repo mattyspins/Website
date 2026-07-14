@@ -164,6 +164,8 @@ import weeklyRaffleRoutes from '@/routes/weeklyRaffle';
 import { setWeeklyRaffleIO } from '@/controllers/WeeklyRaffleController';
 import bossRaidRoutes from '@/routes/bossRaid';
 import { setBossRaidIO } from '@/controllers/BossRaidController';
+import bountyHunterRoutes from '@/routes/bountyHunter';
+import { setBountyHunterIO } from '@/controllers/BountyHunterController';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
@@ -190,6 +192,7 @@ app.use('/api/high-roller', highRollerRoutes);
 app.use('/api/wager-leaderboard', wagerLeaderboardRoutes);
 app.use('/api/weekly-raffle', weeklyRaffleRoutes);
 app.use('/api/boss-raid', bossRaidRoutes);
+app.use('/api/bounty-hunter', bountyHunterRoutes);
 
 // Wire up tournament real-time events
 setTournamentIO(io);
@@ -200,6 +203,7 @@ setKothIO(io);
 setHighRollerIO(io);
 setWeeklyRaffleIO(io);
 setBossRaidIO(io);
+setBountyHunterIO(io);
 
 // Socket.IO connection handling
 io.on('connection', socket => {
@@ -251,6 +255,14 @@ io.on('connection', socket => {
   });
   socket.on('leaveBossRaid', (raidId: string) => {
     socket.leave(`bossraid:${raidId}`);
+  });
+
+  // Bounty Hunter rooms
+  socket.on('joinBountyHunter', (huntId: string) => {
+    socket.join(`bountyhunter:${huntId}`);
+  });
+  socket.on('leaveBountyHunter', (huntId: string) => {
+    socket.leave(`bountyhunter:${huntId}`);
   });
 
   socket.on('disconnect', () => {

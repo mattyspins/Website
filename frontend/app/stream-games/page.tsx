@@ -59,6 +59,17 @@ const GAMES: Game[] = [
     link: "/boss-raid", linkLabel: "View Live Boss Raid",
   },
   {
+    id: "bounty-hunter", name: "Community Bounty Hunter",
+    tagline: "Land closest to the secret multiplier to claim the pot",
+    icon: <span className="text-xl leading-none">🎯</span>, color: "text-amber-400", iconBg: "bg-amber-500/15", border: "border-amber-500/20",
+    badge: "NEW", badgeColor: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    description: "Matty secretly sets a target multiplier. Hunters join the pool, take turns playing a slot, and whoever lands closest to the hidden target claims the bounty pot. Nobody close enough? The bounty rolls over — bigger pot, wider claim zone, new secret target 🎯",
+    howItWorks: ["Type the bounty keyword shown on stream to join (optionally with a slot)", "One hunter is drawn at a time and plays their slot", "Each result's distance from the secret target is revealed as a heat level — never the target itself", "Landing inside the claim zone qualifies you for the bounty", "The closest qualifying shot claims the pot when Matty settles the bounty", "Nobody qualifies? The bounty rolls over with a bigger pot and wider claim zone 🔥"],
+    rewards: ["Website coins", "Community rewards", "Bragging rights on the bounty board"],
+    note: "Only one bounty is active at a time — watch stream for the keyword 👊",
+    link: "/bounty-hunter", linkLabel: "View Live Bounty Hunter",
+  },
+  {
     id: "bonus-bingo", name: "Bonus Bingo",
     tagline: "Complete a line on the bingo board to win",
     icon: <Grid3X3 className="w-6 h-6" />, color: "text-green-400", iconBg: "bg-green-500/15", border: "border-green-500/20",

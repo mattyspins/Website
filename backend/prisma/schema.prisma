@@ -78,6 +78,9 @@ model User {
   bossRaidsCreated       BossRaid[]            @relation("BossRaidCreator")
   bossRaidEntries        BossRaidEntry[]
   bossRaidRounds         BossRaidRound[]
+  bountyHuntersCreated   BountyHunter[]        @relation("BountyHunterCreator")
+  bountyHunterEntries    BountyHunterEntry[]
+  bountyHunterRounds     BountyHunterRound[]
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")
@@ -1072,5 +1075,85 @@ model BossRaidRound {
   user  User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("boss_raid_rounds")
+}
+
+// ─── Community Bounty Hunter (secret target multiplier, closest hit wins) ──
+
+enum BountyHunterStatus {
+  REGISTRATION
+  ACTIVE
+  SETTLED
+}
+
+enum BountyHunterEntryStatus {
+  WAITING
+  DRAWN
+  DONE
+}
+
+model BountyHunter {
+  id               String                   @id @default(uuid())
+  keyword          String
+  status           BountyHunterStatus       @default(REGISTRATION)
+  registrationOpen Boolean                  @default(true) @map("registration_open")
+  target           Int
+  targetMin        Int                      @default(50) @map("target_min")
+  targetMax        Int                      @default(500) @map("target_max")
+  claimZone        Int                      @default(25) @map("claim_zone")
+  pot              Int                      @default(5000)
+  rolloverCount    Int                      @default(0) @map("rollover_count")
+  epoch            Int                      @default(0)
+  winnerEntryId    String?                  @map("winner_entry_id")
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  closedAt         DateTime?                @map("closed_at")
+  createdById      String                   @map("created_by_id")
+
+  creator User                @relation("BountyHunterCreator", fields: [createdById], references: [id])
+  entries BountyHunterEntry[]
+  rounds  BountyHunterRound[]
+
+  @@map("bounty_hunters")
+}
+
+model BountyHunterEntry {
+  id           String                   @id @default(uuid())
+  huntId       String                   @map("hunt_id")
+  kickUsername String                   @map("kick_username")
+  userId       String?                  @map("user_id")
+  slotName     String?                  @map("slot_name")
+  status       BountyHunterEntryStatus  @default(WAITING)
+  joinedAt     DateTime                 @default(now()) @map("joined_at")
+  drawnAt      DateTime?                @map("drawn_at")
+
+  hunt   BountyHunter        @relation(fields: [huntId], references: [id], onDelete: Cascade)
+  user   User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  rounds BountyHunterRound[]
+
+  @@unique([huntId, kickUsername])
+  @@map("bounty_hunter_entries")
+}
+
+model BountyHunterRound {
+  id           String    @id @default(uuid())
+  huntId       String    @map("hunt_id")
+  entryId      String    @map("entry_id")
+  userId       String?   @map("user_id")
+  epoch        Int
+  slotName     String?   @map("slot_name")
+  betAmount    Decimal?  @map("bet_amount") @db.Decimal(10, 2)
+  payoutAmount Decimal?  @map("payout_amount") @db.Decimal(10, 2)
+  multiplier   Decimal?  @db.Decimal(10, 2)
+  distance     Int?
+  qualifies    Boolean   @default(false)
+  skipped      Boolean   @default(false)
+  drawnAt      DateTime  @default(now()) @map("drawn_at")
+  slotCalledAt DateTime? @map("slot_called_at")
+  playedAt     DateTime? @map("played_at")
+
+  hunt  BountyHunter      @relation(fields: [huntId], references: [id], onDelete: Cascade)
+  entry BountyHunterEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  user  User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("bounty_hunter_rounds")
 }
 
