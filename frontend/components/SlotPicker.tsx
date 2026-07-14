@@ -50,7 +50,9 @@ export function VolatilityBadge({ volatility }: { volatility: Volatility }) {
   );
 }
 
-// Provider filter chips — ordered by catalogue size
+// Curated one-tap shortcuts for the providers most requested on this stream (not
+// necessarily the biggest by catalogue size) — the dropdown next to these covers
+// every other provider in the full catalogue.
 const PROVIDERS = [
   { label: "All", value: "" },
   { label: "Pragmatic", value: "Pragmatic Play" },
@@ -87,6 +89,14 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
     if (sortAZ) list = [...list].sort((a, b) => a.name.localeCompare(b.name));
     return list;
   }, [query, provider, volFilter, sortAZ]);
+
+  // Every provider in the catalogue (not just the curated quick-pick chips below),
+  // alphabetical so the native select's type-ahead-by-letter jumps somewhere useful.
+  const providerCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const g of SLOT_GAMES) counts.set(g.provider, (counts.get(g.provider) ?? 0) + 1);
+    return Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, []);
 
   const selectedGame = useMemo(
     () => SLOT_GAMES.find((s) => s.name === value),
@@ -148,24 +158,45 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
       {open && (
         <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: 340 }}>
 
-          {/* Provider filter chips */}
-          <div
-            className="flex gap-1.5 px-3 pt-2.5 pb-2 overflow-x-auto shrink-0 [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-track]:bg-transparent"
-            style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.2) transparent" }}
-          >
-            {PROVIDERS.map((p) => (
-              <button
-                key={p.value}
-                onClick={(e) => { e.stopPropagation(); setProvider(p.value); }}
-                className={`shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full transition-colors ${
-                  provider === p.value
-                    ? "bg-yellow-400 text-black"
-                    : "bg-white/8 text-white/50 hover:bg-white/15 hover:text-white"
-                }`}
+          {/* Provider filter: full-catalogue dropdown + curated quick-pick chips */}
+          <div className="flex items-center gap-1.5 px-3 pt-2.5 pb-2 shrink-0">
+            <div className="relative shrink-0">
+              <select
+                value={provider}
+                onChange={(e) => setProvider(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Filter by provider"
+                title="Filter by provider"
+                style={{ colorScheme: "dark" }}
+                className="appearance-none max-w-[132px] truncate text-[11px] font-semibold pl-2.5 pr-6 py-1 rounded-full border transition-colors cursor-pointer focus:outline-none focus:border-yellow-400/50 !bg-white/8 text-white/70 border-white/10 hover:!bg-white/15 hover:text-white"
               >
-                {p.label}
-              </button>
-            ))}
+                <option value="" className="bg-[#111] text-white">All Providers</option>
+                {providerCounts.map(([name, count]) => (
+                  <option key={name} value={name} className="bg-[#111] text-white">{name} ({count})</option>
+                ))}
+              </select>
+              <svg className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-white/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+            <div
+              className="flex gap-1.5 overflow-x-auto min-w-0 [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-track]:bg-transparent"
+              style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.2) transparent" }}
+            >
+              {PROVIDERS.map((p) => (
+                <button
+                  key={p.value}
+                  onClick={(e) => { e.stopPropagation(); setProvider(p.value); }}
+                  className={`shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full transition-colors ${
+                    provider === p.value
+                      ? "bg-yellow-400 text-black"
+                      : "bg-white/8 text-white/50 hover:bg-white/15 hover:text-white"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Volatility filter row */}
