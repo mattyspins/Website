@@ -26,22 +26,6 @@ type HuntWithRelations = Prisma.BountyHunterGetPayload<{ include: typeof INCLUDE
 type EntryWithUser = HuntWithRelations['entries'][number];
 type RoundWithUser = HuntWithRelations['rounds'][number];
 
-const SLOT_CATALOG: Record<string, string> = {
-  sweetbonanza: 'Sweet Bonanza',
-  'sweet bonanza': 'Sweet Bonanza',
-  gatesofolympus: 'Gates of Olympus',
-  'gates of olympus': 'Gates of Olympus',
-  wanted: 'Wanted',
-  sugarrush1000: 'Sugar Rush 1000',
-  'sugar rush 1000': 'Sugar Rush 1000',
-  'sugar rush': 'Sugar Rush 1000',
-  bigbass: 'Big Bass Bonanza',
-  'big bass': 'Big Bass Bonanza',
-  'big bass bonanza': 'Big Bass Bonanza',
-  starlight: 'Starlight Princess',
-  'starlight princess': 'Starlight Princess',
-};
-
 const ROLLOVER_POT_MULT = 1.5;
 const ROLLOVER_BAND_ADD = 20;
 
@@ -259,9 +243,10 @@ export class BountyHunterService {
   }
 
   // Called from KickChatService when a chatter's message matches this hunt's own entry
-  // keyword, e.g. "!bounty" or "!bounty sweetbonanza" — the optional trailing text locks
-  // in a slot at signup (best-effort match against the known slot catalog); it can still
-  // be overridden later via the shared "!slot <name>" command or by the admin.
+  // keyword, e.g. "!bounty" or "!bounty pub kings" — the optional trailing text locks in
+  // a slot at signup (any free text, same as Boss Raid/King of the Hill — not restricted
+  // to a fixed catalog); it can still be overridden later via the shared "!slot <name>"
+  // command or by the admin.
   static async handleKeyword(kickUsername: string, message: string, io?: SocketIOServer): Promise<boolean> {
     const hunt = await prisma.bountyHunter.findFirst({ where: { status: BountyHunterStatus.REGISTRATION, registrationOpen: true } });
     if (!hunt) return false;
@@ -272,7 +257,7 @@ export class BountyHunterService {
     if (lower !== lowerKeyword && !lower.startsWith(lowerKeyword + ' ')) return false;
 
     const rest = trimmed.slice(hunt.keyword.length).trim();
-    const slotName = rest ? SLOT_CATALOG[rest.toLowerCase()] ?? null : null;
+    const slotName = rest ? rest.slice(0, 100) : null;
 
     const normalized = kickUsername.trim().toLowerCase();
     const existing = await prisma.bountyHunterEntry.findUnique({

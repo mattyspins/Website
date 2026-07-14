@@ -333,8 +333,11 @@ export default function AdminBossRaidPage() {
                   {filteredParticipants.length === 0 && <p style={{ fontSize: 13, color: "oklch(0.5 0.02 260)", textAlign: "center", padding: "16px 0" }}>No participants yet</p>}
                   {filteredParticipants.map((p) => (
                     <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", borderRadius: 6, fontSize: 13, background: p.status === "DRAWN" ? "oklch(0.28 0.08 220 / 0.5)" : "oklch(0.13 0.015 260)", opacity: p.status === "DONE" ? 0.5 : 1 }}>
-                      <span>{p.user.displayName}</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.user.displayName}</span>
+                      <span style={{ fontSize: 11, color: "oklch(0.65 0.05 220)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1, margin: "0 8px", textAlign: "right" }}>
+                        {p.slotName ? `🎰 ${p.slotName}` : ""}
+                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                         <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, color: p.status === "DRAWN" ? "oklch(0.85 0.13 220)" : p.status === "DONE" ? "oklch(0.5 0.02 260)" : "oklch(0.65 0.13 145)" }}>
                           {p.status === "DRAWN" ? "PLAYING" : p.status === "DONE" ? "done" : "ready"}
                         </span>

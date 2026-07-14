@@ -404,14 +404,17 @@ export default function AdminKingOfTheHillPage() {
                       <div key={e.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/3 border border-white/5">
                         <Avatar u={e.user} size={7} />
                         <span className="text-white/80 text-sm font-medium truncate">{name(e.user)}</span>
-                        <button
-                          onClick={() => handleRemoveEntry(e.id)}
-                          disabled={actionLoading}
-                          className="ml-auto text-white/20 hover:text-red-400 transition-colors text-xs shrink-0"
-                          title="Remove"
-                        >
-                          ✕
-                        </button>
+                        <div className="ml-auto flex items-center gap-2 shrink-0">
+                          {e.slotName && <span className="text-white/40 text-xs truncate">🎰 {e.slotName}</span>}
+                          <button
+                            onClick={() => handleRemoveEntry(e.id)}
+                            disabled={actionLoading}
+                            className="text-white/20 hover:text-red-400 transition-colors text-xs shrink-0"
+                            title="Remove"
+                          >
+                            ✕
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}
