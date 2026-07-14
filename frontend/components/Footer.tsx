@@ -164,6 +164,13 @@ export default function Footer() {
           <p className="text-gray-700 text-xs">
             Not affiliated with any gambling operator. For entertainment purposes.
           </p>
+          <p className="text-gray-700 text-xs">
+            Slot data by{" "}
+            <a href="https://slot.report/" target="_blank" rel="noopener noreferrer"
+              className="text-gray-600 hover:text-gray-400 transition-colors">
+              slot.report
+            </a>
+          </p>
         </div>
 
       </div>
