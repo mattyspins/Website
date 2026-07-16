@@ -1,12 +1,75 @@
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
-@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
 
 * {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
+}
+
+/* ─── Accessibility baseline ───────────────────────────────────────────────
+   Applies site-wide. Keep these rules ahead of component styles so a component
+   can still opt out deliberately, but never has to opt *in* to being usable. */
+
+/* Visible keyboard focus. :focus-visible only fires for keyboard/AT users, so
+   mouse clicks stay visually clean. WCAG 2.4.7. */
+:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* Never leave a control with no focus affordance: if something removes the
+   outline, this ring still lands. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+/* Screen-reader-only text — for icon-only controls and section labels. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+/* NOTE: don't redefine `.focus\:not-sr-only:focus` here — Tailwind generates its
+   own copy after this file in the cascade and wins. The skip link's revealed
+   appearance is styled with utilities on the element itself instead. */
+
+/* Respect the OS "reduce motion" setting. The site leans on Framer Motion and
+   long CSS transitions; for vestibular-sensitive users all of that collapses to
+   an instant state change rather than being removed (content must still appear).
+   WCAG 2.3.3. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Minimum touch target for coarse pointers (WCAG 2.5.5 / 2.5.8).
+   Opt-in class so dense admin tables can stay dense on desktop. */
+@media (pointer: coarse) {
+  .tap-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 html,
@@ -63,7 +126,13 @@ body {
 .btn-glow {
   position: relative;
   overflow: hidden;
-  transition: all 0.3s ease;
+  /* Transition only what actually moves. `all` also animated `outline`, which
+     made the keyboard focus ring fade in (and resolve to the UA default rather
+     than our gold) instead of appearing instantly — a focus indicator must be
+     immediate. It's also cheaper: `all` forces the compositor to watch every
+     animatable property. */
+  transition: background-color 0.3s ease, color 0.3s ease,
+    box-shadow 0.3s ease, transform 0.3s ease, filter 0.3s ease;
 }
 
 .btn-glow::before {

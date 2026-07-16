@@ -113,9 +113,15 @@ const limiter = rateLimit({
 
 app.use('/api/', limiter);
 
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsing middleware.
+// 10mb was far beyond anything this API accepts (there are no upload endpoints),
+// which made it a cheap way to tie up memory. 1mb still cuts that surface by
+// 10x while leaving real headroom for the largest legitimate payload:
+// POST /users/bulk/points, which carries an array of user UUIDs (~39 bytes each
+// once JSON-encoded). 1mb ≈ 26k ids, well clear of the 5k ceiling the user
+// export already implies.
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Cookie parsing middleware
 app.use(cookieParser());

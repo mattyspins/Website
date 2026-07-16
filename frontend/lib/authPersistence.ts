@@ -29,6 +29,16 @@ export interface StoredUser {
 /**
  * Store authentication tokens and user info
  */
+/**
+ * Persist the session for this device.
+ *
+ * MIGRATION — the two `setItem` calls below are the last thing keeping JWTs
+ * readable by page JavaScript (and therefore stealable by an XSS). The API
+ * already sets httpOnly cookies on the OAuth callback, and every request path
+ * here sends `credentials: "include"`, so the tokens are redundant the moment
+ * the last direct `localStorage.getItem("access_token")` caller is migrated to
+ * `authFetch()`. Deleting these two lines is the final step — see lib/authFetch.ts.
+ */
 export function storeAuthData(
   accessToken: string,
   refreshToken: string,
@@ -109,23 +119,26 @@ export function isTokenExpired(): boolean {
 }
 
 /**
- * Refresh the access token using the refresh token
+ * Refresh the access token.
+ *
+ * Sends `credentials: "include"` so the httpOnly refresh cookie is used when
+ * present; the body token is a fallback for sessions created before cookies
+ * existed. The server rotates both the cookies and the response body, so this
+ * works either way and needs no branching here.
  */
 export async function refreshAccessToken(): Promise<boolean> {
   const refreshToken = getRefreshToken();
 
-  if (!refreshToken) {
-    console.warn("No refresh token available");
-    return false;
-  }
-
   try {
     const response = await fetch(`${API_BASE}/api/auth/refresh`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ refreshToken }),
+      // Omit the body entirely when there's no stored token — the cookie is
+      // then the only credential, which is the end state we're migrating to.
+      body: refreshToken ? JSON.stringify({ refreshToken }) : undefined,
     });
 
     if (!response.ok) {
@@ -216,9 +229,12 @@ export async function initializeAuth(): Promise<StoredUser | null> {
     }
   }
 
-  // Verify token with backend
+  // Verify the session with the backend. credentials:"include" means this keeps
+  // working once the access token is no longer in localStorage — the cookie
+  // authenticates it.
   try {
     const response = await fetch(API_ENDPOINTS.AUTH_ME, {
+      credentials: "include",
       headers: {
         Authorization: `Bearer ${getAccessToken()}`,
       },
@@ -275,10 +291,21 @@ export function updateStoredUser(updates: Partial<StoredUser>): void {
 }
 
 /**
- * Check if user is authenticated
+ * Is there a session on this device?
+ *
+ * Deliberately keyed off the stored *user info*, not the token: once tokens move
+ * to httpOnly cookies, page JS can't see them, so "do I hold a token" stops
+ * being answerable client-side. `user_info` is non-sensitive (display name,
+ * avatar, role flags) and is what the UI actually needs anyway.
+ *
+ * This is a UI hint for routing/rendering — never a security boundary. Every
+ * protected read is still authorised server-side against the cookie; a user who
+ * forges `user_info` gets a prettier menu and 401s on every request.
+ *
+ * The token check is retained as a fallback so sessions created before the
+ * cookie migration keep working until they expire.
  */
 export function isAuthenticated(): boolean {
-  const accessToken = getAccessToken();
-  const refreshToken = getRefreshToken();
-  return !!(accessToken && refreshToken);
+  if (getStoredUser()) return true;
+  return !!(getAccessToken() && getRefreshToken());
 }

@@ -5,7 +5,13 @@ import { DiscordService } from '@/services/DiscordService';
 import { KickOAuthService } from '@/services/KickOAuthService';
 import { asyncHandler, createError } from '@/middleware/errorHandler';
 import { logger } from '@/utils/logger';
-import { AuthenticatedRequest } from '@/middleware/auth';
+import {
+  AuthenticatedRequest,
+  setAuthCookies,
+  clearAuthCookies,
+  extractAccessToken,
+  REFRESH_TOKEN_COOKIE,
+} from '@/middleware/auth';
 import { RedisService } from '@/config/redis';
 import { prisma } from '@/config/database';
 
@@ -115,6 +121,18 @@ export class AuthController {
         logger.info(
           `Discord authentication successful for user: ${user.displayName}`
         );
+
+        // Issue the session as httpOnly cookies. These are the tokens the API
+        // will prefer from here on (see extractAccessToken), and page JS can't
+        // read them — so an XSS can't steal the session.
+        //
+        // The query-string tokens below are retained only so the existing
+        // localStorage-based frontend keeps working during the migration.
+        // NOTE: tokens in a URL leak into browser history, Referer headers and
+        // access logs — once the frontend reads auth from cookies, drop the
+        // access_token/refresh_token params and redirect to a bare
+        // `/auth/callback`.
+        setAuthCookies(res, tokens);
 
         // Redirect to frontend with tokens
         // Use the first CORS origin for redirects (in case multiple are configured)
@@ -330,7 +348,11 @@ export class AuthController {
 
   // Refresh access token
   static refreshToken = asyncHandler(async (req: Request, res: Response) => {
-    const { refreshToken } = req.body;
+    // Prefer the httpOnly cookie; fall back to the body for clients that still
+    // hold the token themselves.
+    const cookieRefresh = (req as Request & { cookies?: Record<string, string> })
+      .cookies?.[REFRESH_TOKEN_COOKIE];
+    const refreshToken: unknown = cookieRefresh ?? req.body?.refreshToken;
 
     if (!refreshToken || typeof refreshToken !== 'string') {
       throw createError.badRequest('Refresh token is required');
@@ -338,6 +360,9 @@ export class AuthController {
 
     try {
       const newTokens = await AuthService.refreshToken(refreshToken);
+
+      // Rotate the cookies alongside the response body.
+      setAuthCookies(res, newTokens);
 
       res.json({
         success: true,
@@ -416,8 +441,14 @@ export class AuthController {
       }
 
       try {
-        const accessToken = req.headers.authorization?.substring(7);
+        // Read via the shared extractor so a cookie-authenticated session is
+        // revoked too, not just a Bearer one.
+        const accessToken = extractAccessToken(req) ?? undefined;
         await AuthService.logout(req.user.id, accessToken);
+
+        // Always clear the cookies, even if the client authenticated by header —
+        // leaving a valid cookie behind would silently keep the session alive.
+        clearAuthCookies(res);
 
         logger.info(`User logged out: ${req.user.discordId}`);
 

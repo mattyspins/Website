@@ -44,6 +44,7 @@ router.get('/users/export', AdminController.exportUsers);
 router.get('/users/ranks', AdminController.getUserPointsRanks);
 router.get('/users/:userId', AdminController.getUserDetails);
 router.get('/users/:userId/sessions', AdminController.getUserSessions);
+router.get('/users/:userId/engagement', AdminController.getUserEngagement);
 router.patch('/users/:userId/profile', AdminController.updateUserProfile);
 router.post(
   '/users/:userId/moderator',

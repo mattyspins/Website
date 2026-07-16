@@ -1,40 +1,50 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Play, ExternalLink, Users, Trophy, Coins, Target } from "lucide-react";
 import Link from "next/link";
 
 // Cinematic "expo-out" curve — matches IntroSplash, no bounce.
 const EASE = [0.16, 1, 0.3, 1] as const;
-// Hero content starts revealing right as the intro splash's panels clear (~0.9s in).
-const REVEAL_DELAY = 0.9;
+// Hero content starts revealing right as the intro splash's panels clear.
+const REVEAL_DELAY = 0.45;
 
 export default function Hero() {
+  // Users who ask for reduced motion get the content immediately and in place —
+  // no clip-path wipe, no stagger, no delay. Content still appears; only the
+  // movement is dropped.
+  const reduce = useReducedMotion();
+  const delay = (d: number) => (reduce ? 0 : d);
+  const rise = (y: number) =>
+    reduce ? { opacity: 1, y: 0 } : { opacity: 0, y };
+
   return (
     <motion.section
-      initial={{ clipPath: "inset(0% 50% 0% 50%)" }}
+      initial={reduce ? false : { clipPath: "inset(0% 50% 0% 50%)" }}
       animate={{ clipPath: "inset(0% 0% 0% 0%)" }}
-      transition={{ duration: 0.6, delay: REVEAL_DELAY, ease: EASE }}
+      transition={{ duration: reduce ? 0 : 0.6, delay: delay(REVEAL_DELAY), ease: EASE }}
       className="min-h-screen flex items-center justify-center relative overflow-hidden pt-16"
     >
       <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
         {/* Partner badge */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={rise(16)}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: REVEAL_DELAY + 0.1, duration: 0.4, ease: EASE }}
+          transition={{ delay: delay(REVEAL_DELAY + 0.1), duration: 0.4, ease: EASE }}
           className="inline-flex items-center gap-2 bg-accent-blue/10 border border-accent-blue/25 rounded-full px-4 py-1.5 text-sm text-accent-silver font-medium mb-8 backdrop-blur-sm"
         >
-          <span className="w-2 h-2 bg-accent-gold rounded-full animate-pulse" />
+          <span className="w-2 h-2 bg-accent-gold rounded-full motion-safe:animate-pulse" />
           Official Razed Partner
         </motion.div>
 
-        {/* Heading */}
+        {/* Heading — the wordmark stays as the visual anchor, but the promise
+            now carries equal weight so a first-time visitor learns the offer,
+            not just the brand name. */}
         <motion.h1
-          initial={{ opacity: 0, y: 24 }}
+          initial={rise(24)}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: REVEAL_DELAY + 0.1, duration: 0.4, ease: EASE }}
-          className="font-gaming text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-6 tracking-tight"
+          transition={{ delay: delay(REVEAL_DELAY + 0.1), duration: 0.4, ease: EASE }}
+          className="font-gaming text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-5 tracking-tight"
         >
           <span className="text-premtext-primary">MATTY</span>
           <span className="text-accent-gold" style={{ textShadow: "0 0 24px rgba(247,181,44,0.35)" }}>
@@ -43,54 +53,83 @@ export default function Hero() {
         </motion.h1>
 
         <motion.p
-          initial={{ opacity: 0, y: 16 }}
+          initial={rise(18)}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: REVEAL_DELAY + 0.2, duration: 0.4, ease: EASE }}
-          className="text-premtext-secondary text-base md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed"
+          transition={{ delay: delay(REVEAL_DELAY + 0.15), duration: 0.4, ease: EASE }}
+          className="text-premtext-primary text-xl md:text-3xl font-semibold mb-4 max-w-3xl mx-auto text-balance"
         >
-          Compete on the leaderboard, guess bonus hunt balances, and redeem
-          your coins for exclusive rewards.
+          Watch, play, and earn — turn stream time into rewards.
         </motion.p>
 
-        {/* CTA buttons */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: REVEAL_DELAY + 0.3, duration: 0.4, ease: EASE }}
-          className="flex flex-wrap gap-3 justify-center mb-16"
+        <motion.p
+          initial={rise(16)}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: delay(REVEAL_DELAY + 0.2), duration: 0.4, ease: EASE }}
+          className="text-premtext-secondary text-base md:text-lg mb-10 max-w-2xl mx-auto leading-relaxed"
         >
-          <a
-            href="https://kick.com/mattyspinsslots"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-glow inline-flex items-center gap-2 bg-[#53FC18] hover:bg-[#45D615] text-black px-6 py-3 rounded-2xl font-semibold text-sm transition-all hover:scale-105"
-          >
-            <Play className="w-4 h-4" />
-            Watch Live
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+          Earn coins just for watching on Kick. Compete on live wager
+          leaderboards, play stream games, and redeem your coins for exclusive
+          rewards.
+        </motion.p>
 
-          <a
-            href="https://www.razed.com/signup/?raf=Mattyspins"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-glow premium-gold-hover inline-flex items-center gap-2 bg-accent-gold hover:brightness-110 text-black px-6 py-3 rounded-2xl font-semibold text-sm transition-all hover:scale-105"
-          >
-            <span className="font-gaming font-bold text-base">R</span>
-            Play on Razed
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+        {/* CTA buttons — one filled primary (the on-site action that actually
+            converts a viewer into a member); everything else is secondary or a
+            quiet outbound link. */}
+        <motion.div
+          initial={reduce ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: delay(REVEAL_DELAY + 0.3), duration: 0.4, ease: EASE }}
+          className="flex flex-col items-center gap-4 mb-16"
+        >
+          <div className="flex flex-wrap gap-3 justify-center">
+            <a
+              href="https://kick.com/mattyspinsslots"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-glow tap-target inline-flex items-center gap-2 bg-[#53FC18] hover:bg-[#45D615] text-black px-7 py-3.5 rounded-2xl font-semibold text-base transition-all motion-safe:hover:scale-105"
+            >
+              <Play className="w-4 h-4" aria-hidden="true" />
+              Watch Live
+              <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+              <span className="sr-only">(opens Kick in a new tab)</span>
+            </a>
 
-          <a
-            href="https://discord.gg/n2gCDVwebw"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-glow inline-flex items-center gap-2 bg-[#5865F2] hover:bg-[#4752C4] text-white px-6 py-3 rounded-2xl font-semibold text-sm transition-all hover:scale-105"
-          >
-            <Users className="w-4 h-4" />
-            Join Discord
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+            <a
+              href="https://discord.gg/n2gCDVwebw"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="tap-target inline-flex items-center gap-2 border border-white/12 bg-white/5 hover:bg-white/10 text-premtext-primary px-6 py-3.5 rounded-2xl font-medium text-sm transition-colors"
+            >
+              <Users className="w-4 h-4" aria-hidden="true" />
+              Join Discord
+              <ExternalLink className="w-3.5 h-3.5 opacity-60" aria-hidden="true" />
+              <span className="sr-only">(opens Discord in a new tab)</span>
+            </a>
+          </div>
+
+          {/* The affiliate CTA is separated from the community CTAs and carries
+              its own 18+ / responsible-play disclosure, so the gambling link is
+              never presented as a casual peer of "Watch Live". */}
+          <div className="flex flex-col items-center gap-1.5 mt-1">
+            <a
+              href="https://www.razed.com/signup/?raf=Mattyspins"
+              target="_blank"
+              rel="noopener noreferrer sponsored"
+              className="premium-gold-hover tap-target inline-flex items-center gap-2 border border-accent-gold/35 bg-accent-gold/10 hover:bg-accent-gold/20 text-accent-gold px-5 py-2.5 rounded-xl font-medium text-sm transition-colors"
+            >
+              <span className="font-gaming font-bold text-base" aria-hidden="true">R</span>
+              Play on Razed
+              <ExternalLink className="w-3.5 h-3.5 opacity-70" aria-hidden="true" />
+              <span className="sr-only">(affiliate link, opens Razed in a new tab)</span>
+            </a>
+            <p className="text-xs text-premtext-secondary/70 flex items-center gap-1.5">
+              <span className="border border-red-500/40 text-red-400 font-bold px-1.5 rounded text-[10px]">18+</span>
+              Affiliate link. Gamble responsibly —{" "}
+              <Link href="/responsible-gaming" className="underline underline-offset-2 hover:text-premtext-primary transition-colors">
+                get support
+              </Link>
+            </p>
+          </div>
         </motion.div>
 
         {/* Feature cards */}
@@ -102,9 +141,9 @@ export default function Hero() {
           ].map(({ href, icon: Icon, title, desc }, i) => (
             <motion.div
               key={href}
-              initial={{ opacity: 0, y: 20 }}
+              initial={rise(20)}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: REVEAL_DELAY + 0.4 + i * 0.08, duration: 0.4, ease: EASE }}
+              transition={{ delay: delay(REVEAL_DELAY + 0.4 + i * 0.08), duration: 0.4, ease: EASE }}
             >
               <Link
                 href={href}
@@ -119,15 +158,16 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* Scroll indicator */}
+      {/* Scroll indicator — decorative, so hidden from assistive tech. */}
       <motion.div
-        initial={{ opacity: 0 }}
+        aria-hidden="true"
+        initial={{ opacity: reduce ? 1 : 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: REVEAL_DELAY + 0.8, duration: 0.5 }}
+        transition={{ delay: delay(REVEAL_DELAY + 0.8), duration: 0.5 }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2"
       >
         <div className="w-5 h-8 border border-accent-silver/25 rounded-full flex justify-center">
-          <div className="w-0.5 h-2 bg-accent-gold/60 rounded-full mt-2 animate-bounce" />
+          <div className="w-0.5 h-2 bg-accent-gold/60 rounded-full mt-2 motion-safe:animate-bounce" />
         </div>
       </motion.div>
     </motion.section>

@@ -161,17 +161,19 @@ export default function AuthButtons({ inline = false, onNavigate }: AuthButtonsP
   const handleLogout = async () => {
     const accessToken = localStorage.getItem("access_token");
 
-    if (accessToken) {
-      try {
-        await fetch(API_ENDPOINTS.AUTH_LOGOUT, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-      } catch (err) {
-        console.error("Logout error:", err);
-      }
+    // Always call the server, even with no local token: the session may be held
+    // in an httpOnly cookie that only the server can clear. Skipping this call
+    // would clear the local UI state while leaving the user genuinely logged in.
+    try {
+      await fetch(API_ENDPOINTS.AUTH_LOGOUT, {
+        method: "POST",
+        credentials: "include",
+        headers: accessToken
+          ? { Authorization: `Bearer ${accessToken}` }
+          : undefined,
+      });
+    } catch (err) {
+      console.error("Logout error:", err);
     }
 
     // Clear all auth data using the persistence module
@@ -283,7 +285,11 @@ export default function AuthButtons({ inline = false, onNavigate }: AuthButtonsP
         whileTap={{ scale: 0.95 }}
         onClick={handleDiscordLogin}
         disabled={isLoading}
-        className="btn-glow flex items-center space-x-2 bg-[#5865F2] hover:bg-[#4752C4] text-white px-4 py-2 rounded-lg transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+        // The visible label is just "Discord" to fit the navbar; the accessible
+        // name has to say what the control actually does.
+        aria-label={isLoading ? "Connecting to Discord" : "Log in with Discord"}
+        aria-busy={isLoading}
+        className="btn-glow tap-target flex items-center space-x-2 bg-[#5865F2] hover:bg-[#4752C4] text-white px-4 py-2 rounded-lg transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
           <>
@@ -323,9 +329,10 @@ export default function AuthButtons({ inline = false, onNavigate }: AuthButtonsP
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={handleKickLogin}
-        className="btn-glow flex items-center space-x-2 bg-[#53FC18] hover:bg-[#45D615] text-black px-4 py-2 rounded-lg transition-all duration-300 font-semibold"
+        aria-label="Link your Kick account"
+        className="btn-glow tap-target flex items-center space-x-2 bg-[#53FC18] hover:bg-[#45D615] text-black px-4 py-2 rounded-lg transition-all duration-300 font-semibold"
       >
-        <div className="w-5 h-5 bg-black rounded-sm flex items-center justify-center">
+        <div aria-hidden="true" className="w-5 h-5 bg-black rounded-sm flex items-center justify-center">
           <span className="text-[#53FC18] text-xs font-bold">K</span>
         </div>
         <span>Kick</span>

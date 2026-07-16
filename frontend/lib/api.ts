@@ -152,6 +152,8 @@ export const API_ENDPOINTS = {
   ADMIN_USERS_EXPORT: `${API_URL}/api/admin/users/export`,
   ADMIN_USER_SESSIONS: (userId: string) =>
     `${API_URL}/api/admin/users/${userId}/sessions`,
+  ADMIN_USER_ENGAGEMENT: (userId: string) =>
+    `${API_URL}/api/admin/users/${userId}/engagement`,
 
   // Users
   USERS_KICK: `${API_URL}/api/auth/kick-username`,

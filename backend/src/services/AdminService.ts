@@ -386,6 +386,115 @@ export class AdminService {
     });
   }
 
+  // Stream-engagement + per-game participation for a user's admin profile page.
+  // Every count is scoped to the linked site account (userId); chat-only entries
+  // that never resolved to a site account are intentionally excluded.
+  static async getUserEngagement(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, points: true },
+    });
+    if (!user) throw createError.notFound('User not found');
+
+    const [
+      streamsWatched,
+      watchAgg,
+      rankAbove,
+      raffleEntries,
+      raffleWins,
+      weeklyWins,
+      kothEntries,
+      kothKingRounds,
+      gtbEntries,
+      gtbWins,
+      huntEntries,
+      huntWins,
+      bingoEntries,
+      highRollerEntries,
+      tournamentEntries,
+      tournamentWins,
+      bossRaidEntries,
+      bountyEntries,
+      bountyEntryRows,
+    ] = await Promise.all([
+      prisma.viewingSession.count({ where: { userId } }),
+      prisma.viewingSession.aggregate({ where: { userId }, _sum: { durationMinutes: true } }),
+      // Rank = how many users hold strictly more points, +1.
+      prisma.user.count({ where: { points: { gt: user.points } } }),
+      prisma.raffleTicket.count({ where: { userId } }),
+      prisma.raffleWinner.count({ where: { userId } }),
+      prisma.weeklyRaffle.count({ where: { winnerUserId: userId } }),
+      prisma.kingOfTheHillEntry.count({ where: { userId } }),
+      prisma.kingOfTheHillRound.count({ where: { userId, isKing: true } }),
+      prisma.guessSubmission.count({ where: { userId } }),
+      prisma.guessTheBalance.count({ where: { winnerId: userId } }),
+      prisma.bonusHuntPrediction.count({ where: { userId } }),
+      prisma.bonusHuntPrediction.count({ where: { userId, won: true } }),
+      prisma.bingoParticipant.count({ where: { userId } }),
+      prisma.highRollerPlayer.count({ where: { userId } }),
+      prisma.tournamentParticipant.count({ where: { userId } }),
+      prisma.tournamentParticipant.count({ where: { userId, finalPosition: 1 } }),
+      prisma.bossRaidEntry.count({ where: { userId } }),
+      prisma.bountyHunterEntry.count({ where: { userId } }),
+      prisma.bountyHunterEntry.findMany({ where: { userId }, select: { id: true } }),
+    ]);
+
+    // Bounty Hunter has no winner relation — resolve wins by matching the hunt's
+    // winnerEntryId against this user's entry ids.
+    const bountyWins = bountyEntryRows.length
+      ? await prisma.bountyHunter.count({
+          where: { winnerEntryId: { in: bountyEntryRows.map(e => e.id) } },
+        })
+      : 0;
+
+    const mk = (
+      key: string,
+      name: string,
+      icon: string,
+      entries: number,
+      wins: number,
+      noun: string
+    ) => {
+      const status = wins > 0 ? 'WON' : entries > 0 ? 'PLAYED' : 'NONE';
+      let detail: string;
+      if (entries > 0) {
+        detail = `${entries.toLocaleString()} ${entries === 1 ? noun : `${noun}s`}`;
+        if (wins > 0) detail += ` · ${wins} win${wins === 1 ? '' : 's'}`;
+      } else if (wins > 0) {
+        detail = `${wins} win${wins === 1 ? '' : 's'}`;
+      } else {
+        detail = 'Not participated';
+      }
+      return { key, name, icon, entries, wins, status, detail };
+    };
+
+    const games = [
+      mk('raffles', 'Raffles', 'ticket', raffleEntries, raffleWins, 'entry'),
+      mk('kingOfTheHill', 'King of the Hill', 'hill', kothEntries, kothKingRounds, 'entry'),
+      mk('weeklyRaffle', 'Weekly Raffle', 'gift', weeklyWins, weeklyWins, 'win'),
+      mk('guessTheBalance', 'Guess the Balance', 'target', gtbEntries, gtbWins, 'guess'),
+      mk('bonusHunt', 'Bonus Hunt', 'zap', huntEntries, huntWins, 'prediction'),
+      mk('bonusBingo', 'Bonus Bingo', 'bingo', bingoEntries, 0, 'card'),
+      mk('highRoller', 'High Roller', 'dice', highRollerEntries, 0, 'round'),
+      mk('tournament', 'Tournament', 'trophy', tournamentEntries, tournamentWins, 'entry'),
+      mk('bossRaid', 'Boss Raid', 'sword', bossRaidEntries, 0, 'raid'),
+      mk('bountyHunter', 'Bounty Hunter', 'crosshair', bountyEntries, bountyWins, 'hunt'),
+    ];
+
+    const gamesPlayed = games.filter(g => g.entries > 0 || g.wins > 0).length;
+    const gamesWon = games.reduce((n, g) => n + (g.wins > 0 ? 1 : 0), 0);
+
+    return {
+      rank: rankAbove + 1,
+      streamsWatched,
+      watchMinutes: watchAgg._sum.durationMinutes ?? 0,
+      gamesPlayed,
+      totalGames: games.length,
+      gamesWon,
+      games,
+    };
+  }
+
   // Get user details with full information
   static async getUserDetails(userId: string): Promise<any> {
     try {

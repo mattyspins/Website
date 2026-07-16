@@ -87,6 +87,18 @@ export class AdminController {
     }
   );
 
+  static getUserEngagement = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response) => {
+      if (!req.user?.isAdmin) {
+        throw createError.forbidden('Admin access required');
+      }
+      const { userId } = req.params;
+      if (!userId) throw createError.badRequest('User ID is required');
+      const engagement = await AdminService.getUserEngagement(userId);
+      res.json({ success: true, data: engagement });
+    }
+  );
+
   // User Management
 
   static getUserPointsRanks = asyncHandler(

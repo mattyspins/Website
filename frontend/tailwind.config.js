@@ -8,6 +8,52 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // ─── Semantic layer (canonical) ──────────────────────────────────
+        // The single vocabulary for all NEW work. Meaning, not hue: a success
+        // state is `text-success`, never `text-green-400` or a raw hex. The
+        // primitive palettes below (navy/gold/ink) stay put so existing
+        // components keep working, and get migrated onto these over time.
+        //
+        // Rule of thumb: components reference semantic tokens; only this file
+        // knows the hex values.
+        success: {
+          DEFAULT: "#4fd18b",
+          soft: "rgba(79,209,139,0.12)",
+          border: "rgba(79,209,139,0.28)",
+          strong: "#22a35a",
+        },
+        warning: {
+          DEFAULT: "#f5a623",
+          soft: "rgba(245,166,35,0.12)",
+          border: "rgba(245,166,35,0.28)",
+        },
+        danger: {
+          DEFAULT: "#f16060",
+          soft: "rgba(239,96,96,0.10)",
+          border: "rgba(239,96,96,0.35)",
+          strong: "#c0392b",
+        },
+        info: {
+          DEFAULT: "#4fbfd1",
+          soft: "rgba(79,191,209,0.12)",
+          border: "rgba(79,191,209,0.28)",
+        },
+        // Surfaces — page ground → card → raised. Replaces ad-hoc
+        // bg-[#0d0d10] / bg-navy-800/60 drift in new work.
+        surface: {
+          DEFAULT: "#08080a",
+          card: "#0d0d10",
+          raised: "#14171f",
+        },
+        // Text ramp for dark surfaces.
+        content: {
+          DEFAULT: "#e8e8ec",
+          muted: "#8a8a93",
+          dim: "#6b6b73",
+          faint: "#3a3a42",
+        },
+
+        // ─── Primitive palettes (legacy — migrating onto the semantic layer) ──
         // Semantic dark surface tokens — referenced throughout components
         navy: {
           50:  "#fdf8ed",
@@ -99,6 +145,8 @@ module.exports = {
       fontFamily: {
         gaming: ["Orbitron", "monospace"],
         sans:   ["Inter", "system-ui", "sans-serif"],
+        // Data/label face — IDs, stat values, section labels in the admin suite.
+        mono:   ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       boxShadow: {
         card:       "0 4px 24px rgba(0,0,0,0.5)",
