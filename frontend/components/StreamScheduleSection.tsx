@@ -42,7 +42,11 @@ export default function StreamScheduleSection() {
   const days = Object.keys(grouped);
 
   return (
-    <section className="pb-20 px-4">
+    // pt-* matters: this section previously had no top padding and relied on the
+    // hero happening to end short of the viewport. The hero is min-h-screen, so
+    // once its content grew the two sections met flush and the "Upcoming
+    // Streams" badge collided with the hero's feature cards.
+    <section className="pt-16 sm:pt-24 pb-20 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Section header */}
         <motion.div

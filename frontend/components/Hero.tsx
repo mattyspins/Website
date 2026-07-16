@@ -23,7 +23,11 @@ export default function Hero() {
       initial={reduce ? false : { clipPath: "inset(0% 50% 0% 50%)" }}
       animate={{ clipPath: "inset(0% 0% 0% 0%)" }}
       transition={{ duration: reduce ? 0 : 0.6, delay: delay(REVEAL_DELAY), ease: EASE }}
-      className="min-h-screen flex items-center justify-center relative overflow-hidden pt-16"
+      // pb-32 reserves room for the absolutely-positioned scroll indicator and
+      // stops the feature cards butting against the next section. min-h-screen
+      // is a floor, not a cap — the section grows past it on short viewports,
+      // so the content must carry its own padding rather than rely on slack.
+      className="min-h-screen flex items-center justify-center relative overflow-hidden pt-24 pb-32"
     >
       <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
         {/* Partner badge */}
