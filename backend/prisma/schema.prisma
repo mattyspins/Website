@@ -137,26 +137,28 @@ model UserStatistics {
 }
 
 model Raffle {
-  id                String         @id @default(uuid())
-  title             String
-  description       String?
-  prize             String
-  ticketPrice       Int            @map("ticket_price")
-  maxTickets        Int            @map("max_tickets")
-  ticketsSold       Int            @default(0) @map("tickets_sold")
-  status            String         @default("active")
-  category          String?
-  isFeatured        Boolean        @default(false) @map("is_featured")
-  createdBy         String?        @map("created_by")
-  createdAt         DateTime       @default(now()) @map("created_at")
-  endsAt            DateTime       @map("ends_at")
-  winnerSelectedAt  DateTime?      @map("winner_selected_at")
-  metadata          Json?
-  maxEntriesPerUser Int            @default(-1) @map("max_entries_per_user")
-  numberOfWinners   Int            @default(1) @map("number_of_winners")
-  tickets           RaffleTicket[]
-  winners           RaffleWinner[]
-  creator           User?          @relation(fields: [createdBy], references: [id])
+  id                  String         @id @default(uuid())
+  title               String
+  description         String?
+  prize               String
+  ticketPrice         Int            @map("ticket_price")
+  maxTickets          Int            @map("max_tickets")
+  ticketsSold         Int            @default(0) @map("tickets_sold")
+  status              String         @default("active")
+  category            String?
+  isFeatured          Boolean        @default(false) @map("is_featured")
+  createdBy           String?        @map("created_by")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  endsAt              DateTime       @map("ends_at")
+  winnerSelectedAt    DateTime?      @map("winner_selected_at")
+  metadata            Json?
+  maxEntriesPerUser   Int            @default(-1) @map("max_entries_per_user")
+  numberOfWinners     Int            @default(1) @map("number_of_winners")
+  minWagerRequirement Decimal        @default(0) @map("min_wager_requirement") @db.Decimal(10, 2)
+  wagerDays           Int            @default(7) @map("wager_days")
+  tickets             RaffleTicket[]
+  winners             RaffleWinner[]
+  creator             User?          @relation(fields: [createdBy], references: [id])
 
   @@map("raffles")
 }

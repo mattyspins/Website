@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; background: oklch(0.13 0.015 260); }
+    * { box-sizing: border-box; }
+    ::-webkit-scrollbar { width:8px; height:8px; }
+    ::-webkit-scrollbar-thumb { background: oklch(0.4 0.06 220); border-radius:4px; }
+    @keyframes floatUp { 0%{opacity:1; transform:translateY(0) scale(1);} 70%{opacity:1;} 100%{opacity:0; transform:translateY(-90px) scale(1.15);} }
+    @keyframes shakeArena {
+      0%,100%{transform:translate(0,0);} 10%{transform:translate(-6px,3px);} 20%{transform:translate(6px,-4px);}
+      30%{transform:translate(-8px,2px);} 40%{transform:translate(7px,-3px);} 50%{transform:translate(-5px,4px);}
+      60%{transform:translate(5px,-2px);} 70%{transform:translate(-4px,3px);} 80%{transform:translate(3px,-2px);} 90%{transform:translate(-2px,1px);}
+    }
+    @keyframes pulseGlow { 0%,100%{filter:drop-shadow(0 0 14px currentColor);} 50%{filter:drop-shadow(0 0 34px currentColor);} }
+    @keyframes coreSpin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+    @keyframes coreSpinRev { from{transform:rotate(0deg);} to{transform:rotate(-360deg);} }
+    @keyframes burstParticle { 0%{opacity:1; transform:translate(0,0) scale(1);} 100%{opacity:0; transform:translate(var(--tx),var(--ty)) scale(0.2);} }
+    @keyframes flashWhite { 0%{opacity:0.85;} 100%{opacity:0;} }
+    @keyframes ringPulse { 0%,100%{opacity:0.5; transform:scale(1);} 50%{opacity:1; transform:scale(1.06);} }
+    @keyframes rageBlink { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+    @keyframes bannerIn { 0%{opacity:0; transform:translate(-50%,-20px) scale(0.9);} 15%{opacity:1; transform:translate(-50%,0) scale(1);} 85%{opacity:1;} 100%{opacity:0; transform:translate(-50%,-10px) scale(0.95);} }
+    @keyframes victoryIn { 0%{opacity:0; transform:scale(0.92);} 100%{opacity:1; transform:scale(1);} }
+    @keyframes rowFlash { 0%{background: oklch(0.35 0.1 85 / 0.55);} 100%{background: var(--rowbg);} }
+    @keyframes floatIdle { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
+    @keyframes wingBeat { 0%,100%{transform:rotate(-4deg);} 50%{transform:rotate(4deg);} }
+  </style>
+</helmet>
+
+<div style="font-family:'Rajdhani',sans-serif; min-height:100vh; background: radial-gradient(ellipse at 50% -10%, oklch(0.22 0.03 250) 0%, oklch(0.13 0.015 260) 55%); color: oklch(0.93 0.01 260); overflow-x:hidden;">
+
+  <!-- TOP NAV -->
+  <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 28px; background: oklch(0.16 0.02 260 / 0.9); backdrop-filter: blur(10px); border-bottom: 1px solid oklch(0.35 0.05 220 / 0.4); position:sticky; top:0; z-index:50;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div style="width:34px; height:34px; background: linear-gradient(135deg, oklch(0.75 0.15 220), oklch(0.5 0.15 250)); clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); box-shadow: 0 0 14px oklch(0.75 0.15 220 / 0.6);"></div>
+      <div style="font-family:'Orbitron',sans-serif; font-weight:800; font-size:16px; letter-spacing:1.5px; color: oklch(0.95 0.01 260);">COMMUNITY BOSS RAID</div>
+    </div>
+    <div style="display:flex; gap:6px; background: oklch(0.1 0.01 260); padding:4px; border-radius:8px; border:1px solid oklch(0.3 0.04 220 / 0.4);">
+      <button onClick="{{ setModeArena }}" style="{{ tabArenaStyle }}">LIVE ARENA · OVERLAY</button>
+      <button onClick="{{ setModeAdmin }}" style="{{ tabAdminStyle }}">ADMIN DASHBOARD</button>
+    </div>
+  </div>
+
+  <sc-if value="{{ isArena }}" hint-placeholder-val="{{ true }}">
+    <!-- ================= ARENA / OBS OVERLAY ================= -->
+    <div key="{{ shakeKey }}" style="{{ arenaStageStyle }}">
+
+      <sc-if value="{{ showPhaseBanner }}">
+        <div key="{{ bannerKey }}" style="position:fixed; top:90px; left:50%; transform:translate(-50%,0); z-index:80; animation: bannerIn 2.6s ease forwards; font-family:'Orbitron',sans-serif; font-weight:800; font-size:26px; letter-spacing:3px; padding:14px 34px; background: oklch(0.18 0.03 260 / 0.9); border:1px solid oklch(0.75 0.16 25 / 0.7); color: oklch(0.85 0.16 25); box-shadow:0 0 40px oklch(0.6 0.2 25 / 0.5); clip-path: polygon(4% 0,96% 0,100% 50%,96% 100%,4% 100%,0 50%);">
+          {{ phaseBannerText }}
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showFlash }}">
+        <div key="{{ flashKey }}" style="position:fixed; inset:0; background: {{ flashColor }}; z-index:70; pointer-events:none; animation: flashWhite 0.5s ease-out forwards;"></div>
+      </sc-if>
+
+      <div style="max-width:1440px; margin:0 auto; padding:22px 24px 40px; display:grid; grid-template-columns: 1fr 340px; gap:22px; align-items:start;">
+
+        <!-- LEFT: boss stage -->
+        <div style="position:relative;">
+          <div style="text-align:center; margin-bottom:2px;">
+            <div style="font-family:'Orbitron',sans-serif; font-size:13px; letter-spacing:4px; color: oklch(0.65 0.1 220);">RAID BOSS · {{ bossIcon }} {{ bossName }}</div>
+            <div style="font-family:'Orbitron',sans-serif; font-size:30px; font-weight:900; letter-spacing:2px; background: linear-gradient(90deg, oklch(0.85 0.14 220), oklch(0.75 0.16 260)); -webkit-background-clip:text; background-clip:text; color:transparent;">{{ bossPassive }}</div>
+          </div>
+
+          <!-- boss visual -->
+          <div style="position:relative; width:100%; height:400px; display:flex; align-items:center; justify-content:center;">
+            <div style="position:relative; width:420px; height:400px; display:flex; align-items:center; justify-content:center;">
+
+              <!-- generic aura -->
+              <div style="position:absolute; inset:60px; border-radius:50%; background: radial-gradient(circle, {{ coreColor }} 0%, transparent 68%); opacity:0.22; filter:blur(24px);"></div>
+
+              <!-- mecha shield rings -->
+              <sc-if value="{{ bossIsMecha }}">
+                <div style="position:absolute; inset:16px; border:2px solid oklch(0.75 0.14 220 / 0.5); border-radius:50%; animation: ringPulse 2.4s ease-in-out infinite;"></div>
+                <div style="position:absolute; inset:38px; border:1.5px dashed oklch(0.75 0.14 220 / 0.4); border-radius:50%; animation: coreSpin 14s linear infinite;"></div>
+              </sc-if>
+
+              <sc-for list="{{ particles }}" as="p" hint-placeholder-count="0">
+                <div style="{{ p.style }}"></div>
+              </sc-for>
+              <sc-for list="{{ floatingNumbers }}" as="f" hint-placeholder-count="0">
+                <div style="{{ f.style }}">{{ f.label }}</div>
+              </sc-for>
+
+              <!-- ===== MECHA OVERLORD ===== -->
+              <sc-if value="{{ bossIsMecha }}">
+                <div style="position:relative; animation: floatIdle 5s ease-in-out infinite;">
+                  <div style="position:absolute; left:-34px; top:120px; width:60px; height:80px; background: linear-gradient(135deg, oklch(0.42 0.02 250), oklch(0.28 0.01 250)); clip-path: polygon(30% 0,100% 10%,100% 90%,30% 100%,0 70%,0 30%); box-shadow: inset 0 0 10px oklch(0 0 0 / 0.5);"></div>
+                  <div style="position:absolute; right:-34px; top:120px; width:60px; height:80px; background: linear-gradient(225deg, oklch(0.42 0.02 250), oklch(0.28 0.01 250)); clip-path: polygon(70% 0,100% 30%,100% 70%,70% 100%,0 90%,0 10%); box-shadow: inset 0 0 10px oklch(0 0 0 / 0.5);"></div>
+                  <div style="position:relative; width:250px; height:290px; margin:0 auto; background: linear-gradient(160deg, oklch(0.5 0.015 250) 0%, oklch(0.32 0.01 255) 55%, oklch(0.22 0.01 255) 100%); clip-path: polygon(20% 0%, 80% 0%, 100% 18%, 96% 60%, 100% 75%, 78% 100%, 22% 100%, 4% 75%, 0% 60%, 4% 18%); box-shadow: 0 20px 60px oklch(0 0 0 / 0.6);">
+                    <div style="position:absolute; left:16%; right:16%; top:22%; height:1.5px; background: oklch(0.6 0.02 250 / 0.5);"></div>
+                    <div style="position:absolute; left:12%; right:12%; top:70%; height:1.5px; background: oklch(0.6 0.02 250 / 0.5);"></div>
+                    <div style="position:absolute; left:50%; top:16%; transform:translateX(-50%); width:116px; height:20px; background: {{ visorColor }}; border-radius:3px; box-shadow: 0 0 22px {{ visorColor }}; animation: pulseGlow 2.2s ease-in-out infinite; color: {{ visorColor }};"></div>
+                    <div style="position:absolute; left:50%; top:44%; transform:translate(-50%,-50%); width:84px; height:84px; border-radius:50%; background: radial-gradient(circle at 35% 30%, {{ coreColorLight }}, {{ coreColor }} 60%, oklch(0.15 0.01 255) 100%); box-shadow: 0 0 40px {{ coreColor }}; animation: pulseGlow 1.8s ease-in-out infinite; color: {{ coreColor }};">
+                      <div style="position:absolute; inset:14px; border-radius:50%; border:2px solid oklch(0.9 0.05 220 / 0.6); animation: coreSpinRev 6s linear infinite;"></div>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+
+              <!-- ===== INFERNO DRAGON ===== -->
+              <sc-if value="{{ bossIsInferno }}">
+                <div style="position:relative; width:400px; height:400px; animation: floatIdle 5s ease-in-out infinite;">
+
+                  <!-- WINGS (behind) -->
+                  <div style="position:absolute; left:-58px; top:70px; width:200px; height:230px; transform-origin:100% 10%; animation: wingBeat 4.5s ease-in-out infinite;">
+                    <div style="position:absolute; inset:0; background:linear-gradient(115deg, oklch(0.44 0.15 34), oklch(0.27 0.1 26) 52%, oklch(0.16 0.06 22)); clip-path:polygon(100% 4%, 2% 20%, 26% 34%, 4% 46%, 30% 60%, 8% 72%, 34% 84%, 14% 96%, 60% 92%, 100% 66%); box-shadow:0 0 40px oklch(0.55 0.18 35 / 0.32); opacity:0.97;"></div>
+                    <div style="position:absolute; right:0; top:5%; width:2px; height:44%; background:oklch(0.58 0.11 30 / 0.7); transform-origin:top; transform:rotate(-58deg);"></div>
+                    <div style="position:absolute; right:0; top:5%; width:2px; height:62%; background:oklch(0.58 0.11 30 / 0.6); transform-origin:top; transform:rotate(-42deg);"></div>
+                    <div style="position:absolute; right:0; top:5%; width:2px; height:80%; background:oklch(0.58 0.11 30 / 0.5); transform-origin:top; transform:rotate(-26deg);"></div>
+                  </div>
+                  <div style="position:absolute; right:-58px; top:70px; width:200px; height:230px; transform-origin:0 10%; animation: wingBeat 4.5s ease-in-out infinite;">
+                    <div style="position:absolute; inset:0; background:linear-gradient(245deg, oklch(0.44 0.15 34), oklch(0.27 0.1 26) 52%, oklch(0.16 0.06 22)); clip-path:polygon(0 4%, 98% 20%, 74% 34%, 96% 46%, 70% 60%, 92% 72%, 66% 84%, 86% 96%, 40% 92%, 0 66%); box-shadow:0 0 40px oklch(0.55 0.18 35 / 0.32); opacity:0.97;"></div>
+                    <div style="position:absolute; left:0; top:5%; width:2px; height:44%; background:oklch(0.58 0.11 30 / 0.7); transform-origin:top; transform:rotate(58deg);"></div>
+                    <div style="position:absolute; left:0; top:5%; width:2px; height:62%; background:oklch(0.58 0.11 30 / 0.6); transform-origin:top; transform:rotate(42deg);"></div>
+                    <div style="position:absolute; left:0; top:5%; width:2px; height:80%; background:oklch(0.58 0.11 30 / 0.5); transform-origin:top; transform:rotate(26deg);"></div>
+                  </div>
+
+                  <!-- HORNS (curved, two-segment) -->
+                  <div style="position:absolute; left:112px; top:18px; width:20px; height:64px; transform-origin:bottom; transform:rotate(-30deg); background:linear-gradient(180deg, oklch(0.24 0.03 30), oklch(0.42 0.05 34)); clip-path:polygon(38% 0,62% 0,100% 100%,0 100%);"></div>
+                  <div style="position:absolute; left:96px; top:-14px; width:16px; height:52px; transform-origin:bottom; transform:rotate(-52deg); background:linear-gradient(180deg, oklch(0.16 0.02 30), oklch(0.3 0.04 32)); clip-path:polygon(42% 0,58% 0,100% 100%,0 100%);"></div>
+                  <div style="position:absolute; right:112px; top:18px; width:20px; height:64px; transform-origin:bottom; transform:rotate(30deg); background:linear-gradient(180deg, oklch(0.24 0.03 30), oklch(0.42 0.05 34)); clip-path:polygon(38% 0,62% 0,100% 100%,0 100%);"></div>
+                  <div style="position:absolute; right:96px; top:-14px; width:16px; height:52px; transform-origin:bottom; transform:rotate(52deg); background:linear-gradient(180deg, oklch(0.16 0.02 30), oklch(0.3 0.04 32)); clip-path:polygon(42% 0,58% 0,100% 100%,0 100%);"></div>
+
+                  <!-- NECK / CHEST with spine spikes + molten cracks -->
+                  <div style="position:absolute; left:50%; top:230px; transform:translateX(-50%); width:190px; height:170px;">
+                    <div style="position:absolute; inset:0; background:linear-gradient(165deg, oklch(0.42 0.14 34), oklch(0.26 0.09 26) 60%, oklch(0.15 0.05 22)); clip-path:polygon(24% 0, 76% 0, 100% 46%, 82% 100%, 18% 100%, 0 46%); box-shadow:inset 0 0 26px oklch(0.08 0.04 20);"></div>
+                    <div style="position:absolute; left:50%; top:6px; transform:translateX(-50%); width:60px; height:2px; background:oklch(0.62 0.14 40 / 0.7); box-shadow:0 0 8px oklch(0.6 0.16 40); animation:pulseGlow 2.2s ease-in-out infinite; color:oklch(0.62 0.14 40);"></div>
+                    <div style="position:absolute; left:40px; top:44px; width:56px; height:2px; background:oklch(0.6 0.14 38 / 0.6); transform:rotate(28deg); box-shadow:0 0 8px oklch(0.6 0.16 40); animation:pulseGlow 2.6s ease-in-out infinite; color:oklch(0.6 0.14 40);"></div>
+                    <div style="position:absolute; right:40px; top:60px; width:52px; height:2px; background:oklch(0.6 0.14 38 / 0.6); transform:rotate(-24deg); box-shadow:0 0 8px oklch(0.6 0.16 40); animation:pulseGlow 2.3s ease-in-out infinite; color:oklch(0.6 0.14 40);"></div>
+                    <div style="position:absolute; left:50%; top:36px; transform:translateX(-50%); width:2px; height:90px; background:oklch(0.58 0.13 36 / 0.55); box-shadow:0 0 8px oklch(0.6 0.16 40); animation:pulseGlow 2.8s ease-in-out infinite; color:oklch(0.6 0.14 40);"></div>
+                  </div>
+
+                  <!-- HEAD -->
+                  <div style="position:relative; width:196px; height:250px; margin:44px auto 0;">
+                    <!-- skull / upper head -->
+                    <div style="position:absolute; left:0; top:0; width:196px; height:250px; background:linear-gradient(158deg, oklch(0.52 0.15 40) 0%, oklch(0.34 0.11 28) 52%, oklch(0.2 0.07 22) 100%); clip-path:polygon(50% 100%, 14% 78%, 2% 46%, 12% 24%, 30% 12%, 50% 6%, 70% 12%, 88% 24%, 98% 46%, 86% 78%); box-shadow:0 12px 40px oklch(0 0 0 / 0.5), inset 0 0 30px oklch(0.1 0.05 20);"></div>
+
+                    <!-- brow ridges -->
+                    <div style="position:absolute; left:22px; top:70px; width:66px; height:24px; background:linear-gradient(160deg, oklch(0.44 0.1 32), oklch(0.22 0.06 24)); border-radius:60% 30% 20% 40%; transform:rotate(-14deg); box-shadow:0 3px 6px oklch(0 0 0 / 0.5);"></div>
+                    <div style="position:absolute; right:22px; top:70px; width:66px; height:24px; background:linear-gradient(200deg, oklch(0.44 0.1 32), oklch(0.22 0.06 24)); border-radius:30% 60% 40% 20%; transform:rotate(14deg); box-shadow:0 3px 6px oklch(0 0 0 / 0.5);"></div>
+
+                    <!-- eyes with slit pupils -->
+                    <div style="position:absolute; left:30px; top:92px; width:52px; height:26px; background:radial-gradient(circle at 50% 50%, {{ coreColorLight }}, {{ visorColor }} 62%, oklch(0.2 0.06 20)); clip-path:polygon(0 55%, 40% 8%, 100% 30%, 96% 78%, 44% 100%); box-shadow:0 0 20px {{ visorColor }}; animation:pulseGlow 2s ease-in-out infinite; color:{{ visorColor }};">
+                      <div style="position:absolute; left:50%; top:8%; transform:translateX(-50%); width:4px; height:84%; background:oklch(0.1 0.03 20); border-radius:2px;"></div>
+                    </div>
+                    <div style="position:absolute; right:30px; top:92px; width:52px; height:26px; background:radial-gradient(circle at 50% 50%, {{ coreColorLight }}, {{ visorColor }} 62%, oklch(0.2 0.06 20)); clip-path:polygon(100% 55%, 60% 8%, 0 30%, 4% 78%, 56% 100%); box-shadow:0 0 20px {{ visorColor }}; animation:pulseGlow 2s ease-in-out infinite; color:{{ visorColor }};">
+                      <div style="position:absolute; left:50%; top:8%; transform:translateX(-50%); width:4px; height:84%; background:oklch(0.1 0.03 20); border-radius:2px;"></div>
+                    </div>
+
+                    <!-- snout / muzzle -->
+                    <div style="position:absolute; left:50%; top:132px; transform:translateX(-50%); width:104px; height:110px; background:linear-gradient(165deg, oklch(0.46 0.13 36), oklch(0.28 0.09 26) 60%, oklch(0.17 0.06 22)); clip-path:polygon(18% 0, 82% 0, 100% 40%, 70% 100%, 30% 100%, 0 40%); box-shadow:inset 0 0 18px oklch(0.08 0.04 20);">
+                      <!-- nostrils -->
+                      <div style="position:absolute; left:26px; top:24px; width:12px; height:16px; border-radius:50%; background:radial-gradient(circle, {{ coreColorLight }}, {{ coreColor }} 70%, oklch(0.12 0.04 20)); box-shadow:0 0 12px {{ coreColor }}; animation:pulseGlow 1.6s ease-in-out infinite; color:{{ coreColor }};"></div>
+                      <div style="position:absolute; right:26px; top:24px; width:12px; height:16px; border-radius:50%; background:radial-gradient(circle, {{ coreColorLight }}, {{ coreColor }} 70%, oklch(0.12 0.04 20)); box-shadow:0 0 12px {{ coreColor }}; animation:pulseGlow 1.6s ease-in-out infinite; color:{{ coreColor }};"></div>
+                    </div>
+
+                    <!-- fanged jaw -->
+                    <div style="position:absolute; left:50%; top:214px; transform:translateX(-50%); display:flex; gap:3px;">
+                      <div style="width:9px; height:16px; background:linear-gradient(180deg, oklch(0.95 0.02 60), oklch(0.7 0.03 50)); clip-path:polygon(50% 100%,0 0,100% 0);"></div>
+                      <div style="width:11px; height:22px; background:linear-gradient(180deg, oklch(0.95 0.02 60), oklch(0.7 0.03 50)); clip-path:polygon(50% 100%,0 0,100% 0);"></div>
+                      <div style="width:9px; height:14px; background:linear-gradient(180deg, oklch(0.95 0.02 60), oklch(0.7 0.03 50)); clip-path:polygon(50% 100%,0 0,100% 0);"></div>
+                      <div style="width:11px; height:22px; background:linear-gradient(180deg, oklch(0.95 0.02 60), oklch(0.7 0.03 50)); clip-path:polygon(50% 100%,0 0,100% 0);"></div>
+                      <div style="width:9px; height:16px; background:linear-gradient(180deg, oklch(0.95 0.02 60), oklch(0.7 0.03 50)); clip-path:polygon(50% 100%,0 0,100% 0);"></div>
+                    </div>
+
+                    <!-- cheek spikes -->
+                    <div style="position:absolute; left:-4px; top:150px; width:34px; height:14px; background:linear-gradient(90deg, oklch(0.22 0.05 26), oklch(0.4 0.09 32)); clip-path:polygon(0 50%,100% 0,100% 100%); transform:rotate(-8deg);"></div>
+                    <div style="position:absolute; right:-4px; top:150px; width:34px; height:14px; background:linear-gradient(270deg, oklch(0.22 0.05 26), oklch(0.4 0.09 32)); clip-path:polygon(100% 50%,0 0,0 100%); transform:rotate(8deg);"></div>
+                  </div>
+                </div>
+              </sc-if>
+
+              <!-- ===== FROST TITAN ===== -->
+              <sc-if value="{{ bossIsFrost }}">
+                <div style="position:relative; width:300px; height:320px; animation: floatIdle 6s ease-in-out infinite;">
+                  <div style="position:absolute; left:24px; top:36px; width:40px; height:100px; background:linear-gradient(180deg, oklch(0.85 0.08 220), oklch(0.5 0.1 235)); clip-path:polygon(50% 0,100% 100%,0 100%); box-shadow:0 0 20px oklch(0.8 0.1 220 / 0.5);"></div>
+                  <div style="position:absolute; right:24px; top:36px; width:40px; height:100px; background:linear-gradient(180deg, oklch(0.85 0.08 220), oklch(0.5 0.1 235)); clip-path:polygon(50% 0,100% 100%,0 100%); box-shadow:0 0 20px oklch(0.8 0.1 220 / 0.5);"></div>
+                  <div style="position:relative; width:230px; height:290px; margin:0 auto; background:linear-gradient(160deg, oklch(0.82 0.09 218), oklch(0.52 0.11 232) 55%, oklch(0.32 0.08 242)); clip-path:polygon(30% 0,70% 0,90% 22%,78% 46%,94% 70%,68% 100%,32% 100%,6% 70%,22% 46%,10% 22%); box-shadow:0 0 55px oklch(0.75 0.12 220 / 0.5), inset 0 0 32px oklch(0.95 0.05 220 / 0.35);">
+                    <div style="position:absolute; left:20%; top:12%; width:60%; height:2px; background:oklch(0.95 0.04 220 / 0.6); transform:rotate(18deg);"></div>
+                    <div style="position:absolute; left:14%; top:55%; width:70%; height:2px; background:oklch(0.95 0.04 220 / 0.5); transform:rotate(-12deg);"></div>
+                    <div style="position:absolute; left:38px; top:110px; width:40px; height:14px; background:{{ visorColor }}; box-shadow:0 0 20px {{ visorColor }}; border-radius:3px; transform:skewX(-12deg); animation:pulseGlow 2.4s ease-in-out infinite; color:{{ visorColor }};"></div>
+                    <div style="position:absolute; right:38px; top:110px; width:40px; height:14px; background:{{ visorColor }}; box-shadow:0 0 20px {{ visorColor }}; border-radius:3px; transform:skewX(12deg); animation:pulseGlow 2.4s ease-in-out infinite; color:{{ visorColor }};"></div>
+                  </div>
+                </div>
+              </sc-if>
+
+              <!-- ===== STORM COLOSSUS ===== -->
+              <sc-if value="{{ bossIsStorm }}">
+                <div style="position:relative; width:320px; height:320px; animation: floatIdle 4.5s ease-in-out infinite;">
+                  <div style="position:absolute; left:50%; top:20px; transform:translateX(-50%); width:300px; height:190px; background:radial-gradient(circle at 35% 40%, oklch(0.42 0.1 292), oklch(0.22 0.08 285)); border-radius:52% 48% 46% 54% / 62% 62% 40% 40%; box-shadow:0 0 44px oklch(0.5 0.14 292 / 0.4);"></div>
+                  <div style="position:absolute; left:50%; top:130px; transform:translateX(-50%); width:220px; height:170px; background:radial-gradient(circle at 60% 30%, oklch(0.38 0.09 288), oklch(0.2 0.07 284)); border-radius:50% 50% 48% 52% / 40% 40% 60% 60%; box-shadow:0 0 30px oklch(0.45 0.12 290 / 0.35);"></div>
+                  <div style="position:absolute; left:50%; top:118px; transform:translateX(-50%); width:70px; height:150px; background:{{ coreColor }}; clip-path:polygon(52% 0,18% 46%,46% 46%,14% 100%,82% 40%,54% 40%,82% 0); box-shadow:0 0 34px {{ coreColor }}; animation:pulseGlow 1.2s ease-in-out infinite; color:{{ coreColor }};"></div>
+                  <div style="position:absolute; left:96px; top:96px; width:34px; height:14px; background:{{ visorColor }}; box-shadow:0 0 18px {{ visorColor }}; clip-path:polygon(0 40%,100% 0,90% 100%,10% 100%); animation:pulseGlow 1.5s ease-in-out infinite; color:{{ visorColor }};"></div>
+                  <div style="position:absolute; right:96px; top:96px; width:34px; height:14px; background:{{ visorColor }}; box-shadow:0 0 18px {{ visorColor }}; clip-path:polygon(0 0,100% 40%,90% 100%,10% 100%); animation:pulseGlow 1.5s ease-in-out infinite; color:{{ visorColor }};"></div>
+                </div>
+              </sc-if>
+
+              <!-- ===== SHADOW REAPER ===== -->
+              <sc-if value="{{ bossIsShadow }}">
+                <div style="position:relative; width:300px; height:340px; animation: floatIdle 6s ease-in-out infinite;">
+                  <div style="position:absolute; right:26px; top:0; width:6px; height:320px; background:linear-gradient(180deg, oklch(0.4 0.03 300), oklch(0.2 0.02 300)); transform:rotate(10deg); border-radius:3px;"></div>
+                  <div style="position:absolute; right:8px; top:-4px; width:80px; height:54px; border:8px solid {{ visorColor }}; border-bottom:none; border-right:none; border-radius:60px 0 0 0; transform:rotate(10deg); box-shadow:0 0 20px {{ visorColor }}; color:{{ visorColor }};"></div>
+                  <div style="position:relative; width:230px; height:320px; margin:0 auto; background:linear-gradient(180deg, oklch(0.26 0.06 302), oklch(0.11 0.03 296)); clip-path:polygon(50% 0, 74% 8%, 66% 30%, 92% 56%, 100% 100%, 0 100%, 8% 56%, 34% 30%, 26% 8%); box-shadow:0 0 44px oklch(0.4 0.13 300 / 0.4);">
+                    <div style="position:absolute; left:50%; top:36px; transform:translateX(-50%); width:96px; height:130px; background:radial-gradient(circle at 50% 30%, oklch(0.09 0.02 300), oklch(0.04 0.01 300)); clip-path:polygon(50% 0,82% 24%,72% 100%,28% 100%,18% 24%);">
+                      <div style="position:absolute; left:20px; top:52px; width:20px; height:20px; border-radius:50%; background:{{ visorColor }}; box-shadow:0 0 18px {{ visorColor }}; animation:pulseGlow 2s ease-in-out infinite; color:{{ visorColor }};"></div>
+                      <div style="position:absolute; right:20px; top:52px; width:20px; height:20px; border-radius:50%; background:{{ visorColor }}; box-shadow:0 0 18px {{ visorColor }}; animation:pulseGlow 2s ease-in-out infinite; color:{{ visorColor }};"></div>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+
+              <!-- ===== VOID LEVIATHAN ===== -->
+              <sc-if value="{{ bossIsVoid }}">
+                <div style="position:relative; width:340px; height:340px; animation: floatIdle 7s ease-in-out infinite;">
+                  <div style="position:absolute; left:10px; top:40px; width:120px; height:32px; background:linear-gradient(90deg, oklch(0.3 0.14 320), transparent); clip-path:polygon(0 40%,100% 0,100% 100%,0 60%); transform:rotate(-24deg);"></div>
+                  <div style="position:absolute; right:10px; top:40px; width:120px; height:32px; background:linear-gradient(270deg, oklch(0.3 0.14 320), transparent); clip-path:polygon(0 0,100% 40%,100% 60%,0 100%); transform:rotate(24deg);"></div>
+                  <div style="position:absolute; left:24px; bottom:34px; width:130px; height:30px; background:linear-gradient(90deg, oklch(0.28 0.14 300), transparent); clip-path:polygon(0 30%,100% 0,100% 100%,0 70%); transform:rotate(20deg);"></div>
+                  <div style="position:absolute; right:24px; bottom:34px; width:130px; height:30px; background:linear-gradient(270deg, oklch(0.28 0.14 300), transparent); clip-path:polygon(0 0,100% 30%,100% 70%,0 100%); transform:rotate(-20deg);"></div>
+                  <div style="position:relative; width:230px; height:230px; margin:52px auto 0; border-radius:50%; background:conic-gradient(from 0deg, oklch(0.32 0.15 320), oklch(0.26 0.16 280), oklch(0.42 0.14 342), oklch(0.28 0.15 300), oklch(0.32 0.15 320)); box-shadow:0 0 55px oklch(0.45 0.16 320 / 0.5); animation: coreSpin 20s linear infinite;">
+                    <div style="position:absolute; inset:44px; border-radius:50%; background:radial-gradient(circle, oklch(0.05 0.02 300), oklch(0.13 0.06 300)); box-shadow: inset 0 0 30px {{ coreColor }}; display:flex; align-items:center; justify-content:center;">
+                      <div style="width:52px; height:52px; border-radius:50%; background:radial-gradient(circle at 40% 35%, {{ coreColorLight }}, {{ coreColor }}); box-shadow:0 0 30px {{ coreColor }}; animation:pulseGlow 1.8s ease-in-out infinite; color:{{ coreColor }};"></div>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+
+            </div>
+          </div>
+
+          <!-- HP + status -->
+          <div style="background: oklch(0.17 0.02 260 / 0.75); backdrop-filter: blur(8px); border:1px solid oklch(0.35 0.05 220 / 0.35); border-radius:14px; padding:18px 24px;">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
+              <div style="font-family:'Orbitron',sans-serif; font-size:12px; letter-spacing:2px; color: oklch(0.7 0.1 220);">PHASE {{ phase }} · {{ phaseLabel }}</div>
+              <div style="font-family:'Orbitron',sans-serif; font-weight:800; font-size:20px; color: oklch(0.92 0.01 260);">{{ hpDisplay }} <span style="font-size:13px; color:oklch(0.6 0.02 260); font-weight:600;">/ 10,000</span></div>
+            </div>
+            <div style="height:24px; border-radius:6px; background: oklch(0.1 0.01 260); border:1px solid oklch(0.35 0.04 250 / 0.6); overflow:hidden;">
+              <div style="height:100%; width:{{ hpPercent }}%; background: {{ hpBarGradient }}; transition: width 0.7s cubic-bezier(.2,.8,.2,1); box-shadow: 0 0 16px {{ hpBarGlow }};"></div>
+            </div>
+            <div style="display:flex; gap:22px; margin-top:14px; flex-wrap:wrap;">
+              <div style="flex:1; min-width:160px;">
+                <div style="font-size:11px; letter-spacing:1.5px; color: oklch(0.6 0.02 260); margin-bottom:6px;">RAGE METER</div>
+                <div style="height:12px; border-radius:6px; background: oklch(0.1 0.01 260); overflow:hidden; border:1px solid oklch(0.3 0.04 250 / 0.5);">
+                  <div style="{{ rageBarStyle }}"></div>
+                </div>
+              </div>
+              <div style="min-width:160px;">
+                <div style="font-size:11px; letter-spacing:1.5px; color: oklch(0.6 0.02 260); margin-bottom:6px;">STATUS</div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <sc-for list="{{ statusTags }}" as="tag" hint-placeholder-count="0">
+                    <div style="{{ tag.style }}">{{ tag.label }}</div>
+                  </sc-for>
+                  <sc-if value="{{ noStatusTags }}"><div style="font-size:12px; color: oklch(0.5 0.02 260);">— none —</div></sc-if>
+                </div>
+              </div>
+              <div style="min-width:200px;">
+                <div style="font-size:11px; letter-spacing:1.5px; color: oklch(0.6 0.02 260); margin-bottom:6px;">WEAKNESS · {{ bossPassive }}</div>
+                <div style="{{ weaknessStyle }}">{{ weaknessText }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: leaderboard -->
+        <div style="background: oklch(0.16 0.02 260 / 0.8); backdrop-filter: blur(10px); border:1px solid oklch(0.35 0.05 220 / 0.35); border-radius:14px; padding:18px; position:sticky; top:90px;">
+          <div style="font-family:'Orbitron',sans-serif; font-size:13px; letter-spacing:2px; color: oklch(0.8 0.13 85); margin-bottom:4px;">🏆 BOSS RAID LEADERBOARD</div>
+          <div style="font-size:11px; color: oklch(0.55 0.02 260); margin-bottom:14px;">Ranked by total boss damage dealt</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <sc-for list="{{ leaderboard }}" as="row" hint-placeholder-count="4">
+              <div key="{{ row.key }}" style="{{ row.style }}">
+                <div style="{{ row.medalStyle }}">{{ row.medal }}</div>
+                <div style="{{ row.avatarStyle }}">{{ row.initial }}</div>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-weight:700; font-size:14px; color: oklch(0.93 0.01 260); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ row.name }}</div>
+                  <div style="font-size:11px; color: oklch(0.6 0.02 260); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">🎰 {{ row.slot }}</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-family:'Orbitron',sans-serif; font-weight:800; font-size:15px; color: {{ row.dmgColor }};">{{ row.damage }}</div>
+                  <div style="font-size:10px; color: oklch(0.5 0.02 260);">DMG</div>
+                </div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noLeaderboard }}">
+              <div style="font-size:13px; color: oklch(0.5 0.02 260); padding:20px 0; text-align:center;">No contributors yet — start drawing players from the admin dashboard.</div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+
+      <!-- VICTORY OVERLAY -->
+      <sc-if value="{{ victory }}">
+        <div style="position:fixed; inset:0; background: oklch(0.08 0.01 260 / 0.93); backdrop-filter: blur(6px); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px;">
+          <div style="animation: victoryIn 0.6s ease-out; text-align:center; background: oklch(0.16 0.02 260); border:1px solid oklch(0.75 0.15 85 / 0.6); border-radius:18px; padding:40px 50px; box-shadow: 0 0 80px oklch(0.75 0.15 85 / 0.35); max-width:640px; width:100%;">
+            <div style="font-family:'Orbitron',sans-serif; font-size:13px; letter-spacing:4px; color: oklch(0.8 0.14 85);">BOSS DEFEATED</div>
+            <div style="font-family:'Orbitron',sans-serif; font-weight:900; font-size:32px; margin:6px 0 20px; background: linear-gradient(90deg, oklch(0.85 0.15 85), oklch(0.8 0.14 60)); -webkit-background-clip:text; background-clip:text; color:transparent;">{{ bossName }} FELLED</div>
+
+            <div style="display:flex; gap:10px; justify-content:center; margin-bottom:22px;">
+              <sc-for list="{{ podium }}" as="p" hint-placeholder-count="3">
+                <div style="{{ p.style }}">
+                  <div style="font-size:22px;">{{ p.medal }}</div>
+                  <div style="{{ p.avatarStyle }}">{{ p.initial }}</div>
+                  <div style="font-weight:800; font-size:14px; margin-top:6px;">{{ p.name }}</div>
+                  <div style="font-size:11px; color: oklch(0.6 0.02 260);">🎰 {{ p.slot }}</div>
+                  <div style="font-family:'Orbitron',sans-serif; font-weight:800; font-size:15px; color: oklch(0.85 0.14 85); margin-top:4px;">{{ p.damage }} dmg</div>
+                  <div style="font-size:12px; color: oklch(0.8 0.13 85); font-weight:700; margin-top:2px;">🪙 {{ p.coins }} coins</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; text-align:left; margin-bottom:24px;">
+              <div style="background: oklch(0.13 0.01 260); border-radius:10px; padding:12px;"><div style="font-size:10px; color:oklch(0.6 0.02 260); letter-spacing:1px;">TOTAL DMG</div><div style="font-size:18px; font-weight:800; font-family:'Orbitron',sans-serif;">{{ totalDamageDisplay }}</div></div>
+              <div style="background: oklch(0.13 0.01 260); border-radius:10px; padding:12px;"><div style="font-size:10px; color:oklch(0.6 0.02 260); letter-spacing:1px;">BIGGEST HIT</div><div style="font-size:18px; font-weight:800; font-family:'Orbitron',sans-serif;">{{ biggestHitDisplay }}</div></div>
+              <div style="background: oklch(0.13 0.01 260); border-radius:10px; padding:12px;"><div style="font-size:10px; color:oklch(0.6 0.02 260); letter-spacing:1px;">TOP MULTI</div><div style="font-size:18px; font-weight:800; font-family:'Orbitron',sans-serif;">{{ highestMultDisplay }}×</div></div>
+              <div style="background: oklch(0.13 0.01 260); border-radius:10px; padding:12px;"><div style="font-size:10px; color:oklch(0.6 0.02 260); letter-spacing:1px;">CRITS</div><div style="font-size:18px; font-weight:800; font-family:'Orbitron',sans-serif;">{{ critCount }}</div></div>
+            </div>
+            <button onClick="{{ resetRaid }}" style="padding:12px 28px; border-radius:8px; border:none; background: linear-gradient(90deg, oklch(0.75 0.15 220), oklch(0.6 0.15 250)); color: oklch(0.1 0.01 260); font-family:'Orbitron',sans-serif; font-weight:800; letter-spacing:1px; cursor:pointer;">START NEW RAID</button>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isAdmin }}">
+    <!-- ================= ADMIN DASHBOARD ================= -->
+    <div style="max-width:1480px; margin:0 auto; padding:24px; display:grid; grid-template-columns: 320px 1fr 340px; gap:20px; align-items:start;">
+
+      <!-- COLUMN 1: registration + participants -->
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div style="{{ panelStyle }}">
+          <div style="{{ panelTitleStyle }}">REGISTRATION</div>
+          <label style="font-size:12px; color: oklch(0.6 0.02 260); display:block; margin-bottom:6px;">Entry keyword</label>
+          <input value="{{ keyword }}" onChange="{{ onKeywordChange }}" style="width:100%; padding:10px 12px; background: oklch(0.1 0.01 260); border:1px solid oklch(0.35 0.04 250 / 0.6); border-radius:8px; color: oklch(0.9 0.01 260); font-weight:700; font-family:'Rajdhani',sans-serif; margin-bottom:12px;"/>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div>
+              <div style="font-size:11px; color: oklch(0.6 0.02 260);">Participants</div>
+              <div style="font-family:'Orbitron',sans-serif; font-weight:800; font-size:24px; color: oklch(0.8 0.13 220);">{{ participantCount }}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:11px; color: oklch(0.6 0.02 260);">Reg. timer</div>
+              <div style="{{ regTimerStyle }}">{{ regTimerDisplay }}</div>
+            </div>
+          </div>
+
+          <button onClick="{{ toggleRegistration }}" style="{{ regButtonStyle }} width:100%; margin-bottom:12px;">{{ regButtonLabel }}</button>
+
+          <input value="{{ search }}" onChange="{{ onSearchChange }}" placeholder="Search participants…" style="width:100%; padding:9px 12px; background: oklch(0.1 0.01 260); border:1px solid oklch(0.3 0.04 250 / 0.5); border-radius:8px; color: oklch(0.9 0.01 260); margin-bottom:10px; font-family:'Rajdhani',sans-serif;"/>
+
+          <div style="max-height:320px; overflow-y:auto; display:flex; flex-direction:column; gap:4px;">
+            <sc-for list="{{ filteredParticipants }}" as="p" hint-placeholder-count="6">
+              <div style="{{ p.rowStyle }}">
+                <span>{{ p.name }}</span>
+                <span style="{{ p.tagStyle }}">{{ p.tag }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUMN 2: turn + result entry -->
+      <div style="display:flex; flex-direction:column; gap:20px;">
+
+        <!-- current turn -->
+        <div style="{{ panelStyle }}">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <div style="{{ panelTitleStyle }} margin-bottom:0;">CURRENT TURN</div>
+            <div style="{{ raidStatusPillStyle }}">{{ raidStatusLabel }}</div>
+          </div>
+
+          <sc-if value="{{ turnIdle }}">
+            <div style="text-align:center; padding:16px 0;">
+              <div style="font-size:14px; color: oklch(0.6 0.02 260); margin-bottom:16px;">No active player. Draw the next viewer to continue the raid.</div>
+              <button onClick="{{ drawNext }}" style="{{ drawBtnStyle }}">🎲 Draw Next Player</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ turnActive }}">
+            <div style="display:flex; gap:16px; align-items:center; margin-bottom:16px;">
+              <div style="{{ currentAvatarStyle }}">{{ currentInitial }}</div>
+              <div style="flex:1;">
+                <div style="font-family:'Orbitron',sans-serif; font-weight:800; font-size:20px;">{{ currentName }}</div>
+                <div style="font-size:13px; color: oklch(0.6 0.02 260);">Selected · turn in progress</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="{{ countdownStyle }}">{{ countdown }}</div>
+                <div style="font-size:10px; color: oklch(0.55 0.02 260); letter-spacing:1px;">SECONDS</div>
+              </div>
+            </div>
+
+            <div style="font-size:12px; color: oklch(0.6 0.02 260); margin-bottom:8px;">Slot choice — <span style="color:oklch(0.85 0.01 260);">!slot &lt;name&gt;</span> in chat (or pick for them):</div>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:12px;">
+              <sc-for list="{{ slotOptions }}" as="opt" hint-placeholder-count="6">
+                <button onClick="{{ opt.onPick }}" style="{{ opt.style }}">{{ opt.icon }} {{ opt.name }}</button>
+              </sc-for>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button onClick="{{ autoSelectSlot }}" style="{{ ghostBtnStyle }}">Auto-Select Slot</button>
+              <button onClick="{{ skipPlayer }}" style="{{ ghostBtnStyleRed }}">Skip Player</button>
+            </div>
+          </sc-if>
+        </div>
+
+        <!-- result entry -->
+        <div style="{{ panelStyle }} {{ resultPanelDim }}">
+          <div style="{{ panelTitleStyle }}">BONUS RESULT ENTRY</div>
+          <div style="font-size:12px; color: oklch(0.6 0.02 260); margin-bottom:14px;">Playing: <span style="color:oklch(0.85 0.13 220); font-weight:700;">{{ activeSlotDisplay }}</span></div>
+
+          <div style="display:flex; gap:14px; margin-bottom:16px;">
+            <div style="flex:1;">
+              <label style="font-size:12px; color: oklch(0.6 0.02 260); display:block; margin-bottom:6px;">Base Bet</label>
+              <input value="{{ baseBet }}" onChange="{{ onBaseBetChange }}" placeholder="0.20" style="{{ numInputStyle }}"/>
+            </div>
+            <div style="display:flex; align-items:flex-end; padding-bottom:10px; font-size:20px; color: oklch(0.5 0.02 260);">÷</div>
+            <div style="flex:1;">
+              <label style="font-size:12px; color: oklch(0.6 0.02 260); display:block; margin-bottom:6px;">Final Win</label>
+              <input value="{{ finalWin }}" onChange="{{ onFinalWinChange }}" placeholder="20.00" style="{{ numInputStyle }}"/>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; background: oklch(0.11 0.01 260); border:1px solid oklch(0.35 0.05 220 / 0.4); border-radius:10px; padding:12px 16px; margin-bottom:16px;">
+            <div>
+              <div style="font-size:11px; color: oklch(0.6 0.02 260); letter-spacing:1px;">CALCULATED MULTIPLIER</div>
+              <div style="font-family:'Orbitron',sans-serif; font-weight:800; font-size:28px; color: {{ multColor }};">{{ multiplierDisplay }}×</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:11px; color: oklch(0.6 0.02 260); letter-spacing:1px;">BOSS DAMAGE</div>
+              <div style="font-family:'Orbitron',sans-serif; font-weight:800; font-size:28px; color: oklch(0.85 0.14 25);">{{ pendingDamageDisplay }}</div>
+            </div>
+          </div>
+
+          <label style="display:flex; align-items:center; gap:8px; font-size:13px; color: oklch(0.75 0.01 260); margin-bottom:14px; cursor:pointer;">
+            <input type="checkbox" checked="{{ retriggerOn }}" onChange="{{ toggleRetrigger }}" style="width:16px; height:16px; accent-color: oklch(0.7 0.15 220);"/>
+            Mark as Retrigger (Critical Hit {{ critMultLabel }})
+          </label>
+
+          <button onClick="{{ submitResult }}" style="{{ submitBtnStyle }}">Submit Result → Deal Damage</button>
+
+          <div style="height:1px; background: oklch(0.3 0.03 260 / 0.4); margin:16px 0;"></div>
+
+          <div style="font-size:11px; letter-spacing:1.5px; color: oklch(0.55 0.02 260); margin-bottom:8px;">SPECIAL EVENT ACTIONS</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <button onClick="{{ deadBonus }}" style="{{ specialDarkStyle }}">💀 Dead Bonus · +{{ deadHealLabel }} HP</button>
+            <button style="{{ specialInfoStyle }}">ℹ 500×+ auto-stuns · 1000×+ legendary</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUMN 3: boss select + control + leaderboard + history -->
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div style="{{ panelStyle }}">
+          <div style="{{ panelTitleStyle }}">BOSS ROSTER</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <sc-for list="{{ bossOptions }}" as="b" hint-placeholder-count="6">
+              <button onClick="{{ b.onSelect }}" style="{{ b.style }}">
+                <div style="font-size:22px; line-height:1;">{{ b.icon }}</div>
+                <div style="font-weight:700; font-size:12px; margin-top:4px;">{{ b.name }}</div>
+                <div style="font-size:10px; color: oklch(0.6 0.02 260);">{{ b.passive }}</div>
+              </button>
+            </sc-for>
+          </div>
+          <div style="font-size:11px; color: oklch(0.6 0.02 260); margin-top:10px; line-height:1.4;">{{ bossDesc }}</div>
+        </div>
+
+        <div style="{{ panelStyle }}">
+          <div style="{{ panelTitleStyle }}">BOSS STATUS</div>
+          <div style="display:flex; gap:14px; margin-bottom:12px;">
+            <div style="flex:1;">
+              <div style="font-size:11px; color: oklch(0.6 0.02 260);">HP</div>
+              <div style="font-family:'Orbitron',sans-serif; font-weight:800; font-size:16px;">{{ hpDisplay }} / 10K</div>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:11px; color: oklch(0.6 0.02 260);">Phase</div>
+              <div style="font-family:'Orbitron',sans-serif; font-weight:800; font-size:16px;">{{ phase }} · {{ phaseLabel }}</div>
+            </div>
+          </div>
+          <div style="height:14px; border-radius:6px; background: oklch(0.1 0.01 260); border:1px solid oklch(0.35 0.04 250 / 0.6); overflow:hidden; margin-bottom:12px;">
+            <div style="height:100%; width:{{ hpPercent }}%; background: {{ hpBarGradient }}; transition: width 0.7s ease;"></div>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <sc-for list="{{ statusTags }}" as="tag" hint-placeholder-count="0">
+              <div style="{{ tag.style }}">{{ tag.label }}</div>
+            </sc-for>
+            <sc-if value="{{ noStatusTags }}"><div style="font-size:12px; color: oklch(0.5 0.02 260);">No active modifiers</div></sc-if>
+          </div>
+          <button onClick="{{ endRaid }}" style="{{ endBtnStyle }} width:100%; margin-top:14px;">End Raid</button>
+        </div>
+
+        <div style="{{ panelStyle }}">
+          <div style="{{ panelTitleStyle }}">🏆 LIVE LEADERBOARD</div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <sc-for list="{{ leaderboardMini }}" as="row" hint-placeholder-count="3">
+              <div style="{{ row.miniStyle }}">
+                <div style="{{ row.medalStyle }}">{{ row.rankLabel }}</div>
+                <div style="flex:1; font-weight:700; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ row.name }}</div>
+                <div style="font-family:'Orbitron',sans-serif; font-weight:700; font-size:13px; color: {{ row.dmgColor }};">{{ row.damage }}</div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noLeaderboard }}"><div style="font-size:12px; color: oklch(0.5 0.02 260);">No contributors yet.</div></sc-if>
+          </div>
+        </div>
+
+        <div style="{{ panelStyle }}">
+          <div style="{{ panelTitleStyle }}">RAID HISTORY</div>
+          <div style="display:flex; flex-direction:column; gap:6px; max-height:150px; overflow-y:auto;">
+            <sc-for list="{{ history }}" as="h" hint-placeholder-count="1">
+              <div style="padding:8px 10px; background: oklch(0.13 0.015 260); border-radius:6px; font-size:12px; display:flex; justify-content:space-between;">
+                <span>{{ h.boss }}</span>
+                <span style="color: oklch(0.6 0.02 260);">{{ h.result }}</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noHistory }}"><div style="font-size:12px; color: oklch(0.5 0.02 260);">No raids completed yet.</div></sc-if>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+
+const SLOTS = [
+  { id:'sweetbonanza', name:'Sweet Bonanza', icon:'🍬' },
+  { id:'gatesofolympus', name:'Gates of Olympus', icon:'⚡' },
+  { id:'wanted', name:'Wanted', icon:'🤠' },
+  { id:'sugarrush1000', name:'Sugar Rush 1000', icon:'🍭' },
+  { id:'bigbass', name:'Big Bass Bonanza', icon:'🎣' },
+  { id:'starlight', name:'Starlight Princess', icon:'✨' }
+];
+const SLOT_MAP = Object.fromEntries(SLOTS.map(s => [s.id, s]));
+
+const BOSSES = [
+  { id:'inferno', name:'Inferno Dragon', icon:'🔥', passive:'Molten Armor', hue:35, chroma:0.19,
+    desc:'Molten Armor: reduces incoming damage 20%. Every 5th bonus round it sheds armor, taking +50% damage for that hit.' },
+  { id:'frost', name:'Frost Titan', icon:'❄', passive:'Frozen Heart', hue:222, chroma:0.13,
+    desc:'Frozen Heart: every 3rd bonus freezes the raid, disabling crits that round. Only stunnable by 500×+.' },
+  { id:'storm', name:'Storm Colossus', icon:'⚡', passive:'Chain Lightning', hue:290, chroma:0.16,
+    desc:'Chain Lightning: retriggers deal ×3 instead of ×2. Dead Bonuses charge its Rage Meter.' },
+  { id:'shadow', name:'Shadow Reaper', icon:'☠', passive:'Soul Drain', hue:302, chroma:0.14,
+    desc:'Soul Drain: Dead Bonuses heal 250 HP. Every 500× breaks a Soul Shield, making the boss more vulnerable.' },
+  { id:'mecha', name:'Mecha Overlord', icon:'🤖', passive:'Adaptive Shield', hue:220, chroma:0.13,
+    desc:'Adaptive Shield: repeated multiplier ranges deal less damage. Land a variety of multipliers to break through.' },
+  { id:'void', name:'Void Leviathan', icon:'🌌', passive:'Reality Distortion', hue:322, chroma:0.16,
+    desc:'Reality Distortion: a random raid modifier rotates every few rounds — retriggers, heals, stuns and buffs all shift.' }
+];
+const BOSS_MAP = Object.fromEntries(BOSSES.map(b => [b.id, b]));
+
+const VOID_MODS = [
+  { id:'retrigger3x', label:'Retriggers deal ×3' },
+  { id:'deadheal50', label:'Dead Bonus heals only 50' },
+  { id:'stun500', label:'500× instantly stuns' },
+  { id:'globaldmg25', label:'Global damage +25%' },
+  { id:'doublecrit', label:'Double critical damage' }
+];
+
+const NAMES = ['Shadow','Nova','Pixel','Frost','Ace','Ghost','Nyx','Kael','Zephyr','Ronin','Vex','Astra','Talon','Ember','Rook','Sable','Onyx','Piper','Draven','Lyric','Storm','Juno','Wraith','Skye'];
+const AV_COLORS = ['oklch(0.6 0.16 25)','oklch(0.6 0.15 145)','oklch(0.62 0.15 260)','oklch(0.65 0.15 200)','oklch(0.62 0.16 300)','oklch(0.6 0.15 60)','oklch(0.6 0.15 340)','oklch(0.6 0.14 180)'];
+const avColor = (id) => AV_COLORS[id % AV_COLORS.length];
+
+class Component extends DCLogic {
+  freshRaid(bossId) {
+    const st = {
+      bossHP:10000, phase:1, rage:0, stunTimer:0, legendaryBuffRounds:0,
+      consecutiveBucket:null, consecutiveCount:0, floatingNumbers:[], particles:[],
+      victory:false, totalDamage:0, biggestHit:0, critCount:0, highestMult:0,
+      turnState:'idle', current:null, countdown:30, drawnIds:[],
+      baseBet:'', finalWin:'', retriggerOn:false, scores:{}, lastScoredId:null,
+      roundCount:0, soulShields:3, voidMod:'', voidModLabel:'', voidModRoundsLeft:0
+    };
+    if (bossId === 'void') { const m = VOID_MODS[Math.floor(Math.random()*VOID_MODS.length)]; st.voidMod=m.id; st.voidModLabel=m.label; st.voidModRoundsLeft=3; }
+    return st;
+  }
+
+  state = Object.assign({
+    mode: 'arena', boss: 'mecha', maxHP: 10000,
+    shakeKey:0, flashKey:0, flashColor:'', showFlash:false, bannerKey:0, showPhaseBanner:false, phaseBannerText:'', seq:0,
+    keyword:'!monster', registrationOpen:false, regTimer:0,
+    participants: NAMES.slice(0, 14).map((name, i) => ({ id:i, name })), nextId:14, search:'',
+    history: []
+  }, this.freshRaid('mecha'));
+
+  componentDidMount() { this._pTimers = []; this._tick = setInterval(() => this.tick(), 1000); }
+  componentWillUnmount() { clearInterval(this._tick); (this._pTimers||[]).forEach(t => clearTimeout(t)); }
+
+  tick = () => {
+    this.setState(s => {
+      const patch = {};
+      if (s.registrationOpen) {
+        if (s.regTimer > 0) patch.regTimer = s.regTimer - 1;
+        if (s.regTimer <= 1) { patch.registrationOpen = false; patch.regTimer = 0; }
+        if (Math.random() < 0.6 && s.participants.length < 60) {
+          const name = NAMES[s.nextId % NAMES.length] + (Math.floor(s.nextId / NAMES.length) || '');
+          patch.participants = [...s.participants, { id:s.nextId, name }];
+          patch.nextId = s.nextId + 1;
+        }
+      }
+      if (s.turnState === 'choosing' && s.current && !s.current.slot) {
+        if (s.countdown > 1) patch.countdown = s.countdown - 1;
+        else {
+          patch.countdown = 0; patch.turnState = 'ready';
+          patch.current = { ...s.current, slot: SLOTS[Math.floor(Math.random()*SLOTS.length)].id };
+        }
+      }
+      return patch;
+    });
+  };
+
+  setModeArena = () => this.setState({ mode:'arena' });
+  setModeAdmin = () => this.setState({ mode:'admin' });
+  setBoss = (id) => this.setState(Object.assign({ boss:id }, this.freshRaid(id)));
+
+  triggerShake = () => this.setState(s => ({ shakeKey: s.shakeKey + 1 }));
+  triggerFlash = (color) => { this.setState(s => ({ flashKey:s.flashKey+1, flashColor:color, showFlash:true })); setTimeout(() => this.setState({ showFlash:false }), 500); };
+  triggerBanner = (text) => { this.setState(s => ({ bannerKey:s.bannerKey+1, phaseBannerText:text, showPhaseBanner:true })); setTimeout(() => this.setState({ showPhaseBanner:false }), 2600); };
+
+  spawnParticles = (n) => {
+    const key = this.state.seq; const items = [];
+    for (let i=0;i<n;i++){ const a=(Math.PI*2*i)/n+Math.random()*0.4, d=90+Math.random()*90;
+      items.push({ id:`p${key}-${i}`, style:{ position:'absolute', left:'50%', top:'46%', width:'8px', height:'8px', borderRadius:'2px', background: i%2===0?'oklch(0.8 0.15 220)':'oklch(0.85 0.15 85)', '--tx':Math.cos(a)*d+'px', '--ty':Math.sin(a)*d+'px', animation:'burstParticle 0.9s ease-out forwards', zIndex:20 } }); }
+    this.setState(s => ({ particles:[...s.particles, ...items], seq:s.seq+1 }));
+    this._pTimers.push(setTimeout(() => this.setState(s => ({ particles: s.particles.filter(p => !items.find(it => it.id===p.id)) })), 950));
+  };
+  spawnFloatingNumber = (label, crit, heal) => {
+    const id = `f${this.state.seq+1000+Math.random()}`;
+    const item = { id, label, style:{ position:'absolute', left:(30+Math.random()*40)+'%', top:'30%', transform:'translateX(-50%)', fontFamily:"'Orbitron',sans-serif", fontWeight:800, fontSize: crit?'34px':'24px', color: heal?'oklch(0.7 0.14 145)':(crit?'oklch(0.85 0.16 85)':'oklch(0.75 0.18 25)'), textShadow: crit?'0 0 20px oklch(0.8 0.16 85 / 0.8)':'0 0 14px oklch(0.6 0.2 25 / 0.7)', animation:'floatUp 1.2s ease-out forwards', zIndex:25, pointerEvents:'none' } };
+    this.setState(s => ({ floatingNumbers:[...s.floatingNumbers, item] }));
+    this._pTimers.push(setTimeout(() => this.setState(s => ({ floatingNumbers: s.floatingNumbers.filter(f => f.id!==id) })), 1200));
+  };
+
+  applyPhase = (hp) => {
+    const pct = (hp / this.state.maxHP) * 100;
+    let phase = 1; if (pct<=25) phase=4; else if (pct<=50) phase=3; else if (pct<=75) phase=2;
+    if (phase !== this.state.phase) {
+      const labels = {2:'AWAKENED',3:'ENRAGED',4:'FINAL PHASE'};
+      this.triggerBanner('PHASE '+phase+' — '+(labels[phase]||''));
+      this.triggerFlash(phase>=3 ? 'oklch(0.6 0.2 25 / 0.45)' : 'oklch(0.7 0.15 220 / 0.35)');
+    }
+    return phase;
+  };
+  bucketOf = (m) => m<100?'low':m<500?'mid':m<1000?'high':'legendary';
+
+  rotateVoid = (boss, s) => {
+    if (boss !== 'void') return {};
+    const left = s.voidModRoundsLeft - 1;
+    if (left <= 0) { const m = VOID_MODS[Math.floor(Math.random()*VOID_MODS.length)]; this.triggerBanner('🌌 DISTORTION: '+m.label.toUpperCase()); return { voidMod:m.id, voidModLabel:m.label, voidModRoundsLeft:3 }; }
+    return { voidModRoundsLeft: left };
+  };
+
+  finishTurn = () => this.setState({ turnState:'idle', current:null, baseBet:'', finalWin:'', retriggerOn:false, countdown:30 });
+
+  dealDamage = (mult, opts = {}) => {
+    const s = this.state; if (s.victory) return;
+    const boss = s.boss; const roundNo = s.roundCount + 1; const cur = s.current;
+
+    if (opts.dead) {
+      let heal = 100;
+      if (boss==='shadow') heal = 250;
+      if (boss==='void' && s.voidMod==='deadheal50') heal = 50;
+      const rageAdd = boss==='storm' ? 25 : 0;
+      this.triggerFlash('oklch(0.35 0.08 290 / 0.5)');
+      this.spawnFloatingNumber('+'+heal, false, true);
+      const vm = this.rotateVoid(boss, s);
+      this.setState(Object.assign({ bossHP: Math.min(s.maxHP, s.bossHP+heal), rage: Math.min(100, s.rage+rageAdd), consecutiveBucket:null, consecutiveCount:0, roundCount:roundNo }, vm));
+      this.finishTurn();
+      return;
+    }
+
+    const bucket = this.bucketOf(mult);
+    const consCount = s.consecutiveBucket === bucket ? s.consecutiveCount + 1 : 1;
+    let dmg = mult;
+
+    let critMult = boss==='storm' ? 3 : 2;
+    if (boss==='void' && s.voidMod==='retrigger3x') critMult = 3;
+    if (boss==='void' && s.voidMod==='doublecrit') critMult = 4;
+    const frozenThisRound = boss==='frost' && (roundNo % 3 === 0);
+    const crit = !!opts.crit && !frozenThisRound;
+    if (crit) dmg = mult * critMult;
+    const legendary = mult >= 1000;
+
+    if (s.legendaryBuffRounds > 0) dmg = Math.round(dmg * 1.25);
+    if (boss==='void' && s.voidMod==='globaldmg25') dmg = Math.round(dmg * 1.25);
+
+    let infernoShed = false;
+    if (boss==='inferno') { infernoShed = roundNo % 5 === 0; dmg = Math.round(dmg * (infernoShed ? 1.5 : 0.8)); }
+    if (boss==='shadow') dmg = Math.round(dmg * (1 - s.soulShields * 0.12));
+    if (boss==='mecha') { const r = consCount>=2 ? Math.min(0.6,(consCount-1)*0.2) : 0; dmg = Math.round(dmg*(1-r)); }
+
+    const newHP = Math.max(0, s.bossHP - dmg);
+    const phase = this.applyPhase(newHP);
+    const newRage = Math.min(100, s.rage + dmg * 0.04);
+    const legendaryBuffRounds = (boss==='mecha' && legendary) ? 3 : Math.max(0, s.legendaryBuffRounds - (s.legendaryBuffRounds>0?1:0));
+
+    let soulShields = s.soulShields;
+    if (boss==='shadow' && mult>=500 && soulShields>0) soulShields -= 1;
+    const stun = mult >= 500;
+
+    this.spawnParticles(legendary ? 16 : 10);
+    this.spawnFloatingNumber('-'+dmg.toLocaleString(), crit || legendary);
+    this.triggerShake();
+    if (legendary) { this.triggerFlash('oklch(0.85 0.16 85 / 0.55)'); this.triggerBanner('⚡ LEGENDARY STRIKE'); }
+    else if (crit) this.triggerFlash('oklch(0.75 0.14 220 / 0.4)');
+    else if (stun) this.triggerBanner('⚡ BOSS STUNNED');
+    if (infernoShed) this.triggerBanner('🔥 ARMOR SHED');
+
+    const scores = { ...s.scores };
+    if (cur) { const prev = scores[cur.id] || { name:cur.name, slot:cur.slot, damage:0 }; scores[cur.id] = { name:cur.name, slot:cur.slot, damage: prev.damage + dmg }; }
+
+    const vm = this.rotateVoid(boss, s);
+
+    this.setState(Object.assign({
+      bossHP:newHP, phase, rage: newRage>=100?0:newRage,
+      stunTimer: stun ? 4 : Math.max(0, s.stunTimer-1),
+      legendaryBuffRounds, consecutiveBucket:bucket, consecutiveCount:consCount,
+      totalDamage: s.totalDamage+dmg, biggestHit: Math.max(s.biggestHit,dmg),
+      critCount: s.critCount + (crit||legendary?1:0), highestMult: Math.max(s.highestMult,mult),
+      victory: newHP<=0, scores, lastScoredId: cur?cur.id:null, roundCount:roundNo, soulShields
+    }, vm));
+    this.finishTurn();
+  };
+
+  // registration
+  onKeywordChange = (e) => this.setState({ keyword:e.target.value });
+  toggleRegistration = () => this.setState(s => s.registrationOpen ? { registrationOpen:false, regTimer:0 } : { registrationOpen:true, regTimer:60 });
+  onSearchChange = (e) => this.setState({ search:e.target.value });
+
+  // turn
+  drawNext = () => {
+    const s = this.state;
+    if (s.registrationOpen) this.setState({ registrationOpen:false, regTimer:0 });
+    const pool = s.participants.filter(p => !s.drawnIds.includes(p.id));
+    if (pool.length === 0) return;
+    const pick = pool[Math.floor(Math.random()*pool.length)];
+    this.setState(st => ({ current:{ id:pick.id, name:pick.name, slot:'' }, turnState:'choosing', countdown:30, drawnIds:[...st.drawnIds, pick.id], baseBet:'', finalWin:'', retriggerOn:false }));
+  };
+  pickSlot = (slotId) => this.setState(s => s.current ? { current:{ ...s.current, slot:slotId }, turnState:'ready' } : {});
+  autoSelectSlot = () => this.pickSlot(SLOTS[Math.floor(Math.random()*SLOTS.length)].id);
+  skipPlayer = () => this.finishTurn();
+
+  onBaseBetChange = (e) => this.setState({ baseBet:e.target.value.replace(/[^0-9.]/g,'') });
+  onFinalWinChange = (e) => this.setState({ finalWin:e.target.value.replace(/[^0-9.]/g,'') });
+  toggleRetrigger = () => this.setState(s => ({ retriggerOn:!s.retriggerOn }));
+  computeMult = () => { const b=parseFloat(this.state.baseBet), f=parseFloat(this.state.finalWin); if(!b||b<=0||isNaN(f)) return 0; return Math.round(f/b); };
+  submitResult = () => { if (this.state.turnState==='idle') return; const m=this.computeMult(); if (m<=0) return; this.dealDamage(m, { crit:this.state.retriggerOn }); };
+  deadBonus = () => { if (this.state.turnState==='idle') return; this.dealDamage(0, { dead:true }); };
+
+  endRaid = () => {
+    this.setState(s => ({ history: [{ boss: BOSS_MAP[s.boss].icon+' '+BOSS_MAP[s.boss].name, result: s.bossHP<=0 ? 'Defeated · '+s.totalDamage.toLocaleString()+' dmg' : s.totalDamage.toLocaleString()+' dmg' }, ...s.history].slice(0,8) }));
+    this.setState(Object.assign({}, this.freshRaid(this.state.boss)));
+  };
+  resetRaid = () => this.setState(Object.assign({}, this.freshRaid(this.state.boss)));
+
+  buildLeaderboard = () => Object.entries(this.state.scores).map(([id,v]) => ({ id:parseInt(id,10), ...v })).sort((a,b) => b.damage - a.damage);
+
+  renderVals() {
+    const s = this.state;
+    const isArena = s.mode==='arena', isAdmin = s.mode==='admin';
+    const B = BOSS_MAP[s.boss];
+    const hpPercent = Math.max(0, Math.min(100, (s.bossHP / s.maxHP) * 100));
+    const phaseLabel = {1:'STABLE',2:'AWAKENED',3:'ENRAGED',4:'FINAL PHASE'}[s.phase];
+
+    // palette from boss + phase
+    const L = [0.74,0.74,0.71,0.67][s.phase-1];
+    const C = B.chroma + [0,0.02,0.04,0.05][s.phase-1];
+    const hue = B.hue;
+    const coreColor = `oklch(${L} ${C} ${hue})`;
+    const coreColorLight = `oklch(${Math.min(0.92,L+0.14)} ${Math.max(0.03,C-0.03)} ${hue})`;
+    const visorColor = coreColor;
+    const hpBarGradient = `linear-gradient(90deg, oklch(${L} ${C} ${hue}), oklch(${Math.min(0.85,L+0.06)} ${Math.max(0.05,C-0.02)} ${hue+25}))`;
+    const hpBarGlow = `oklch(${L} ${C} ${hue} / 0.55)`;
+
+    // status tags + weakness (boss-specific)
+    const mkTag = (label, h, blink) => ({ label, style:{ fontSize:'11px', fontWeight:700, padding:'4px 10px', borderRadius:'999px', background:`oklch(0.28 0.07 ${h} / 0.45)`, color:`oklch(0.82 0.14 ${h})`, border:`1px solid oklch(0.6 0.13 ${h} / 0.5)`, animation: blink?'rageBlink 1s ease-in-out infinite':'none' } });
+    const tags = [];
+    if (s.stunTimer > 0) tags.push(mkTag('STUNNED', 265, true));
+    let weaknessText, weaknessHot = false;
+    if (s.boss === 'inferno') { const shedNext=(s.roundCount+1)%5===0; tags.push(mkTag(shedNext?'ARMOR SHED +50%':'MOLTEN ARMOR −20%', 35, shedNext)); weaknessText = shedNext?'Armor is shedding — strike now for +50%!':'Molten armor absorbs 20% — bait the shed round'; weaknessHot=shedNext; }
+    else if (s.boss === 'frost') { const froze=(s.roundCount+1)%3===0; tags.push(mkTag('FROZEN HEART', 222)); if(froze){ tags.push(mkTag('FROZEN · NO CRIT', 200, true)); } weaknessText = froze?'Frozen next round — crits disabled':'Only 500×+ can stun the Titan'; weaknessHot=froze; }
+    else if (s.boss === 'storm') { tags.push(mkTag('CHAIN LIGHTNING ×3', 290)); weaknessText = 'Retriggers deal ×3 — save your crits for big bets'; }
+    else if (s.boss === 'shadow') { tags.push(mkTag('SOUL SHIELD ×'+s.soulShields, 302)); weaknessText = s.soulShields>0 ? `Break ${s.soulShields} Soul Shield${s.soulShields>1?'s':''} with 500×+` : 'Shields shattered — fully vulnerable!'; weaknessHot = s.soulShields===0; }
+    else if (s.boss === 'mecha') { if (s.consecutiveCount>=2) tags.push(mkTag('SHIELD RESIST ×'+s.consecutiveCount, 220)); weaknessText = s.consecutiveCount>=3 ? 'EXPOSED — vary your multipliers!' : 'Repeated ranges lose power'; weaknessHot = s.consecutiveCount>=3; }
+    else if (s.boss === 'void') { tags.push(mkTag('DISTORTION', 322)); weaknessText = 'Reality distorted: '+(s.voidModLabel||'—'); }
+    if (s.legendaryBuffRounds > 0) tags.push(mkTag('GLOBAL DMG +25%', 85));
+
+    // leaderboard
+    const lb = this.buildLeaderboard();
+    const medals = ['🥇','🥈','🥉'];
+    const rowBg = (r) => r===0?'oklch(0.28 0.09 85 / 0.35)':r===1?'oklch(0.26 0.05 250 / 0.4)':r===2?'oklch(0.26 0.06 30 / 0.3)':'oklch(0.14 0.015 260 / 0.6)';
+    const leaderboard = lb.map((e,i) => ({
+      key:e.id, name:e.name, slot: SLOT_MAP[e.slot]?SLOT_MAP[e.slot].name:'—',
+      damage:e.damage.toLocaleString(), initial:e.name[0].toUpperCase(),
+      medal: i<3?medals[i]:(i+1)+'.', dmgColor: i===0?'oklch(0.85 0.14 85)':'oklch(0.9 0.01 260)',
+      style:{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', borderRadius:'10px', '--rowbg':rowBg(i), background:rowBg(i), border:'1px solid '+(i<3?`oklch(0.6 0.12 ${i===0?85:i===1?250:30} / 0.5)`:'oklch(0.3 0.03 260 / 0.4)'), boxShadow: i===0?'0 0 18px oklch(0.7 0.14 85 / 0.25)':'none', animation: e.id===s.lastScoredId?'rowFlash 0.9s ease-out':'none' },
+      medalStyle:{ fontSize:i<3?'20px':'14px', width:'26px', textAlign:'center', color:'oklch(0.6 0.02 260)', fontFamily:"'Orbitron',sans-serif", fontWeight:700 },
+      avatarStyle:{ width:'32px', height:'32px', borderRadius:'50%', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:'14px', color:'oklch(0.98 0 0)', background:avColor(e.id) }
+    }));
+    const leaderboardMini = lb.slice(0,6).map((e,i) => ({ name:e.name, damage:e.damage.toLocaleString(), rankLabel:i<3?medals[i]:(i+1)+'.', dmgColor:i===0?'oklch(0.85 0.14 85)':'oklch(0.85 0.01 260)', medalStyle:{ width:'24px', textAlign:'center', fontSize:i<3?'16px':'12px' }, miniStyle:{ display:'flex', alignItems:'center', gap:'8px', padding:'7px 10px', borderRadius:'8px', background:i<3?rowBg(i):'oklch(0.13 0.015 260)' } }));
+    const COINS = [250,125,125];
+    const podium = lb.slice(0,3).map((e,i) => ({ medal:medals[i], name:e.name, slot:SLOT_MAP[e.slot]?SLOT_MAP[e.slot].name:'—', damage:e.damage.toLocaleString(), coins:COINS[i], initial:e.name[0].toUpperCase(), style:{ flex:1, background:'oklch(0.13 0.01 260)', border:'1px solid '+(i===0?'oklch(0.7 0.14 85 / 0.6)':'oklch(0.3 0.03 260 / 0.5)'), borderRadius:'12px', padding:'16px 12px', transform:i===0?'translateY(-8px)':'none', boxShadow:i===0?'0 0 24px oklch(0.7 0.14 85 / 0.3)':'none' }, avatarStyle:{ width:'40px', height:'40px', borderRadius:'50%', margin:'8px auto 0', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, color:'oklch(0.98 0 0)', background:avColor(e.id) } }));
+
+    // styles
+    const panelStyle = { background:'oklch(0.17 0.02 260 / 0.7)', backdropFilter:'blur(8px)', border:'1px solid oklch(0.32 0.04 220 / 0.35)', borderRadius:'14px', padding:'20px' };
+    const panelTitleStyle = { fontFamily:"'Orbitron',sans-serif", fontSize:'12px', letterSpacing:'2px', color:'oklch(0.7 0.1 220)', marginBottom:'14px' };
+    const primaryBtnStyle = { padding:'10px 14px', borderRadius:'8px', border:'none', background:'linear-gradient(90deg, oklch(0.72 0.14 220), oklch(0.6 0.14 250))', color:'oklch(0.1 0.01 260)', fontWeight:800, cursor:'pointer', fontFamily:"'Rajdhani',sans-serif", fontSize:'14px' };
+    const drawBtnStyle = { ...primaryBtnStyle, padding:'12px 28px', fontSize:'16px', fontFamily:"'Orbitron',sans-serif", letterSpacing:'1px' };
+    const ghostBtnStyle = { flex:1, padding:'9px', borderRadius:'8px', border:'1px solid oklch(0.4 0.06 220 / 0.5)', background:'transparent', color:'oklch(0.8 0.05 220)', fontWeight:700, cursor:'pointer', fontFamily:"'Rajdhani',sans-serif" };
+    const ghostBtnStyleRed = { ...ghostBtnStyle, border:'1px solid oklch(0.5 0.15 25 / 0.5)', color:'oklch(0.72 0.15 25)' };
+    const numInputStyle = { width:'100%', padding:'12px', background:'oklch(0.1 0.01 260)', border:'1px solid oklch(0.35 0.04 250 / 0.6)', borderRadius:'8px', color:'oklch(0.95 0.01 260)', fontFamily:"'Orbitron',sans-serif", fontWeight:700, fontSize:'18px' };
+    const submitBtnStyle = { ...primaryBtnStyle, width:'100%', padding:'13px', fontSize:'15px', fontFamily:"'Orbitron',sans-serif", letterSpacing:'1px', background:'linear-gradient(90deg, oklch(0.65 0.18 25), oklch(0.6 0.16 15))', color:'oklch(0.98 0.01 25)' };
+    const specialDarkStyle = { padding:'11px', borderRadius:'8px', border:'1px solid oklch(0.4 0.06 290 / 0.6)', background:'oklch(0.2 0.05 290 / 0.4)', color:'oklch(0.8 0.06 290)', fontWeight:700, cursor:'pointer', fontFamily:"'Rajdhani',sans-serif", fontSize:'13px' };
+    const specialInfoStyle = { padding:'11px', borderRadius:'8px', border:'1px solid oklch(0.3 0.03 260 / 0.5)', background:'oklch(0.13 0.01 260)', color:'oklch(0.55 0.02 260)', cursor:'default', fontFamily:"'Rajdhani',sans-serif", fontSize:'11px' };
+    const endBtnStyle = { ...primaryBtnStyle, background:'transparent', border:'1px solid oklch(0.5 0.15 25 / 0.5)', color:'oklch(0.7 0.15 25)' };
+    const regButtonStyle = { ...primaryBtnStyle, background: s.registrationOpen ? 'linear-gradient(90deg, oklch(0.6 0.16 25), oklch(0.55 0.16 10))' : 'linear-gradient(90deg, oklch(0.72 0.14 165), oklch(0.65 0.14 180))' };
+    const tabBase = { padding:'8px 18px', borderRadius:'6px', border:'none', fontFamily:"'Orbitron',sans-serif", fontWeight:700, fontSize:'11px', letterSpacing:'1px', cursor:'pointer', background:'transparent', color:'oklch(0.6 0.02 260)' };
+    const tabActive = { ...tabBase, background:'oklch(0.3 0.08 220)', color:'oklch(0.95 0.02 220)', boxShadow:'0 0 12px oklch(0.5 0.15 220 / 0.4)' };
+
+    // boss roster buttons
+    const bossOptions = BOSSES.map(b => ({ name:b.name, icon:b.icon, passive:b.passive, onSelect:()=>this.setBoss(b.id), style:{ padding:'10px 8px', borderRadius:'10px', textAlign:'center', cursor:'pointer', border:'1px solid '+(b.id===s.boss?`oklch(0.6 0.13 ${b.hue} / 0.8)`:'oklch(0.3 0.03 260 / 0.4)'), background: b.id===s.boss?`oklch(0.24 0.08 ${b.hue} / 0.5)`:'oklch(0.12 0.01 260)', color:'oklch(0.9 0.01 260)', fontFamily:"'Rajdhani',sans-serif", boxShadow: b.id===s.boss?`0 0 16px oklch(0.6 0.13 ${b.hue} / 0.3)`:'none' } }));
+
+    // participants
+    const filteredParticipants = s.participants.filter(p => p.name.toLowerCase().includes(s.search.toLowerCase())).map(p => {
+      const drawn = s.drawnIds.includes(p.id); const current = s.current && s.current.id===p.id;
+      return { name:p.name, tag: current?'PLAYING':drawn?'done':(s.registrationOpen?'live':'ready'),
+        rowStyle:{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 10px', borderRadius:'6px', fontSize:'13px', background: current?'oklch(0.28 0.08 220 / 0.5)':'oklch(0.13 0.015 260)', opacity: drawn&&!current?0.5:1 },
+        tagStyle:{ fontSize:'10px', fontWeight:700, letterSpacing:'0.5px', color: current?'oklch(0.85 0.13 220)':drawn?'oklch(0.5 0.02 260)':'oklch(0.65 0.13 145)' } };
+    });
+
+    const turnState = s.turnState;
+    const mult = this.computeMult();
+    const critMultForBoss = s.boss==='storm' ? 3 : (s.boss==='void' && (s.voidMod==='retrigger3x')) ? 3 : (s.boss==='void' && s.voidMod==='doublecrit') ? 4 : 2;
+    const pendingDamage = mult>0 ? (s.retriggerOn ? mult*critMultForBoss : mult) : 0;
+    const activeSlot = s.current && s.current.slot ? SLOT_MAP[s.current.slot] : null;
+    const slotOptions = SLOTS.map(sl => ({ name:sl.name, icon:sl.icon, onPick:()=>this.pickSlot(sl.id), style:{ padding:'9px 6px', borderRadius:'8px', border:'1px solid '+(s.current&&s.current.slot===sl.id?'oklch(0.7 0.14 220 / 0.8)':'oklch(0.35 0.04 250 / 0.5)'), background:s.current&&s.current.slot===sl.id?'oklch(0.28 0.08 220 / 0.5)':'oklch(0.11 0.01 260)', color:'oklch(0.88 0.03 220)', fontWeight:600, cursor:'pointer', fontFamily:"'Rajdhani',sans-serif", fontSize:'12px' } }));
+    const raidStatusLabel = turnState==='idle'?'READY':turnState==='choosing'?'CHOOSING SLOT':'RESULT PENDING';
+    const rsColor = turnState==='choosing'?'oklch(0.75 0.14 60)':turnState==='ready'?'oklch(0.72 0.14 165)':'oklch(0.6 0.1 220)';
+    const raidStatusPillStyle = { padding:'5px 12px', borderRadius:'999px', fontSize:'11px', fontWeight:700, letterSpacing:'0.5px', background:'oklch(0.2 0.02 260)', color:rsColor, border:'1px solid '+rsColor };
+    const canSubmit = turnState!=='idle';
+    const multColor = mult>=1000?'oklch(0.85 0.15 85)':mult>=500?'oklch(0.8 0.15 260)':mult>=100?'oklch(0.85 0.13 220)':'oklch(0.9 0.01 260)';
+    const deadHeal = s.boss==='shadow'?250:(s.boss==='void'&&s.voidMod==='deadheal50')?50:100;
+
+    return {
+      isArena, isAdmin,
+      tabArenaStyle: isArena?tabActive:tabBase, tabAdminStyle: isAdmin?tabActive:tabBase,
+      setModeArena:this.setModeArena, setModeAdmin:this.setModeAdmin,
+
+      bossName:B.name, bossIcon:B.icon, bossPassive:B.passive, bossDesc:B.desc,
+      bossIsMecha:s.boss==='mecha', bossIsInferno:s.boss==='inferno', bossIsFrost:s.boss==='frost',
+      bossIsStorm:s.boss==='storm', bossIsShadow:s.boss==='shadow', bossIsVoid:s.boss==='void',
+      bossOptions,
+
+      arenaStageStyle:{ position:'relative', animation: s.shakeKey>0?'shakeArena 0.5s ease-in-out':'none' },
+      shakeKey:s.shakeKey, flashKey:s.flashKey, showFlash:s.showFlash, flashColor:s.flashColor,
+      bannerKey:s.bannerKey, showPhaseBanner:s.showPhaseBanner, phaseBannerText:s.phaseBannerText,
+      particles:s.particles, floatingNumbers:s.floatingNumbers,
+      coreColor, coreColorLight, visorColor,
+
+      phase:s.phase, phaseLabel, hpDisplay:s.bossHP.toLocaleString(), hpPercent, hpBarGradient, hpBarGlow,
+      rageBarStyle:{ height:'100%', width:s.rage+'%', background:'linear-gradient(90deg, oklch(0.65 0.18 25), oklch(0.75 0.15 60))', transition:'width 0.4s ease', boxShadow:s.rage>=90?'0 0 14px oklch(0.7 0.18 25 / 0.8)':'none' },
+      statusTags:tags, noStatusTags:tags.length===0,
+      weaknessStyle:{ fontSize:'13px', fontWeight:700, color: weaknessHot?'oklch(0.78 0.16 45)':'oklch(0.7 0.02 260)' }, weaknessText,
+
+      leaderboard, leaderboardMini, noLeaderboard:lb.length===0, podium,
+      victory:s.victory, totalDamageDisplay:s.totalDamage.toLocaleString(), biggestHitDisplay:s.biggestHit.toLocaleString(),
+      highestMultDisplay:s.highestMult.toLocaleString(), critCount:s.critCount, resetRaid:this.resetRaid,
+
+      panelStyle, panelTitleStyle,
+      keyword:s.keyword, onKeywordChange:this.onKeywordChange, participantCount:s.participants.length,
+      regTimerDisplay: s.registrationOpen?s.regTimer+'s':'—',
+      regTimerStyle:{ fontFamily:"'Orbitron',sans-serif", fontWeight:800, fontSize:'18px', color:s.registrationOpen?'oklch(0.75 0.14 60)':'oklch(0.5 0.02 260)' },
+      toggleRegistration:this.toggleRegistration, regButtonStyle, regButtonLabel: s.registrationOpen?'Close Registration':'Start Registration',
+      search:s.search, onSearchChange:this.onSearchChange, filteredParticipants,
+
+      turnIdle:turnState==='idle', turnActive:turnState!=='idle',
+      drawNext:this.drawNext, drawBtnStyle,
+      currentName:s.current?s.current.name:'', currentInitial:s.current?s.current.name[0].toUpperCase():'',
+      currentAvatarStyle:{ width:'52px', height:'52px', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:'22px', color:'oklch(0.98 0 0)', background:s.current?avColor(s.current.id):'oklch(0.4 0 0)' },
+      countdown:s.countdown,
+      countdownStyle:{ fontFamily:"'Orbitron',sans-serif", fontWeight:800, fontSize:'26px', color: turnState==='choosing'?(s.countdown<=10?'oklch(0.7 0.18 25)':'oklch(0.85 0.13 220)'):'oklch(0.6 0.02 260)' },
+      slotOptions, autoSelectSlot:this.autoSelectSlot, skipPlayer:this.skipPlayer, ghostBtnStyle, ghostBtnStyleRed,
+
+      resultPanelDim: canSubmit?{ opacity:1 }:{ opacity:0.5, pointerEvents:'none' },
+      activeSlotDisplay: activeSlot?(activeSlot.icon+' '+activeSlot.name):(turnState==='choosing'?'waiting for slot choice…':'—'),
+      baseBet:s.baseBet, finalWin:s.finalWin, onBaseBetChange:this.onBaseBetChange, onFinalWinChange:this.onFinalWinChange, numInputStyle,
+      multiplierDisplay:mult.toLocaleString(), multColor, pendingDamageDisplay:pendingDamage.toLocaleString(),
+      retriggerOn:s.retriggerOn, toggleRetrigger:this.toggleRetrigger, critMultLabel:'×'+critMultForBoss,
+      submitResult:this.submitResult, submitBtnStyle,
+      deadBonus:this.deadBonus, specialDarkStyle, specialInfoStyle, deadHealLabel:deadHeal,
+
+      raidStatusLabel, raidStatusPillStyle, endRaid:this.endRaid, endBtnStyle,
+      history:s.history, noHistory:s.history.length===0
+    };
+  }
+}
+
+</script>
+</body>
+</html>
