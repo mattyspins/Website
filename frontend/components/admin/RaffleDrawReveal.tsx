@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trophy } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/api";
+import { authFetch } from "@/lib/authFetch";
 
 interface RevealWinner {
   id: string;
@@ -34,13 +35,6 @@ type Phase =
   | "error";
 
 const CARD_COUNT = 12;
-
-function authHeaders(): Record<string, string> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-  return token
-    ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
-    : { "Content-Type": "application/json" };
-}
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -341,9 +335,9 @@ export default function RaffleDrawReveal({ raffleId, onClose }: RaffleDrawReveal
       await sleep(600);
       if (cancelled) return;
 
-      const drawPromise = fetch(API_ENDPOINTS.RAFFLE_SELECT_WINNERS(raffleId), {
+      const drawPromise = authFetch(API_ENDPOINTS.RAFFLE_SELECT_WINNERS(raffleId), {
         method: "POST",
-        headers: authHeaders(),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       }).then(async (res) => {
         const data = await res.json();

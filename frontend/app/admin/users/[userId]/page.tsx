@@ -9,6 +9,8 @@ import {
   Gamepad2, Ticket, Gift, Target, Zap, Grid3x3, Dices, Swords, Crosshair, Mountain,
 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/api";
+import { authFetch } from "@/lib/authFetch";
+import { isAuthenticated } from "@/lib/authPersistence";
 import { useToast } from "@/components/ui/ToastProvider";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import SuspendUserModal from "@/components/admin/SuspendUserModal";
@@ -158,14 +160,10 @@ export default function AdminUserPage() {
   const [sessions, setSessions] = useState<UserSession[] | null>(null);
 
   const { success, error: toastError } = useToast();
-  const token = () => localStorage.getItem("access_token") ?? "";
 
   useEffect(() => {
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) { router.push("/"); return; }
-    fetch(API_ENDPOINTS.ADMIN_USER(userId), {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
+    if (!isAuthenticated()) { router.push("/"); return; }
+    authFetch(API_ENDPOINTS.ADMIN_USER(userId))
       .then((r) => { if (r.status === 404) { setNotFound(true); return null; } return r.json(); })
       .then((d) => {
         if (!d) return;
@@ -177,16 +175,12 @@ export default function AdminUserPage() {
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
 
-    fetch(API_ENDPOINTS.ADMIN_USER_SESSIONS(userId), {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
+    authFetch(API_ENDPOINTS.ADMIN_USER_SESSIONS(userId))
       .then((r) => r.json())
       .then((d) => { if (d.success) setSessions(d.data.sessions); })
       .catch(() => setSessions([]));
 
-    fetch(API_ENDPOINTS.ADMIN_USER_ENGAGEMENT(userId), {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
+    authFetch(API_ENDPOINTS.ADMIN_USER_ENGAGEMENT(userId))
       .then((r) => r.json())
       .then((d) => { if (d.success) setEngagement(d.data); })
       .catch(() => setEngagement(null));
@@ -201,9 +195,9 @@ export default function AdminUserPage() {
     const body = field === "isModerator" ? { isModerator: !current }
       : field === "isVip"    ? { isVip: !current }
       : { isDepositor: !current };
-    const res = await fetch(endpoint, {
+    const res = await authFetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
     if (res.ok) setUser((u) => u ? { ...u, [field]: !current } : u);
@@ -214,9 +208,9 @@ export default function AdminUserPage() {
     setCoinsSaving(true); setCoinsMsg("");
     const amount = coinsOp === "add" ? Math.abs(Number(coinsAmount)) : -Math.abs(Number(coinsAmount));
     try {
-      const res = await fetch(API_ENDPOINTS.ADMIN_USER_POINTS(user.id), {
+      const res = await authFetch(API_ENDPOINTS.ADMIN_USER_POINTS(user.id), {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount, reason: coinsReason }),
       });
       if (res.ok) {
@@ -233,17 +227,17 @@ export default function AdminUserPage() {
     try {
       const results: string[] = [];
       if (parseFloat(newWager) !== Number(user.totalWagered)) {
-        const r = await fetch(API_ENDPOINTS.ADMIN_USER_WAGER(user.id), {
+        const r = await authFetch(API_ENDPOINTS.ADMIN_USER_WAGER(user.id), {
           method: "PATCH",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ totalWagered: parseFloat(newWager) }),
         });
         if (r.ok) { setUser((u) => u ? { ...u, totalWagered: newWager } : u); results.push("wagered"); }
       }
       if (parseFloat(newDeposited) !== Number(user.totalDeposited)) {
-        const r = await fetch(API_ENDPOINTS.ADMIN_USER_DEPOSIT(user.id), {
+        const r = await authFetch(API_ENDPOINTS.ADMIN_USER_DEPOSIT(user.id), {
           method: "PATCH",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ totalDeposited: parseFloat(newDeposited) }),
         });
         if (r.ok) { setUser((u) => u ? { ...u, totalDeposited: newDeposited } : u); results.push("deposited"); }
@@ -259,9 +253,9 @@ export default function AdminUserPage() {
       ? API_ENDPOINTS.ADMIN_USER_UNSUSPEND(user.id)
       : API_ENDPOINTS.ADMIN_USER_SUSPEND(user.id);
     try {
-      const res = await fetch(endpoint, {
+      const res = await authFetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+        headers: { "Content-Type": "application/json" },
         body: user.isSuspended ? undefined : JSON.stringify({ reason, durationHours }),
       });
       if (res.ok) {
@@ -284,10 +278,7 @@ export default function AdminUserPage() {
     if (!user) return;
     setRazedChecking(true);
     try {
-      const res = await fetch(API_ENDPOINTS.ADMIN_RECHECK_RAZED(user.id), {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token()}` },
-      });
+      const res = await authFetch(API_ENDPOINTS.ADMIN_RECHECK_RAZED(user.id), { method: "POST" });
       const d = await res.json().catch(() => ({}));
       if (res.ok) {
         setUser((u) => u ? { ...u, rainbetVerified: !!d.data?.verified } : u);

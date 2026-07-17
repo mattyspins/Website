@@ -9,6 +9,7 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 import { TableSkeleton } from "@/components/ui/Skeleton";
 import { LoadingError } from "@/components/ui/ErrorState";
 import { storeApi } from "@/lib/api/store";
+import { isAuthenticated } from "@/lib/authPersistence";
 
 interface Purchase {
   id: string;
@@ -37,8 +38,7 @@ export default function PurchaseHistoryPage() {
   }, []);
 
   const checkAuthAndLoadPurchases = async () => {
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) {
+    if (!isAuthenticated()) {
       router.push("/?login=required");
       return;
     }

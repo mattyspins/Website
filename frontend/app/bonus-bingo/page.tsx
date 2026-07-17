@@ -6,8 +6,10 @@ import { ArrowLeft, Users } from "lucide-react";
 import { bingoApi, BingoGame, BingoCell } from "@/lib/api/bonusBingo";
 import { getSocket } from "@/lib/socket";
 import { API_ENDPOINTS } from "@/lib/api";
+import { authFetch } from "@/lib/authFetch";
 import SlotPicker from "@/components/SlotPicker";
 import { kickName, lineLabel, getLineWinners } from "@/lib/bingoUtils";
+import { isAuthenticated } from "@/lib/authPersistence";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -307,9 +309,8 @@ export default function BonusBingoPage() {
     activeGame.cells.find(c => c.id === activeGame.currentCellId)?.slotName);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
-    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
+    if (!isAuthenticated()) return;
+    authFetch(API_ENDPOINTS.AUTH_ME)
       .then(r => r.json())
       .then(d => { if (d.user) setUser(d.user); })
       .catch(() => {});

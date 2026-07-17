@@ -14,6 +14,8 @@ import {
 } from "@/lib/huntTracker";
 import { SLOT_GAMES, findSlot, type SlotGame } from "@/lib/slotGames";
 import { API_ENDPOINTS } from "@/lib/api";
+import { authFetch } from "@/lib/authFetch";
+import { isAuthenticated } from "@/lib/authPersistence";
 import { slotRequestApi, SlotRequest } from "@/lib/api/slotRequests";
 import { gtbApi, type GTBGame } from "@/lib/api/gtb";
 import { getSocket } from "@/lib/socket";
@@ -389,8 +391,7 @@ export default function HuntDetailPage() {
   }, [huntId]);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    fetch(API_ENDPOINTS.LIVE_HUNT, token ? { headers: { Authorization: `Bearer ${token}` } } : {})
+    authFetch(API_ENDPOINTS.LIVE_HUNT)
       .then((r) => r.ok ? r.json() : null)
       .then((d) => {
         if (!d?.hunt) return;
@@ -408,9 +409,8 @@ export default function HuntDetailPage() {
 
   // Admin check + initial slot request load
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
-    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
+    if (!isAuthenticated()) return;
+    authFetch(API_ENDPOINTS.AUTH_ME)
       .then((r) => r.json())
       .then((d) => { if (d.user?.isAdmin || d.user?.isModerator) setIsAdmin(true); })
       .catch(() => {});
@@ -423,8 +423,7 @@ export default function HuntDetailPage() {
   // Poll slot requests every 8s
   useEffect(() => {
     const id = setInterval(() => {
-      const token = localStorage.getItem("access_token");
-      if (!token) return;
+      if (!isAuthenticated()) return;
       slotRequestApi.getAll().then(setSlotRequests).catch(() => {});
     }, 8000);
     return () => clearInterval(id);
@@ -541,13 +540,12 @@ export default function HuntDetailPage() {
 
   async function handleGoLive() {
     if (!hunt) return;
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
+    if (!isAuthenticated()) return;
     setLiveLoading(true);
     try {
-      const res = await fetch(API_ENDPOINTS.LIVE_HUNT, {
+      const res = await authFetch(API_ENDPOINTS.LIVE_HUNT, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(hunt),
       });
       if (res.ok) setIsLive(true);
@@ -555,14 +553,10 @@ export default function HuntDetailPage() {
   }
 
   async function handleTakeDown() {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
+    if (!isAuthenticated()) return;
     setLiveLoading(true);
     try {
-      const res = await fetch(API_ENDPOINTS.LIVE_HUNT, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await authFetch(API_ENDPOINTS.LIVE_HUNT, { method: "DELETE" });
       if (res.ok) setIsLive(false);
     } catch { /* ignore */ } finally { setLiveLoading(false); }
   }
@@ -590,11 +584,10 @@ export default function HuntDetailPage() {
     pushHuntToServer(updated); // so other admins/mods see the change
     // If this hunt is currently live, also push the update to the OBS overlay feed
     if (isLive) {
-      const token = localStorage.getItem("access_token");
-      if (token) {
-        fetch(API_ENDPOINTS.LIVE_HUNT, {
+      if (isAuthenticated()) {
+        authFetch(API_ENDPOINTS.LIVE_HUNT, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updated),
         }).catch(() => {});
       }
@@ -620,12 +613,8 @@ export default function HuntDetailPage() {
     setOpeningMode(false);
     // Take down live if needed
     if (isLive) {
-      const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-      if (token) {
-        await fetch(API_ENDPOINTS.LIVE_HUNT, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }).catch(() => {});
+      if (isAuthenticated()) {
+        await authFetch(API_ENDPOINTS.LIVE_HUNT, { method: "DELETE" }).catch(() => {});
         setIsLive(false);
       }
     }

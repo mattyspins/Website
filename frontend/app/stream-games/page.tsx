@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { API_ENDPOINTS } from "@/lib/api";
+import { authFetch } from "@/lib/authFetch";
+import { isAuthenticated } from "@/lib/authPersistence";
 
 /* ─── Types ─────────────────────────────────────────── */
 interface Raffle {
@@ -191,9 +193,10 @@ function RaffleList() {
   const [myTickets, setMyTickets] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    setIsLoggedIn(!!token);
-    fetch(API_ENDPOINTS.RAFFLES, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    const signedIn = isAuthenticated();
+    setIsLoggedIn(signedIn);
+    // Endpoint takes optional auth — the cookie rides along when signed in.
+    authFetch(API_ENDPOINTS.RAFFLES)
       .then((r) => r.json())
       .then((d) => {
         const list = d.data?.raffles;
@@ -202,22 +205,22 @@ function RaffleList() {
           const init: Record<string, number> = {};
           for (const r of list) init[r.id] = 1;
           setQuantities(init);
-          if (token) loadTickets(token, list);
+          if (signedIn) loadTickets(list);
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-    if (token) {
-      fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
+    if (signedIn) {
+      authFetch(API_ENDPOINTS.AUTH_ME)
         .then((r) => r.json()).then((d) => { if (d.user) setUserCoins(d.user.points); }).catch(() => {});
     }
   }, []);
 
-  const loadTickets = async (token: string, list: Raffle[]) => {
+  const loadTickets = async (list: Raffle[]) => {
     const result: Record<string, number> = {};
     await Promise.all(list.map(async (r) => {
       try {
-        const res = await fetch(API_ENDPOINTS.RAFFLE_USER_TICKETS(r.id), { headers: { Authorization: `Bearer ${token}` } });
+        const res = await authFetch(API_ENDPOINTS.RAFFLE_USER_TICKETS(r.id));
         const d = await res.json();
         if (d.data?.tickets) result[r.id] = d.data.tickets.length;
       } catch { /* ignore */ }
@@ -226,14 +229,13 @@ function RaffleList() {
   };
 
   const handleBuy = async (raffle: Raffle) => {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
+    if (!isAuthenticated()) return;
     const qty = quantities[raffle.id] ?? 1;
     setBuying(raffle.id);
     try {
-      const res = await fetch(API_ENDPOINTS.RAFFLE_PURCHASE(raffle.id), {
+      const res = await authFetch(API_ENDPOINTS.RAFFLE_PURCHASE(raffle.id), {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ quantity: qty }),
       });
       const d = await res.json();
@@ -254,14 +256,14 @@ function RaffleList() {
   const [pastRaffles, setPastRaffles] = useState<Array<{ id: string; title: string; prize: string; endedAt: string; winners: Array<{ displayName: string }> }>>([]);
 
   useEffect(() => {
-    fetch(API_ENDPOINTS.RAFFLES_COMPLETED)
+    authFetch(API_ENDPOINTS.RAFFLES_COMPLETED)
       .then((r) => r.json())
       .then((d) => {
         const completed: any[] = d.data?.raffles ?? [];
         Promise.all(
           completed.slice(0, 5).map(async (r: any) => {
             try {
-              const wr = await fetch(API_ENDPOINTS.RAFFLE_WINNERS(r.id));
+              const wr = await authFetch(API_ENDPOINTS.RAFFLE_WINNERS(r.id));
               const wd = await wr.json();
               return { id: r.id, title: r.title, prize: r.prize, endedAt: r.endsAt, winners: wd.data?.winners ?? [] };
             } catch { return { id: r.id, title: r.title, prize: r.prize, endedAt: r.endsAt, winners: [] }; }
@@ -384,7 +386,7 @@ export default function StreamGamesPage() {
 
   // Fetch schedule to know which games are live or happening today
   useEffect(() => {
-    fetch(API_ENDPOINTS.STREAM_EVENTS)
+    authFetch(API_ENDPOINTS.STREAM_EVENTS)
       .then((r) => r.json())
       .then((d) => {
         if (!d.success || !d.events) return;

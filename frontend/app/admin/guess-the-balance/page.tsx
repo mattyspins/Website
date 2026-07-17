@@ -8,6 +8,8 @@ import { guessTheBalanceApi } from "@/lib/api/guessTheBalance";
 import type { GuessTheBalanceGame } from "@/types/guessTheBalance";
 import { GuessTheBalanceStatus } from "@/types/guessTheBalance";
 import { API_ENDPOINTS } from "@/lib/api";
+import { authFetch } from "@/lib/authFetch";
+import { isAuthenticated } from "@/lib/authPersistence";
 import CreateGameModal from "@/components/admin/CreateGameModal";
 import GameManagementCard from "@/components/admin/GameManagementCard";
 
@@ -35,16 +37,13 @@ export default function AdminGuessTheBalancePage() {
   }, [statusFilter, games]);
 
   const checkAdminAccess = async () => {
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) {
+    if (!isAuthenticated()) {
       router.push("/");
       return;
     }
 
     try {
-      const response = await fetch(API_ENDPOINTS.AUTH_ME, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const response = await authFetch(API_ENDPOINTS.AUTH_ME);
 
       if (response.ok) {
         const data = await response.json();

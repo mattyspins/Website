@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { API_ENDPOINTS } from "@/lib/api";
+import { isAuthenticated } from "@/lib/authPersistence";
+import { authFetch } from "@/lib/authFetch";
 import { getSocket } from "@/lib/socket";
 import { bountyHunterApi, BountyHunter } from "@/lib/api/bountyHunter";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -55,9 +57,8 @@ export default function AdminBountyHunterPage() {
   const [setupPot, setSetupPot] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) { router.push("/"); return; }
-    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
+    if (!isAuthenticated()) { router.push("/"); return; }
+    authFetch(API_ENDPOINTS.AUTH_ME)
       .then((r) => r.json())
       .then((d) => { if (!d.user?.isAdmin) router.push("/"); else setAuthed(true); })
       .catch(() => router.push("/"));

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/ToastProvider";
 import { API_ENDPOINTS } from "@/lib/api";
+import { authFetch } from "@/lib/authFetch";
+import { isAuthenticated } from "@/lib/authPersistence";
 
 interface User {
   id: string;
@@ -35,16 +37,13 @@ export default function ModeratorDashboard() {
   }, []);
 
   const checkModeratorAccess = async () => {
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) {
+    if (!isAuthenticated()) {
       router.push("/");
       return;
     }
 
     try {
-      const response = await fetch(API_ENDPOINTS.AUTH_ME, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const response = await authFetch(API_ENDPOINTS.AUTH_ME);
 
       if (response.ok) {
         const data = await response.json();
@@ -67,17 +66,14 @@ export default function ModeratorDashboard() {
   };
 
   const searchUsers = async (query: string) => {
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) return;
+    if (!isAuthenticated()) return;
 
     try {
       const url = query
         ? `${API_ENDPOINTS.ADMIN_USERS_SEARCH}?q=${encodeURIComponent(query)}`
         : API_ENDPOINTS.ADMIN_USERS_SEARCH;
 
-      const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const response = await authFetch(url);
 
       if (response.ok) {
         const data = await response.json();
@@ -94,17 +90,15 @@ export default function ModeratorDashboard() {
       return;
     }
 
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) return;
+    if (!isAuthenticated()) return;
 
     try {
-      const response = await fetch(
+      const response = await authFetch(
         API_ENDPOINTS.ADMIN_USER_SUSPEND(selectedUser.id),
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             reason: suspendReason,
@@ -137,15 +131,11 @@ export default function ModeratorDashboard() {
       return;
     }
 
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) return;
+    if (!isAuthenticated()) return;
 
     try {
-      const response = await fetch(API_ENDPOINTS.ADMIN_USER_UNSUSPEND(userId), {
+      const response = await authFetch(API_ENDPOINTS.ADMIN_USER_UNSUSPEND(userId), {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
       });
 
       if (response.ok) {

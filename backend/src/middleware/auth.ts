@@ -34,18 +34,35 @@ const baseCookieOptions = {
   path: '/',
 };
 
+/**
+ * Cookie lifetime is read off the token's own `exp` rather than hardcoded.
+ *
+ * A cookie that outlives its token is harmless (the request 401s and the client
+ * refreshes), but a cookie that dies *before* its token silently destroys the
+ * only credential a cookie-authenticated request carries, while the client still
+ * believes the session is good and so never refreshes. JWT_EXPIRES_IN is
+ * configurable per-environment, so deriving the lifetime is the only way these
+ * two cannot drift apart again.
+ */
+const cookieMaxAge = (token: string, fallbackMs: number): number => {
+  const decoded = jwt.decode(token) as { exp?: number } | null;
+  if (!decoded?.exp) return fallbackMs;
+  const remainingMs = decoded.exp * 1000 - Date.now();
+  return remainingMs > 0 ? remainingMs : fallbackMs;
+};
+
 export const setAuthCookies = (
   res: Response,
   tokens: { accessToken: string; refreshToken?: string }
 ): void => {
   res.cookie(ACCESS_TOKEN_COOKIE, tokens.accessToken, {
     ...baseCookieOptions,
-    maxAge: 15 * 60 * 1000, // 15m — mirrors the access token's own lifetime
+    maxAge: cookieMaxAge(tokens.accessToken, 60 * 60 * 1000),
   });
   if (tokens.refreshToken) {
     res.cookie(REFRESH_TOKEN_COOKIE, tokens.refreshToken, {
       ...baseCookieOptions,
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30d
+      maxAge: cookieMaxAge(tokens.refreshToken, 7 * 24 * 60 * 60 * 1000),
     });
   }
 };
@@ -110,9 +127,15 @@ export interface JWTPayload {
  * the Authorization header.
  *
  * The cookie is the safer transport: it can't be read by JavaScript, so an XSS
- * can't exfiltrate it the way it can a token kept in localStorage. The Bearer
- * header remains supported so existing clients (and the OBS overlay routes)
- * keep working while the frontend is migrated off localStorage.
+ * can't exfiltrate it the way it can a token kept in localStorage.
+ *
+ * The Bearer branch is now a compatibility shim with no known caller: every
+ * frontend call site goes through `authFetch()` (cookie only), and the OBS
+ * overlay/widget routes an earlier comment credited here turned out to be
+ * unauthenticated — see `slotRequest.ts` ("Public — for OBS widget"). It is
+ * retained only for sessions issued before the cookie rollout, whose tokens are
+ * still in localStorage but are no longer read. Once `storeAuthData()` stops
+ * writing those tokens and they have aged out, this branch can be deleted.
  */
 export const extractAccessToken = (req: Request): string | null => {
   const cookieToken = (req as Request & { cookies?: Record<string, string> })

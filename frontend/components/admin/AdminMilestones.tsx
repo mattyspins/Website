@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { API_ENDPOINTS } from "@/lib/api";
+import { authFetch } from "@/lib/authFetch";
 
 const TIERS = [
   { id: 1, name: "Rookie",       wagerRequired: 10_000,    reward: 25   },
@@ -36,10 +37,8 @@ export default function AdminMilestones() {
     setCurrentDeposited(null);
 
     try {
-      const token = localStorage.getItem("access_token");
-      const res = await fetch(
-        `${API_ENDPOINTS.ADMIN_USERS_SEARCH}?query=${encodeURIComponent(search)}&limit=1`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await authFetch(
+        `${API_ENDPOINTS.ADMIN_USERS_SEARCH}?query=${encodeURIComponent(search)}&limit=1`
       );
       const data = await res.json();
       const user = data.data?.users?.[0] || data.data?.[0];
@@ -65,12 +64,11 @@ export default function AdminMilestones() {
     setSaving(true);
     setMsg(null);
     try {
-      const token = localStorage.getItem("access_token");
-      const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+      const headers = { "Content-Type": "application/json" };
       const results: string[] = [];
 
       if (newWager !== "" && parseFloat(newWager) !== currentWager) {
-        const res = await fetch(API_ENDPOINTS.ADMIN_USER_WAGER(userId), {
+        const res = await authFetch(API_ENDPOINTS.ADMIN_USER_WAGER(userId), {
           method: "PATCH", headers,
           body: JSON.stringify({ totalWagered: parseFloat(newWager) }),
         });
@@ -82,7 +80,7 @@ export default function AdminMilestones() {
       }
 
       if (newDeposited !== "" && parseFloat(newDeposited) !== currentDeposited) {
-        const res = await fetch(API_ENDPOINTS.ADMIN_USER_DEPOSIT(userId), {
+        const res = await authFetch(API_ENDPOINTS.ADMIN_USER_DEPOSIT(userId), {
           method: "PATCH", headers,
           body: JSON.stringify({ totalDeposited: parseFloat(newDeposited) }),
         });

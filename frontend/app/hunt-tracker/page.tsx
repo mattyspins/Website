@@ -15,6 +15,8 @@ import {
   type GlobalStats,
 } from "@/lib/huntTracker";
 import { API_ENDPOINTS } from "@/lib/api";
+import { authFetch } from "@/lib/authFetch";
+import { isAuthenticated } from "@/lib/authPersistence";
 
 /* ── helpers ─────────────────────────────────────────────── */
 function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
@@ -301,14 +303,10 @@ export default function HuntTrackerPage() {
   }, []);
 
   async function handleClearLive() {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
+    if (!isAuthenticated()) return;
     setClearingLive(true);
     try {
-      await fetch(API_ENDPOINTS.LIVE_HUNT, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await authFetch(API_ENDPOINTS.LIVE_HUNT, { method: "DELETE" });
       setLiveHuntName(null);
     } finally {
       setClearingLive(false);
