@@ -12,9 +12,16 @@
  * open.
  *
  * `credentials: "include"` is required (not "same-origin") because the API is on
- * a different origin (Railway) to the frontend. The server's CORS config already
- * sets `credentials: true` with an explicit origin allow-list, which is what
- * makes this legal.
+ * a different origin to the frontend. The server's CORS config sets
+ * `credentials: true` with an explicit origin allow-list — but note that CORS
+ * only makes the request legal, it does NOT make the browser attach the cookie.
+ * SameSite governs that, independently:
+ *
+ *   DEPLOYMENT PREREQUISITE — the API must be same-SITE with the frontend
+ *   (e.g. mattyspins.com -> api.mattyspins.com). The cookies are SameSite=lax,
+ *   which browsers do not send on cross-site subrequests, so pointing this at a
+ *   foreign domain (*.up.railway.app) means every call below is unauthenticated
+ *   no matter what CORS says. See baseCookieOptions in backend middleware/auth.ts.
  *
  * MIGRATION — step 1 of 2 is DONE: every call site now goes through this helper
  * and no page code reads the token. What remains, and must land together:

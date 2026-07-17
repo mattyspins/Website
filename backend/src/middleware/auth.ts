@@ -26,6 +26,19 @@ const isProd = env.NODE_ENV === 'production';
  * (a top-level GET navigation) while still blocking it on cross-site
  * subrequests, which is what a CSRF would need. `secure` is off in dev so the
  * cookie survives plain-http localhost.
+ *
+ * DEPLOYMENT CONSTRAINT — lax is only viable while the frontend and this API
+ * are the SAME SITE (same registrable domain, e.g. mattyspins.com calling
+ * api.mattyspins.com). "Blocking it on cross-site subrequests" is not only a
+ * CSRF defence: it is also why a cookie cannot authenticate a `fetch()` from a
+ * different site. Serving the API from a foreign domain (e.g. *.up.railway.app
+ * while the app is on mattyspins.com) silently breaks *every* cookie-
+ * authenticated request — `credentials: "include"` does not help, and the
+ * failure is invisible for as long as callers still send a Bearer header.
+ *
+ * So: do not point the frontend at a cross-site API origin without first
+ * moving these to `sameSite: 'none'` + `secure: true`, which trades away the
+ * CSRF property above and requires a replacement for it.
  */
 const baseCookieOptions = {
   httpOnly: true,
