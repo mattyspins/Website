@@ -576,64 +576,20 @@ export class RaffleService {
           );
         }
 
-        // GUARANTEED WINNER: Check if "sunnyrocks" or "sunny_the_indian_gambler" has any tickets
-        const sunnyrocksTickets = raffle.tickets.filter(
-          ticket =>
-            ticket.user.kickUsername?.toLowerCase() === 'sunnyrocks' ||
-            ticket.user.displayName?.toLowerCase() === 'sunnyrocks' ||
-            ticket.user.displayName?.toLowerCase() ===
-              'sunny_the_indian_gambler'
-        );
-
         const winners: RaffleWinner[] = [];
         const availableTickets = [...raffle.tickets];
-        let position = 1;
 
-        // Always make sunnyrocks the first winner if they have tickets
-        if (sunnyrocksTickets.length > 0 && actualWinnerCount >= 1) {
-          const sunnyrocksTicket =
-            sunnyrocksTickets[crypto.randomInt(0, sunnyrocksTickets.length)];
-          const indexToRemove = availableTickets.findIndex(
-            t => t.id === sunnyrocksTicket.id
-          );
-          if (indexToRemove !== -1) {
-            availableTickets.splice(indexToRemove, 1);
-          }
-
-          const winner = await tx.raffleWinner.create({
-            data: {
-              raffleId,
-              userId: sunnyrocksTicket.userId,
-              ticketId: sunnyrocksTicket.id,
-              position: 1,
-              prizeDescription: raffle.prize,
-            },
-          });
-
-          winners.push({
-            id: winner.id,
-            raffleId: winner.raffleId,
-            userId: winner.userId,
-            ticketId: winner.ticketId || undefined,
-            ticketNumber: sunnyrocksTicket.ticketNumber,
-            position: winner.position,
-            prizeDescription: winner.prizeDescription || undefined,
-            selectedAt: winner.selectedAt,
-            notifiedAt: winner.notifiedAt || undefined,
-            prizeDeliveredAt: winner.prizeDeliveredAt || undefined,
-            deliveryMethod: winner.deliveryMethod || undefined,
-            displayName: sunnyrocksTicket.user.displayName,
-            avatarUrl: sunnyrocksTicket.user.avatarUrl,
-          });
-
-          logger.info(
-            `Raffle ${raffleId}: GUARANTEED WINNER "sunnyrocks" selected as position 1`
-          );
-          position = 2;
-        }
-
-        // Select remaining winners randomly
-        for (; position <= actualWinnerCount; position++) {
+        // Every position, including 1st, is drawn from the full ticket pool.
+        //
+        // There was previously a hardcoded "guaranteed winner" block here that
+        // handed position 1 (and the actual prize) to a named account whenever
+        // it held any ticket, leaving everyone else to draw for 2nd onward. The
+        // draw below was always fair; it simply never got to decide 1st place.
+        // A raffle users spend earned coins on has to be winnable by all of
+        // them, so the pool is now undivided. Do not reintroduce per-user
+        // special cases: any weighting belongs in ticket counts, which is what
+        // tickets are for and what participants can actually see.
+        for (let position = 1; position <= actualWinnerCount; position++) {
           // Use cryptographically secure random selection
           const randomIndex = crypto.randomInt(0, availableTickets.length);
           const winningTicket = availableTickets[randomIndex];

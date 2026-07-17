@@ -19,12 +19,15 @@ Added wager requirement validation to the raffle system, ensuring only users who
 - Compares total wagered amount against requirement
 - Shows clear error message with current wager amount and required amount
 
-### 3. Enhanced Sunnyrocks Winner Guarantee
+### 3. Winner Selection (guarantee removed)
 
-- Now checks for both:
-  - Kick username: "sunnyrocks" (case-insensitive)
-  - Display name: "sunnyrocks" or "sunny_the_indian_gambler" (case-insensitive)
-- Guarantees sunnyrocks as position 1 winner when they have tickets
+- All winners, including position 1, are drawn from the full ticket pool using
+  `crypto.randomInt` (cryptographically secure, no modulo bias).
+- The previous "Sunnyrocks Winner Guarantee" — which awarded position 1 and the
+  prize to a named account whenever it held any ticket — has been **removed**.
+  It made every other participant ineligible for first place while the raffle
+  was still presented to them as a fair draw.
+- A user's only legitimate way to improve their odds is holding more tickets.
 
 ## Database Changes
 
@@ -137,15 +140,16 @@ const userWagers = await tx.razedDailyWager.aggregate({
 const totalWagered = Number(userWagers._sum.amount || 0);
 ```
 
-### Sunnyrocks Identification
+### Winner Draw
 
 ```typescript
-const sunnyrocksTickets = raffle.tickets.filter(
-  ticket =>
-    ticket.user.kickUsername?.toLowerCase() === 'sunnyrocks' ||
-    ticket.user.displayName?.toLowerCase() === 'sunnyrocks' ||
-    ticket.user.displayName?.toLowerCase() === 'sunny_the_indian_gambler'
-);
+// Every position is drawn from the same pool; no account is special-cased.
+for (let position = 1; position <= actualWinnerCount; position++) {
+  const randomIndex = crypto.randomInt(0, availableTickets.length);
+  const winningTicket = availableTickets[randomIndex];
+  availableTickets.splice(randomIndex, 1); // no duplicate tickets
+  // ...
+}
 ```
 
 ## Benefits
@@ -163,8 +167,8 @@ const sunnyrocksTickets = raffle.tickets.filter(
 1. ✅ User with sufficient wager can purchase tickets
 2. ✅ User with insufficient wager is blocked with clear message
 3. ✅ Raffles with $0 requirement allow all users
-4. ✅ Sunnyrocks wins as position 1 when they have tickets
-5. ✅ Both "sunnyrocks" and "sunny_the_indian_gambler" are recognized
+4. ✅ Position 1 is drawn from the full ticket pool — no account is guaranteed
+5. ✅ A ticket cannot win twice (drawn tickets leave the pool)
 
 ## Deployment Status
 
@@ -179,4 +183,5 @@ const sunnyrocksTickets = raffle.tickets.filter(
 - Wager requirement is checked at ticket purchase time
 - If a raffle has no wager requirement (`minWagerRequirement = 0`), all users can participate
 - Wager data comes from the `razedDailyWager` table
-- Sunnyrocks guarantee only applies if they have at least one ticket
+- Winner selection special-cases no one: more tickets is the only way to improve
+  your odds, and that is visible to every participant
