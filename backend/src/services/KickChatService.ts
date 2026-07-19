@@ -14,7 +14,8 @@ import { TournamentService } from '@/services/TournamentService';
 import { HighRollerService } from '@/services/HighRollerService';
 import { BossRaidService } from '@/services/BossRaidService';
 import { BountyHunterService } from '@/services/BountyHunterService';
-import { BingoStatus, TournamentStatus, HighRollerPrediction, HighRollerStatus } from '@prisma/client';
+import { SlotWorldCupService } from '@/services/SlotWorldCupService';
+import { BingoStatus, TournamentStatus, HighRollerPrediction, HighRollerStatus, SlotWorldCupStatus } from '@prisma/client';
 
 const KICK_CHANNEL_NAME = process.env['KICK_CHANNEL_NAME'] || 'mattyspins';
 // Set KICK_CHATROOM_ID in .env — find it by opening kick.com/mattyspins and checking the chatroom ID in network tab
@@ -180,6 +181,12 @@ export class KickChatService {
     // Check for tournament join command: !jointourney
     if (content.trim().toLowerCase() === '!jointourney') {
       await this.processTournamentJoin(kickUsername);
+    }
+
+    // Check for Slot World Cup nomination command: !wc <slot name>
+    const wcMatch = content.match(/^!wc\s+(.+)/i);
+    if (wcMatch) {
+      await this.processSlotWorldCupNomination(kickUsername, wcMatch[1].trim());
     }
 
     // Check for slot request command: !sr <slot name>
@@ -398,6 +405,24 @@ export class KickChatService {
     } catch (err) {
       await this.sendChatMessage(`@${senderKickUsername} failed: ${(err as Error).message}`);
       logger.warn(`KickChatService: !addcoins failed for ${targetKickUsername}`, { error: (err as Error).message });
+    }
+  }
+
+  // Slot World Cup nomination: !wc <slot name> — one nomination per viewer,
+  // resubmitting replaces the previous one (SlotWorldCupService.nominate upserts).
+  private static async processSlotWorldCupNomination(kickUsername: string, slotName: string): Promise<void> {
+    try {
+      const tournament = await prisma.slotWorldCup.findFirst({
+        where: { status: SlotWorldCupStatus.NOMINATION, nominationsOpen: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (!tournament) return;
+
+      await SlotWorldCupService.nominate(tournament.id, kickUsername, slotName);
+      logger.info(`KickChatService: ${kickUsername} nominated "${slotName}" for Slot World Cup via !wc`);
+      this.io?.to(`slotWorldCup:${tournament.id}`).emit('slotWorldCup:nominationsUpdated');
+    } catch (err) {
+      logger.warn(`KickChatService: !wc failed for ${kickUsername}`, { error: (err as Error).message });
     }
   }
 

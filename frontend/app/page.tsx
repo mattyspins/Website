@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Hero from "@/components/Hero";
 import StreamScheduleSection from "@/components/StreamScheduleSection";
+import ActivationChecklist from "@/components/home/ActivationChecklist";
 import IntroSplash from "@/components/home/IntroSplash";
 
 export default function Home() {
@@ -54,6 +55,7 @@ export default function Home() {
       )}
 
       <Hero />
+      <ActivationChecklist />
       <StreamScheduleSection />
     </div>
   );

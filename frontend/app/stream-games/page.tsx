@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Ticket, Swords, Zap, Trophy, Skull, Users, Grid3X3, ExternalLink, Clock, X, Radio, Dices, Gift } from "lucide-react";
+import { Crown, Ticket, Swords, Zap, Trophy, Skull, Users, Grid3X3, ExternalLink, Clock, X, Radio, Dices, Gift, Globe } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -108,6 +108,17 @@ const GAMES: Game[] = [
     rewards: ["Website points", "Giveaway entries", "Community rewards", "Special event prizes"],
     note: "Make sure you're in stream from the start to secure your place 👊",
     link: "/tournament", linkLabel: "View Tournament Bracket",
+  },
+  {
+    id: "slot-world-cup", name: "Slot World Cup",
+    tagline: "Community-nominated slots battle it out — predict every round",
+    icon: <Globe className="w-6 h-6" />, color: "text-yellow-400", iconBg: "bg-yellow-500/15", border: "border-yellow-500/20",
+    badge: "NEW", badgeColor: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+    description: "Chat nominates the slots with !wc, the top picks are seeded into a single-elimination bracket, and every viewer predicts the winner of every matchup. Score points round by round, earn upset and perfect bracket bonuses, and climb the live leaderboard.",
+    howItWorks: ["Nominate a slot in chat with !wc <slot name>", "The most-voted slots are seeded into the bracket", "Predict every matchup before the first round starts", "Predictions lock automatically once the bracket goes live", "Score points for correct picks — more for later rounds", "Top predictors win coins when the champion is crowned 🏆"],
+    rewards: ["Website coins", "Leaderboard bragging rights", "Perfect bracket bonus"],
+    note: "Get your prediction bracket in before the first matchup starts — it locks automatically 👊",
+    link: "/slot-world-cup", linkLabel: "View Slot World Cup",
   },
   {
     id: "guess-the-balance", name: "Guess the Balance",

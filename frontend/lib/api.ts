@@ -195,6 +195,9 @@ export const API_ENDPOINTS = {
   CHECKIN_STATUS: `${API_URL}/api/checkin/status`,
   CHECKIN_CLAIM: `${API_URL}/api/checkin/claim`,
 
+  // Activation checklist
+  ACTIVATION_STATUS: `${API_URL}/api/activation/status`,
+
   // Raffles
   RAFFLES: `${API_URL}/api/raffles`,
   RAFFLE: (id: string) => `${API_URL}/api/raffles/${id}`,

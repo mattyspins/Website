@@ -18,6 +18,7 @@ import {
   Gift,
   Swords,
   Crosshair,
+  Globe,
 } from "lucide-react";
 
 const QUICK_ACCESS = [
@@ -33,6 +34,7 @@ const QUICK_ACCESS = [
   { href: "/admin/high-roller", icon: <Dices className="w-5 h-5 text-red-400" />, bg: "bg-red-500/10", title: "High Roller", desc: "Viewers predict Over/Under a multiplier line each round and build a correct-guess streak" },
   { href: "/admin/boss-raid", icon: <Swords className="w-5 h-5 text-orange-400" />, bg: "bg-orange-500/10", title: "Boss Raid", desc: "Viewers join with a keyword, take turns picking slots, and deal damage to a shared boss" },
   { href: "/admin/bounty-hunter", icon: <Crosshair className="w-5 h-5 text-amber-400" />, bg: "bg-amber-500/10", title: "Bounty Hunter", desc: "Secretly set a target multiplier — the closest hit claims the pot, or it rolls over" },
+  { href: "/admin/slot-world-cup", icon: <Globe className="w-5 h-5 text-yellow-400" />, bg: "bg-yellow-500/10", title: "Slot World Cup", desc: "Nominate slots, seed the bracket, and advance winners round by round" },
   { href: "/admin/audit-log", icon: <FileText className="w-5 h-5 text-blue-400" />, bg: "bg-blue-500/10", title: "Audit Log", desc: "Full history of all admin actions with before/after values" },
 ];
 

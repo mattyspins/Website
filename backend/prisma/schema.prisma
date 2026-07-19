@@ -81,6 +81,8 @@ model User {
   bountyHuntersCreated   BountyHunter[]        @relation("BountyHunterCreator")
   bountyHunterEntries    BountyHunterEntry[]
   bountyHunterRounds     BountyHunterRound[]
+  slotWorldCupsCreated   SlotWorldCup[]           @relation("SlotWorldCupCreator")
+  slotWorldCupPredictions SlotWorldCupPrediction[] @relation("SlotWorldCupPredictions")
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")
@@ -1164,5 +1166,125 @@ model BountyHunterRound {
   user  User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("bounty_hunter_rounds")
+}
+
+// ─── Slot World Cup (community slot bracket + prediction tournament) ───────
+
+enum SlotWorldCupStatus {
+  NOMINATION
+  BRACKET_SET
+  PREDICTIONS_OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum SlotWorldCupSeeding {
+  RANDOM
+  POPULARITY
+}
+
+model SlotWorldCup {
+  id              String              @id @default(uuid())
+  title           String
+  size            Int                 @default(8)
+  status          SlotWorldCupStatus  @default(NOMINATION)
+  nominationsOpen Boolean             @default(true) @map("nominations_open")
+  seeding         SlotWorldCupSeeding @default(RANDOM)
+  currentRound    Int                 @default(0) @map("current_round")
+  totalRounds     Int                 @map("total_rounds")
+  scoringConfig   Json                @map("scoring_config")
+  rewardConfig    Json                @map("reward_config")
+  championSlotId  String?             @map("champion_slot_id")
+  runnerUpSlotId  String?             @map("runner_up_slot_id")
+  createdById     String              @map("created_by_id")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  closedAt        DateTime?           @map("closed_at")
+
+  creator     User                     @relation("SlotWorldCupCreator", fields: [createdById], references: [id])
+  nominations SlotWorldCupNomination[]
+  slots       SlotWorldCupSlot[]
+  matches     SlotWorldCupMatch[]
+  predictions SlotWorldCupPrediction[]
+
+  @@map("slot_world_cups")
+}
+
+model SlotWorldCupNomination {
+  id             String   @id @default(uuid())
+  tournamentId   String   @map("tournament_id")
+  kickUsername   String   @map("kick_username")
+  slotName       String   @map("slot_name")
+  normalizedName String   @map("normalized_name")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  tournament SlotWorldCup @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, kickUsername])
+  @@index([tournamentId, normalizedName])
+  @@map("slot_world_cup_nominations")
+}
+
+model SlotWorldCupSlot {
+  id              String  @id @default(uuid())
+  tournamentId    String  @map("tournament_id")
+  slotName        String  @map("slot_name")
+  provider        String?
+  imageUrl        String? @map("image_url")
+  seed            Int
+  votes           Int     @default(0)
+  eliminatedRound Int?    @map("eliminated_round")
+
+  tournament SlotWorldCup        @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  matchesAsA SlotWorldCupMatch[] @relation("MatchSlotA")
+  matchesAsB SlotWorldCupMatch[] @relation("MatchSlotB")
+  matchesWon SlotWorldCupMatch[] @relation("MatchWinner")
+
+  @@unique([tournamentId, seed])
+  @@map("slot_world_cup_slots")
+}
+
+model SlotWorldCupMatch {
+  id            String    @id @default(uuid())
+  tournamentId  String    @map("tournament_id")
+  round         Int
+  matchNumber   Int       @map("match_number")
+  slotAId       String?   @map("slot_a_id")
+  slotBId       String?   @map("slot_b_id")
+  winnerId      String?   @map("winner_id")
+  nextMatchId   String?   @map("next_match_id")
+  nextMatchSlot String?   @map("next_match_slot")
+  stats         Json?
+  completedAt   DateTime? @map("completed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  tournament SlotWorldCup      @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  slotA      SlotWorldCupSlot? @relation("MatchSlotA", fields: [slotAId], references: [id])
+  slotB      SlotWorldCupSlot? @relation("MatchSlotB", fields: [slotBId], references: [id])
+  winner     SlotWorldCupSlot? @relation("MatchWinner", fields: [winnerId], references: [id])
+
+  @@unique([tournamentId, round, matchNumber])
+  @@map("slot_world_cup_matches")
+}
+
+model SlotWorldCupPrediction {
+  id             String   @id @default(uuid())
+  tournamentId   String   @map("tournament_id")
+  userId         String   @map("user_id")
+  displayName    String   @map("display_name")
+  picks          Json
+  championPickId String?  @map("champion_pick_id")
+  score          Int      @default(0)
+  correctPicks   Int      @default(0) @map("correct_picks")
+  accuracy       Float    @default(0)
+  submittedAt    DateTime @default(now()) @map("submitted_at")
+
+  tournament SlotWorldCup @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user       User         @relation("SlotWorldCupPredictions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, userId])
+  @@map("slot_world_cup_predictions")
 }
 

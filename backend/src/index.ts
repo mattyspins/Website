@@ -147,6 +147,7 @@ import notificationRoutes from '@/routes/notifications';
 import milestoneRoutes from '@/routes/milestones';
 import streamEventRoutes from '@/routes/streamEvents';
 import checkinRoutes from '@/routes/checkin';
+import activationRoutes from '@/routes/activation';
 import publicProfileRoutes from '@/routes/publicProfile';
 import raffleRoutes from '@/routes/raffles';
 import viewingRoutes from '@/routes/viewing';
@@ -172,6 +173,8 @@ import bossRaidRoutes from '@/routes/bossRaid';
 import { setBossRaidIO } from '@/controllers/BossRaidController';
 import bountyHunterRoutes from '@/routes/bountyHunter';
 import { setBountyHunterIO } from '@/controllers/BountyHunterController';
+import slotWorldCupRoutes from '@/routes/slotWorldCup';
+import { setSlotWorldCupIO } from '@/controllers/SlotWorldCupController';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
@@ -183,6 +186,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/milestones', milestoneRoutes);
 app.use('/api/stream-events', streamEventRoutes);
 app.use('/api/checkin', checkinRoutes);
+app.use('/api/activation', activationRoutes);
 app.use('/api/users', publicProfileRoutes);
 app.use('/api/raffles', raffleRoutes);
 app.use('/api/viewing', viewingRoutes);
@@ -199,6 +203,7 @@ app.use('/api/wager-leaderboard', wagerLeaderboardRoutes);
 app.use('/api/weekly-raffle', weeklyRaffleRoutes);
 app.use('/api/boss-raid', bossRaidRoutes);
 app.use('/api/bounty-hunter', bountyHunterRoutes);
+app.use('/api/slot-world-cup', slotWorldCupRoutes);
 
 // Wire up tournament real-time events
 setTournamentIO(io);
@@ -210,6 +215,7 @@ setHighRollerIO(io);
 setWeeklyRaffleIO(io);
 setBossRaidIO(io);
 setBountyHunterIO(io);
+setSlotWorldCupIO(io);
 
 // Socket.IO connection handling
 io.on('connection', socket => {
@@ -269,6 +275,14 @@ io.on('connection', socket => {
   });
   socket.on('leaveBountyHunter', (huntId: string) => {
     socket.leave(`bountyhunter:${huntId}`);
+  });
+
+  // Slot World Cup rooms
+  socket.on('joinSlotWorldCup', (tournamentId: string) => {
+    socket.join(`slotWorldCup:${tournamentId}`);
+  });
+  socket.on('leaveSlotWorldCup', (tournamentId: string) => {
+    socket.leave(`slotWorldCup:${tournamentId}`);
   });
 
   socket.on('disconnect', () => {

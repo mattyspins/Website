@@ -4,17 +4,9 @@ import { authMiddleware } from '@/middleware/auth';
 import { asyncHandler, createError } from '@/middleware/errorHandler';
 import { AuthenticatedRequest } from '@/middleware/auth';
 import { logger } from '@/utils/logger';
+import { DAILY_REWARD, isSameUTCDay } from '@/utils/dailyCheckIn';
 
 const router = Router();
-const DAILY_REWARD = 5;
-
-function isSameUTCDay(a: Date, b: Date) {
-  return (
-    a.getUTCFullYear() === b.getUTCFullYear() &&
-    a.getUTCMonth() === b.getUTCMonth() &&
-    a.getUTCDate() === b.getUTCDate()
-  );
-}
 
 // GET /api/checkin/status
 router.get(
