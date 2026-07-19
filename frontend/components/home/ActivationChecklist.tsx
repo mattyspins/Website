@@ -5,7 +5,8 @@ import { Check, Coins, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { API_ENDPOINTS } from "@/lib/api";
-import { getAccessToken } from "@/lib/authPersistence";
+import { authFetch } from "@/lib/authFetch";
+import { isAuthenticated } from "@/lib/authPersistence";
 
 // Matches Hero and IntroSplash — the homepage shares one curve.
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -45,17 +46,14 @@ export default function ActivationChecklist() {
   const [claimError, setClaimError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const token = getAccessToken();
     // Logged out: stay silent rather than inviting a login here. The navbar
     // already owns that call to action, and Hero is the pitch for visitors.
-    if (!token) {
+    if (!isAuthenticated()) {
       setSteps(null);
       return;
     }
     try {
-      const res = await fetch(API_ENDPOINTS.ACTIVATION_STATUS, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await authFetch(API_ENDPOINTS.ACTIVATION_STATUS);
       if (!res.ok) {
         setSteps(null);
         return;
@@ -88,10 +86,8 @@ export default function ActivationChecklist() {
     setClaiming(true);
     setClaimError(null);
     try {
-      const token = getAccessToken();
-      const res = await fetch(API_ENDPOINTS.CHECKIN_CLAIM, {
+      const res = await authFetch(API_ENDPOINTS.CHECKIN_CLAIM, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (data.success) {

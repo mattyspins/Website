@@ -12,6 +12,8 @@ import {
 } from "@/types/slotWorldCup";
 import { getSocket } from "@/lib/socket";
 import { API_ENDPOINTS } from "@/lib/api";
+import { authFetch } from "@/lib/authFetch";
+import { isAuthenticated } from "@/lib/authPersistence";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -126,10 +128,9 @@ export default function SlotWorldCupPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
-    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.json()).then((d) => { if (d.user) setUser(d.user); }).catch(() => {});
+    if (!isAuthenticated()) return;
+    authFetch(API_ENDPOINTS.AUTH_ME)
+      .then((r) => (r.ok ? r.json() : null)).then((d) => { if (d?.user) setUser(d.user); }).catch(() => {});
   }, []);
 
   const load = useCallback(async () => {
