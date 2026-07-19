@@ -17,7 +17,7 @@ function matchKey(round: number, matchNumber: number) {
 }
 
 function SlotChip({
-  slot, isWinner, isLoser, onClick, selected, disabled,
+  slot, isWinner, isLoser, onClick, selected, disabled, multiplier,
 }: {
   slot: SlotWorldCupSlot | null;
   isWinner?: boolean;
@@ -25,6 +25,7 @@ function SlotChip({
   onClick?: () => void;
   selected?: boolean;
   disabled?: boolean;
+  multiplier?: string | null;
 }) {
   if (!slot) {
     return (
@@ -60,6 +61,11 @@ function SlotChip({
         <p className="text-sm font-semibold text-white truncate">{slot.slotName}</p>
         <p className="text-[11px] text-white/40 truncate">{game?.provider ?? slot.provider ?? "—"} · Seed {slot.seed}</p>
       </div>
+      {multiplier && (
+        <span className={`text-xs font-bold shrink-0 ${isWinner ? "text-green-400" : "text-white/40"}`}>
+          {Number(multiplier).toFixed(2)}x
+        </span>
+      )}
       {isWinner && <span className="text-green-400 text-xs shrink-0">✓</span>}
     </Wrapper>
   );
@@ -111,8 +117,20 @@ export default function SlotWorldCupBracket({ tournament, mode, picks, onPick, u
                 const slotB = match.slotBId ? slotsById.get(match.slotBId) ?? null : null;
                 return (
                   <div key={match.id} className="bg-white/3 border border-white/8 rounded-xl p-2.5 space-y-1.5">
-                    <SlotChip slot={slotA} isWinner={!!match.winnerId && match.winnerId === match.slotAId} isLoser={!!match.winnerId && match.winnerId !== match.slotAId && !!slotA} />
-                    {!isBye && <SlotChip slot={slotB} isWinner={!!match.winnerId && match.winnerId === match.slotBId} isLoser={!!match.winnerId && match.winnerId !== match.slotBId && !!slotB} />}
+                    <SlotChip
+                      slot={slotA}
+                      isWinner={!!match.winnerId && match.winnerId === match.slotAId}
+                      isLoser={!!match.winnerId && match.winnerId !== match.slotAId && !!slotA}
+                      multiplier={match.multiplierA}
+                    />
+                    {!isBye && (
+                      <SlotChip
+                        slot={slotB}
+                        isWinner={!!match.winnerId && match.winnerId === match.slotBId}
+                        isLoser={!!match.winnerId && match.winnerId !== match.slotBId && !!slotB}
+                        multiplier={match.multiplierB}
+                      />
+                    )}
                     {isBye && <p className="text-[10px] text-white/25 text-center">BYE — advances automatically</p>}
                   </div>
                 );
@@ -154,12 +172,6 @@ export default function SlotWorldCupBracket({ tournament, mode, picks, onPick, u
             })}
           </div>
         ))}
-        {tournament.championSlotId && (
-          <div className="flex flex-col justify-center min-w-[220px]">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-yellow-400/70 text-center mb-1">Champion 👑</p>
-            <SlotChip slot={slotsById.get(tournament.championSlotId) ?? null} isWinner />
-          </div>
-        )}
       </div>
     </div>
   );

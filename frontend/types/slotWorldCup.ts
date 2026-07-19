@@ -33,7 +33,12 @@ export interface SlotWorldCupMatch {
   winnerId: string | null;
   nextMatchId: string | null;
   nextMatchSlot: "A" | "B" | null;
-  stats: Record<string, unknown> | null;
+  betAmountA: string | null;
+  payoutAmountA: string | null;
+  multiplierA: string | null;
+  betAmountB: string | null;
+  payoutAmountB: string | null;
+  multiplierB: string | null;
   completedAt: string | null;
   createdAt: string;
 }
@@ -50,12 +55,12 @@ export interface SlotWorldCup {
   size: number;
   status: SlotWorldCupStatus;
   nominationsOpen: boolean;
+  nominationCommand: string;
   seeding: SlotWorldCupSeeding;
   currentRound: number;
   totalRounds: number;
   scoringConfig: {
     stagePoints: number[];
-    championBonus: number;
     upsetThresholdPercent: number;
     upsetBonusPoints: number;
     perfectBracketBonus: number;
@@ -79,7 +84,6 @@ export interface SlotWorldCupLeaderboardEntry {
   score: number;
   correctPicks: number;
   accuracy: number;
-  championPickId: string | null;
 }
 
 export interface SlotWorldCupPrediction {
@@ -93,10 +97,4 @@ export interface SlotWorldCupPrediction {
   correctPicks: number;
   accuracy: number;
   submittedAt: string;
-}
-
-export interface SlotWorldCupMatchStat {
-  slotId: string;
-  count: number;
-  percent: number;
 }

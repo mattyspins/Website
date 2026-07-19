@@ -31,9 +31,18 @@ export default function AdminSlotWorldCupPage() {
 
   const [title, setTitle] = useState("");
   const [size, setSize] = useState<8 | 12 | 16>(8);
+  const [nominationCommand, setNominationCommand] = useState("!wc");
   const [manualSlot, setManualSlot] = useState("");
   const [seeding, setSeeding] = useState<"RANDOM" | "POPULARITY">("POPULARITY");
   const [manualList, setManualList] = useState("");
+  const [matchResults, setMatchResults] = useState<Record<string, { betA: string; payoutA: string; betB: string; payoutB: string }>>({});
+
+  const updateMatchResult = (matchId: string, field: "betA" | "payoutA" | "betB" | "payoutB", value: string) => {
+    setMatchResults((prev) => {
+      const current = prev[matchId] ?? { betA: "", payoutA: "", betB: "", payoutB: "" };
+      return { ...prev, [matchId]: { ...current, [field]: value } };
+    });
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -82,7 +91,21 @@ export default function AdminSlotWorldCupPage() {
 
   const handleCreate = () => {
     if (!title.trim()) { toastError("Title required", "Give the tournament a name."); return; }
-    return withAction(() => slotWorldCupApi.create({ title: title.trim(), size }));
+    if (!nominationCommand.trim().startsWith("!")) { toastError("Invalid command", "Nomination command must start with \"!\"."); return; }
+    return withAction(() => slotWorldCupApi.create({ title: title.trim(), size, nominationCommand: nominationCommand.trim() }));
+  };
+
+  const handleSubmitResult = (matchId: string) => {
+    const r = matchResults[matchId];
+    const betA = Number(r?.betA), payoutA = Number(r?.payoutA), betB = Number(r?.betB), payoutB = Number(r?.payoutB);
+    if (!r?.betA || !r?.payoutA || !r?.betB || !r?.payoutB || !(betA > 0) || !(betB > 0) || isNaN(payoutA) || isNaN(payoutB)) {
+      toastError("Missing result", "Enter bet + payout for both slots.");
+      return;
+    }
+    return withAction(async () => {
+      await slotWorldCupApi.submitMatchResult(matchId, betA, payoutA, betB, payoutB);
+      setMatchResults((prev) => { const next = { ...prev }; delete next[matchId]; return next; });
+    });
   };
 
   if (loading) return <div className="text-white/50 text-sm p-6">Loading…</div>;
@@ -101,7 +124,7 @@ export default function AdminSlotWorldCupPage() {
             value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Summer Slot World Cup"
             className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 mb-3 focus:outline-none focus:border-yellow-400/40"
           />
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-2 mb-3">
             {[8, 12, 16].map((s) => (
               <button key={s} onClick={() => setSize(s as 8 | 12 | 16)}
                 className={`flex-1 py-2 rounded-lg text-sm font-semibold border ${size === s ? "bg-yellow-400 text-black border-yellow-400" : "bg-white/5 text-white/60 border-white/10"}`}>
@@ -109,6 +132,11 @@ export default function AdminSlotWorldCupPage() {
               </button>
             ))}
           </div>
+          <label className="block text-xs text-gray-500 mb-1">Nomination command (viewers type this in Kick chat)</label>
+          <input
+            value={nominationCommand} onChange={(e) => setNominationCommand(e.target.value)} placeholder="!wc"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 mb-4 font-mono focus:outline-none focus:border-yellow-400/40"
+          />
           <button onClick={handleCreate} disabled={actionLoading}
             className="w-full py-2.5 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 disabled:opacity-40 text-sm">
             Create Tournament
@@ -217,25 +245,46 @@ export default function AdminSlotWorldCupPage() {
 
           {[SlotWorldCupStatus.PREDICTIONS_OPEN, SlotWorldCupStatus.IN_PROGRESS].includes(active.status) && (
             <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5">
-              <h3 className="text-white font-semibold mb-3">Pending Matches</h3>
-              <div className="space-y-2">
+              <h3 className="text-white font-semibold mb-1">Pending Matches</h3>
+              <p className="text-xs text-gray-500 mb-3">Enter the bet + payout for each slot's round — the multiplier is calculated automatically and the higher one wins.</p>
+              <div className="space-y-3">
                 {active.matches
                   .filter((m) => m.slotAId && m.slotBId && !m.winnerId)
                   .sort((a, b) => a.round - b.round || a.matchNumber - b.matchNumber)
                   .map((m) => {
                     const slotA = active.slots.find((s) => s.id === m.slotAId);
                     const slotB = active.slots.find((s) => s.id === m.slotBId);
+                    const r = matchResults[m.id] ?? { betA: "", payoutA: "", betB: "", payoutB: "" };
+                    const multA = Number(r.betA) > 0 && r.payoutA !== "" ? Number(r.payoutA) / Number(r.betA) : null;
+                    const multB = Number(r.betB) > 0 && r.payoutB !== "" ? Number(r.payoutB) / Number(r.betB) : null;
                     return (
-                      <div key={m.id} className="flex items-center gap-3 bg-white/3 border border-white/8 rounded-lg p-3">
-                        <span className="text-xs text-white/40 w-24 shrink-0">{roundLabel(m.round, active.totalRounds)}</span>
-                        <button onClick={() => withAction(() => slotWorldCupApi.declareMatchWinner(m.id, m.slotAId!))} disabled={actionLoading}
-                          className="flex-1 px-3 py-1.5 bg-white/8 hover:bg-green-500/20 hover:border-green-500/30 border border-white/10 text-white rounded-lg text-sm disabled:opacity-40">
-                          {slotA?.slotName ?? "?"} wins
-                        </button>
-                        <span className="text-white/30 text-xs">vs</span>
-                        <button onClick={() => withAction(() => slotWorldCupApi.declareMatchWinner(m.id, m.slotBId!))} disabled={actionLoading}
-                          className="flex-1 px-3 py-1.5 bg-white/8 hover:bg-green-500/20 hover:border-green-500/30 border border-white/10 text-white rounded-lg text-sm disabled:opacity-40">
-                          {slotB?.slotName ?? "?"} wins
+                      <div key={m.id} className="bg-white/3 border border-white/8 rounded-lg p-3 space-y-2">
+                        <span className="text-xs text-white/40">{roundLabel(m.round, active.totalRounds)}</span>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <p className="text-sm text-white font-medium truncate">{slotA?.slotName ?? "?"}</p>
+                            <div className="flex gap-1.5">
+                              <input type="number" placeholder="Bet" value={r.betA} onChange={(e) => updateMatchResult(m.id, "betA", e.target.value)}
+                                className="w-1/2 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white placeholder:text-white/30" />
+                              <input type="number" placeholder="Payout" value={r.payoutA} onChange={(e) => updateMatchResult(m.id, "payoutA", e.target.value)}
+                                className="w-1/2 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white placeholder:text-white/30" />
+                            </div>
+                            {multA !== null && <p className="text-xs text-yellow-400 font-semibold">{multA.toFixed(2)}x</p>}
+                          </div>
+                          <div className="space-y-1.5">
+                            <p className="text-sm text-white font-medium truncate">{slotB?.slotName ?? "?"}</p>
+                            <div className="flex gap-1.5">
+                              <input type="number" placeholder="Bet" value={r.betB} onChange={(e) => updateMatchResult(m.id, "betB", e.target.value)}
+                                className="w-1/2 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white placeholder:text-white/30" />
+                              <input type="number" placeholder="Payout" value={r.payoutB} onChange={(e) => updateMatchResult(m.id, "payoutB", e.target.value)}
+                                className="w-1/2 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white placeholder:text-white/30" />
+                            </div>
+                            {multB !== null && <p className="text-xs text-yellow-400 font-semibold">{multB.toFixed(2)}x</p>}
+                          </div>
+                        </div>
+                        <button onClick={() => handleSubmitResult(m.id)} disabled={actionLoading}
+                          className="w-full py-1.5 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-300 disabled:opacity-40 text-sm">
+                          Submit Result
                         </button>
                       </div>
                     );

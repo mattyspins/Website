@@ -4,7 +4,6 @@ import {
   SlotWorldCupLeaderboardEntry,
   SlotWorldCupNominationRanking,
   SlotWorldCupPrediction,
-  SlotWorldCupMatchStat,
 } from '@/types/slotWorldCup';
 
 export const slotWorldCupApi = {
@@ -33,11 +32,6 @@ export const slotWorldCupApi = {
     return data.prediction;
   },
 
-  getMatchStats: async (id: string, matchId: string): Promise<SlotWorldCupMatchStat[]> => {
-    const data = await api.get(`/api/slot-world-cup/${id}/matches/${matchId}/stats`);
-    return data.stats;
-  },
-
   nominate: async (id: string, slotName: string): Promise<SlotWorldCupNominationRanking[]> => {
     const data = await api.post(`/api/slot-world-cup/${id}/nominate`, { slotName });
     return data.nominations;
@@ -49,7 +43,7 @@ export const slotWorldCupApi = {
   },
 
   // Admin
-  create: async (payload: { title: string; size: number }): Promise<SlotWorldCup> => {
+  create: async (payload: { title: string; size: number; nominationCommand?: string }): Promise<SlotWorldCup> => {
     const data = await api.post('/api/slot-world-cup', payload);
     return data.tournament;
   },
@@ -82,8 +76,8 @@ export const slotWorldCupApi = {
     return data.tournament;
   },
 
-  declareMatchWinner: async (matchId: string, winnerId: string): Promise<SlotWorldCup> => {
-    const data = await api.post(`/api/slot-world-cup/matches/${matchId}/winner`, { winnerId });
+  submitMatchResult: async (matchId: string, betA: number, payoutA: number, betB: number, payoutB: number): Promise<SlotWorldCup> => {
+    const data = await api.post(`/api/slot-world-cup/matches/${matchId}/result`, { betA, payoutA, betB, payoutB });
     return data.tournament;
   },
 

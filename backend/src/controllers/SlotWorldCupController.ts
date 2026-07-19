@@ -32,10 +32,6 @@ export class SlotWorldCupController {
     res.json({ success: true, prediction: await SlotWorldCupService.getMyPrediction(req.params.id, req.user!.id) });
   });
 
-  static getMatchStats = asyncHandler(async (req, res) => {
-    res.json({ success: true, stats: await SlotWorldCupService.getMatchPredictionStats(req.params.id, req.params.matchId) });
-  });
-
   // Web nominations reuse the caller's own verified Kick identity server-side —
   // never a client-supplied username — so this can't be used to ballot-stuff
   // under someone else's name the way a naive body.kickUsername would allow.
@@ -69,12 +65,12 @@ export class SlotWorldCupController {
   // ─── Admin ────────────────────────────────────────────────────────────────
 
   static create = asyncHandler(async (req, res) => {
-    const { title, size, scoringConfig, rewardConfig } = req.body;
+    const { title, size, nominationCommand, scoringConfig, rewardConfig } = req.body;
     if (!title?.trim() || !size) {
       res.status(400).json({ error: 'title and size are required' });
       return;
     }
-    const tournament = await SlotWorldCupService.create(title, Number(size), req.user!.id, scoringConfig, rewardConfig);
+    const tournament = await SlotWorldCupService.create(title, Number(size), req.user!.id, nominationCommand, scoringConfig, rewardConfig);
     res.status(201).json({ success: true, tournament });
   });
 
@@ -111,10 +107,15 @@ export class SlotWorldCupController {
     res.json({ success: true, tournament: await SlotWorldCupService.openPredictions(req.params.id) });
   });
 
-  static declareMatchWinner = asyncHandler(async (req, res) => {
-    const { winnerId, stats } = req.body;
-    if (!winnerId) { res.status(400).json({ error: 'winnerId is required' }); return; }
-    const tournament = await SlotWorldCupService.declareMatchWinner(req.params.matchId, winnerId, stats, _io);
+  static submitMatchResult = asyncHandler(async (req, res) => {
+    const { betA, payoutA, betB, payoutB } = req.body;
+    if ([betA, payoutA, betB, payoutB].some((v) => v === undefined || v === null || isNaN(Number(v)))) {
+      res.status(400).json({ error: 'betA, payoutA, betB, and payoutB are required numbers' });
+      return;
+    }
+    const tournament = await SlotWorldCupService.submitMatchResult(
+      req.params.matchId, Number(betA), Number(payoutA), Number(betB), Number(payoutB), _io
+    );
     res.json({ success: true, tournament });
   });
 

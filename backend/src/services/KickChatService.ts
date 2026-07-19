@@ -183,11 +183,10 @@ export class KickChatService {
       await this.processTournamentJoin(kickUsername);
     }
 
-    // Check for Slot World Cup nomination command: !wc <slot name>
-    const wcMatch = content.match(/^!wc\s+(.+)/i);
-    if (wcMatch) {
-      await this.processSlotWorldCupNomination(kickUsername, wcMatch[1].trim());
-    }
+    // Slot World Cup nomination — command is admin-configurable per tournament
+    // (set at creation, e.g. "!wc"), so look up the active one and compare
+    // against its own command the same way High Roller's keywords work.
+    await this.processSlotWorldCupNomination(kickUsername, content);
 
     // Check for slot request command: !sr <slot name>
     const srMatch = content.match(/^!sr\s+(.+)/i);
@@ -408,9 +407,12 @@ export class KickChatService {
     }
   }
 
-  // Slot World Cup nomination: !wc <slot name> — one nomination per viewer,
-  // resubmitting replaces the previous one (SlotWorldCupService.nominate upserts).
-  private static async processSlotWorldCupNomination(kickUsername: string, slotName: string): Promise<void> {
+  // Slot World Cup nomination — the command itself is admin-configurable per
+  // tournament (default "!wc"), so this checks the raw message against the
+  // active tournament's own command rather than a hardcoded regex. One
+  // nomination per viewer; resubmitting replaces the previous one
+  // (SlotWorldCupService.nominate upserts).
+  private static async processSlotWorldCupNomination(kickUsername: string, content: string): Promise<void> {
     try {
       const tournament = await prisma.slotWorldCup.findFirst({
         where: { status: SlotWorldCupStatus.NOMINATION, nominationsOpen: true },
@@ -418,11 +420,17 @@ export class KickChatService {
       });
       if (!tournament) return;
 
+      const trimmed = content.trim();
+      const command = tournament.nominationCommand.toLowerCase();
+      if (!trimmed.toLowerCase().startsWith(command)) return;
+      const slotName = trimmed.slice(command.length).trim();
+      if (!slotName) return;
+
       await SlotWorldCupService.nominate(tournament.id, kickUsername, slotName);
-      logger.info(`KickChatService: ${kickUsername} nominated "${slotName}" for Slot World Cup via !wc`);
+      logger.info(`KickChatService: ${kickUsername} nominated "${slotName}" for Slot World Cup via ${tournament.nominationCommand}`);
       this.io?.to(`slotWorldCup:${tournament.id}`).emit('slotWorldCup:nominationsUpdated');
     } catch (err) {
-      logger.warn(`KickChatService: !wc failed for ${kickUsername}`, { error: (err as Error).message });
+      logger.warn(`KickChatService: Slot World Cup nomination failed for ${kickUsername}`, { error: (err as Error).message });
     }
   }
 

@@ -42,7 +42,7 @@ function NominationPanel({
     <div className="bg-white/3 border border-white/8 rounded-2xl p-6 mb-6">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
         <h3 className="text-lg font-bold text-white">Most Requested Slots</h3>
-        <p className="text-xs text-white/40">Nominate in chat with <span className="text-yellow-400 font-mono">!wc &lt;slot name&gt;</span></p>
+        <p className="text-xs text-white/40">Nominate in chat with <span className="text-yellow-400 font-mono">{tournament.nominationCommand} &lt;slot name&gt;</span></p>
       </div>
 
       {tournament.nominationsOpen && user && (
@@ -141,7 +141,7 @@ export default function SlotWorldCupPage() {
         if (active.status === SlotWorldCupStatus.NOMINATION) {
           setRankings(await slotWorldCupApi.getNominations(active.id));
         }
-        if ([SlotWorldCupStatus.IN_PROGRESS, SlotWorldCupStatus.COMPLETED, SlotWorldCupStatus.PREDICTIONS_OPEN].includes(active.status)) {
+        if ([SlotWorldCupStatus.BRACKET_SET, SlotWorldCupStatus.IN_PROGRESS, SlotWorldCupStatus.COMPLETED, SlotWorldCupStatus.PREDICTIONS_OPEN].includes(active.status)) {
           setLeaderboard(await slotWorldCupApi.getLeaderboard(active.id));
         }
       }
@@ -285,7 +285,7 @@ export default function SlotWorldCupPage() {
               </div>
             )}
 
-            {[SlotWorldCupStatus.PREDICTIONS_OPEN, SlotWorldCupStatus.IN_PROGRESS, SlotWorldCupStatus.COMPLETED].includes(tournament.status) && (
+            {[SlotWorldCupStatus.BRACKET_SET, SlotWorldCupStatus.PREDICTIONS_OPEN, SlotWorldCupStatus.IN_PROGRESS, SlotWorldCupStatus.COMPLETED].includes(tournament.status) && (
               <div className="bg-white/3 border border-white/8 rounded-2xl p-6">
                 <h3 className="text-lg font-bold text-white mb-4">Leaderboard</h3>
                 <LeaderboardTable leaderboard={leaderboard} />

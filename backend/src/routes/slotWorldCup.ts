@@ -12,7 +12,6 @@ router.get('/', lim, SlotWorldCupController.getAll);
 router.get('/:id', lim, SlotWorldCupController.getById);
 router.get('/:id/nominations', lim, SlotWorldCupController.getNominations);
 router.get('/:id/leaderboard', lim, SlotWorldCupController.getLeaderboard);
-router.get('/:id/matches/:matchId/stats', lim, SlotWorldCupController.getMatchStats);
 
 // ─── Viewer (auth required) ───────────────────────────────────────────────────
 router.post('/:id/nominate', authMiddleware, lim, SlotWorldCupController.nominate);
@@ -27,7 +26,7 @@ router.delete('/:id/slots/:slotId', authMiddleware, adminMiddleware, adminLim, S
 router.post('/:id/finalize-participants', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.finalizeParticipants);
 router.post('/:id/generate-bracket', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.generateBracket);
 router.post('/:id/open-predictions', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.openPredictions);
-router.post('/matches/:matchId/winner', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.declareMatchWinner);
+router.post('/matches/:matchId/result', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.submitMatchResult);
 router.post('/:id/cancel', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.cancel);
 router.post('/:id/config', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.updateConfig);
 

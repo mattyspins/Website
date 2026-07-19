@@ -12,7 +12,6 @@ export interface ScoringConfig {
   // (0 = final, 1 = semi, 2 = quarter, 3 = round 1). Matches the spec's
   // Round1/QF/SF/Final weighting regardless of how many rounds the bracket has.
   stagePoints: number[]; // e.g. [8, 4, 2, 1] => final, semi, qf, round1
-  championBonus: number;
   upsetThresholdPercent: number;
   upsetBonusPoints: number;
   perfectBracketBonus: number;
@@ -25,7 +24,6 @@ export interface RewardConfig {
 
 export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
   stagePoints: [8, 4, 2, 1],
-  championBonus: 5,
   upsetThresholdPercent: 10,
   upsetBonusPoints: 2,
   perfectBracketBonus: 25,
@@ -143,9 +141,6 @@ export class SlotWorldCupService {
     const predictions = await prisma.slotWorldCupPrediction.findMany({ where: { tournamentId } });
     const ranked = predictions.slice().sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
-      const aChamp = tournament.championSlotId && a.championPickId === tournament.championSlotId ? 1 : 0;
-      const bChamp = tournament.championSlotId && b.championPickId === tournament.championSlotId ? 1 : 0;
-      if (bChamp !== aChamp) return bChamp - aChamp;
       if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
       if (b.correctPicks !== a.correctPicks) return b.correctPicks - a.correctPicks;
       return a.submittedAt.getTime() - b.submittedAt.getTime();
@@ -157,33 +152,11 @@ export class SlotWorldCupService {
       score: p.score,
       correctPicks: p.correctPicks,
       accuracy: p.accuracy,
-      championPickId: p.championPickId,
     }));
   }
 
   static async getMyPrediction(tournamentId: string, userId: string) {
     return prisma.slotWorldCupPrediction.findUnique({ where: { tournamentId_userId: { tournamentId, userId } } });
-  }
-
-  static async getMatchPredictionStats(tournamentId: string, matchId: string) {
-    const match = await prisma.slotWorldCupMatch.findUnique({ where: { id: matchId } });
-    if (!match || match.tournamentId !== tournamentId) throw createError.notFound('Match not found');
-    const key = matchKey(match.round, match.matchNumber);
-    const predictions = await prisma.slotWorldCupPrediction.findMany({ where: { tournamentId } });
-    const counts = new Map<string, number>();
-    let total = 0;
-    for (const p of predictions) {
-      const picks = p.picks as Record<string, string>;
-      const pick = picks[key];
-      if (!pick) continue;
-      total += 1;
-      counts.set(pick, (counts.get(pick) ?? 0) + 1);
-    }
-    return Array.from(counts.entries()).map(([slotId, count]) => ({
-      slotId,
-      count,
-      percent: total > 0 ? Math.round((count / total) * 1000) / 10 : 0,
-    }));
   }
 
   // ─── Nominations (chat + web) ────────────────────────────────────────────
@@ -229,15 +202,19 @@ export class SlotWorldCupService {
     title: string,
     size: number,
     createdById: string,
+    nominationCommand: string = '!wc',
     scoringConfig: Partial<ScoringConfig> = {},
     rewardConfig: Partial<RewardConfig> = {}
   ) {
     if (![8, 12, 16].includes(size)) throw createError.badRequest('Tournament size must be 8, 12, or 16');
+    const command = nominationCommand.trim() || '!wc';
+    if (!command.startsWith('!')) throw createError.badRequest('Nomination command must start with "!"');
     return prisma.slotWorldCup.create({
       data: {
         title: title.trim(),
         size,
         createdById,
+        nominationCommand: command,
         totalRounds: roundsForSize(size),
         scoringConfig: { ...DEFAULT_SCORING_CONFIG, ...scoringConfig } as unknown as Prisma.InputJsonValue,
         rewardConfig: { ...DEFAULT_REWARD_CONFIG, ...rewardConfig } as unknown as Prisma.InputJsonValue,
@@ -476,14 +453,36 @@ export class SlotWorldCupService {
 
   // ─── Admin: match resolution ──────────────────────────────────────────────
 
-  static async declareMatchWinner(matchId: string, winnerId: string, stats: Record<string, unknown> | undefined, io?: SocketIOServer) {
-    return this.resolveMatchWinner(matchId, winnerId, stats, io, false);
+  // Admin enters bet + payout for both slots in one submit; the multiplier is
+  // derived for each side and whichever is higher wins the matchup automatically.
+  static async submitMatchResult(
+    matchId: string,
+    betA: number,
+    payoutA: number,
+    betB: number,
+    payoutB: number,
+    io?: SocketIOServer
+  ) {
+    const match = await prisma.slotWorldCupMatch.findUnique({ where: { id: matchId } });
+    if (!match) throw createError.notFound('Match not found');
+    if (match.completedAt) throw createError.badRequest('Match already has a result');
+    if (!match.slotAId || !match.slotBId) throw createError.badRequest('Both slots must be set before entering a result');
+    if (!(betA > 0) || !(betB > 0)) throw createError.badRequest('Bet amounts must be greater than 0');
+    if (!(payoutA >= 0) || !(payoutB >= 0)) throw createError.badRequest('Payout amounts cannot be negative');
+
+    const multiplierA = payoutA / betA;
+    const multiplierB = payoutB / betB;
+    // A dead-even multiplier (rare) falls back to whichever paid out more in raw terms.
+    const winnerId =
+      multiplierA === multiplierB ? (payoutA >= payoutB ? match.slotAId : match.slotBId) : multiplierA > multiplierB ? match.slotAId : match.slotBId;
+
+    return this.resolveMatchWinner(matchId, winnerId, { betA, payoutA, multiplierA, betB, payoutB, multiplierB }, io, false);
   }
 
   private static async resolveMatchWinner(
     matchId: string,
     winnerId: string,
-    stats: Record<string, unknown> | undefined,
+    result: { betA: number; payoutA: number; multiplierA: number; betB: number; payoutB: number; multiplierB: number } | undefined,
     io: SocketIOServer | undefined,
     isBye: boolean
   ) {
@@ -500,7 +499,16 @@ export class SlotWorldCupService {
     await prisma.$transaction(async (tx) => {
       await tx.slotWorldCupMatch.update({
         where: { id: matchId },
-        data: { winnerId, completedAt: new Date(), stats: stats as unknown as Prisma.InputJsonValue },
+        data: {
+          winnerId,
+          completedAt: new Date(),
+          ...(result
+            ? {
+                betAmountA: result.betA, payoutAmountA: result.payoutA, multiplierA: result.multiplierA,
+                betAmountB: result.betB, payoutAmountB: result.payoutB, multiplierB: result.multiplierB,
+              }
+            : {}),
+        },
       });
       if (loserId) await tx.slotWorldCupSlot.update({ where: { id: loserId }, data: { eliminatedRound: match.round } });
       if (match.nextMatchId && match.nextMatchSlot) {
@@ -598,9 +606,7 @@ export class SlotWorldCupService {
         },
       }),
       ...predictions.map((p) => {
-        let bonus = 0;
-        if (p.championPickId === championId) bonus += config.championBonus;
-        if (p.correctPicks >= totalMatches) bonus += config.perfectBracketBonus;
+        const bonus = p.correctPicks >= totalMatches ? config.perfectBracketBonus : 0;
         return bonus > 0
           ? prisma.slotWorldCupPrediction.update({ where: { id: p.id }, data: { score: p.score + bonus } })
           : prisma.slotWorldCupPrediction.update({ where: { id: p.id }, data: {} });

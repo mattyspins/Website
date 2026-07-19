@@ -1190,6 +1190,7 @@ model SlotWorldCup {
   size            Int                 @default(8)
   status          SlotWorldCupStatus  @default(NOMINATION)
   nominationsOpen Boolean             @default(true) @map("nominations_open")
+  nominationCommand String            @default("!wc") @map("nomination_command")
   seeding         SlotWorldCupSeeding @default(RANDOM)
   currentRound    Int                 @default(0) @map("current_round")
   totalRounds     Int                 @map("total_rounds")
@@ -1256,7 +1257,14 @@ model SlotWorldCupMatch {
   winnerId      String?   @map("winner_id")
   nextMatchId   String?   @map("next_match_id")
   nextMatchSlot String?   @map("next_match_slot")
-  stats         Json?
+  // Admin enters bet + payout per slot for the round; the multiplier is derived
+  // and whichever slot hit the higher multiplier wins the matchup automatically.
+  betAmountA      Decimal?  @map("bet_amount_a") @db.Decimal(12, 2)
+  payoutAmountA   Decimal?  @map("payout_amount_a") @db.Decimal(14, 2)
+  multiplierA     Decimal?  @map("multiplier_a") @db.Decimal(10, 2)
+  betAmountB      Decimal?  @map("bet_amount_b") @db.Decimal(12, 2)
+  payoutAmountB   Decimal?  @map("payout_amount_b") @db.Decimal(14, 2)
+  multiplierB     Decimal?  @map("multiplier_b") @db.Decimal(10, 2)
   completedAt   DateTime? @map("completed_at")
   createdAt     DateTime  @default(now()) @map("created_at")
 
