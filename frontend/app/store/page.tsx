@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { storeApi } from "@/lib/api/store";
+// Aliased: this component has its own `isAuthenticated` state that would shadow it.
+import { isAuthenticated as hasSession } from "@/lib/authPersistence";
 import type { StoreItem, StoreCategory } from "@/types/store";
 import StoreItemCard from "@/components/store/StoreItemCard";
 import PurchaseModal from "@/components/store/PurchaseModal";
@@ -20,7 +22,7 @@ export default function StorePage() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
   useEffect(() => {
-    setIsAuthenticated(!!localStorage.getItem("access_token"));
+    setIsAuthenticated(hasSession());
     loadStoreData();
   }, []);
 

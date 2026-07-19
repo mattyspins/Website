@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { API_ENDPOINTS } from "@/lib/api";
+import { authFetch } from "@/lib/authFetch";
+import { isAuthenticated } from "@/lib/authPersistence";
 
 interface AuditLogEntry {
   id: string;
@@ -51,13 +53,10 @@ export default function AuditLogPage() {
   const limit = 50;
 
   const load = useCallback(async () => {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
+    if (!isAuthenticated()) return;
     const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
     if (actionFilter) params.set("action", actionFilter);
-    const res = await fetch(`${API_ENDPOINTS.ADMIN_AUDIT_LOGS}?${params}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await authFetch(`${API_ENDPOINTS.ADMIN_AUDIT_LOGS}?${params}`);
     const data = await res.json();
     if (data.success) {
       setLogs(data.data.logs);

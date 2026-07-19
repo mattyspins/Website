@@ -2,21 +2,24 @@
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-// Helper function to get auth headers
-export const getAuthHeaders = () => {
-  const accessToken = localStorage.getItem("access_token");
-  return {
-    "Content-Type": "application/json",
-    ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-  };
-};
+/**
+ * Request headers for the JSON API.
+ *
+ * No longer carries the JWT: every request below sends `credentials: "include"`,
+ * so the httpOnly cookie authenticates it and the token never has to be readable
+ * by page JavaScript. See lib/authFetch.ts.
+ */
+export const jsonHeaders = () => ({
+  "Content-Type": "application/json",
+});
 
 // API Client
 export const api = {
   get: async (endpoint: string, options?: RequestInit) => {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: "GET",
-      headers: getAuthHeaders(),
+      credentials: "include",
+      headers: jsonHeaders(),
       ...options,
     });
 
@@ -35,7 +38,8 @@ export const api = {
   post: async (endpoint: string, data?: any, options?: RequestInit) => {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: "POST",
-      headers: getAuthHeaders(),
+      credentials: "include",
+      headers: jsonHeaders(),
       body: JSON.stringify(data),
       ...options,
     });
@@ -55,7 +59,8 @@ export const api = {
   put: async (endpoint: string, data?: any, options?: RequestInit) => {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: "PUT",
-      headers: getAuthHeaders(),
+      credentials: "include",
+      headers: jsonHeaders(),
       body: JSON.stringify(data),
       ...options,
     });
@@ -65,7 +70,8 @@ export const api = {
   patch: async (endpoint: string, data?: any, options?: RequestInit) => {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: "PATCH",
-      headers: getAuthHeaders(),
+      credentials: "include",
+      headers: jsonHeaders(),
       body: data ? JSON.stringify(data) : undefined,
       ...options,
     });
@@ -85,7 +91,8 @@ export const api = {
   delete: async (endpoint: string, options?: RequestInit) => {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: "DELETE",
-      headers: getAuthHeaders(),
+      credentials: "include",
+      headers: jsonHeaders(),
       ...options,
     });
 

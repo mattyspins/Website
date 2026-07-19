@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { bingoApi, BingoGame } from "@/lib/api/bonusBingo";
 import { API_ENDPOINTS } from "@/lib/api";
+import { isAuthenticated } from "@/lib/authPersistence";
+import { authFetch } from "@/lib/authFetch";
 import { getSocket } from "@/lib/socket";
 import SlotPicker from "@/components/SlotPicker";
 import { kickName, lineLabel, getLineWinners } from "@/lib/bingoUtils";
@@ -256,9 +258,8 @@ export default function AdminBingoPage() {
 
   // Auth check
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) { router.push("/"); return; }
-    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
+    if (!isAuthenticated()) { router.push("/"); return; }
+    authFetch(API_ENDPOINTS.AUTH_ME)
       .then(r => r.json())
       .then(d => { if (!d.user?.isAdmin) router.push("/"); else setAuthLoading(false); })
       .catch(() => router.push("/"));

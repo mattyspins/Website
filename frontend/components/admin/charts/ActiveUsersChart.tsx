@@ -5,6 +5,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { API_ENDPOINTS } from "@/lib/api";
+import { authFetch } from "@/lib/authFetch";
+import { isAuthenticated } from "@/lib/authPersistence";
 
 interface Point {
   date: string;
@@ -19,9 +21,8 @@ export default function ActiveUsersChart() {
   const [data, setData] = useState<Point[] | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
-    fetch(`${API_ENDPOINTS.ADMIN_ACTIVE_TIMESERIES}?days=30`, { headers: { Authorization: `Bearer ${token}` } })
+    if (!isAuthenticated()) return;
+    authFetch(`${API_ENDPOINTS.ADMIN_ACTIVE_TIMESERIES}?days=30`)
       .then((r) => r.json())
       .then((d) => { if (d.success) setData(d.data); })
       .catch(() => setData([]));

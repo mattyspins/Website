@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { API_ENDPOINTS } from "@/lib/api";
+import { isAuthenticated } from "@/lib/authPersistence";
+import { authFetch } from "@/lib/authFetch";
 
 type ActivityType = "all" | "points" | "store";
 
@@ -155,24 +157,20 @@ export default function ActivityPage() {
   const [searchInput, setSearchInput] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) { router.push("/"); return; }
-    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
+    if (!isAuthenticated()) { router.push("/"); return; }
+    authFetch(API_ENDPOINTS.AUTH_ME)
       .then(r => r.json())
       .then(d => { if (!d.user?.isAdmin) router.push("/"); else setAuthed(true); })
       .catch(() => router.push("/"));
   }, []);
 
   const load = useCallback(async () => {
-    const token = localStorage.getItem("access_token");
-    if (!token || !authed) return;
+    if (!authed) return;
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: "50", type: typeFilter });
       if (search) params.set("search", search);
-      const res = await fetch(`${API_ENDPOINTS.ADMIN_ACTIVITY}?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await authFetch(`${API_ENDPOINTS.ADMIN_ACTIVITY}?${params}`);
       const data = await res.json();
       if (data.success) {
         setItems(data.data.items);

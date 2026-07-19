@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Ticket, Trophy, Clock, Lock } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/api";
+import { authFetch } from "@/lib/authFetch";
+import { isAuthenticated } from "@/lib/authPersistence";
 
 interface Raffle {
   id: string;
@@ -34,17 +36,16 @@ export default function RafflePage() {
   const [userCoins, setUserCoins] = useState(0);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    setIsLoggedIn(!!token);
-    loadRaffles(token);
-    if (token) loadUserInfo(token);
+    const signedIn = isAuthenticated();
+    setIsLoggedIn(signedIn);
+    loadRaffles();
+    if (signedIn) loadUserInfo();
   }, []);
 
-  const loadRaffles = async (token: string | null) => {
+  const loadRaffles = async () => {
     try {
-      const res = await fetch(API_ENDPOINTS.RAFFLES, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      // Endpoint takes optional auth — the cookie rides along when signed in.
+      const res = await authFetch(API_ENDPOINTS.RAFFLES);
       const d = await res.json();
       const list = d.data?.raffles ?? d.raffles ?? [];
       if (list.length >= 0) {
@@ -52,28 +53,26 @@ export default function RafflePage() {
         const init: Record<string, number> = {};
         for (const r of list) init[r.id] = 1;
         setQuantities(init);
-        if (token) loadMyTickets(token, list);
+        if (isAuthenticated()) loadMyTickets(list);
       }
     } catch { /* ignore */ }
     finally { setLoading(false); }
   };
 
-  const loadUserInfo = async (token: string) => {
+  const loadUserInfo = async () => {
     try {
-      const res = await fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await authFetch(API_ENDPOINTS.AUTH_ME);
       const d = await res.json();
       if (d.user) setUserCoins(d.user.points);
     } catch { /* ignore */ }
   };
 
-  const loadMyTickets = async (token: string, raffleList: Raffle[]) => {
+  const loadMyTickets = async (raffleList: Raffle[]) => {
     const result: MyTickets = {};
     await Promise.all(
       raffleList.map(async (r) => {
         try {
-          const res = await fetch(API_ENDPOINTS.RAFFLE_USER_TICKETS(r.id), {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const res = await authFetch(API_ENDPOINTS.RAFFLE_USER_TICKETS(r.id));
           const d = await res.json();
           if (d.data?.tickets) result[r.id] = d.data.tickets.length;
         } catch { /* ignore */ }
@@ -83,15 +82,14 @@ export default function RafflePage() {
   };
 
   const handleBuy = async (raffle: Raffle) => {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
+    if (!isAuthenticated()) return;
     const qty = quantities[raffle.id] ?? 1;
     setBuying(raffle.id);
     setMsgs((m) => ({ ...m, [raffle.id]: undefined as any }));
     try {
-      const res = await fetch(API_ENDPOINTS.RAFFLE_PURCHASE(raffle.id), {
+      const res = await authFetch(API_ENDPOINTS.RAFFLE_PURCHASE(raffle.id), {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ quantity: qty }),
       });
       const d = await res.json();

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { API_ENDPOINTS } from "@/lib/api";
+import { authFetch } from "@/lib/authFetch";
+import { isAuthenticated } from "@/lib/authPersistence";
 
 const HEARTBEAT_INTERVAL = 5 * 60 * 1000;  // every 5 min
 const STATUS_POLL_INTERVAL = 60 * 1000;     // check live status every 60s
@@ -13,18 +15,16 @@ export function useViewingSession() {
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const statusRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const token = () =>
-    typeof window !== "undefined"
-      ? localStorage.getItem("access_token")
-      : null;
+  // The session cookie isn't readable from page JS, so "is there a session?" is
+  // answered from the stored user info rather than from the token itself.
+  const signedIn = () => typeof window !== "undefined" && isAuthenticated();
 
   const startSession = async () => {
-    const t = token();
-    if (!t || sessionActive.current) return;
+    if (!signedIn() || sessionActive.current) return;
     try {
-      const res = await fetch(API_ENDPOINTS.VIEWING_SESSION_START, {
+      const res = await authFetch(API_ENDPOINTS.VIEWING_SESSION_START, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ streamId: STREAM_ID }),
       });
       if (res.ok) {
@@ -38,24 +38,22 @@ export function useViewingSession() {
     if (!sessionActive.current) return;
     sessionActive.current = false;
     if (heartbeatRef.current) { clearInterval(heartbeatRef.current); heartbeatRef.current = null; }
-    const t = token();
-    if (!t) return;
+    if (!signedIn()) return;
     try {
-      await fetch(API_ENDPOINTS.VIEWING_SESSION_END, {
+      await authFetch(API_ENDPOINTS.VIEWING_SESSION_END, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ streamId: STREAM_ID }),
       });
     } catch { /* ignore */ }
   };
 
   const sendHeartbeat = async () => {
-    const t = token();
-    if (!t) return;
+    if (!signedIn()) return;
     try {
-      await fetch(API_ENDPOINTS.VIEWING_SESSION_HEARTBEAT, {
+      await authFetch(API_ENDPOINTS.VIEWING_SESSION_HEARTBEAT, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ streamId: STREAM_ID }),
       });
     } catch { /* ignore */ }
@@ -67,7 +65,7 @@ export function useViewingSession() {
       const d = await res.json();
       const live: boolean = d?.data?.isLive ?? false;
       setIsLive(live);
-      if (live && token()) {
+      if (live && signedIn()) {
         if (!sessionActive.current) startSession();
       } else {
         if (sessionActive.current) endSession();

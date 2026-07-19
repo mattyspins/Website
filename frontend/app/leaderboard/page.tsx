@@ -6,6 +6,8 @@ import { Trophy, Crown, Calendar, Users } from "lucide-react";
 import { wagerLeaderboardApi, ActiveRace, RaceHistoryEntry, RaceStandingRow } from "@/lib/api/wagerLeaderboard";
 import { formatLondon } from "@/lib/londonTime";
 import { API_ENDPOINTS } from "@/lib/api";
+import { authFetch } from "@/lib/authFetch";
+import { isAuthenticated } from "@/lib/authPersistence";
 
 function maskUsername(username: string): string {
   if (username.length <= 3) return username;
@@ -125,9 +127,8 @@ export default function LeaderboardPage() {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) return;
-    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
+    if (!isAuthenticated()) return;
+    authFetch(API_ENDPOINTS.AUTH_ME)
       .then((r) => r.json())
       .then((d) => setMyUserId(d.user?.id ?? null))
       .catch(() => {});
