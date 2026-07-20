@@ -5,8 +5,12 @@ import { logger } from '@/utils/logger';
 
 /**
  * Razed Wager Sync Background Job
- * Runs every 5 minutes: syncs recent days' wagers, refreshes weekly/monthly rolling
+ * Runs every 30 minutes: syncs recent days' wagers, refreshes weekly/monthly rolling
  * stats, and pays out the monthly leaderboard if a new calendar month has started.
+ *
+ * The interval is the leaderboard's staleness budget — nothing caches on top of it,
+ * so wager figures on the site can trail Razed by up to one interval. It also bounds
+ * how late a month-rollover payout can fire.
  */
 export class RazedWagerSyncJob {
   private static job: cron.ScheduledTask | null = null;
@@ -22,7 +26,7 @@ export class RazedWagerSyncJob {
       return;
     }
 
-    this.job = cron.schedule('*/5 * * * *', async () => {
+    this.job = cron.schedule('*/30 * * * *', async () => {
       try {
         logger.debug('Running Razed wager sync');
         await RazedWagerSyncService.syncRecentDays(2);
@@ -31,12 +35,12 @@ export class RazedWagerSyncJob {
       }
     });
 
-    // Run once at startup so data isn't stale for up to 5 minutes after a deploy.
+    // Run once at startup so data isn't stale for up to 30 minutes after a deploy.
     RazedWagerSyncService.syncRecentDays(2).catch((error) =>
       logger.error('Error in initial Razed wager sync:', error)
     );
 
-    logger.info('Razed wager sync job started (runs every 5 minutes)');
+    logger.info('Razed wager sync job started (runs every 30 minutes)');
   }
 
   static stop(): void {
