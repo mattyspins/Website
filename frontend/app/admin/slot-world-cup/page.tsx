@@ -498,61 +498,20 @@ export default function AdminSlotWorldCupPage() {
 
           {(active.matches?.length ?? 0) > 0 && (
             <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5">
-              <h3 className="text-white font-semibold mb-3">Bracket</h3>
-              <SlotWorldCupBracket tournament={active} mode="view" />
-            </div>
-          )}
-
-          {[SlotWorldCupStatus.PREDICTIONS_OPEN, SlotWorldCupStatus.IN_PROGRESS].includes(active.status) && (
-            <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5">
-              <h3 className="text-white font-semibold mb-1">Pending Matches</h3>
-              <p className="text-xs text-gray-500 mb-3">Enter the bet + payout for each slot's round — the multiplier is calculated automatically and the higher one wins.</p>
-              <div className="space-y-3">
-                {(active.matches ?? [])
-                  .filter((m) => m.slotAId && m.slotBId && !m.winnerId)
-                  .sort((a, b) => a.round - b.round || a.matchNumber - b.matchNumber)
-                  .map((m) => {
-                    const slotA = (active.slots ?? []).find((s) => s.id === m.slotAId);
-                    const slotB = (active.slots ?? []).find((s) => s.id === m.slotBId);
-                    const r = matchResults[m.id] ?? { betA: "", payoutA: "", betB: "", payoutB: "" };
-                    const multA = Number(r.betA) > 0 && r.payoutA !== "" ? Number(r.payoutA) / Number(r.betA) : null;
-                    const multB = Number(r.betB) > 0 && r.payoutB !== "" ? Number(r.payoutB) / Number(r.betB) : null;
-                    return (
-                      <div key={m.id} className="bg-white/3 border border-white/8 rounded-lg p-3 space-y-2">
-                        <span className="text-xs text-white/40">{roundLabel(m.round, active.totalRounds)}</span>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1.5">
-                            <p className="text-sm text-white font-medium truncate">{slotA?.slotName ?? "?"}</p>
-                            <div className="flex gap-1.5">
-                              <input type="number" placeholder="Bet" value={r.betA} onChange={(e) => updateMatchResult(m.id, "betA", e.target.value)}
-                                className="w-1/2 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white placeholder:text-white/30" />
-                              <input type="number" placeholder="Payout" value={r.payoutA} onChange={(e) => updateMatchResult(m.id, "payoutA", e.target.value)}
-                                className="w-1/2 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white placeholder:text-white/30" />
-                            </div>
-                            {multA !== null && <p className="text-xs text-yellow-400 font-semibold">{multA.toFixed(2)}x</p>}
-                          </div>
-                          <div className="space-y-1.5">
-                            <p className="text-sm text-white font-medium truncate">{slotB?.slotName ?? "?"}</p>
-                            <div className="flex gap-1.5">
-                              <input type="number" placeholder="Bet" value={r.betB} onChange={(e) => updateMatchResult(m.id, "betB", e.target.value)}
-                                className="w-1/2 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white placeholder:text-white/30" />
-                              <input type="number" placeholder="Payout" value={r.payoutB} onChange={(e) => updateMatchResult(m.id, "payoutB", e.target.value)}
-                                className="w-1/2 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white placeholder:text-white/30" />
-                            </div>
-                            {multB !== null && <p className="text-xs text-yellow-400 font-semibold">{multB.toFixed(2)}x</p>}
-                          </div>
-                        </div>
-                        <button onClick={() => handleSubmitResult(m.id)} disabled={actionLoading}
-                          className="w-full py-1.5 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-300 disabled:opacity-40 text-sm">
-                          Submit Result
-                        </button>
-                      </div>
-                    );
-                  })}
-                {(active.matches ?? []).filter((m) => m.slotAId && m.slotBId && !m.winnerId).length === 0 && (
-                  <p className="text-white/30 text-sm">No matches ready to resolve yet.</p>
-                )}
-              </div>
+              <h3 className="text-white font-semibold mb-1">Bracket</h3>
+              <p className="text-xs text-gray-500 mb-3">
+                Enter the bet + payout on each live matchup — the multiplier is calculated as you type and the higher one wins.
+              </p>
+              {/* Results are entered on the matchup itself rather than in a separate
+                  list, so the admin sees the bracket context while scoring it. */}
+              <SlotWorldCupBracket
+                tournament={active}
+                mode="admin"
+                matchResults={matchResults}
+                onResultChange={updateMatchResult}
+                onSubmitResult={handleSubmitResult}
+                actionLoading={actionLoading}
+              />
             </div>
           )}
 
