@@ -28,30 +28,24 @@ export interface StoredUser {
 }
 
 /**
- * Store authentication tokens and user info
- */
-/**
- * Persist the session for this device.
+ * Persist the non-sensitive parts of the session for this device.
  *
- * MIGRATION — the two token `setItem` calls below are the last thing keeping
- * JWTs readable by page JavaScript (and therefore stealable by an XSS). Their
- * precondition is now met: no call site reads them any more (every request goes
- * through `authFetch()` on the cookie), so they are already dead weight.
+ * The JWTs are deliberately NOT stored here. They live only in httpOnly cookies
+ * issued by the API, which page JavaScript cannot read — so an XSS can no longer
+ * exfiltrate a session, which was the whole point of the cookie migration.
  *
- * Deleting them is step 2, and it must land together with removing the tokens
- * from the OAuth redirect URL — see lib/authFetch.ts. Note `USER_INFO_KEY` and
- * `TOKEN_EXPIRY_KEY` must stay: `isAuthenticated()` and the refresh scheduler
- * are keyed off them and neither is sensitive.
+ * What stays is only what the UI needs and what is safe to expose:
+ *   - USER_INFO_KEY  — display name / avatar / role flags, drives the navbar and
+ *                      `isAuthenticated()`. A forged value gets a prettier menu
+ *                      and 401s on every request; authorisation is server-side.
+ *   - TOKEN_EXPIRY_KEY — when to proactively refresh. Refreshing itself needs no
+ *                      token here: /auth/refresh reads the httpOnly cookie.
  */
 export function storeAuthData(
-  accessToken: string,
-  refreshToken: string,
   user: StoredUser,
   expiresIn: number = 3600, // Default 1 hour
 ): void {
   try {
-    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
     localStorage.setItem(USER_INFO_KEY, JSON.stringify(user));
 
     // Calculate expiry time
@@ -65,29 +59,10 @@ export function storeAuthData(
   }
 }
 
-/**
- * Get stored access token
- */
-export function getAccessToken(): string | null {
-  try {
-    return localStorage.getItem(ACCESS_TOKEN_KEY);
-  } catch (error) {
-    console.error("Failed to get access token:", error);
-    return null;
-  }
-}
-
-/**
- * Get stored refresh token
- */
-export function getRefreshToken(): string | null {
-  try {
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
-  } catch (error) {
-    console.error("Failed to get refresh token:", error);
-    return null;
-  }
-}
+// getAccessToken()/getRefreshToken() are intentionally gone. The tokens are
+// httpOnly-cookie-only now, so a getter could never return anything but null —
+// keeping them around would only invite a caller to "authenticate" with null and
+// get silent 401s. Requests authenticate by going through authFetch().
 
 /**
  * Get stored user info
@@ -131,18 +106,15 @@ export function isTokenExpired(): boolean {
  * works either way and needs no branching here.
  */
 export async function refreshAccessToken(): Promise<boolean> {
-  const refreshToken = getRefreshToken();
-
   try {
+    // No body: the httpOnly refresh cookie is the credential. The server reads
+    // it via REFRESH_TOKEN_COOKIE and rotates both cookies in the response.
     const response = await fetch(`${API_BASE}/api/auth/refresh`, {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
-      // Omit the body entirely when there's no stored token — the cookie is
-      // then the only credential, which is the end state we're migrating to.
-      body: refreshToken ? JSON.stringify({ refreshToken }) : undefined,
     });
 
     if (!response.ok) {
@@ -154,18 +126,14 @@ export async function refreshAccessToken(): Promise<boolean> {
     const data = await response.json();
 
     if (data.success && data.tokens) {
-      // Update tokens
-      localStorage.setItem(ACCESS_TOKEN_KEY, data.tokens.accessToken);
-      localStorage.setItem(REFRESH_TOKEN_KEY, data.tokens.refreshToken);
-
-      // Update expiry
+      // The rotated tokens themselves are only persisted as cookies by the
+      // server; all we track locally is when to refresh next.
       const expiryTime = Date.now() + data.tokens.expiresIn * 1000;
       localStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
 
       // Schedule next refresh
       scheduleTokenRefresh(data.tokens.expiresIn * 1000);
 
-      console.log("Token refreshed successfully");
       return true;
     }
 
@@ -269,6 +237,9 @@ export async function initializeAuth(): Promise<StoredUser | null> {
  */
 export function clearAuthData(): void {
   try {
+    // Nothing writes these two any more, but keep removing them: users who
+    // logged in before the cookie migration still have stale JWTs sitting in
+    // localStorage, and logout is the natural moment to clean them up.
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_INFO_KEY);
@@ -310,11 +281,7 @@ export function updateStoredUser(updates: Partial<StoredUser>): void {
  * This is a UI hint for routing/rendering — never a security boundary. Every
  * protected read is still authorised server-side against the cookie; a user who
  * forges `user_info` gets a prettier menu and 401s on every request.
- *
- * The token check is retained as a fallback so sessions created before the
- * cookie migration keep working until they expire.
  */
 export function isAuthenticated(): boolean {
-  if (getStoredUser()) return true;
-  return !!(getAccessToken() && getRefreshToken());
+  return !!getStoredUser();
 }

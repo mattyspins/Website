@@ -15,9 +15,6 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Get tokens from URL parameters (if backend redirects with them)
-        const accessToken = searchParams.get("access_token");
-        const refreshToken = searchParams.get("refresh_token");
         const error = searchParams.get("error");
 
         if (error) {
@@ -27,31 +24,28 @@ export default function AuthCallback() {
           return;
         }
 
-        if (accessToken && refreshToken) {
-          // Store user info if available
-          const userId = searchParams.get("user_id");
-          const displayName = searchParams.get("display_name");
-          const isAdmin = searchParams.get("is_admin");
-          const isModerator = searchParams.get("is_moderator");
-          const avatar = searchParams.get("avatar");
+        // The session itself arrives as httpOnly cookies set by the API on this
+        // redirect — there are no tokens in the URL to read. These params are
+        // just the non-sensitive profile fields, so the navbar can render
+        // immediately instead of waiting on /auth/me.
+        const userId = searchParams.get("user_id");
+        const displayName = searchParams.get("display_name");
+        const isAdmin = searchParams.get("is_admin");
+        const isModerator = searchParams.get("is_moderator");
+        const avatar = searchParams.get("avatar");
 
-          if (userId && displayName) {
-            const userInfo = {
+        if (userId && displayName) {
+          storeAuthData(
+            {
               id: userId,
               displayName: decodeURIComponent(displayName),
               avatar: avatar ? decodeURIComponent(avatar) : "",
               points: 0,
               isAdmin: isAdmin === "true",
               isModerator: isModerator === "true",
-            };
-
-            // Store auth data with persistence (default 1 hour expiry)
-            storeAuthData(accessToken, refreshToken, userInfo, 3600);
-          } else {
-            // Fallback: store tokens without user info
-            localStorage.setItem("access_token", accessToken);
-            localStorage.setItem("refresh_token", refreshToken);
-          }
+            },
+            3600,
+          );
 
           setStatus("success");
           setMessage("Login successful! Redirecting...");
@@ -59,7 +53,7 @@ export default function AuthCallback() {
           setTimeout(() => router.push("/"), 300);
         } else {
           setStatus("error");
-          setMessage("Authentication failed. No tokens received.");
+          setMessage("Authentication failed. Please try signing in again.");
           setTimeout(() => router.push("/"), 3000);
         }
       } catch (error) {
