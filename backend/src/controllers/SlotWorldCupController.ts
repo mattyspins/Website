@@ -107,6 +107,36 @@ export class SlotWorldCupController {
     res.json({ success: true, tournament: await SlotWorldCupService.openPredictions(req.params.id) });
   });
 
+  static closePredictions = asyncHandler(async (req, res) => {
+    res.json({ success: true, tournament: await SlotWorldCupService.closePredictions(req.params.id) });
+  });
+
+  static approveNomination = asyncHandler(async (req, res) => {
+    const { key, provider, imageUrl } = req.body;
+    if (!key?.trim()) { res.status(400).json({ error: 'key is required' }); return; }
+    const slot = await SlotWorldCupService.approveNomination(req.params.id, key.trim(), provider, imageUrl);
+    res.json({ success: true, slot });
+  });
+
+  static rejectNomination = asyncHandler(async (req, res) => {
+    const { key } = req.body;
+    if (!key?.trim()) { res.status(400).json({ error: 'key is required' }); return; }
+    await SlotWorldCupService.rejectNomination(req.params.id, key.trim());
+    res.json({ success: true });
+  });
+
+  static setMatchRule = asyncHandler(async (req, res) => {
+    const { matchRule } = req.body;
+    if (!matchRule?.trim()) { res.status(400).json({ error: 'matchRule is required' }); return; }
+    res.json({ success: true, tournament: await SlotWorldCupService.setMatchRule(req.params.id, matchRule) });
+  });
+
+  static reset = asyncHandler(async (req, res) => {
+    const tournament = await SlotWorldCupService.resetTournament(req.params.id);
+    _io?.to(`slotWorldCup:${req.params.id}`).emit('slotWorldCup:updated', tournament);
+    res.json({ success: true, tournament });
+  });
+
   static submitMatchResult = asyncHandler(async (req, res) => {
     const { betA, payoutA, betB, payoutB } = req.body;
     if ([betA, payoutA, betB, payoutB].some((v) => v === undefined || v === null || isNaN(Number(v)))) {

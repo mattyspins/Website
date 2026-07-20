@@ -45,7 +45,11 @@ export interface SlotWorldCupMatch {
 
 export interface SlotWorldCupNominationRanking {
   rank: number;
+  /** normalizedName — the identifier approve/reject act on. */
+  key: string;
   slotName: string;
+  /** Kick username of whoever nominated it first. */
+  by: string;
   votes: number;
 }
 
@@ -56,6 +60,8 @@ export interface SlotWorldCup {
   status: SlotWorldCupStatus;
   nominationsOpen: boolean;
   nominationCommand: string;
+  /** How matchups are played on stream (Bonus Buy / 100 Spins / …). */
+  matchRule: string;
   seeding: SlotWorldCupSeeding;
   currentRound: number;
   totalRounds: number;

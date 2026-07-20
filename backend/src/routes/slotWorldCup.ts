@@ -26,6 +26,11 @@ router.delete('/:id/slots/:slotId', authMiddleware, adminMiddleware, adminLim, S
 router.post('/:id/finalize-participants', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.finalizeParticipants);
 router.post('/:id/generate-bracket', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.generateBracket);
 router.post('/:id/open-predictions', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.openPredictions);
+router.post('/:id/close-predictions', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.closePredictions);
+router.post('/:id/nominations/approve', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.approveNomination);
+router.post('/:id/nominations/reject', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.rejectNomination);
+router.post('/:id/match-rule', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.setMatchRule);
+router.post('/:id/reset', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.reset);
 router.post('/matches/:matchId/result', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.submitMatchResult);
 router.post('/:id/cancel', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.cancel);
 router.post('/:id/config', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.updateConfig);

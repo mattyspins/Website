@@ -19,6 +19,35 @@ function roundLabel(round: number, totalRounds: number): string {
   return `Round ${round}`;
 }
 
+// Panel chrome from the Claude Design tournament UI — a darker, cooler surface
+// than the rest of admin, so the control room reads as its own console.
+const PANEL = "border border-[#2D3446] rounded-2xl bg-[#151922] p-5";
+const PANEL_TITLE = "font-gaming font-bold text-sm tracking-[1px] text-white mb-1";
+
+const MATCH_RULES = ["Bonus Buy", "100 Spins", "50 Spins"];
+
+// Stable per-provider tint for the slot badges, so the same studio always reads
+// the same colour across the queue and the bracket.
+const PROVIDER_COLORS = [
+  "#29B6F6", "#7C4DFF", "#00E5A0", "#FFD54A", "#FF8A96", "#4fbfd1", "#f5a623",
+];
+function providerColor(provider?: string | null): string {
+  if (!provider) return "#2D3446";
+  let h = 0;
+  for (let i = 0; i < provider.length; i++) h = (h * 31 + provider.charCodeAt(i)) >>> 0;
+  return PROVIDER_COLORS[h % PROVIDER_COLORS.length];
+}
+
+function initials(name: string): string {
+  return name
+    .replace(/[^a-zA-Z0-9 ]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join("") || "?";
+}
+
 export default function AdminSlotWorldCupPage() {
   const router = useRouter();
   const { success, error: toastError } = useToast();
@@ -35,8 +64,11 @@ export default function AdminSlotWorldCupPage() {
   const [size, setSize] = useState<8 | 12 | 16>(8);
   const [nominationCommand, setNominationCommand] = useState("!wc");
   const [manualSlot, setManualSlot] = useState("");
-  const [seeding, setSeeding] = useState<"RANDOM" | "POPULARITY">("POPULARITY");
-  const [manualList, setManualList] = useState("");
+  const [customRule, setCustomRule] = useState("");
+  const [search, setSearch] = useState("");
+  // Bumping this reshuffles the suggestion order; it's a seed rather than a
+  // stored order so the list still re-sorts naturally as new votes arrive.
+  const [shuffleSeed, setShuffleSeed] = useState(0);
   const [matchResults, setMatchResults] = useState<Record<string, { betA: string; payoutA: string; betB: string; payoutB: string }>>({});
 
   const updateMatchResult = (matchId: string, field: "betA" | "payoutA" | "betB" | "payoutB", value: string) => {
@@ -110,6 +142,134 @@ export default function AdminSlotWorldCupPage() {
     });
   };
 
+  // Best multiplier a slot has posted so far, shown next to each participant.
+  // Derived from played matches rather than stored, so it can never drift.
+  const bestMultiplier = (slotId: string): string => {
+    if (!active?.matches) return "—";
+    let best: number | null = null;
+    for (const m of active.matches) {
+      const mult = m.slotAId === slotId ? m.multiplierA : m.slotBId === slotId ? m.multiplierB : null;
+      const n = mult == null ? null : Number(mult);
+      if (n != null && !isNaN(n) && (best == null || n > best)) best = n;
+    }
+    return best == null ? "—" : `${best.toFixed(2)}x`;
+  };
+
+  const visibleSuggestions = (() => {
+    const q = search.trim().toLowerCase();
+    const list = q
+      ? rankings.filter((r) => r.slotName.toLowerCase().includes(q) || r.by.toLowerCase().includes(q))
+      : rankings.slice();
+    if (shuffleSeed === 0) return list;
+    // Deterministic per-seed shuffle so the order is stable across re-renders
+    // and only changes when the admin actually presses Randomize.
+    return list
+      .map((r, i) => ({ r, k: Math.sin((i + 1) * 9301 + shuffleSeed * 49297) }))
+      .sort((a, b) => a.k - b.k)
+      .map((x) => x.r);
+  })();
+
+  // Every control maps to an action the backend actually supports; anything not
+  // yet possible is disabled with the reason rather than silently doing nothing.
+  const st = active?.status;
+  const slotsFull = (active?.slots?.length ?? 0) === active?.size;
+  const controlButtons = !active ? [] : [
+    {
+      label: "⬡ Generate Bracket", bg: "rgba(41,182,246,.14)", color: "#29B6F6", border: "#29B6F6",
+      disabled: st !== SlotWorldCupStatus.NOMINATION || !slotsFull,
+      why: `Fill all ${active.size} participant places first`,
+      onClick: () => withAction(() => slotWorldCupApi.generateBracket(active.id, "POPULARITY")),
+    },
+    {
+      label: "⇄ Shuffle Bracket", bg: "rgba(124,77,255,.14)", color: "#b79dff", border: "#7C4DFF",
+      disabled: st !== SlotWorldCupStatus.NOMINATION || !slotsFull,
+      why: "Only available before the bracket is generated",
+      onClick: () => withAction(() => slotWorldCupApi.generateBracket(active.id, "RANDOM")),
+    },
+    {
+      label: "★ Auto-fill by Votes", bg: "rgba(255,213,74,.14)", color: "#FFD54A", border: "#FFD54A",
+      disabled: st !== SlotWorldCupStatus.NOMINATION || (active.slots?.length ?? 0) > 0,
+      why: "Only while nominating, and before any participant is added",
+      onClick: () => withAction(() => slotWorldCupApi.finalizeParticipants(active.id, "auto")),
+    },
+    {
+      label: active.nominationsOpen ? "🔒 Lock Nominations" : "🔓 Nominations Locked",
+      bg: "#10141c", color: "#cfd6e4", border: "#2D3446",
+      disabled: st !== SlotWorldCupStatus.NOMINATION || !active.nominationsOpen,
+      why: "Nominations are already closed",
+      onClick: () => withAction(() => slotWorldCupApi.lockNominations(active.id)),
+    },
+    {
+      label: st === SlotWorldCupStatus.PREDICTIONS_OPEN ? "🔒 Close Predictions" : "🔓 Open Predictions",
+      bg: st === SlotWorldCupStatus.PREDICTIONS_OPEN ? "rgba(124,77,255,.14)" : "rgba(0,229,160,.14)",
+      color: st === SlotWorldCupStatus.PREDICTIONS_OPEN ? "#b79dff" : "#00E5A0",
+      border: st === SlotWorldCupStatus.PREDICTIONS_OPEN ? "#7C4DFF" : "#00E5A0",
+      disabled: st !== SlotWorldCupStatus.BRACKET_SET && st !== SlotWorldCupStatus.PREDICTIONS_OPEN,
+      why: "Generate the bracket first",
+      onClick: () => withAction(() =>
+        st === SlotWorldCupStatus.PREDICTIONS_OPEN
+          ? slotWorldCupApi.closePredictions(active.id)
+          : slotWorldCupApi.openPredictions(active.id)),
+    },
+    {
+      label: "⬇ Export Results", bg: "#10141c", color: "#cfd6e4", border: "#2D3446",
+      disabled: false, why: "",
+      onClick: () => exportResults(),
+    },
+    {
+      label: "↺ Reset Tournament", bg: "#10141c", color: "#FF8A96", border: "#2D3446",
+      disabled: st === SlotWorldCupStatus.COMPLETED,
+      why: "A completed tournament can't be reset",
+      onClick: () => {
+        if (!window.confirm("Reset this tournament? The bracket, participants and every prediction are deleted, and suggestions return to the pending queue.")) return;
+        return withAction(() => slotWorldCupApi.reset(active.id));
+      },
+    },
+    {
+      label: "✕ Cancel Tournament", bg: "#10141c", color: "#FF8A96", border: "#2D3446",
+      disabled: st === SlotWorldCupStatus.COMPLETED,
+      why: "Already completed",
+      onClick: () => {
+        if (!window.confirm(`Cancel "${active.title}"? This closes it for good.`)) return;
+        return withAction(() => slotWorldCupApi.cancel(active.id));
+      },
+    },
+  ];
+
+  // Client-side CSV: everything needed is already loaded, so this avoids an
+  // endpoint whose only job would be re-serialising what the page has.
+  function exportResults() {
+    if (!active) return;
+    const esc = (v: unknown) => {
+      const s = String(v ?? "");
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const slotName = (id?: string | null) =>
+      active.slots?.find((s) => s.id === id)?.slotName ?? "";
+
+    const rows: string[][] = [["Round", "Match", "Slot A", "Bet A", "Payout A", "Mult A", "Slot B", "Bet B", "Payout B", "Mult B", "Winner"]];
+    for (const m of (active.matches ?? []).slice().sort((a, b) => a.round - b.round || a.matchNumber - b.matchNumber)) {
+      rows.push([
+        String(m.round), String(m.matchNumber + 1),
+        slotName(m.slotAId), String(m.betAmountA ?? ""), String(m.payoutAmountA ?? ""), String(m.multiplierA ?? ""),
+        slotName(m.slotBId), String(m.betAmountB ?? ""), String(m.payoutAmountB ?? ""), String(m.multiplierB ?? ""),
+        slotName(m.winnerId),
+      ]);
+    }
+    rows.push([], ["Rank", "Player", "Score", "Correct picks", "Accuracy"]);
+    for (const e of leaderboard) {
+      rows.push([String(e.rank), e.displayName, String(e.score), String(e.correctPicks), `${Math.round(e.accuracy * 100)}%`]);
+    }
+
+    const csv = rows.map((r) => r.map(esc).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${active.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-results.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   if (loading) return <div className="text-white/50 text-sm p-6">Loading…</div>;
 
   return (
@@ -157,96 +317,181 @@ export default function AdminSlotWorldCupPage() {
             </button>
           </div>
 
-          {active.status === SlotWorldCupStatus.NOMINATION && (
-            <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5 space-y-5">
-              <div>
-                <h3 className="text-white font-semibold mb-3">Nominations ({rankings.length})</h3>
-                <div className="space-y-1 max-h-64 overflow-y-auto">
-                  {rankings.map((r) => (
-                    <div key={r.rank} className={`flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm ${r.rank <= active.size ? "bg-yellow-400/8" : "bg-white/3"}`}>
-                      <span className="w-6 text-center font-bold text-yellow-400">{r.rank}</span>
-                      <span className="flex-1 text-white">{r.slotName}</span>
-                      <span className="text-white/40 text-xs">{r.votes} votes</span>
-                    </div>
+          {/* ─── Control room ────────────────────────────────────────────────
+              Two columns: run-the-show controls on the left, the live chat
+              suggestion queue on the right, so the admin never has to scroll
+              away from pending approvals while driving the bracket. */}
+          <div className="grid grid-cols-1 xl:grid-cols-[1.15fr_1fr] gap-5 items-start">
+            <div className="flex flex-col gap-5">
+
+              {/* TOURNAMENT CONTROLS */}
+              <section className={PANEL}>
+                <h3 className={PANEL_TITLE}>TOURNAMENT CONTROLS</h3>
+                <p className="text-xs text-[#6b7488] mb-4">Run the show from here — generate, lock, and advance matches live.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {controlButtons.map((b) => (
+                    <button key={b.label} onClick={b.onClick} disabled={actionLoading || b.disabled}
+                      title={b.disabled ? b.why : undefined}
+                      className="font-gaming font-semibold text-[13px] px-3 py-3 rounded-[10px] border text-left transition-all hover:brightness-125 disabled:opacity-35 disabled:cursor-not-allowed"
+                      style={{ borderColor: b.border, background: b.bg, color: b.color }}>
+                      {b.label}
+                    </button>
                   ))}
                 </div>
-              </div>
+              </section>
 
-              <div className="flex items-center gap-2">
-                <button onClick={() => withAction(() => slotWorldCupApi.lockNominations(active.id))} disabled={actionLoading || !active.nominationsOpen}
-                  className="px-3 py-2 bg-white/8 hover:bg-white/12 text-white rounded-lg text-sm disabled:opacity-40">
-                  {active.nominationsOpen ? "Lock Nominations" : "Nominations Locked ✓"}
+              {/* MATCH RULES */}
+              <section className={PANEL}>
+                <h3 className={PANEL_TITLE}>MATCH RULES</h3>
+                <div className="flex gap-2.5 flex-wrap">
+                  {MATCH_RULES.map((r) => {
+                    const on = active.matchRule === r;
+                    return (
+                      <button key={r} onClick={() => withAction(() => slotWorldCupApi.setMatchRule(active.id, r))}
+                        disabled={actionLoading}
+                        className="font-gaming font-semibold text-[13px] px-[18px] py-2.5 rounded-[10px] border disabled:opacity-40"
+                        style={{
+                          borderColor: on ? "#FFD54A" : "#2D3446",
+                          background: on ? "rgba(255,213,74,.16)" : "#10141c",
+                          color: on ? "#FFD54A" : "#cfd6e4",
+                        }}>
+                        {r}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* A custom rule is free text, so it gets its own input rather than
+                    pretending the four presets cover every format. */}
+                <div className="flex gap-2 mt-3">
+                  <input value={customRule} onChange={(e) => setCustomRule(e.target.value)}
+                    placeholder="Custom rule — e.g. 200 spins @ £2"
+                    className="flex-1 bg-[#10141c] border border-[#2D3446] rounded-[9px] px-3 py-2 text-[13px] text-white placeholder:text-[#6b7488] focus:outline-none focus:border-[#FFD54A]/50" />
+                  <button onClick={() => withAction(async () => { await slotWorldCupApi.setMatchRule(active.id, customRule.trim()); setCustomRule(""); })}
+                    disabled={actionLoading || !customRule.trim()}
+                    className="px-4 rounded-[9px] border border-[#2D3446] bg-[#10141c] text-[#cfd6e4] text-xs font-semibold disabled:opacity-40">
+                    Set
+                  </button>
+                </div>
+                <p className="mt-3.5 text-xs text-[#6b7488]">
+                  Winner determined by <span className="text-[#FFD54A] font-semibold">Highest Multiplier</span>. Loser is eliminated.
+                </p>
+              </section>
+
+              {/* APPROVED PARTICIPANTS */}
+              <section className={PANEL}>
+                <div className="flex items-center justify-between mb-3.5">
+                  <h3 className={`${PANEL_TITLE} mb-0`}>APPROVED PARTICIPANTS</h3>
+                  <span className="text-xs font-bold text-[#29B6F6]">{active.slots?.length ?? 0} / {active.size} slots</span>
+                </div>
+                {(active.slots?.length ?? 0) === 0 ? (
+                  <p className="text-[13px] text-[#6b7488] py-6 text-center">
+                    No participants yet — approve chat suggestions or add a slot below.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-80 overflow-y-auto">
+                    {active.slots.map((s) => (
+                      <div key={s.id} className="flex items-center gap-2.5 px-2.5 py-2 rounded-[9px] border border-[#22283a] bg-[#10141c]">
+                        <span className="w-[26px] h-[26px] rounded-md flex items-center justify-center font-gaming font-bold text-[10px] text-white shrink-0"
+                          style={{ background: `linear-gradient(135deg, ${providerColor(s.provider)}, #12151d)` }}>
+                          {initials(s.slotName)}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-xs text-white truncate">{s.slotName}</div>
+                          <div className="text-[10px]" style={{ color: providerColor(s.provider) }}>{s.provider ?? "—"}</div>
+                        </div>
+                        <span className="font-gaming font-bold text-xs text-[#FFD54A]">{bestMultiplier(s.id)}</span>
+                        {active.status === SlotWorldCupStatus.NOMINATION && (
+                          <button onClick={() => withAction(() => slotWorldCupApi.removeSlot(active.id, s.id))} disabled={actionLoading}
+                            aria-label={`Remove ${s.slotName}`}
+                            className="text-[#FF8A96] hover:text-red-400 text-sm px-1 disabled:opacity-40">×</button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {active.status === SlotWorldCupStatus.NOMINATION && (
+                  <div className="border-t border-[#22283a] mt-4 pt-4">
+                    <p className="text-xs text-[#6b7488] mb-2">Add a slot directly (bypasses voting):</p>
+                    {/* Same catalogue picker the other stream games use, so names
+                        match slot.report exactly instead of being free-typed. */}
+                    <SlotPicker value={manualSlot} onChange={setManualSlot} disabled={actionLoading}
+                      placeholder="Search for a slot…" />
+                    <button
+                      onClick={() => withAction(async () => {
+                        const name = manualSlot.trim();
+                        // Carry the catalogue's provider + art through when the pick
+                        // is a known slot; a free-typed name just sends the name.
+                        const game = SLOT_GAMES.find((g) => g.name === name);
+                        await slotWorldCupApi.addSlot(active.id, name, game?.provider, game?.image);
+                        setManualSlot("");
+                      })}
+                      disabled={actionLoading || !manualSlot.trim()}
+                      className="w-full mt-2 px-4 py-2 rounded-[9px] border border-[#2D3446] bg-[#10141c] text-[#cfd6e4] text-sm font-semibold hover:brightness-125 disabled:opacity-40">
+                      Add slot
+                    </button>
+                  </div>
+                )}
+              </section>
+            </div>
+
+            {/* CHAT SUGGESTIONS */}
+            <section className={`${PANEL} flex flex-col`}>
+              <div className="flex items-center justify-between mb-1">
+                <h3 className={`${PANEL_TITLE} mb-0`}>CHAT SUGGESTIONS</h3>
+                <span className="text-xs font-bold text-[#7C4DFF]">{rankings.length} pending</span>
+              </div>
+              <p className="text-xs text-[#6b7488] mb-3.5">
+                Viewers submit with <span className="text-[#29B6F6] font-mono">{active.nominationCommand} Slot Name</span>
+              </p>
+
+              <div className="flex gap-2 mb-3.5">
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search suggestions…"
+                  className="flex-1 px-3 py-2.5 rounded-[9px] border border-[#2D3446] bg-[#10141c] text-[13px] text-white placeholder:text-[#6b7488] focus:outline-none focus:border-[#29B6F6]/50" />
+                {/* Shuffles the display order so picking isn't biased toward whoever
+                    shouted first — the underlying vote counts are untouched. */}
+                <button onClick={() => setShuffleSeed((n) => n + 1)}
+                  className="px-3.5 rounded-[9px] border border-[#7C4DFF] bg-[#7C4DFF]/15 text-[#b79dff] text-xs font-semibold whitespace-nowrap">
+                  Randomize
                 </button>
               </div>
 
-              <div className="border-t border-white/8 pt-4">
-                <p className="text-xs text-gray-500 mb-2">Add a slot manually (bypasses voting):</p>
-                <div className="mb-4">
-                  {/* Same catalogue picker the other stream games use, so the name
-                      matches slot.report exactly instead of being free-typed. */}
-                  <SlotPicker value={manualSlot} onChange={setManualSlot} disabled={actionLoading}
-                    placeholder="Search for a slot…" />
-                  <button
-                    onClick={() => withAction(async () => {
-                      const name = manualSlot.trim();
-                      // Carry the catalogue's provider + art through when the pick is a
-                      // known slot; a free-typed name just sends the name.
-                      const game = SLOT_GAMES.find((g) => g.name === name);
-                      await slotWorldCupApi.addSlot(active.id, name, game?.provider, game?.image);
-                      setManualSlot("");
-                    })}
-                    disabled={actionLoading || !manualSlot.trim()}
-                    className="w-full mt-2 px-4 py-2 bg-white/8 hover:bg-white/12 text-white rounded-lg text-sm disabled:opacity-40">
-                    Add slot
-                  </button>
-                </div>
-
-                <p className="text-xs text-gray-500 mb-2">Finalize {active.size} participants:</p>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <button onClick={() => withAction(() => slotWorldCupApi.finalizeParticipants(active.id, "auto"))} disabled={actionLoading}
-                    className="px-4 py-2 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-300 disabled:opacity-40 text-sm">
-                    Auto-fill Top {active.size} by votes
-                  </button>
-                </div>
-                <textarea value={manualList} onChange={(e) => setManualList(e.target.value)}
-                  placeholder={`Or paste ${active.size} slot names, one per line, to bypass voting entirely`}
-                  rows={4} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 mb-2" />
-                <button
-                  onClick={() => withAction(() => slotWorldCupApi.finalizeParticipants(active.id, "manual", manualList.split("\n").map((s) => s.trim()).filter(Boolean)))}
-                  disabled={actionLoading || manualList.split("\n").map((s) => s.trim()).filter(Boolean).length !== active.size}
-                  className="px-4 py-2 bg-white/8 hover:bg-white/12 text-white rounded-lg text-sm disabled:opacity-40">
-                  Finalize Manual List
-                </button>
+              <div className="flex flex-col gap-2 overflow-y-auto flex-1 max-h-[620px]">
+                {visibleSuggestions.length === 0 ? (
+                  <p className="py-8 text-center text-[#6b7488] text-[13px]">
+                    {rankings.length === 0 ? "No suggestions yet." : "No suggestions match your search."}
+                  </p>
+                ) : visibleSuggestions.map((p) => {
+                  const game = SLOT_GAMES.find((g) => g.name.toLowerCase() === p.slotName.toLowerCase());
+                  return (
+                    <div key={p.key} className="flex items-center gap-3 px-3 py-2.5 rounded-[11px] border border-[#22283a] bg-[#10141c]">
+                      <span className="w-[30px] h-[30px] rounded-[7px] flex items-center justify-center font-gaming font-bold text-[11px] text-white shrink-0"
+                        style={{ background: `linear-gradient(135deg, ${providerColor(game?.provider)}, #12151d)` }}>
+                        {initials(p.slotName)}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-[13px] text-white truncate">{p.slotName}</div>
+                        <div className="text-[11px] text-[#6b7488] truncate">
+                          by {p.by} · <span className="text-[#29B6F6]">{p.votes} vote{p.votes === 1 ? "" : "s"}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => withAction(() => slotWorldCupApi.approveNomination(active.id, p.key, game?.provider, game?.image))}
+                        disabled={actionLoading || (active.slots?.length ?? 0) >= active.size}
+                        title={(active.slots?.length ?? 0) >= active.size ? "All participant places are filled" : undefined}
+                        className="font-gaming font-bold text-xs px-3 py-1.5 rounded-lg border border-[#00E5A0] bg-[#00E5A0]/15 text-[#00E5A0] hover:bg-[#00E5A0]/25 disabled:opacity-35 disabled:cursor-not-allowed">
+                        Approve
+                      </button>
+                      <button onClick={() => withAction(() => slotWorldCupApi.rejectNomination(active.id, p.key))} disabled={actionLoading}
+                        className="font-gaming font-bold text-xs px-3 py-1.5 rounded-lg border border-[#2D3446] bg-[#10141c] text-[#FF8A96] hover:border-[#FF5C6C] disabled:opacity-40">
+                        Reject
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          )}
-
-          {active.status === SlotWorldCupStatus.NOMINATION && active.slots?.length === active.size && (
-            <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5">
-              <h3 className="text-white font-semibold mb-3">Generate Bracket</h3>
-              <div className="flex gap-2 mb-3">
-                {(["POPULARITY", "RANDOM"] as const).map((s) => (
-                  <button key={s} onClick={() => setSeeding(s)}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold border ${seeding === s ? "bg-yellow-400 text-black border-yellow-400" : "bg-white/5 text-white/60 border-white/10"}`}>
-                    {s === "POPULARITY" ? "Popularity (1v16, 2v15…)" : "Random"}
-                  </button>
-                ))}
-              </div>
-              <button onClick={() => withAction(() => slotWorldCupApi.generateBracket(active.id, seeding))} disabled={actionLoading}
-                className="px-4 py-2 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 disabled:opacity-40 text-sm">
-                Generate Bracket
-              </button>
-            </div>
-          )}
-
-          {active.status === SlotWorldCupStatus.BRACKET_SET && (
-            <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5">
-              <button onClick={() => withAction(() => slotWorldCupApi.openPredictions(active.id))} disabled={actionLoading}
-                className="px-4 py-2 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 disabled:opacity-40 text-sm">
-                Open Predictions
-              </button>
-            </div>
-          )}
+            </section>
+          </div>
 
           {active.matches?.length > 0 && (
             <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5">

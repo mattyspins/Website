@@ -76,6 +76,31 @@ export const slotWorldCupApi = {
     return data.tournament;
   },
 
+  closePredictions: async (id: string): Promise<SlotWorldCup> => {
+    const data = await api.post(`/api/slot-world-cup/${id}/close-predictions`);
+    return data.tournament;
+  },
+
+  // `key` is the ranking's normalizedName, not the display name — that's what
+  // groups every viewer's nomination of the same slot together.
+  approveNomination: async (id: string, key: string, provider?: string, imageUrl?: string): Promise<void> => {
+    await api.post(`/api/slot-world-cup/${id}/nominations/approve`, { key, provider, imageUrl });
+  },
+
+  rejectNomination: async (id: string, key: string): Promise<void> => {
+    await api.post(`/api/slot-world-cup/${id}/nominations/reject`, { key });
+  },
+
+  setMatchRule: async (id: string, matchRule: string): Promise<SlotWorldCup> => {
+    const data = await api.post(`/api/slot-world-cup/${id}/match-rule`, { matchRule });
+    return data.tournament;
+  },
+
+  reset: async (id: string): Promise<SlotWorldCup> => {
+    const data = await api.post(`/api/slot-world-cup/${id}/reset`);
+    return data.tournament;
+  },
+
   submitMatchResult: async (matchId: string, betA: number, payoutA: number, betB: number, payoutB: number): Promise<SlotWorldCup> => {
     const data = await api.post(`/api/slot-world-cup/matches/${matchId}/result`, { betA, payoutA, betB, payoutB });
     return data.tournament;

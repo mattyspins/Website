@@ -1,7 +1,12 @@
 import { prisma } from '@/config/database';
 import { Server as SocketIOServer } from 'socket.io';
 import { createError } from '@/middleware/errorHandler';
-import { Prisma, SlotWorldCupStatus, SlotWorldCupSeeding } from '@prisma/client';
+import {
+  Prisma,
+  SlotWorldCupStatus,
+  SlotWorldCupSeeding,
+  SlotWorldCupNominationStatus,
+} from '@prisma/client';
 import { logger } from '@/utils/logger';
 import { PointsService } from '@/services/PointsService';
 
@@ -118,21 +123,160 @@ export class SlotWorldCupService {
     return tournament;
   }
 
-  static async getNominationRankings(tournamentId: string) {
-    const nominations = await prisma.slotWorldCupNomination.findMany({ where: { tournamentId } });
-    const groups = new Map<string, { slotName: string; votes: number; firstAt: Date }>();
+  /**
+   * Vote-ranked suggestions, grouped by the normalized slot name.
+   *
+   * `status` defaults to PENDING so the admin queue only shows what still needs
+   * a decision; pass a status to inspect what was approved/rejected. `by` is the
+   * viewer who nominated it first, which is what the admin UI credits.
+   */
+  static async getNominationRankings(
+    tournamentId: string,
+    status: SlotWorldCupNominationStatus | 'ALL' = SlotWorldCupNominationStatus.PENDING
+  ) {
+    const nominations = await prisma.slotWorldCupNomination.findMany({
+      where: { tournamentId, ...(status === 'ALL' ? {} : { status }) },
+    });
+    const groups = new Map<string, { key: string; slotName: string; by: string; votes: number; firstAt: Date }>();
     for (const n of nominations) {
       const existing = groups.get(n.normalizedName);
       if (existing) {
         existing.votes += 1;
-        if (n.createdAt < existing.firstAt) existing.firstAt = n.createdAt;
+        if (n.createdAt < existing.firstAt) {
+          existing.firstAt = n.createdAt;
+          existing.by = n.kickUsername;
+          existing.slotName = n.slotName;
+        }
       } else {
-        groups.set(n.normalizedName, { slotName: n.slotName, votes: 1, firstAt: n.createdAt });
+        groups.set(n.normalizedName, {
+          key: n.normalizedName,
+          slotName: n.slotName,
+          by: n.kickUsername,
+          votes: 1,
+          firstAt: n.createdAt,
+        });
       }
     }
     return Array.from(groups.values())
       .sort((a, b) => b.votes - a.votes || a.firstAt.getTime() - b.firstAt.getTime())
-      .map((g, i) => ({ rank: i + 1, slotName: g.slotName, votes: g.votes }));
+      .map((g, i) => ({ rank: i + 1, key: g.key, slotName: g.slotName, by: g.by, votes: g.votes }));
+  }
+
+  /**
+   * Approve a suggestion into the bracket: creates the participant slot and marks
+   * every nomination for that name APPROVED so it leaves the pending queue.
+   */
+  static async approveNomination(
+    tournamentId: string,
+    normalizedName: string,
+    provider?: string,
+    imageUrl?: string
+  ) {
+    const tournament = await this.requireStatus(tournamentId, [SlotWorldCupStatus.NOMINATION]);
+    const nominations = await prisma.slotWorldCupNomination.findMany({
+      where: { tournamentId, normalizedName },
+    });
+    if (nominations.length === 0) throw createError.notFound('Suggestion not found');
+
+    const count = await prisma.slotWorldCupSlot.count({ where: { tournamentId } });
+    if (count >= tournament.size) {
+      throw createError.badRequest(`This tournament already has all ${tournament.size} participants`);
+    }
+    // Guard the unique [tournamentId, seed] and stop the same slot being approved twice.
+    const slotName = nominations[0].slotName;
+    const already = await prisma.slotWorldCupSlot.findFirst({ where: { tournamentId, slotName } });
+    if (already) throw createError.badRequest('That slot is already a participant');
+
+    const [slot] = await prisma.$transaction([
+      prisma.slotWorldCupSlot.create({
+        data: {
+          tournamentId,
+          slotName,
+          provider,
+          imageUrl,
+          seed: count + 1,
+          votes: nominations.length,
+        },
+      }),
+      prisma.slotWorldCupNomination.updateMany({
+        where: { tournamentId, normalizedName },
+        data: { status: SlotWorldCupNominationStatus.APPROVED },
+      }),
+    ]);
+    return slot;
+  }
+
+  /** Reject a suggestion so it drops out of the pending queue for good. */
+  static async rejectNomination(tournamentId: string, normalizedName: string) {
+    await this.requireStatus(tournamentId, [SlotWorldCupStatus.NOMINATION]);
+    const { count } = await prisma.slotWorldCupNomination.updateMany({
+      where: { tournamentId, normalizedName },
+      data: { status: SlotWorldCupNominationStatus.REJECTED },
+    });
+    if (count === 0) throw createError.notFound('Suggestion not found');
+  }
+
+  /** How matchups are played on stream — descriptive; the multiplier still decides. */
+  static async setMatchRule(tournamentId: string, matchRule: string) {
+    const rule = matchRule.trim().slice(0, 40);
+    if (!rule) throw createError.badRequest('Match rule is required');
+    return prisma.slotWorldCup.update({ where: { id: tournamentId }, data: { matchRule: rule } });
+  }
+
+  /** Reopen the bracket for edits — the inverse of openPredictions. */
+  static async closePredictions(tournamentId: string) {
+    const tournament = await this.requireStatus(tournamentId, [SlotWorldCupStatus.PREDICTIONS_OPEN]);
+    return prisma.slotWorldCup.update({
+      where: { id: tournament.id },
+      data: { status: SlotWorldCupStatus.BRACKET_SET },
+    });
+  }
+
+  /**
+   * Tear the tournament back down to nomination stage: drops the bracket, the
+   * participants and every prediction, and returns approved/rejected suggestions
+   * to the pending queue so the admin can re-pick.
+   *
+   * Refused once a match has a real result — at that point predictions have been
+   * scored and coins may already be awarded, so a silent wipe would destroy a
+   * played-out tournament. Cancel it and start a new one instead.
+   */
+  static async resetTournament(tournamentId: string) {
+    const tournament = await prisma.slotWorldCup.findUnique({ where: { id: tournamentId } });
+    if (!tournament) throw createError.notFound('Tournament not found');
+    if (tournament.status === SlotWorldCupStatus.COMPLETED) {
+      throw createError.badRequest('A completed tournament cannot be reset');
+    }
+    const played = await prisma.slotWorldCupMatch.count({
+      where: { tournamentId, completedAt: { not: null }, slotAId: { not: null }, slotBId: { not: null } },
+    });
+    if (played > 0) {
+      throw createError.badRequest(
+        'Matches have already been played — cancel this tournament and create a new one instead of resetting'
+      );
+    }
+
+    await prisma.$transaction([
+      prisma.slotWorldCupPrediction.deleteMany({ where: { tournamentId } }),
+      prisma.slotWorldCupMatch.deleteMany({ where: { tournamentId } }),
+      prisma.slotWorldCupSlot.deleteMany({ where: { tournamentId } }),
+      prisma.slotWorldCupNomination.updateMany({
+        where: { tournamentId },
+        data: { status: SlotWorldCupNominationStatus.PENDING },
+      }),
+      prisma.slotWorldCup.update({
+        where: { id: tournamentId },
+        data: {
+          status: SlotWorldCupStatus.NOMINATION,
+          nominationsOpen: true,
+          currentRound: 0,
+          championSlotId: null,
+          runnerUpSlotId: null,
+          closedAt: null,
+        },
+      }),
+    ]);
+    return this.getById(tournamentId);
   }
 
   static async getLeaderboard(tournamentId: string) {

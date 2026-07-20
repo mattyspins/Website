@@ -1184,6 +1184,15 @@ enum SlotWorldCupSeeding {
   POPULARITY
 }
 
+// Chat suggestions land as PENDING and the admin approves them into the bracket
+// or rejects them. Rejected ones stay recorded so the same slot doesn't keep
+// reappearing in the queue every time another viewer nominates it.
+enum SlotWorldCupNominationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model SlotWorldCup {
   id              String              @id @default(uuid())
   title           String
@@ -1191,6 +1200,11 @@ model SlotWorldCup {
   status          SlotWorldCupStatus  @default(NOMINATION)
   nominationsOpen Boolean             @default(true) @map("nominations_open")
   nominationCommand String            @default("!wc") @map("nomination_command")
+  // How each matchup is played out on stream (Bonus Buy / 100 Spins / …). Free
+  // text rather than an enum so the admin can set a one-off "Custom" rule
+  // without a migration; it's descriptive only — the winner is always decided
+  // by the higher multiplier.
+  matchRule       String              @default("Bonus Buy") @map("match_rule")
   seeding         SlotWorldCupSeeding @default(RANDOM)
   currentRound    Int                 @default(0) @map("current_round")
   totalRounds     Int                 @map("total_rounds")
@@ -1218,6 +1232,7 @@ model SlotWorldCupNomination {
   kickUsername   String   @map("kick_username")
   slotName       String   @map("slot_name")
   normalizedName String   @map("normalized_name")
+  status         SlotWorldCupNominationStatus @default(PENDING)
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
@@ -1225,6 +1240,7 @@ model SlotWorldCupNomination {
 
   @@unique([tournamentId, kickUsername])
   @@index([tournamentId, normalizedName])
+  @@index([tournamentId, status])
   @@map("slot_world_cup_nominations")
 }
 
