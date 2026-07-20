@@ -33,6 +33,8 @@ router.post('/:id/match-rule', authMiddleware, adminMiddleware, adminLim, SlotWo
 router.post('/:id/reset', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.reset);
 router.post('/matches/:matchId/result', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.submitMatchResult);
 router.post('/:id/cancel', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.cancel);
+router.post('/:id/finish', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.finish);
+router.delete('/:id', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.remove);
 router.post('/:id/config', authMiddleware, adminMiddleware, adminLim, SlotWorldCupController.updateConfig);
 
 export default router;

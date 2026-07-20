@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { slotWorldCupApi } from "@/lib/api/slotWorldCup";
 import SlotWorldCupBracket from "@/components/SlotWorldCupBracket";
+import SlotWorldCupCelebration from "@/components/SlotWorldCupCelebration";
 import {
   SlotWorldCup,
   SlotWorldCupStatus,
@@ -264,6 +265,15 @@ export default function SlotWorldCupPage() {
 
             {tournament.status === SlotWorldCupStatus.NOMINATION && (
               <NominationPanel tournament={tournament} rankings={rankings} onNominate={handleNominate} user={user} actionLoading={actionLoading} />
+            )}
+
+            {tournament.status === SlotWorldCupStatus.COMPLETED && (
+              <div className="mb-6">
+                <SlotWorldCupCelebration
+                  title={tournament.title}
+                  champion={tournament.slots?.find((s) => s.id === tournament.championSlotId) ?? null}
+                />
+              </div>
             )}
 
             {[SlotWorldCupStatus.BRACKET_SET, SlotWorldCupStatus.PREDICTIONS_OPEN, SlotWorldCupStatus.IN_PROGRESS, SlotWorldCupStatus.COMPLETED].includes(tournament.status) && (

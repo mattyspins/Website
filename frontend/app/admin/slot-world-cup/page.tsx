@@ -7,6 +7,8 @@ import { getSocket } from "@/lib/socket";
 import { slotWorldCupApi } from "@/lib/api/slotWorldCup";
 import { SlotWorldCup, SlotWorldCupStatus, SlotWorldCupNominationRanking, SlotWorldCupLeaderboardEntry } from "@/types/slotWorldCup";
 import SlotWorldCupBracket from "@/components/SlotWorldCupBracket";
+import SlotWorldCupCelebration from "@/components/SlotWorldCupCelebration";
+import SlotWorldCupFinishModal from "@/components/admin/SlotWorldCupFinishModal";
 import SlotPicker from "@/components/SlotPicker";
 import { SLOT_GAMES } from "@/lib/slotGames";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -70,6 +72,15 @@ export default function AdminSlotWorldCupPage() {
   // stored order so the list still re-sorts naturally as new votes arrive.
   const [shuffleSeed, setShuffleSeed] = useState(0);
   const [matchResults, setMatchResults] = useState<Record<string, { betA: string; payoutA: string; betB: string; payoutB: string }>>({});
+  const [showFinishModal, setShowFinishModal] = useState(false);
+  const [finishing, setFinishing] = useState(false);
+  // Set once the admin confirms rewards and the tournament is actually
+  // COMPLETED, so the celebration replaces the control room without waiting
+  // on the next poll — `load()` stops treating a COMPLETED tournament as
+  // "active", so without this the page would just jump straight to the
+  // create-tournament form the instant it finished.
+  const [completedView, setCompletedView] = useState<SlotWorldCup | null>(null);
+  const [completedLeaderboard, setCompletedLeaderboard] = useState<SlotWorldCupLeaderboardEntry[]>([]);
 
   const updateMatchResult = (matchId: string, field: "betA" | "payoutA" | "betB" | "payoutB", value: string) => {
     setMatchResults((prev) => {
@@ -110,12 +121,29 @@ export default function AdminSlotWorldCupPage() {
     const socket = getSocket();
     socket.emit("joinSlotWorldCup", active.id);
     const onUpdate = (updated: SlotWorldCup) => { if (updated.id === active.id) load(); };
+    // Fires when ANY admin session finishes the tournament — including someone
+    // else's tab. Without this, a second open admin tab would just see the
+    // tournament silently vanish into history rather than showing the result.
+    const onCompleted = async (payload: { tournamentId: string }) => {
+      if (payload.tournamentId !== active.id) return;
+      try {
+        const [full, lb] = await Promise.all([
+          slotWorldCupApi.getById(payload.tournamentId),
+          slotWorldCupApi.getLeaderboard(payload.tournamentId),
+        ]);
+        setCompletedView(full);
+        setCompletedLeaderboard(lb);
+      } catch { /* ignore — next manual refresh will pick it up */ }
+      load();
+    };
     socket.on("slotWorldCup:updated", onUpdate);
     socket.on("slotWorldCup:nominationsUpdated", () => slotWorldCupApi.getNominations(active.id).then(setRankings).catch(() => {}));
+    socket.on("slotWorldCup:completed", onCompleted);
     return () => {
       socket.emit("leaveSlotWorldCup", active.id);
       socket.off("slotWorldCup:updated", onUpdate);
       socket.off("slotWorldCup:nominationsUpdated");
+      socket.off("slotWorldCup:completed", onCompleted);
     };
   }, [authed, active?.id, load]);
 
@@ -142,6 +170,42 @@ export default function AdminSlotWorldCupPage() {
     return withAction(async () => {
       await slotWorldCupApi.submitMatchResult(matchId, betA, payoutA, betB, payoutB);
       setMatchResults((prev) => { const next = { ...prev }; delete next[matchId]; return next; });
+    });
+  };
+
+  // The final's winner is visible on the bracket the instant it's decided, but
+  // the tournament itself stays open until the admin explicitly ends it (see
+  // finishTournament on the backend) — so this is "is there a decided final
+  // waiting on that action", not "is the tournament over".
+  const finalMatch = active?.matches?.find((m) => m.round === active.totalRounds);
+  const readyToFinish = !!active && !!finalMatch?.winnerId && !active.championSlotId;
+  const pendingChampion = readyToFinish
+    ? active?.slots?.find((s) => s.id === finalMatch!.winnerId) ?? null
+    : null;
+
+  const handleFinish = async (rewards: { "1": number; "2": number; "3": number }) => {
+    if (!active) return;
+    setFinishing(true);
+    try {
+      const finished = await slotWorldCupApi.finish(active.id, rewards);
+      const lb = await slotWorldCupApi.getLeaderboard(active.id);
+      setCompletedView(finished);
+      setCompletedLeaderboard(lb);
+      setShowFinishModal(false);
+      success("World Cup complete!", `${pendingChampion?.slotName ?? "The champion"} takes the crown.`);
+      load();
+    } catch (e: any) {
+      toastError("Couldn't end the tournament", e.message || "Something went wrong.");
+    } finally {
+      setFinishing(false);
+    }
+  };
+
+  const handleDeleteTournament = (t: SlotWorldCup) => {
+    if (!window.confirm(`Permanently delete "${t.title}"? This can't be undone.`)) return;
+    withAction(async () => {
+      await slotWorldCupApi.remove(t.id);
+      setTournaments((prev) => prev.filter((x) => x.id !== t.id));
     });
   };
 
@@ -282,7 +346,40 @@ export default function AdminSlotWorldCupPage() {
         <p className="text-gray-500 text-sm mt-0.5">Nominate, seed, and run the community slot bracket tournament.</p>
       </div>
 
-      {!active ? (
+      {completedView ? (
+        <div className="space-y-6">
+          <SlotWorldCupCelebration
+            title={completedView.title}
+            champion={completedView.slots?.find((s) => s.id === completedView.championSlotId) ?? null}
+          >
+            <button
+              onClick={() => { setCompletedView(null); setCompletedLeaderboard([]); load(); }}
+              className="px-5 py-2.5 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 text-sm"
+            >
+              Start New Tournament
+            </button>
+          </SlotWorldCupCelebration>
+
+          <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5">
+            <h3 className="text-white font-semibold mb-3">Final Leaderboard</h3>
+            {completedLeaderboard.length === 0 ? (
+              <p className="text-white/30 text-sm text-center py-6">No predictions were submitted.</p>
+            ) : (
+              <div className="space-y-1">
+                {completedLeaderboard.slice(0, 10).map((e) => (
+                  <div key={e.userId} className="flex items-center gap-3 text-sm px-3 py-1.5 bg-white/3 rounded-lg">
+                    <span className="w-6 text-center font-bold text-yellow-400">
+                      {e.rank === 1 ? "🥇" : e.rank === 2 ? "🥈" : e.rank === 3 ? "🥉" : e.rank}
+                    </span>
+                    <span className="flex-1 text-white">{e.displayName}</span>
+                    <span className="text-white/50">{e.score} pts</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : !active ? (
         <div className="bg-navy-800/60 border border-white/6 rounded-xl p-6 max-w-md">
           <h2 className="text-white font-semibold mb-4">Create Tournament</h2>
           <input
@@ -319,6 +416,27 @@ export default function AdminSlotWorldCupPage() {
               Cancel Tournament
             </button>
           </div>
+
+          {/* The final is decided the moment its match is scored, but the
+              tournament stays open until this is confirmed — an admin always
+              gets a deliberate moment to set the payout before coins go out. */}
+          {readyToFinish && (
+            <div className="relative overflow-hidden bg-gradient-to-r from-yellow-400/15 via-yellow-400/5 to-transparent border border-yellow-400/30 rounded-xl p-5 flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl" aria-hidden="true">🏆</span>
+                <div>
+                  <p className="text-white font-bold">
+                    Final decided — <span className="text-yellow-300">{pendingChampion?.slotName ?? "a champion"}</span> won!
+                  </p>
+                  <p className="text-white/50 text-xs mt-0.5">End the World Cup to crown the champion and pay out rewards.</p>
+                </div>
+              </div>
+              <button onClick={() => setShowFinishModal(true)} disabled={actionLoading}
+                className="px-5 py-2.5 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 disabled:opacity-40 text-sm shrink-0">
+                End World Cup
+              </button>
+            </div>
+          )}
 
           {/* ─── Control room ────────────────────────────────────────────────
               Two columns: run-the-show controls on the left, the live chat
@@ -532,18 +650,55 @@ export default function AdminSlotWorldCupPage() {
         </div>
       )}
 
-      {tournaments.filter((t) => t.status === SlotWorldCupStatus.COMPLETED).length > 0 && (
-        <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5">
-          <h3 className="text-white font-semibold mb-3">Past Tournaments</h3>
-          <div className="space-y-1">
-            {tournaments.filter((t) => t.status === SlotWorldCupStatus.COMPLETED).map((t) => (
-              <div key={t.id} className="flex items-center gap-3 text-sm px-3 py-1.5 bg-white/3 rounded-lg">
-                <span className="flex-1 text-white">{t.title}</span>
-                <span className="text-white/40 text-xs">{t.size} slots · {new Date(t.createdAt).toLocaleDateString()}</span>
-              </div>
-            ))}
+      {(() => {
+        const past = tournaments.filter(
+          (t) => t.status === SlotWorldCupStatus.COMPLETED || t.status === SlotWorldCupStatus.CANCELLED
+        );
+        if (past.length === 0) return null;
+        return (
+          <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5">
+            <h3 className="text-white font-semibold mb-3">Past Tournaments</h3>
+            <div className="space-y-1">
+              {past.map((t) => (
+                <div key={t.id} className="flex items-center gap-3 text-sm px-3 py-1.5 bg-white/3 rounded-lg">
+                  <span
+                    className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 ${
+                      t.status === SlotWorldCupStatus.COMPLETED
+                        ? "bg-yellow-400/15 text-yellow-300"
+                        : "bg-red-500/15 text-red-300"
+                    }`}
+                  >
+                    {t.status === SlotWorldCupStatus.COMPLETED ? "Completed" : "Cancelled"}
+                  </span>
+                  <span className="flex-1 text-white truncate">{t.title}</span>
+                  <span className="text-white/40 text-xs shrink-0">{t.size} slots · {new Date(t.createdAt).toLocaleDateString()}</span>
+                  <button
+                    onClick={() => handleDeleteTournament(t)}
+                    disabled={actionLoading}
+                    aria-label={`Delete ${t.title}`}
+                    className="shrink-0 text-white/30 hover:text-red-400 disabled:opacity-40 px-1.5 py-0.5 text-xs font-semibold"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        );
+      })()}
+
+      {showFinishModal && active && (
+        <SlotWorldCupFinishModal
+          championName={pendingChampion?.slotName ?? "the champion"}
+          defaults={{
+            first: String(active.rewardConfig?.ranks?.["1"] ?? 10000),
+            second: String(active.rewardConfig?.ranks?.["2"] ?? 5000),
+            third: String(active.rewardConfig?.ranks?.["3"] ?? 2500),
+          }}
+          onConfirm={handleFinish}
+          onCancel={() => setShowFinishModal(false)}
+          loading={finishing}
+        />
       )}
     </div>
   );

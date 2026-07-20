@@ -153,6 +153,21 @@ export class SlotWorldCupController {
     res.json({ success: true, tournament: await SlotWorldCupService.cancel(req.params.id) });
   });
 
+  static finish = asyncHandler(async (req, res) => {
+    const { rewards } = req.body;
+    if (!rewards || typeof rewards !== 'object' || Array.isArray(rewards)) {
+      res.status(400).json({ error: 'rewards is required, e.g. { "1": 10000, "2": 5000, "3": 2500 }' });
+      return;
+    }
+    const tournament = await SlotWorldCupService.finishTournament(req.params.id, rewards, _io);
+    res.json({ success: true, tournament });
+  });
+
+  static remove = asyncHandler(async (req, res) => {
+    await SlotWorldCupService.deleteTournament(req.params.id);
+    res.json({ success: true });
+  });
+
   static updateConfig = asyncHandler(async (req, res) => {
     const { scoringConfig, rewardConfig } = req.body;
     res.json({ success: true, tournament: await SlotWorldCupService.updateConfig(req.params.id, scoringConfig, rewardConfig) });

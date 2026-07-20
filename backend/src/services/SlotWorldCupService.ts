@@ -503,6 +503,26 @@ export class SlotWorldCupService {
     });
   }
 
+  /**
+   * Permanently remove a finished tournament from the history list.
+   *
+   * Restricted to CANCELLED/COMPLETED — an active tournament (nominating,
+   * bracketed, or mid-prediction) has real viewer participation riding on it,
+   * so deleting it needs to go through Cancel first rather than disappear in
+   * one click. Cascades to its nominations/slots/matches/predictions.
+   */
+  static async deleteTournament(tournamentId: string) {
+    const tournament = await prisma.slotWorldCup.findUnique({ where: { id: tournamentId } });
+    if (!tournament) throw createError.notFound('Tournament not found');
+    if (
+      tournament.status !== SlotWorldCupStatus.CANCELLED &&
+      tournament.status !== SlotWorldCupStatus.COMPLETED
+    ) {
+      throw createError.badRequest('Cancel or finish this tournament before deleting it');
+    }
+    await prisma.slotWorldCup.delete({ where: { id: tournamentId } });
+  }
+
   static async updateConfig(tournamentId: string, scoringConfig?: Partial<ScoringConfig>, rewardConfig?: Partial<RewardConfig>) {
     const tournament = await prisma.slotWorldCup.findUnique({ where: { id: tournamentId } });
     if (!tournament) throw createError.notFound('Tournament not found');
@@ -675,10 +695,13 @@ export class SlotWorldCupService {
       await this.scorePredictionsForMatch(tournament.id, match.round, match.matchNumber, winnerId, tournament);
     }
 
-    const isFinal = match.round === tournament.totalRounds;
-    if (isFinal) {
-      await this.completeTournament(tournament.id, winnerId, loserId, io);
-    }
+    // Deciding the final does NOT auto-complete the tournament — that used to
+    // happen here, but it meant the tournament vanished into history the
+    // instant the last match was scored, before the admin had any chance to
+    // set rewards. The final's winner is visible on the bracket immediately
+    // (it's just match.winnerId); finishTournament() below is what the admin
+    // triggers explicitly, and it's the only thing that sets championSlotId /
+    // COMPLETED.
 
     const updated = await this.getById(tournament.id);
     io?.to(`slotWorldCup:${tournament.id}`).emit('slotWorldCup:updated', updated);
@@ -726,7 +749,55 @@ export class SlotWorldCupService {
     );
   }
 
-  private static async completeTournament(tournamentId: string, championId: string, runnerUpId: string | null, io?: SocketIOServer) {
+  /**
+   * Admin-triggered: ends the tournament, crowns the champion, and pays out the
+   * rewards the admin just entered for 1st/2nd/3rd (or however many ranks they
+   * set — the mapping is whatever `rewards` contains).
+   *
+   * Requires the final match to already have a winner — deciding the final only
+   * records that match's result; it does not by itself end the tournament, so an
+   * admin always gets a deliberate moment to set the payout before the board is
+   * final and coins go out.
+   */
+  static async finishTournament(
+    tournamentId: string,
+    rewards: Record<string, number>,
+    io?: SocketIOServer
+  ) {
+    const tournament = await this.requireStatus(tournamentId, [
+      SlotWorldCupStatus.IN_PROGRESS,
+      SlotWorldCupStatus.PREDICTIONS_OPEN,
+    ]);
+
+    const final = await prisma.slotWorldCupMatch.findFirst({
+      where: { tournamentId, round: tournament.totalRounds },
+    });
+    if (!final?.winnerId) {
+      throw createError.badRequest('Decide the final match before ending the tournament');
+    }
+    const championId = final.winnerId;
+    const runnerUpId = [final.slotAId, final.slotBId].find((id) => id && id !== championId) ?? null;
+
+    const ranks: Record<string, number> = {};
+    for (const [rank, coins] of Object.entries(rewards)) {
+      const n = Number(coins);
+      if (!Number.isFinite(n) || n < 0) {
+        throw createError.badRequest(`Reward for rank ${rank} must be a non-negative number`);
+      }
+      if (n > 0) ranks[rank] = Math.round(n);
+    }
+
+    await this.completeTournament(tournamentId, championId, runnerUpId, { ranks }, io);
+    return this.getById(tournamentId);
+  }
+
+  private static async completeTournament(
+    tournamentId: string,
+    championId: string,
+    runnerUpId: string | null,
+    rewardConfig: RewardConfig,
+    io?: SocketIOServer
+  ) {
     const tournament = await prisma.slotWorldCup.findUnique({ where: { id: tournamentId } });
     if (!tournament) return;
     const config = tournament.scoringConfig as unknown as ScoringConfig;
@@ -747,6 +818,10 @@ export class SlotWorldCupService {
           championSlotId: championId,
           runnerUpSlotId: runnerUpId,
           closedAt: new Date(),
+          // Record what the admin actually decided to pay, not the tournament's
+          // creation-time default — this is what the leaderboard/export shows
+          // afterward, and what the payout loop below reads.
+          rewardConfig: rewardConfig as unknown as Prisma.InputJsonValue,
         },
       }),
       ...predictions.map((p) => {
@@ -758,7 +833,6 @@ export class SlotWorldCupService {
     ]);
 
     const leaderboard = await this.getLeaderboard(tournamentId);
-    const rewardConfig = tournament.rewardConfig as unknown as RewardConfig;
     for (const entry of leaderboard) {
       const coins = rewardConfig.ranks[String(entry.rank)];
       if (!coins) continue;

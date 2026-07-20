@@ -110,4 +110,19 @@ export const slotWorldCupApi = {
     const data = await api.post(`/api/slot-world-cup/${id}/cancel`);
     return data.tournament;
   },
+
+  // Ends the tournament and pays out the ranks the admin just entered, e.g.
+  // { "1": 10000, "2": 5000, "3": 2500 }. Requires the final match to already
+  // have a winner — deciding the final only records that match's result, it
+  // does not end the tournament by itself.
+  finish: async (id: string, rewards: Record<string, number>): Promise<SlotWorldCup> => {
+    const data = await api.post(`/api/slot-world-cup/${id}/finish`, { rewards });
+    return data.tournament;
+  },
+
+  // Only valid for CANCELLED/COMPLETED tournaments — the backend refuses an
+  // active one so a live event can't disappear in one click.
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/api/slot-world-cup/${id}`);
+  },
 };
