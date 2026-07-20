@@ -122,21 +122,24 @@ export class AuthController {
           `Discord authentication successful for user: ${user.displayName}`
         );
 
-        // The session is issued purely as httpOnly cookies. Page JS can't read
-        // them, so an XSS can't steal the session.
+        // Issue the session as httpOnly cookies. These are the tokens the API
+        // will prefer from here on (see extractAccessToken), and page JS can't
+        // read them — so an XSS can't steal the session.
         //
-        // The tokens are deliberately NOT in the redirect URL: a URL leaks into
-        // browser history, Referer headers and access logs, which would undo the
-        // point of httpOnly cookies. Only non-sensitive profile fields are passed
-        // so the frontend can paint the navbar without waiting on /auth/me.
+        // The query-string tokens below are retained only so the existing
+        // localStorage-based frontend keeps working during the migration.
+        // NOTE: tokens in a URL leak into browser history, Referer headers and
+        // access logs — once the frontend reads auth from cookies, drop the
+        // access_token/refresh_token params and redirect to a bare
+        // `/auth/callback`.
         setAuthCookies(res, tokens);
 
-        // Redirect to frontend
+        // Redirect to frontend with tokens
         // Use the first CORS origin for redirects (in case multiple are configured)
         const corsOrigins =
           process.env['CORS_ORIGIN'] || 'http://localhost:3000';
         const frontendUrl = corsOrigins.split(',')[0].trim();
-        const callbackUrl = `${frontendUrl}/auth/callback?user_id=${encodeURIComponent(user.id)}&display_name=${encodeURIComponent(user.displayName)}&is_admin=${user.isAdmin}&is_moderator=${user.isModerator}&avatar=${encodeURIComponent(user.avatar || '')}`;
+        const callbackUrl = `${frontendUrl}/auth/callback?access_token=${encodeURIComponent(tokens.accessToken)}&refresh_token=${encodeURIComponent(tokens.refreshToken)}&user_id=${encodeURIComponent(user.id)}&display_name=${encodeURIComponent(user.displayName)}&is_admin=${user.isAdmin}&is_moderator=${user.isModerator}&avatar=${encodeURIComponent(user.avatar || '')}`;
 
         res.redirect(callbackUrl);
       } catch (error) {

@@ -23,15 +23,13 @@
  *   foreign domain (*.up.railway.app) means every call below is unauthenticated
  *   no matter what CORS says. See baseCookieOptions in backend middleware/auth.ts.
  *
- * MIGRATION COMPLETE. Every call site goes through this helper, `storeAuthData()`
- * no longer writes the JWTs (only non-sensitive user info + a refresh deadline),
- * and the OAuth callback no longer carries tokens in its URL. The tokens now
- * exist only as httpOnly cookies, so page JavaScript cannot read them at all.
- *
- * Don't reintroduce a token getter or an `Authorization: Bearer` header on the
- * frontend — it can only ever send null now, and it would re-open the exact
- * exposure this removed. The server still accepts Bearer for non-browser
- * clients; browsers authenticate by cookie.
+ * MIGRATION — step 1 of 2 is DONE: every call site now goes through this helper
+ * and no page code reads the token. What remains, and must land together:
+ *   1. `storeAuthData()` stops writing access_token/refresh_token (authPersistence.ts).
+ *   2. `AuthController` stops putting tokens in the /auth/callback redirect URL,
+ *      and `callback/page.tsx` stops reading them.
+ * Until then the tokens are still written to localStorage — they are simply
+ * unused, so the XSS exposure remains until step 2 removes them.
  */
 
 type FetchArgs = Parameters<typeof fetch>;
