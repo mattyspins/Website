@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
-import { isAuthenticated } from "@/lib/authPersistence";
 import { getSocket } from "@/lib/socket";
 import { slotWorldCupApi } from "@/lib/api/slotWorldCup";
 import { SlotWorldCup, SlotWorldCupStatus, SlotWorldCupNominationRanking, SlotWorldCupLeaderboardEntry } from "@/types/slotWorldCup";
@@ -47,10 +45,11 @@ export default function AdminSlotWorldCupPage() {
   };
 
   useEffect(() => {
-    if (!isAuthenticated()) { router.push("/"); return; }
-    authFetch(API_ENDPOINTS.AUTH_ME)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (!d?.user?.isAdmin) router.push("/"); else setAuthed(true); })
+    const token = localStorage.getItem("access_token");
+    if (!token) { router.push("/"); return; }
+    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => { if (!d.user?.isAdmin) router.push("/"); else setAuthed(true); })
       .catch(() => router.push("/"));
   }, [router]);
 
