@@ -7,6 +7,8 @@ import { getSocket } from "@/lib/socket";
 import { slotWorldCupApi } from "@/lib/api/slotWorldCup";
 import { SlotWorldCup, SlotWorldCupStatus, SlotWorldCupNominationRanking, SlotWorldCupLeaderboardEntry } from "@/types/slotWorldCup";
 import SlotWorldCupBracket from "@/components/SlotWorldCupBracket";
+import SlotPicker from "@/components/SlotPicker";
+import { SLOT_GAMES } from "@/lib/slotGames";
 import { useToast } from "@/components/ui/ToastProvider";
 
 function roundLabel(round: number, totalRounds: number): string {
@@ -179,13 +181,23 @@ export default function AdminSlotWorldCupPage() {
 
               <div className="border-t border-white/8 pt-4">
                 <p className="text-xs text-gray-500 mb-2">Add a slot manually (bypasses voting):</p>
-                <div className="flex gap-2 mb-4">
-                  <input value={manualSlot} onChange={(e) => setManualSlot(e.target.value)} placeholder="Slot name"
-                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30" />
-                  <button onClick={() => withAction(async () => { await slotWorldCupApi.addSlot(active.id, manualSlot.trim()); setManualSlot(""); })}
+                <div className="mb-4">
+                  {/* Same catalogue picker the other stream games use, so the name
+                      matches slot.report exactly instead of being free-typed. */}
+                  <SlotPicker value={manualSlot} onChange={setManualSlot} disabled={actionLoading}
+                    placeholder="Search for a slot…" />
+                  <button
+                    onClick={() => withAction(async () => {
+                      const name = manualSlot.trim();
+                      // Carry the catalogue's provider + art through when the pick is a
+                      // known slot; a free-typed name just sends the name.
+                      const game = SLOT_GAMES.find((g) => g.name === name);
+                      await slotWorldCupApi.addSlot(active.id, name, game?.provider, game?.image);
+                      setManualSlot("");
+                    })}
                     disabled={actionLoading || !manualSlot.trim()}
-                    className="px-4 py-2 bg-white/8 hover:bg-white/12 text-white rounded-lg text-sm disabled:opacity-40">
-                    Add
+                    className="w-full mt-2 px-4 py-2 bg-white/8 hover:bg-white/12 text-white rounded-lg text-sm disabled:opacity-40">
+                    Add slot
                   </button>
                 </div>
 
