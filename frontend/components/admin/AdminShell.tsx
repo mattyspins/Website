@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useToast } from "@/components/ui/ToastProvider";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
-import { isAuthenticated } from "@/lib/authPersistence";
 import AdminSidebar from "./AdminSidebar";
 import AdminTopNav from "./AdminTopNav";
 
@@ -21,10 +19,13 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     const checkAdminAccess = async () => {
-      if (!isAuthenticated()) { router.push("/"); return; }
+      const accessToken = localStorage.getItem("access_token");
+      if (!accessToken) { router.push("/"); return; }
 
       try {
-        const res = await authFetch(API_ENDPOINTS.AUTH_ME);
+        const res = await fetch(API_ENDPOINTS.AUTH_ME, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
         if (res.ok) {
           const data = await res.json();
           if (!data.user?.isAdmin) {

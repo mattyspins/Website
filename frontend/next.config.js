@@ -22,11 +22,9 @@ const nextConfig = {
     ignoreDuringBuilds: false,
   },
   env: {
-    // Must stay same-site with the frontend (mattyspins.com): the auth cookies
-    // are SameSite=lax, so a foreign API domain is never sent them and every
-    // authenticated request 401s. See backend middleware/auth.ts.
     NEXT_PUBLIC_API_URL:
-      process.env.NEXT_PUBLIC_API_URL || "https://api.mattyspins.com",
+      process.env.NEXT_PUBLIC_API_URL ||
+      "https://website-production-ece1.up.railway.app",
   },
 };
 

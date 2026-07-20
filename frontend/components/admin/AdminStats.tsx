@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
-import { isAuthenticated } from "@/lib/authPersistence";
 import { Users, Coins, Ticket, Clock, UserCheck, AlertTriangle, Activity, Link2 } from "lucide-react";
 
 interface Stats {
@@ -51,13 +49,15 @@ export default function AdminStats() {
   useEffect(() => { loadAll(); }, []);
 
   const loadAll = async () => {
-    if (!isAuthenticated()) return;
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    const headers = { Authorization: `Bearer ${token}` };
 
     try {
       const [statsRes, claimsRes, rafflesRes] = await Promise.all([
-        authFetch(API_ENDPOINTS.ADMIN_STATS),
-        authFetch(API_ENDPOINTS.MILESTONES_CLAIMS_ADMIN),
-        authFetch(API_ENDPOINTS.RAFFLES_ADMIN_ALL),
+        fetch(API_ENDPOINTS.ADMIN_STATS, { headers }),
+        fetch(API_ENDPOINTS.MILESTONES_CLAIMS_ADMIN, { headers }),
+        fetch(API_ENDPOINTS.RAFFLES_ADMIN_ALL, { headers }),
       ]);
 
       if (statsRes.ok) {

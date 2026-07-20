@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
 import { CheckCircle, XCircle, Clock, RefreshCw } from "lucide-react";
 
 interface Claim {
@@ -32,10 +31,14 @@ export default function AdminMilestoneClaims() {
 
   useEffect(() => { loadClaims(); }, []);
 
+  const token = () => localStorage.getItem("access_token") ?? "";
+
   const loadClaims = async () => {
     setLoading(true);
     try {
-      const res = await authFetch(API_ENDPOINTS.MILESTONES_CLAIMS_ADMIN);
+      const res = await fetch(API_ENDPOINTS.MILESTONES_CLAIMS_ADMIN, {
+        headers: { Authorization: `Bearer ${token()}` },
+      });
       const d = await res.json();
       if (d.success) setClaims(d.claims);
     } catch { /* ignore */ } finally { setLoading(false); }
@@ -44,9 +47,9 @@ export default function AdminMilestoneClaims() {
   const handleAction = async (claimId: string, status: "approved" | "rejected") => {
     setActioning(claimId);
     try {
-      const res = await authFetch(API_ENDPOINTS.MILESTONES_CLAIM_UPDATE(claimId), {
+      const res = await fetch(API_ENDPOINTS.MILESTONES_CLAIM_UPDATE(claimId), {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
         body: JSON.stringify({ status }),
       });
       if (res.ok) {

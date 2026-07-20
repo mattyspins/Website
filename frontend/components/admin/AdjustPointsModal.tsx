@@ -4,7 +4,6 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Coins, Loader2, X } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
 import { useToast } from "@/components/ui/ToastProvider";
 
 interface AdjustPointsModalProps {
@@ -33,12 +32,13 @@ export default function AdjustPointsModal({ userIds, userLabel, onClose, onSucce
       return;
     }
 
+    const token = localStorage.getItem("access_token");
     setLoading(true);
     try {
       const isBulk = userIds.length > 1;
-      const res = await authFetch(isBulk ? API_ENDPOINTS.ADMIN_USERS_BULK_POINTS : API_ENDPOINTS.ADMIN_USER_POINTS(userIds[0]), {
+      const res = await fetch(isBulk ? API_ENDPOINTS.ADMIN_USERS_BULK_POINTS : API_ENDPOINTS.ADMIN_USER_POINTS(userIds[0]), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(isBulk ? { userIds, amount: amountNum, reason } : { amount: amountNum, reason }),
       });
       if (res.ok) {

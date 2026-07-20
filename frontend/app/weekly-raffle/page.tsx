@@ -5,8 +5,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Gift, Users, Clock, CheckCircle2, XCircle, Trophy, Link2 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
-import { isAuthenticated } from "@/lib/authPersistence";
 import { weeklyRaffleApi, WeeklyRaffle, WeeklyRaffleEligibility } from "@/lib/api/weeklyRaffle";
 import { isoWeekNumber } from "@/lib/weekNumber";
 
@@ -44,11 +42,12 @@ export default function WeeklyRafflePage() {
   const remainingMs = useCountdown(raffle?.weekEnd ?? null);
 
   useEffect(() => {
-    if (!isAuthenticated()) {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
       setCheckedAuth(true);
       return;
     }
-    authFetch(API_ENDPOINTS.AUTH_ME)
+    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((d) => setAuthed(!!d.user))
       .catch(() => setAuthed(false))

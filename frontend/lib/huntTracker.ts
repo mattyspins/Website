@@ -1,5 +1,4 @@
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
 
 export type Currency = "USD" | "EUR" | "GBP" | "CAD" | "AUD";
 export type BadgeType = "none" | "super_bonus" | "five_scatter" | "custom";
@@ -73,6 +72,11 @@ export function deleteHunt(id: string): void {
    these functions keep it in sync with the backend so every
    admin/mod sees hunts created on other devices/browsers. ── */
 
+function authHeaders(): HeadersInit {
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 function fromServerHunt(h: any): Hunt {
   return {
     id: h.id,
@@ -91,7 +95,7 @@ function fromServerHunt(h: any): Hunt {
 /** Pulls every hunt from the server and merges it into local storage (server wins per-id). */
 export async function syncHuntsFromServer(): Promise<Hunt[]> {
   try {
-    const res = await authFetch(API_ENDPOINTS.HUNTS);
+    const res = await fetch(API_ENDPOINTS.HUNTS, { headers: authHeaders() });
     if (!res.ok) return loadHunts();
     const data = await res.json();
     const serverHunts: Hunt[] = (data.hunts ?? []).map(fromServerHunt);
@@ -110,7 +114,7 @@ export async function syncHuntsFromServer(): Promise<Hunt[]> {
 /** Fetches a single hunt from the server — used when it isn't in local storage yet (e.g. created by another admin). */
 export async function fetchHuntFromServer(id: string): Promise<Hunt | null> {
   try {
-    const res = await authFetch(API_ENDPOINTS.HUNT(id));
+    const res = await fetch(API_ENDPOINTS.HUNT(id), { headers: authHeaders() });
     if (!res.ok) return null;
     const data = await res.json();
     return data.hunt ? fromServerHunt(data.hunt) : null;
@@ -120,15 +124,15 @@ export async function fetchHuntFromServer(id: string): Promise<Hunt | null> {
 }
 
 export function pushHuntToServer(hunt: Hunt): void {
-  authFetch(API_ENDPOINTS.HUNT(hunt.id), {
+  fetch(API_ENDPOINTS.HUNT(hunt.id), {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(hunt),
   }).catch(() => {});
 }
 
 export function deleteHuntOnServer(id: string): void {
-  authFetch(API_ENDPOINTS.HUNT(id), { method: "DELETE" }).catch(() => {});
+  fetch(API_ENDPOINTS.HUNT(id), { method: "DELETE", headers: authHeaders() }).catch(() => {});
 }
 
 /* ── Computed stats ──────────────────────────────────────── */

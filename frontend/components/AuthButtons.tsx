@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import UserProfile from "./UserProfile";
 import { useToast } from "./ui/ToastProvider";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
 import { User, ShoppingBag, LayoutDashboard, LogOut } from "lucide-react";
 import {
   storeAuthData,
@@ -13,7 +12,6 @@ import {
   initializeAuth,
   clearAuthData,
   updateStoredUser,
-  isAuthenticated,
 } from "@/lib/authPersistence";
 
 interface UserData {
@@ -47,11 +45,16 @@ export default function AuthButtons({ inline = false, onNavigate }: AuthButtonsP
         return;
       }
 
-      // Fallback: check with backend if there's a session on this device
-      if (!isAuthenticated()) return;
+      // Fallback: check with backend if we have a token
+      const accessToken = localStorage.getItem("access_token");
+      if (!accessToken) return;
 
       try {
-        const response = await authFetch(API_ENDPOINTS.AUTH_ME);
+        const response = await fetch(API_ENDPOINTS.AUTH_ME, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
 
         if (response.ok) {
           const data = await response.json();
@@ -70,9 +73,12 @@ export default function AuthButtons({ inline = false, onNavigate }: AuthButtonsP
     checkAuth();
 
     const refreshBalance = async () => {
-      if (!isAuthenticated()) return;
+      const accessToken = localStorage.getItem("access_token");
+      if (!accessToken) return;
       try {
-        const response = await authFetch(API_ENDPOINTS.AUTH_ME);
+        const response = await fetch(API_ENDPOINTS.AUTH_ME, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.user) {
@@ -108,8 +114,9 @@ export default function AuthButtons({ inline = false, onNavigate }: AuthButtonsP
     // Retry once — Railway backend can have a cold-start delay
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        const response = await authFetch(API_ENDPOINTS.AUTH_DISCORD_INITIATE, {
+        const response = await fetch(API_ENDPOINTS.AUTH_DISCORD_INITIATE, {
           method: "GET",
+          credentials: "include",
         });
 
         if (!response.ok) {
@@ -152,11 +159,19 @@ export default function AuthButtons({ inline = false, onNavigate }: AuthButtonsP
   };
 
   const handleLogout = async () => {
-    // Always call the server: the session is held in an httpOnly cookie that
-    // only the server can clear. Skipping this call would clear the local UI
-    // state while leaving the user genuinely logged in.
+    const accessToken = localStorage.getItem("access_token");
+
+    // Always call the server, even with no local token: the session may be held
+    // in an httpOnly cookie that only the server can clear. Skipping this call
+    // would clear the local UI state while leaving the user genuinely logged in.
     try {
-      await authFetch(API_ENDPOINTS.AUTH_LOGOUT, { method: "POST" });
+      await fetch(API_ENDPOINTS.AUTH_LOGOUT, {
+        method: "POST",
+        credentials: "include",
+        headers: accessToken
+          ? { Authorization: `Bearer ${accessToken}` }
+          : undefined,
+      });
     } catch (err) {
       console.error("Logout error:", err);
     }

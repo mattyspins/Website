@@ -4,8 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
-import { isAuthenticated } from "@/lib/authPersistence";
 
 interface User {
   id: string;
@@ -69,8 +67,10 @@ export default function ProfilePage() {
     setCheckinLoading(true);
     setCheckinMsg(null);
     try {
-      const res = await authFetch(API_ENDPOINTS.CHECKIN_CLAIM, {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(API_ENDPOINTS.CHECKIN_CLAIM, {
         method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
       });
       const d = await res.json();
       if (d.success) {
@@ -94,9 +94,12 @@ export default function ProfilePage() {
 
     // Check daily check-in status
     const checkCheckin = async () => {
-      if (!isAuthenticated()) return;
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
       try {
-        const res = await authFetch(API_ENDPOINTS.CHECKIN_STATUS);
+        const res = await fetch(API_ENDPOINTS.CHECKIN_STATUS, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const d = await res.json();
         if (d.success) setCheckinClaimed(d.alreadyClaimed);
       } catch { /* ignore */ }
@@ -104,9 +107,12 @@ export default function ProfilePage() {
     checkCheckin();
 
     const refreshCoins = async () => {
-      if (!isAuthenticated()) return;
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
       try {
-        const res = await authFetch(API_ENDPOINTS.AUTH_ME);
+        const res = await fetch(API_ENDPOINTS.AUTH_ME, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (res.ok) {
           const data = await res.json();
           setUser((u) => u ? { ...u, points: data.user.points, totalWagered: data.user.totalWagered } : u);
@@ -131,14 +137,19 @@ export default function ProfilePage() {
   }, []);
 
   const loadProfile = async () => {
-    if (!isAuthenticated()) { router.push("/?login=required"); return; }
+    const token = localStorage.getItem("access_token");
+    if (!token) { router.push("/?login=required"); return; }
     try {
-      const res = await authFetch(API_ENDPOINTS.AUTH_ME);
+      const res = await fetch(API_ENDPOINTS.AUTH_ME, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) throw new Error();
       const data = await res.json();
       setUser(data.user);
       try {
-        const txRes = await authFetch("/api/users/transactions");
+        const txRes = await fetch("/api/users/transactions", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (txRes.ok) {
           const txData = await txRes.json();
           setTransactions(txData.transactions || []);
@@ -147,7 +158,9 @@ export default function ProfilePage() {
 
       try {
         const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-        const raffleRes = await authFetch(`${API_BASE}/api/raffles/my-history`);
+        const raffleRes = await fetch(`${API_BASE}/api/raffles/my-history`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (raffleRes.ok) {
           const raffleData = await raffleRes.json();
           setRaffleHistory(raffleData.data?.history || []);
@@ -164,9 +177,10 @@ export default function ProfilePage() {
     setKickLoading(true);
     setKickError("");
     try {
-      const res = await authFetch(API_ENDPOINTS.KICK_VERIFY_INITIATE, {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(API_ENDPOINTS.KICK_VERIFY_INITIATE, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ kickUsername: username }),
       });
       const data = await res.json();
@@ -177,7 +191,8 @@ export default function ProfilePage() {
         setKickStep("polling");
         const interval = setInterval(async () => {
           try {
-            const r = await authFetch(API_ENDPOINTS.KICK_VERIFY_STATUS);
+            const t = localStorage.getItem("access_token");
+            const r = await fetch(API_ENDPOINTS.KICK_VERIFY_STATUS, { headers: { Authorization: `Bearer ${t}` } });
             const d = await r.json();
             if (d.verified) {
               clearInterval(interval);
@@ -206,9 +221,10 @@ export default function ProfilePage() {
     setKickLoading(true);
     setKickError("");
     try {
-      const res = await authFetch(API_ENDPOINTS.KICK_VERIFY_INITIATE, {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(API_ENDPOINTS.KICK_VERIFY_INITIATE, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ kickUsername: kickUsernameInput.trim() }),
       });
       const data = await res.json();
@@ -220,7 +236,10 @@ export default function ProfilePage() {
         setKickStep("polling");
         const interval = setInterval(async () => {
           try {
-            const r = await authFetch(API_ENDPOINTS.KICK_VERIFY_STATUS);
+            const t = localStorage.getItem("access_token");
+            const r = await fetch(API_ENDPOINTS.KICK_VERIFY_STATUS, {
+              headers: { Authorization: `Bearer ${t}` },
+            });
             const d = await r.json();
             if (d.verified) {
               clearInterval(interval);
@@ -255,9 +274,11 @@ export default function ProfilePage() {
   const handleUnlinkKick = async () => {
     if (!confirm("Unlink your Kick account?")) return;
     try {
-      await authFetch(API_ENDPOINTS.KICK_OAUTH_UNLINK, {
+      const token = localStorage.getItem("access_token");
+      await fetch(API_ENDPOINTS.KICK_OAUTH_UNLINK, {
         method: "DELETE",
-        });
+        headers: { Authorization: `Bearer ${token}` },
+      });
       // Unlinking only clears verification, not the linked username — it's permanently
       // locked to this account, so keep it in local state to match the backend.
       setUser((u) => u ? { ...u, kickVerified: false } : u);
@@ -272,11 +293,12 @@ export default function ProfilePage() {
     setRazedSaving(true);
     setRazedMsg(null);
     try {
-      const res = await authFetch(
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/auth/rainbet-username`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ rainbetUsername: razedInput.trim() }),
         }
       );

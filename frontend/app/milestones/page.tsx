@@ -4,9 +4,6 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Lock, Trophy } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
-// Aliased: this component has its own `isAuthenticated` state that would shadow it.
-import { isAuthenticated as hasSession } from "@/lib/authPersistence";
 
 interface MilestoneTier {
   id: number;
@@ -43,14 +40,16 @@ export default function MilestonesPage() {
   const [claimMsgs, setClaimMsgs] = useState<Record<number, string>>({});
 
   useEffect(() => {
-    setIsAuthenticated(hasSession());
-    loadMilestones();
+    const token = localStorage.getItem("access_token");
+    setIsAuthenticated(!!token);
+    loadMilestones(token);
   }, []);
 
-  const loadMilestones = async () => {
+  const loadMilestones = async (token: string | null) => {
     try {
-      // Endpoint takes optional auth — the cookie rides along when signed in.
-      const res = await authFetch(API_ENDPOINTS.MILESTONES);
+      const res = await fetch(API_ENDPOINTS.MILESTONES, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       const data = await res.json();
       if (data.success) {
         setTiers(data.tiers);
@@ -61,12 +60,13 @@ export default function MilestonesPage() {
   };
 
   const handleClaim = async (tier: MilestoneTier) => {
-    if (!hasSession()) return;
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
     setClaiming(tier.id);
     try {
-      const res = await authFetch(API_ENDPOINTS.MILESTONES_CLAIM, {
+      const res = await fetch(API_ENDPOINTS.MILESTONES_CLAIM, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ tierId: tier.id }),
       });
       const d = await res.json();

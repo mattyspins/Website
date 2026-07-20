@@ -3,7 +3,6 @@
  * Handles persistent login sessions across browser restarts
  */
 import { API_ENDPOINTS } from "./api";
-import { authFetch } from "./authFetch";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://website-production-ece1.up.railway.app";
 
@@ -33,15 +32,12 @@ export interface StoredUser {
 /**
  * Persist the session for this device.
  *
- * MIGRATION — the two token `setItem` calls below are the last thing keeping
- * JWTs readable by page JavaScript (and therefore stealable by an XSS). Their
- * precondition is now met: no call site reads them any more (every request goes
- * through `authFetch()` on the cookie), so they are already dead weight.
- *
- * Deleting them is step 2, and it must land together with removing the tokens
- * from the OAuth redirect URL — see lib/authFetch.ts. Note `USER_INFO_KEY` and
- * `TOKEN_EXPIRY_KEY` must stay: `isAuthenticated()` and the refresh scheduler
- * are keyed off them and neither is sensitive.
+ * MIGRATION — the two `setItem` calls below are the last thing keeping JWTs
+ * readable by page JavaScript (and therefore stealable by an XSS). The API
+ * already sets httpOnly cookies on the OAuth callback, and every request path
+ * here sends `credentials: "include"`, so the tokens are redundant the moment
+ * the last direct `localStorage.getItem("access_token")` caller is migrated to
+ * `authFetch()`. Deleting these two lines is the final step — see lib/authFetch.ts.
  */
 export function storeAuthData(
   accessToken: string,
@@ -205,13 +201,11 @@ function scheduleTokenRefresh(expiresInMs: number): void {
  * Checks if tokens exist and refreshes if needed
  */
 export async function initializeAuth(): Promise<StoredUser | null> {
-  // Gated on the stored user info rather than the tokens: the session lives in
-  // an httpOnly cookie that page JS cannot see, so a token check here would
-  // report "logged out" for a perfectly good session — and would break outright
-  // once step 2 stops writing the tokens at all.
+  const accessToken = getAccessToken();
+  const refreshToken = getRefreshToken();
   const user = getStoredUser();
 
-  if (!user) {
+  if (!accessToken || !refreshToken || !user) {
     return null;
   }
 
@@ -235,9 +229,16 @@ export async function initializeAuth(): Promise<StoredUser | null> {
     }
   }
 
-  // Verify the session with the backend — the cookie authenticates this.
+  // Verify the session with the backend. credentials:"include" means this keeps
+  // working once the access token is no longer in localStorage — the cookie
+  // authenticates it.
   try {
-    const response = await authFetch(API_ENDPOINTS.AUTH_ME);
+    const response = await fetch(API_ENDPOINTS.AUTH_ME, {
+      credentials: "include",
+      headers: {
+        Authorization: `Bearer ${getAccessToken()}`,
+      },
+    });
 
     if (response.ok) {
       const data = await response.json();
@@ -247,18 +248,8 @@ export async function initializeAuth(): Promise<StoredUser | null> {
         return data.user;
       }
     }
-
-    // An explicit rejection means the session is genuinely gone. Previously the
-    // stale `user_info` was returned here, which rendered a signed-in UI that
-    // 401ed on every action; the token gate above used to mask this.
-    if (response.status === 401 || response.status === 403) {
-      clearAuthData();
-      return null;
-    }
   } catch (error) {
-    // Network/CORS failure — the session may well be fine, so fall through to
-    // the cached user rather than signing them out on a blip.
-    console.error("Session verification failed:", error);
+    console.error("Token verification failed:", error);
   }
 
   return user;

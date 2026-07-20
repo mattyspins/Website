@@ -3,8 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
-import { isAuthenticated } from "@/lib/authPersistence";
 import RaffleDrawReveal from "@/components/admin/RaffleDrawReveal";
 import { useConfirm } from "@/components/admin/useConfirm";
 
@@ -43,11 +41,13 @@ interface RaffleParticipant {
   firstPurchasedAt: string;
 }
 
-// The session cookie authenticates these calls (see lib/authFetch); the only
-// header they still need is the content type.
-const JSON_HEADERS: Record<string, string> = {
-  "Content-Type": "application/json",
-};
+function authHeaders(): Record<string, string> {
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  return token
+    ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+    : { "Content-Type": "application/json" };
+}
 
 // ─── Create Modal ──────────────────────────────────────────────────────────────
 function CreateModal({
@@ -95,9 +95,9 @@ function CreateModal({
         form.useCustomEnd && form.customEndDate
           ? new Date(form.customEndDate).toISOString()
           : new Date(Date.now() + form.durationMs).toISOString();
-      const res = await authFetch(API_ENDPOINTS.RAFFLES, {
+      const res = await fetch(API_ENDPOINTS.RAFFLES, {
         method: "POST",
-        headers: JSON_HEADERS,
+        headers: authHeaders(),
         body: JSON.stringify({
           title: form.title,
           description: form.description || undefined,
@@ -764,11 +764,14 @@ export default function AdminRafflePage() {
   const [participantsLoading, setParticipantsLoading] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated()) {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
       router.push("/");
       return;
     }
-    authFetch(API_ENDPOINTS.AUTH_ME)
+    fetch(API_ENDPOINTS.AUTH_ME, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
       .then((r) => r.json())
       .then((d) => {
         if (!d.user?.isAdmin) router.push("/");
@@ -779,8 +782,8 @@ export default function AdminRafflePage() {
 
   const loadRaffles = useCallback(async () => {
     try {
-      const res = await authFetch(API_ENDPOINTS.RAFFLES_ADMIN_ALL, {
-        headers: JSON_HEADERS,
+      const res = await fetch(API_ENDPOINTS.RAFFLES_ADMIN_ALL, {
+        headers: authHeaders(),
       });
       const data = await res.json();
       const list: Raffle[] = data.data?.raffles ?? data.raffles ?? [];
@@ -799,8 +802,8 @@ export default function AdminRafflePage() {
 
   const loadWinners = useCallback(async (raffleId: string) => {
     try {
-      const res = await authFetch(API_ENDPOINTS.RAFFLE_WINNERS(raffleId), {
-        headers: JSON_HEADERS,
+      const res = await fetch(API_ENDPOINTS.RAFFLE_WINNERS(raffleId), {
+        headers: authHeaders(),
       });
       const data = await res.json();
       setWinners(data.data?.winners ?? data.winners ?? []);
@@ -814,8 +817,8 @@ export default function AdminRafflePage() {
     setShowParticipants(true);
     setParticipantsLoading(true);
     try {
-      const res = await authFetch(API_ENDPOINTS.RAFFLE_PARTICIPANTS(selected.id), {
-        headers: JSON_HEADERS,
+      const res = await fetch(API_ENDPOINTS.RAFFLE_PARTICIPANTS(selected.id), {
+        headers: authHeaders(),
       });
       const data = await res.json();
       setParticipants(data.data?.participants ?? []);
@@ -861,9 +864,9 @@ export default function AdminRafflePage() {
     setActionLoading(true);
     setError(null);
     try {
-      const res = await authFetch(API_ENDPOINTS.RAFFLE_CANCEL(selected.id), {
+      const res = await fetch(API_ENDPOINTS.RAFFLE_CANCEL(selected.id), {
         method: "POST",
-        headers: JSON_HEADERS,
+        headers: authHeaders(),
         body: JSON.stringify({ reason: "Cancelled by admin" }),
       });
       const data = await res.json();
@@ -892,9 +895,9 @@ export default function AdminRafflePage() {
     setActionLoading(true);
     setError(null);
     try {
-      const res = await authFetch(API_ENDPOINTS.RAFFLE(id), {
+      const res = await fetch(API_ENDPOINTS.RAFFLE(id), {
         method: "DELETE",
-        headers: JSON_HEADERS,
+        headers: authHeaders(),
       });
       if (!res.ok) {
         const d = await res.json();

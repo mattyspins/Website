@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { kothApi, KothSession, KothEntry, KothRound, KothUser } from "@/lib/api/kingOfTheHill";
 import { getSocket } from "@/lib/socket";
 import { API_ENDPOINTS } from "@/lib/api";
-import { isAuthenticated } from "@/lib/authPersistence";
-import { authFetch } from "@/lib/authFetch";
 import { useConfirm } from "@/components/admin/useConfirm";
 import SlotPicker from "@/components/SlotPicker";
 
@@ -81,8 +79,9 @@ export default function AdminKingOfTheHillPage() {
 
   // Auth check
   useEffect(() => {
-    if (!isAuthenticated()) { router.push("/"); return; }
-    authFetch(API_ENDPOINTS.AUTH_ME)
+    const token = localStorage.getItem("access_token");
+    if (!token) { router.push("/"); return; }
+    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((d) => { if (!d.user?.isAdmin) router.push("/"); else setAuthLoading(false); })
       .catch(() => router.push("/"));

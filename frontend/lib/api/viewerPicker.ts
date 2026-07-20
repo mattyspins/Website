@@ -1,5 +1,4 @@
-import { api, API_URL } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
+import { api, getAuthHeaders, API_URL } from "@/lib/api";
 
 export interface PickerUser {
   id: string;
@@ -49,7 +48,7 @@ export const pickerApi = {
     api.delete(`/api/viewer-picker/entries/${entryId}`).then((d) => d.picker as ViewerPicker),
   delete: (id: string) => api.delete(`/api/viewer-picker/${id}`),
   exportParticipants: async (id: string) => {
-    const res = await authFetch(`${API_URL}/api/viewer-picker/${id}/export`);
+    const res = await fetch(`${API_URL}/api/viewer-picker/${id}/export`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error("Export failed");
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);

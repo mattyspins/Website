@@ -12,8 +12,6 @@ import {
 } from "@/types/tournament";
 import { getSocket } from "@/lib/socket";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
-import { isAuthenticated } from "@/lib/authPersistence";
 import SlotPicker, { SlotImage, VolatilityBadge } from "@/components/SlotPicker";
 import { findSlot } from "@/lib/slotGames";
 import { ArrowLeft } from "lucide-react";
@@ -220,8 +218,9 @@ export default function TournamentPage() {
   const [viewingPastId, setViewingPastId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated()) return;
-    authFetch(API_ENDPOINTS.AUTH_ME)
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json()).then((d) => { if (d.user) setUser(d.user); }).catch(() => {});
   }, []);
 

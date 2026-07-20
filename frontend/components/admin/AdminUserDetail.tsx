@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Coins, Trophy, Clock, Shield, Star, Wallet, Edit2, Check, ChevronUp, ChevronDown } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
 
 interface UserDetail {
   id: string;
@@ -64,11 +63,15 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
   const [wagerSaving, setWagerSaving] = useState(false);
   const [wagerMsg, setWagerMsg] = useState("");
 
+  const token = () => localStorage.getItem("access_token") ?? "";
+
   useEffect(() => {
     if (!userId) { setUser(null); return; }
     setLoading(true);
     setCoinsMsg(""); setWagerMsg("");
-    authFetch(API_ENDPOINTS.ADMIN_USER(userId))
+    fetch(API_ENDPOINTS.ADMIN_USER(userId), {
+      headers: { Authorization: `Bearer ${token()}` },
+    })
       .then((r) => r.json())
       .then((d) => {
         const u = d.data ?? d.user ?? d;
@@ -96,9 +99,9 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
     const body = field === "isModerator" ? { isModerator: !current }
       : field === "isVip" ? { isVip: !current }
       : { isDepositor: !current };
-    const res = await authFetch(endpoint, {
+    const res = await fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
       body: JSON.stringify(body),
     });
     if (res.ok) {
@@ -112,9 +115,9 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
     setCoinsSaving(true); setCoinsMsg("");
     const amount = coinsOp === "add" ? Math.abs(Number(coinsAmount)) : -Math.abs(Number(coinsAmount));
     try {
-      const res = await authFetch(API_ENDPOINTS.ADMIN_USER_POINTS(user.id), {
+      const res = await fetch(API_ENDPOINTS.ADMIN_USER_POINTS(user.id), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
         body: JSON.stringify({ amount, reason: coinsReason }),
       });
       if (res.ok) {
@@ -132,17 +135,17 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
     try {
       const results: string[] = [];
       if (parseFloat(newWager) !== Number(user.totalWagered)) {
-        const r = await authFetch(API_ENDPOINTS.ADMIN_USER_WAGER(user.id), {
+        const r = await fetch(API_ENDPOINTS.ADMIN_USER_WAGER(user.id), {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
           body: JSON.stringify({ totalWagered: parseFloat(newWager) }),
         });
         if (r.ok) { setUser((u) => u ? { ...u, totalWagered: newWager } : u); results.push("wagered"); }
       }
       if (parseFloat(newDeposited) !== Number(user.totalDeposited)) {
-        const r = await authFetch(API_ENDPOINTS.ADMIN_USER_DEPOSIT(user.id), {
+        const r = await fetch(API_ENDPOINTS.ADMIN_USER_DEPOSIT(user.id), {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
           body: JSON.stringify({ totalDeposited: parseFloat(newDeposited) }),
         });
         if (r.ok) { setUser((u) => u ? { ...u, totalDeposited: newDeposited } : u); results.push("deposited"); }

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/ToastProvider";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
 import { Star, UserCheck, ArrowRight, Coins } from "lucide-react";
 import UsersFilters, { UserFilterState } from "./UsersFilters";
 import UsersBulkActions from "./UsersBulkActions";
@@ -74,7 +73,8 @@ export default function UsersTable() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [adjustUser, setAdjustUser] = useState<User | null>(null);
 
-  const jsonHeaders = { "Content-Type": "application/json" };
+  const token = () => localStorage.getItem("access_token") ?? "";
+  const authHeaders = () => ({ "Content-Type": "application/json", Authorization: `Bearer ${token()}` });
 
   const buildFilterParams = useCallback(() => {
     const params = new URLSearchParams();
@@ -100,7 +100,7 @@ export default function UsersTable() {
       params.set("sortOrder", sortOrder);
       if (query) params.set("query", query);
 
-      const res = await authFetch(`${API_ENDPOINTS.ADMIN_USERS_SEARCH}?${params}`);
+      const res = await fetch(`${API_ENDPOINTS.ADMIN_USERS_SEARCH}?${params}`, { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
         setUsers(data.data?.users ?? []);
@@ -120,7 +120,7 @@ export default function UsersTable() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    authFetch(API_ENDPOINTS.ADMIN_USERS_RANKS)
+    fetch(API_ENDPOINTS.ADMIN_USERS_RANKS, { headers: authHeaders() })
       .then((r) => r.json())
       .then((d) => {
         if (d.success) {
@@ -134,7 +134,7 @@ export default function UsersTable() {
   const toggleRole = async (user: User, field: "isVip" | "isDepositor") => {
     const endpoint = field === "isVip" ? API_ENDPOINTS.ADMIN_USER_VIP(user.id) : API_ENDPOINTS.ADMIN_USER_DEPOSITOR(user.id);
     try {
-      const res = await authFetch(endpoint, { method: "POST", headers: jsonHeaders, body: JSON.stringify({ [field]: !user[field] }) });
+      const res = await fetch(endpoint, { method: "POST", headers: authHeaders(), body: JSON.stringify({ [field]: !user[field] }) });
       if (res.ok) {
         setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, [field]: !user[field] } : u)));
         success("Role updated", `${user.displayName} — ${field === "isVip" ? "VIP" : "Depositor"} ${!user[field] ? "granted" : "removed"}.`);

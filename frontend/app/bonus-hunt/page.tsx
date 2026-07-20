@@ -9,9 +9,6 @@ import { GameCardSkeleton } from "@/components/ui/Skeleton";
 import { LoadingError } from "@/components/ui/ErrorState";
 import { guessTheBalanceApi } from "@/lib/api/guessTheBalance";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
-// Aliased: this component has its own `isAuthenticated` state that would shadow it.
-import { isAuthenticated as hasSession } from "@/lib/authPersistence";
 import type { GuessTheBalanceGame } from "@/types/guessTheBalance";
 import GuessTheBalanceCard from "@/components/GuessTheBalanceCard";
 import CompletedGameCard from "@/components/CompletedGameCard";
@@ -35,11 +32,11 @@ export default function BonusHuntPage() {
   }, []);
 
   const checkAuth = async () => {
-    const signedIn = hasSession();
-    setIsAuthenticated(signedIn);
-    if (signedIn) {
+    const token = localStorage.getItem("access_token");
+    setIsAuthenticated(!!token);
+    if (token) {
       try {
-        const res = await authFetch(API_ENDPOINTS.AUTH_ME);
+        const res = await fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } });
         const d = await res.json();
         setKickVerified(!!(d.user?.kickVerified && d.user?.kickUsername));
       } catch {

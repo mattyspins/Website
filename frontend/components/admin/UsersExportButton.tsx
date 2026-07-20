@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
 import { useToast } from "@/components/ui/ToastProvider";
 
 interface UsersExportButtonProps {
@@ -16,11 +15,14 @@ export default function UsersExportButton({ query, params }: UsersExportButtonPr
   const { error } = useToast();
 
   const handleExport = async () => {
+    const token = localStorage.getItem("access_token");
     setLoading(true);
     try {
       const url = new URLSearchParams(params);
       if (query) url.set("query", query);
-      const res = await authFetch(`${API_ENDPOINTS.ADMIN_USERS_EXPORT}?${url}`);
+      const res = await fetch(`${API_ENDPOINTS.ADMIN_USERS_EXPORT}?${url}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) {
         error("Export failed", "Could not generate CSV export.");
         return;

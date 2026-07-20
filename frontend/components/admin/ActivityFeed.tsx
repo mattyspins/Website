@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
-import { isAuthenticated } from "@/lib/authPersistence";
 
 interface PointActivity {
   id: string;
@@ -51,8 +49,9 @@ export default function ActivityFeed() {
   const [items, setItems] = useState<ActivityItem[] | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated()) return;
-    authFetch(`${API_ENDPOINTS.ADMIN_ACTIVITY}?limit=8&type=all`)
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    fetch(`${API_ENDPOINTS.ADMIN_ACTIVITY}?limit=8&type=all`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((d) => { if (d.success) setItems(d.data.items); })
       .catch(() => setItems([]));

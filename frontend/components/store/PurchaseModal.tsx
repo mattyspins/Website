@@ -10,8 +10,6 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { storeApi } from "@/lib/api/store";
-import { authFetch } from "@/lib/authFetch";
-import { isAuthenticated } from "@/lib/authPersistence";
 import type { StoreItem } from "@/types/store";
 
 interface PurchaseModalProps {
@@ -48,8 +46,13 @@ export default function PurchaseModal({
 
       // Fallback: fetch from API if localStorage doesn't have points
       try {
-        if (isAuthenticated()) {
-          const response = await authFetch("/api/auth/me");
+        const accessToken = localStorage.getItem("access_token");
+        if (accessToken) {
+          const response = await fetch("/api/auth/me", {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
 
           if (response.ok) {
             const data = await response.json();

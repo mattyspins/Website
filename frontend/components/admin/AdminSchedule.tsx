@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { API_ENDPOINTS } from "@/lib/api";
-import { authFetch } from "@/lib/authFetch";
 import { Trash2, Radio } from "lucide-react";
 
 interface StreamEvent {
@@ -39,11 +38,14 @@ export default function AdminSchedule() {
 
   useEffect(() => { loadEvents(); }, []);
 
+  const token = () => localStorage.getItem("access_token") ?? "";
 
   const loadEvents = async () => {
     setLoading(true);
     try {
-      const res = await authFetch(API_ENDPOINTS.STREAM_EVENTS_ALL);
+      const res = await fetch(API_ENDPOINTS.STREAM_EVENTS_ALL, {
+        headers: { Authorization: `Bearer ${token()}` },
+      });
       const d = await res.json();
       if (d.success) setEvents(d.events);
     } catch { /* ignore */ } finally { setLoading(false); }
@@ -54,9 +56,9 @@ export default function AdminSchedule() {
     if (!title.trim() || !scheduledAt) return;
     setSaving(true); setMsg(null);
     try {
-      const res = await authFetch(API_ENDPOINTS.STREAM_EVENTS, {
+      const res = await fetch(API_ENDPOINTS.STREAM_EVENTS, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
         body: JSON.stringify({ title: title.trim(), scheduledAt, gameType: gameType || undefined }),
       });
       const d = await res.json();
@@ -70,9 +72,9 @@ export default function AdminSchedule() {
 
   const handleToggleLive = async (event: StreamEvent) => {
     try {
-      await authFetch(API_ENDPOINTS.STREAM_EVENT(event.id), {
+      await fetch(API_ENDPOINTS.STREAM_EVENT(event.id), {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
         body: JSON.stringify({ isLive: !event.isLive }),
       });
       loadEvents();
@@ -82,7 +84,7 @@ export default function AdminSchedule() {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this event?")) return;
     try {
-      await authFetch(API_ENDPOINTS.STREAM_EVENT(id), { method: "DELETE" });
+      await fetch(API_ENDPOINTS.STREAM_EVENT(id), { method: "DELETE", headers: { Authorization: `Bearer ${token()}` } });
       loadEvents();
     } catch { /* ignore */ }
   };
