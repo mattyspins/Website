@@ -36,6 +36,26 @@ export class WeeklyRaffleController {
     res.json({ success: true, participants, count: participants.length });
   });
 
+  static getExcluded = asyncHandler(async (req, res) => {
+    if (!req.user?.isAdmin) throw createError.forbidden('Admin access required');
+    const excluded = await WeeklyRaffleService.getExcludedParticipants(req.params.id);
+    res.json({ success: true, excluded });
+  });
+
+  static addParticipant = asyncHandler(async (req, res) => {
+    if (!req.user?.isAdmin) throw createError.forbidden('Admin access required');
+    const userId = String(req.body.userId || '');
+    if (!userId) throw createError.badRequest('userId is required');
+    const raffle = await WeeklyRaffleService.addParticipant(req.params.id, userId);
+    res.json({ success: true, raffle });
+  });
+
+  static removeParticipant = asyncHandler(async (req, res) => {
+    if (!req.user?.isAdmin) throw createError.forbidden('Admin access required');
+    const raffle = await WeeklyRaffleService.removeParticipant(req.params.id, req.params.userId);
+    res.json({ success: true, raffle });
+  });
+
   static getHistory = asyncHandler(async (req, res) => {
     const limit = Math.min(parseInt((req.query.limit as string) || '20', 10), 100);
     const history = await WeeklyRaffleService.getHistory(limit);

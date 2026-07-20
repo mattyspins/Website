@@ -14,6 +14,7 @@ interface EligibleUser {
   displayName: string;
   avatarUrl: string | null;
   wagered: number;
+  isManual?: boolean;
 }
 
 const USER_SUMMARY_SELECT = { id: true, displayName: true, avatarUrl: true } as const;
@@ -100,7 +101,57 @@ export class WeeklyRaffleService {
   static async getEligibleParticipants(raffleId: string): Promise<EligibleUser[]> {
     const raffle = await this.getById(raffleId);
     const requirements = (raffle.requirements as unknown as WeeklyRaffleRequirement[]) ?? [];
-    return this.computeEligibleUsers(prisma, raffle.weekStart, raffle.weekEnd, requirements);
+    const manualAdd = (raffle.manualAddUserIds as unknown as string[]) ?? [];
+    const manualExclude = (raffle.manualExcludeUserIds as unknown as string[]) ?? [];
+    return this.computeEligibleUsers(prisma, raffle.weekStart, raffle.weekEnd, requirements, manualAdd, manualExclude);
+  }
+
+  // Admin-only: adds a user to the raffle regardless of computed eligibility.
+  // Removes any prior exclusion of the same user so the two lists stay disjoint.
+  static async addParticipant(raffleId: string, userId: string) {
+    const raffle = await prisma.weeklyRaffle.findUnique({ where: { id: raffleId } });
+    if (!raffle) throw createError.notFound('Weekly raffle not found');
+    if (raffle.status !== 'OPEN') {
+      throw createError.conflict('Cannot edit participants after the raffle has been drawn');
+    }
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+    if (!user) throw createError.notFound('User not found');
+
+    const manualAdd = new Set((raffle.manualAddUserIds as unknown as string[]) ?? []);
+    const manualExclude = new Set((raffle.manualExcludeUserIds as unknown as string[]) ?? []);
+    manualAdd.add(userId);
+    manualExclude.delete(userId);
+
+    return prisma.weeklyRaffle.update({
+      where: { id: raffleId },
+      data: {
+        manualAddUserIds: [...manualAdd] as unknown as Prisma.InputJsonValue,
+        manualExcludeUserIds: [...manualExclude] as unknown as Prisma.InputJsonValue,
+      },
+    });
+  }
+
+  // Admin-only: removes a user from the raffle even if they'd otherwise be eligible.
+  // Removes any prior manual add of the same user so the two lists stay disjoint.
+  static async removeParticipant(raffleId: string, userId: string) {
+    const raffle = await prisma.weeklyRaffle.findUnique({ where: { id: raffleId } });
+    if (!raffle) throw createError.notFound('Weekly raffle not found');
+    if (raffle.status !== 'OPEN') {
+      throw createError.conflict('Cannot edit participants after the raffle has been drawn');
+    }
+
+    const manualAdd = new Set((raffle.manualAddUserIds as unknown as string[]) ?? []);
+    const manualExclude = new Set((raffle.manualExcludeUserIds as unknown as string[]) ?? []);
+    manualAdd.delete(userId);
+    manualExclude.add(userId);
+
+    return prisma.weeklyRaffle.update({
+      where: { id: raffleId },
+      data: {
+        manualAddUserIds: [...manualAdd] as unknown as Prisma.InputJsonValue,
+        manualExcludeUserIds: [...manualExclude] as unknown as Prisma.InputJsonValue,
+      },
+    });
   }
 
   static async getUserEligibility(raffleId: string, userId: string) {
@@ -147,7 +198,9 @@ export class WeeklyRaffleService {
       }
 
       const requirements = (raffle.requirements as unknown as WeeklyRaffleRequirement[]) ?? [];
-      const eligible = await this.computeEligibleUsers(tx, raffle.weekStart, raffle.weekEnd, requirements);
+      const manualAdd = (raffle.manualAddUserIds as unknown as string[]) ?? [];
+      const manualExclude = (raffle.manualExcludeUserIds as unknown as string[]) ?? [];
+      const eligible = await this.computeEligibleUsers(tx, raffle.weekStart, raffle.weekEnd, requirements, manualAdd, manualExclude);
       if (eligible.length === 0) {
         throw createError.badRequest('No eligible participants to draw from');
       }
@@ -188,26 +241,48 @@ export class WeeklyRaffleService {
     db: Prisma.TransactionClient,
     weekStart: Date,
     weekEnd: Date,
-    requirements: WeeklyRaffleRequirement[]
+    requirements: WeeklyRaffleRequirement[],
+    manualAdd: string[] = [],
+    manualExclude: string[] = []
   ): Promise<EligibleUser[]> {
     const verifiedUsers = await db.user.findMany({
       where: { rainbetVerified: true, isSuspended: false },
       select: USER_SUMMARY_SELECT,
     });
-    if (verifiedUsers.length === 0) return [];
+
+    // Manually-added users bypass verification/suspension/wager requirements entirely —
+    // that's the point of an admin override. Fetch the ones not already in the base pool.
+    const excludeSet = new Set(manualExclude);
+    const baseIds = new Set(verifiedUsers.map((u) => u.id));
+    const extraIds = manualAdd.filter((id) => !baseIds.has(id) && !excludeSet.has(id));
+    const extraUsers = extraIds.length
+      ? await db.user.findMany({ where: { id: { in: extraIds } }, select: USER_SUMMARY_SELECT })
+      : [];
+
+    const candidates = [...verifiedUsers, ...extraUsers].filter((u) => !excludeSet.has(u.id));
+    if (candidates.length === 0) return [];
 
     const wagerSums = await db.razedDailyWager.groupBy({
       by: ['userId'],
-      where: { userId: { in: verifiedUsers.map((u) => u.id) }, date: { gte: weekStart, lt: weekEnd } },
+      where: { userId: { in: candidates.map((u) => u.id) }, date: { gte: weekStart, lt: weekEnd } },
       _sum: { amount: true },
     });
     const wagerMap = new Map(wagerSums.map((w) => [w.userId, Number(w._sum.amount ?? 0)]));
 
     const minWagerReq = requirements.find((r) => r.type === 'MIN_WEEKLY_WAGER');
     const minWager = minWagerReq?.value ?? 0;
+    const manualAddSet = new Set(manualAdd);
 
-    return verifiedUsers
-      .map((u) => ({ ...u, wagered: wagerMap.get(u.id) ?? 0 }))
-      .filter((u) => u.wagered >= minWager);
+    return candidates
+      .map((u) => ({ ...u, wagered: wagerMap.get(u.id) ?? 0, isManual: manualAddSet.has(u.id) }))
+      .filter((u) => u.isManual || u.wagered >= minWager);
+  }
+
+  // Users the admin has manually removed — surfaced so the admin UI can offer to undo it.
+  static async getExcludedParticipants(raffleId: string) {
+    const raffle = await this.getById(raffleId);
+    const manualExclude = (raffle.manualExcludeUserIds as unknown as string[]) ?? [];
+    if (manualExclude.length === 0) return [];
+    return prisma.user.findMany({ where: { id: { in: manualExclude } }, select: USER_SUMMARY_SELECT });
   }
 }

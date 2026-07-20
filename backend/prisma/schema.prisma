@@ -992,6 +992,10 @@ model WeeklyRaffle {
   drawnBy          String?            @map("drawn_by")
   createdAt        DateTime           @default(now()) @map("created_at")
   createdBy        String?            @map("created_by")
+  // Admin overrides on top of computed eligibility — arrays of userIds. A user in
+  // both is treated as excluded (removal wins), so add doesn't need to special-case it.
+  manualAddUserIds     Json @default("[]") @map("manual_add_user_ids")
+  manualExcludeUserIds Json @default("[]") @map("manual_exclude_user_ids")
 
   winner      User? @relation("WeeklyRaffleWinner", fields: [winnerUserId], references: [id])
   creator     User? @relation("WeeklyRaffleCreator", fields: [createdBy], references: [id])

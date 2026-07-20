@@ -34,6 +34,13 @@ export interface WeeklyRaffleParticipant {
   displayName: string;
   avatarUrl: string | null;
   wagered: number;
+  isManual?: boolean;
+}
+
+export interface WeeklyRaffleUserSearchResult {
+  id: string;
+  displayName: string;
+  avatarUrl: string | null;
 }
 
 export interface WeeklyRaffleEligibility {
@@ -68,4 +75,15 @@ export const weeklyRaffleApi = {
   draw: (id: string) => api.post(`/api/weekly-raffle/${id}/draw`, {}).then((d) => d as WeeklyRaffleDrawResult),
   updateRequirements: (id: string, requirements: WeeklyRaffleRequirement[]) =>
     api.patch(`/api/weekly-raffle/${id}`, { requirements }).then((d) => d.raffle as WeeklyRaffle),
+
+  getExcluded: (id: string) =>
+    api.get(`/api/weekly-raffle/${id}/excluded`).then((d) => d.excluded as WeeklyRaffleUserSearchResult[]),
+  addParticipant: (id: string, userId: string) =>
+    api.post(`/api/weekly-raffle/${id}/participants`, { userId }).then((d) => d.raffle as WeeklyRaffle),
+  removeParticipant: (id: string, userId: string) =>
+    api.delete(`/api/weekly-raffle/${id}/participants/${userId}`).then((d) => d.raffle as WeeklyRaffle),
+  searchUsers: (query: string) =>
+    api
+      .get(`/api/admin/users/search?query=${encodeURIComponent(query)}&limit=8`)
+      .then((d) => (d.data?.users ?? []) as WeeklyRaffleUserSearchResult[]),
 };

@@ -17,6 +17,9 @@ router.get('/:id/my-eligibility', authMiddleware, lim, WeeklyRaffleController.ge
 // Admin
 router.post('/', authMiddleware, adminMiddleware, lim, WeeklyRaffleController.create);
 router.get('/:id/eligible-preview', authMiddleware, adminMiddleware, lim, WeeklyRaffleController.getEligiblePreview);
+router.get('/:id/excluded', authMiddleware, adminMiddleware, lim, WeeklyRaffleController.getExcluded);
+router.post('/:id/participants', authMiddleware, adminMiddleware, lim, WeeklyRaffleController.addParticipant);
+router.delete('/:id/participants/:userId', authMiddleware, adminMiddleware, lim, WeeklyRaffleController.removeParticipant);
 router.post('/:id/draw', authMiddleware, adminMiddleware, lim, WeeklyRaffleController.draw);
 router.patch('/:id', authMiddleware, adminMiddleware, lim, WeeklyRaffleController.updateRequirements);
 
