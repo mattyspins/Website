@@ -91,8 +91,11 @@ export default function AdminSlotWorldCupPage() {
     try {
       const all = await slotWorldCupApi.getAll();
       setTournaments(all);
-      const live = all.find((t) => t.status !== SlotWorldCupStatus.CANCELLED && t.status !== SlotWorldCupStatus.COMPLETED);
-      setActive(live ?? null);
+      const summary = all.find((t) => t.status !== SlotWorldCupStatus.CANCELLED && t.status !== SlotWorldCupStatus.COMPLETED);
+      // getAll() omits `matches` — the bracket and the pending-match editor both
+      // need them, so re-read the live tournament in full.
+      const live = summary ? await slotWorldCupApi.getById(summary.id) : null;
+      setActive(live);
       if (live) {
         if (live.status === SlotWorldCupStatus.NOMINATION) setRankings(await slotWorldCupApi.getNominations(live.id));
         else setLeaderboard(await slotWorldCupApi.getLeaderboard(live.id));
@@ -389,7 +392,7 @@ export default function AdminSlotWorldCupPage() {
                   </p>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-80 overflow-y-auto">
-                    {active.slots.map((s) => (
+                    {(active.slots ?? []).map((s) => (
                       <div key={s.id} className="flex items-center gap-2.5 px-2.5 py-2 rounded-[9px] border border-[#22283a] bg-[#10141c]">
                         <span className="w-[26px] h-[26px] rounded-md flex items-center justify-center font-gaming font-bold text-[10px] text-white shrink-0"
                           style={{ background: `linear-gradient(135deg, ${providerColor(s.provider)}, #12151d)` }}>
@@ -493,7 +496,7 @@ export default function AdminSlotWorldCupPage() {
             </section>
           </div>
 
-          {active.matches?.length > 0 && (
+          {(active.matches?.length ?? 0) > 0 && (
             <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5">
               <h3 className="text-white font-semibold mb-3">Bracket</h3>
               <SlotWorldCupBracket tournament={active} mode="view" />
@@ -505,12 +508,12 @@ export default function AdminSlotWorldCupPage() {
               <h3 className="text-white font-semibold mb-1">Pending Matches</h3>
               <p className="text-xs text-gray-500 mb-3">Enter the bet + payout for each slot's round — the multiplier is calculated automatically and the higher one wins.</p>
               <div className="space-y-3">
-                {active.matches
+                {(active.matches ?? [])
                   .filter((m) => m.slotAId && m.slotBId && !m.winnerId)
                   .sort((a, b) => a.round - b.round || a.matchNumber - b.matchNumber)
                   .map((m) => {
-                    const slotA = active.slots.find((s) => s.id === m.slotAId);
-                    const slotB = active.slots.find((s) => s.id === m.slotBId);
+                    const slotA = (active.slots ?? []).find((s) => s.id === m.slotAId);
+                    const slotB = (active.slots ?? []).find((s) => s.id === m.slotBId);
                     const r = matchResults[m.id] ?? { betA: "", payoutA: "", betB: "", payoutB: "" };
                     const multA = Number(r.betA) > 0 && r.payoutA !== "" ? Number(r.payoutA) / Number(r.betA) : null;
                     const multB = Number(r.betB) > 0 && r.payoutB !== "" ? Number(r.payoutB) / Number(r.betB) : null;
@@ -546,7 +549,7 @@ export default function AdminSlotWorldCupPage() {
                       </div>
                     );
                   })}
-                {active.matches.filter((m) => m.slotAId && m.slotBId && !m.winnerId).length === 0 && (
+                {(active.matches ?? []).filter((m) => m.slotAId && m.slotBId && !m.winnerId).length === 0 && (
                   <p className="text-white/30 text-sm">No matches ready to resolve yet.</p>
                 )}
               </div>

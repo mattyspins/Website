@@ -78,8 +78,13 @@ export interface SlotWorldCup {
   createdAt: string;
   updatedAt: string;
   closedAt: string | null;
-  slots: SlotWorldCupSlot[];
-  matches: SlotWorldCupMatch[];
+  // Both are optional because the API returns different shapes: the list
+  // endpoint (getAll) includes only `slots`, while `getById` and the socket
+  // payload include `matches` too. Declaring them as always-present is what let
+  // `tournament.matches.filter(...)` compile and then crash both the viewer and
+  // admin pages at runtime — keep them optional so the compiler forces a guard.
+  slots?: SlotWorldCupSlot[];
+  matches?: SlotWorldCupMatch[];
   nominations?: unknown[];
 }
 
