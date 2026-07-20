@@ -135,7 +135,11 @@ export default function SlotWorldCupPage() {
   const load = useCallback(async () => {
     try {
       const all = await slotWorldCupApi.getAll();
-      const active = all.find((t) => t.status !== SlotWorldCupStatus.CANCELLED) ?? null;
+      const summary = all.find((t) => t.status !== SlotWorldCupStatus.CANCELLED) ?? null;
+      // The list endpoint only includes `slots` — the bracket and the prediction
+      // flow both need `matches`, so re-read the active one in full. Rendering the
+      // summary directly left `matches` undefined and crashed the page.
+      const active = summary ? await slotWorldCupApi.getById(summary.id) : null;
       setTournament(active);
       if (active) {
         if (active.status === SlotWorldCupStatus.NOMINATION) {
@@ -195,8 +199,12 @@ export default function SlotWorldCupPage() {
   };
 
   const allPicked = useMemo(() => {
-    if (!tournament) return false;
-    return tournament.matches.every((m) => !!localPicks[`${m.round}:${m.matchNumber}`]);
+    // `matches` is absent on a tournament that came from the list endpoint and
+    // empty before the bracket is generated — neither is "every pick made", and
+    // an unguarded .every() on undefined took the whole page down.
+    const matches = tournament?.matches ?? [];
+    if (matches.length === 0) return false;
+    return matches.every((m) => !!localPicks[`${m.round}:${m.matchNumber}`]);
   }, [tournament, localPicks]);
 
   const handleSubmitPrediction = async () => {

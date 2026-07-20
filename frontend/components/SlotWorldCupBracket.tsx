@@ -80,10 +80,14 @@ interface Props {
 }
 
 export default function SlotWorldCupBracket({ tournament, mode, picks, onPick, userPrediction }: Props) {
-  const slotsById = new Map(tournament.slots.map((s) => [s.id, s]));
+  // Default both: a tournament read from the list endpoint carries neither, and
+  // rendering one of those must degrade to an empty bracket rather than throw.
+  const allSlots = tournament.slots ?? [];
+  const allMatches = tournament.matches ?? [];
+  const slotsById = new Map(allSlots.map((s) => [s.id, s]));
   const rounds: SlotWorldCupMatch[][] = [];
   for (let r = 1; r <= tournament.totalRounds; r++) {
-    rounds.push(tournament.matches.filter((m) => m.round === r).sort((a, b) => a.matchNumber - b.matchNumber));
+    rounds.push(allMatches.filter((m) => m.round === r).sort((a, b) => a.matchNumber - b.matchNumber));
   }
 
   const localPicks = picks ?? {};
