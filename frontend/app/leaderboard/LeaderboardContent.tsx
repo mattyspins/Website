@@ -104,10 +104,21 @@ function PodiumCard({ row }: { row: RaceStandingRow }) {
   );
 }
 
-export default function LeaderboardPage() {
-  const [race, setRace] = useState<ActiveRace | null>(null);
-  const [history, setHistory] = useState<RaceHistoryEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+interface Props {
+  // Fetched server-side in page.tsx before the page ever reaches the browser,
+  // so the first paint (and what a crawler sees) already has real standings
+  // instead of a spinner. `null`/absent means the server fetch didn't run or
+  // failed — in that case this behaves exactly as it always has: start
+  // loading, fetch client-side. The client fetch below still runs either way,
+  // both to pick up anything that changed since the server render and to
+  // drive the existing 30s refresh — this only removes the *first* spinner.
+  initialData?: { race: ActiveRace | null; history: RaceHistoryEntry[] } | null;
+}
+
+export default function LeaderboardPage({ initialData = null }: Props) {
+  const [race, setRace] = useState<ActiveRace | null>(initialData?.race ?? null);
+  const [history, setHistory] = useState<RaceHistoryEntry[]>(initialData?.history ?? []);
+  const [loading, setLoading] = useState(initialData === null);
   const [myUserId, setMyUserId] = useState<string | null>(null);
 
   useEffect(() => {

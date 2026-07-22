@@ -8,11 +8,19 @@ import type { StoreItem, StoreCategory } from "@/types/store";
 import StoreItemCard from "@/components/store/StoreItemCard";
 import PurchaseModal from "@/components/store/PurchaseModal";
 
-export default function StorePage() {
+interface Props {
+  // Fetched server-side in page.tsx — the store's default (all-categories)
+  // listing is already real on first paint instead of a spinner. Absent/null
+  // means the server fetch didn't run or failed, in which case this behaves
+  // exactly as before: start loading, fetch client-side.
+  initialData?: { items: StoreItem[]; categories: StoreCategory[] } | null;
+}
+
+export default function StorePage({ initialData = null }: Props) {
   const router = useRouter();
-  const [items, setItems] = useState<StoreItem[]>([]);
-  const [categories, setCategories] = useState<StoreCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<StoreItem[]>(initialData?.items ?? []);
+  const [categories, setCategories] = useState<StoreCategory[]>(initialData?.categories ?? []);
+  const [loading, setLoading] = useState(initialData === null);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
@@ -21,16 +29,20 @@ export default function StorePage() {
 
   useEffect(() => {
     setIsAuthenticated(!!localStorage.getItem("access_token"));
-    loadStoreData();
+    // Still refetches even when SSR-seeded, both to catch anything that
+    // changed since the server render and because this is also where
+    // isAuthenticated/errors get established — but skips forcing the loading
+    // spinner over content that's already on screen.
+    loadStoreData(initialData !== null);
   }, []);
 
   useEffect(() => {
     loadItems();
   }, [selectedCategory]);
 
-  const loadStoreData = async () => {
+  const loadStoreData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
       const categoriesData = await storeApi.getStoreCategories();
       setCategories(categoriesData);
@@ -144,7 +156,7 @@ export default function StorePage() {
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 text-center">
             <p className="text-red-400 text-sm">{error}</p>
             <button
-              onClick={loadStoreData}
+              onClick={() => loadStoreData()}
               className="text-red-300 hover:text-red-200 text-xs underline mt-1"
             >
               Try again
