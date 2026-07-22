@@ -32,9 +32,9 @@ function StatCard({ label, value, sub, icon, accent, urgent }: StatCardProps) {
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-gray-500 text-xs font-semibold uppercase tracking-widest mb-1">{label}</p>
+        <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1">{label}</p>
         <p className={`text-2xl font-black ${urgent ? "text-yellow-400" : "text-white"}`}>{value}</p>
-        {sub && <p className="text-gray-600 text-xs mt-0.5">{sub}</p>}
+        {sub && <p className="text-gray-400 text-xs mt-0.5">{sub}</p>}
       </div>
     </div>
   );

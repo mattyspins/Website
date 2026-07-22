@@ -8,7 +8,7 @@ import { BingoGame } from "@/lib/api/bonusBingo";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 const STATUS_CFG: Record<string, { label: string; dot: string; text: string }> = {
-  DRAFT:          { label: "Draft",            dot: "bg-white/30",                text: "text-white/40" },
+  DRAFT:          { label: "Draft",            dot: "bg-white/30",                text: "text-white/50" },
   REGISTRATION:   { label: "Registration",     dot: "bg-blue-400",                text: "text-blue-300" },
   SLOT_SELECTION: { label: "Picking Slots",    dot: "bg-amber-400 animate-pulse", text: "text-amber-300" },
   IN_PROGRESS:    { label: "Live",             dot: "bg-green-400 animate-pulse", text: "text-green-300" },
@@ -25,7 +25,7 @@ function MatchCard({ match, tournament }: { match: TournamentMatch; tournament: 
   return (
     <div className={`rounded-lg px-2 py-1.5 border ${match.status === MatchStatus.ACTIVE ? "bg-green-900/30 border-green-500/30" : "bg-white/5 border-white/10"}`}>
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[8px] text-white/30 uppercase tracking-wider">Match {match.matchNumber} · R{match.round}</span>
+        <span className="text-[8px] text-white/45 uppercase tracking-wider">Match {match.matchNumber} · R{match.round}</span>
         {match.status === MatchStatus.ACTIVE && (
           <span className="text-[8px] text-green-400 font-semibold animate-pulse">● Live</span>
         )}
@@ -41,7 +41,7 @@ function MatchCard({ match, tournament }: { match: TournamentMatch; tournament: 
               {p.displayName}
             </span>
             {p.slotCall && (
-              <span className="text-[8px] text-white/30 truncate">🎰 {p.slotCall}</span>
+              <span className="text-[8px] text-white/45 truncate">🎰 {p.slotCall}</span>
             )}
             {!p.slotCall && match.status === MatchStatus.SLOT_SELECTION && (
               <span className="text-[8px] text-amber-400/60 animate-pulse">choosing…</span>
@@ -100,11 +100,11 @@ function RecentBingo() {
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot}`} />
-          <span className="text-[8px] text-white/40">{statusLabel}</span>
+          <span className="text-[8px] text-white/50">{statusLabel}</span>
         </div>
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-[8px] text-white/40">{greenCells.length}/{total} cells won</span>
+        <span className="text-[8px] text-white/50">{greenCells.length}/{total} cells won</span>
         {recentWin && (
           <span className="text-[8px] text-yellow-400/80 truncate ml-2">🏆 {recentWin.lineType} {recentWin.lineIndex + 1}</span>
         )}
@@ -234,7 +234,7 @@ export default function TournamentWidget() {
       {tournament.status === TournamentStatus.IN_PROGRESS && (
         <div className="bg-black/70 border border-white/10 rounded-lg px-2 py-1 flex items-center justify-between">
           <span className="text-white/60 text-[9px] font-semibold">Round {tournament.currentRound}</span>
-          <span className="text-white/40 text-[9px]">{remaining} players left</span>
+          <span className="text-white/50 text-[9px]">{remaining} players left</span>
         </div>
       )}
 
@@ -242,14 +242,14 @@ export default function TournamentWidget() {
       {tournament.status === TournamentStatus.REGISTRATION && (
         <div className="bg-black/70 border border-white/10 rounded-lg px-2 py-1.5 text-center">
           <p className="text-blue-300 text-[10px] font-semibold">{tournament.entryCount} / {tournament.maxPlayers} entered</p>
-          <p className="text-white/30 text-[8px] mt-0.5">Registration is open</p>
+          <p className="text-white/45 text-[8px] mt-0.5">Registration is open</p>
         </div>
       )}
 
       {/* Slot selection */}
       {tournament.status === TournamentStatus.SLOT_SELECTION && (
         <div className="bg-black/70 border border-white/10 rounded-lg px-2 py-1.5">
-          <p className="text-white/30 text-[8px] uppercase tracking-wider mb-1">Picking Slots</p>
+          <p className="text-white/45 text-[8px] uppercase tracking-wider mb-1">Picking Slots</p>
           <div className="space-y-0.5">
             {tournament.participants.slice(0, 8).map(p => (
               <div key={p.id} className="flex items-center gap-1.5 min-w-0">
@@ -258,12 +258,12 @@ export default function TournamentWidget() {
                 </span>
                 <span className="text-[9px] text-white/70 truncate">{p.displayName}</span>
                 {p.currentSlot && (
-                  <span className="text-[8px] text-white/30 truncate ml-auto">{p.currentSlot}</span>
+                  <span className="text-[8px] text-white/45 truncate ml-auto">{p.currentSlot}</span>
                 )}
               </div>
             ))}
             {tournament.participants.length > 8 && (
-              <p className="text-white/25 text-[8px]">+{tournament.participants.length - 8} more</p>
+              <p className="text-white/45 text-[8px]">+{tournament.participants.length - 8} more</p>
             )}
           </div>
         </div>
@@ -281,7 +281,7 @@ export default function TournamentWidget() {
       {/* Recent results */}
       {tournament.status === TournamentStatus.IN_PROGRESS && recentMatches.length > 0 && (
         <div className="bg-black/70 border border-white/10 rounded-lg px-2 py-1.5">
-          <p className="text-white/30 text-[8px] uppercase tracking-wider mb-1">Recent Results</p>
+          <p className="text-white/45 text-[8px] uppercase tracking-wider mb-1">Recent Results</p>
           <div className="space-y-0.5">
             {recentMatches.map(m => {
               const winner = m.participants.find(p => p.participantId === m.winnerId || p.userId === m.winnerId);
@@ -290,8 +290,8 @@ export default function TournamentWidget() {
                 <div key={m.id} className="flex items-center gap-1 min-w-0">
                   <span className="text-green-400 text-[8px] shrink-0">✓</span>
                   <span className="text-green-300 text-[9px] truncate font-semibold">{winner?.displayName}</span>
-                  <span className="text-white/25 text-[8px] shrink-0">vs</span>
-                  <span className="text-white/35 text-[8px] truncate">{loser?.displayName}</span>
+                  <span className="text-white/45 text-[8px] shrink-0">vs</span>
+                  <span className="text-white/45 text-[8px] truncate">{loser?.displayName}</span>
                 </div>
               );
             })}

@@ -156,7 +156,7 @@ export default function EditStoreItemModal({
                 htmlFor="description"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
-                Description <span className="text-gray-500">(Optional)</span>
+                Description <span className="text-gray-400">(Optional)</span>
               </label>
               <textarea
                 id="description"
@@ -237,7 +237,7 @@ export default function EditStoreItemModal({
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm sm:text-base"
                   disabled={loading}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-400 mt-1">
                   -1 for unlimited stock, or enter a positive number
                 </p>
               </div>
@@ -286,7 +286,7 @@ export default function EditStoreItemModal({
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm sm:text-base"
                   disabled={loading}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-400 mt-1">
                   Lower numbers appear first
                 </p>
               </div>

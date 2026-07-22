@@ -282,11 +282,11 @@ function RaffleList() {
       .catch(() => {});
   }, []);
 
-  if (loading) return <div className="text-center py-8 text-gray-500 text-sm">Loading raffles…</div>;
+  if (loading) return <div className="text-center py-8 text-gray-400 text-sm">Loading raffles…</div>;
   if (raffles.length === 0 && pastRaffles.length === 0) return (
     <div className="text-center py-8">
       <Ticket className="w-10 h-10 text-gray-700 mx-auto mb-3" />
-      <p className="text-gray-500 text-sm">No active raffles right now. Check back soon!</p>
+      <p className="text-gray-400 text-sm">No active raffles right now. Check back soon!</p>
     </div>
   );
 
@@ -297,7 +297,7 @@ function RaffleList() {
       )}
       {raffles.length === 0 && (
         <div className="text-center py-6">
-          <p className="text-gray-500 text-sm">No active raffles right now. Check back soon!</p>
+          <p className="text-gray-400 text-sm">No active raffles right now. Check back soon!</p>
         </div>
       )}
       {raffles.map((raffle) => {
@@ -320,16 +320,16 @@ function RaffleList() {
               </div>
               <div className="shrink-0 bg-gold-500/10 border border-gold-500/20 rounded-lg px-2.5 py-1 text-center">
                 <p className="text-gold-400 font-bold text-sm leading-none">{raffle.ticketPrice}</p>
-                <p className="text-gray-600 text-[10px]">coins</p>
+                <p className="text-gray-400 text-[10px]">coins</p>
               </div>
             </div>
-            {raffle.description && <p className="text-gray-500 text-xs mb-2">{raffle.description}</p>}
-            <div className="flex items-center gap-1.5 text-gray-500 text-xs mb-3">
+            {raffle.description && <p className="text-gray-400 text-xs mb-2">{raffle.description}</p>}
+            <div className="flex items-center gap-1.5 text-gray-400 text-xs mb-3">
               <Clock className="w-3 h-3" /><span>{tl}</span>
               {raffle.numberOfWinners > 1 && <span className="ml-auto text-gold-500/70">{raffle.numberOfWinners} winners</span>}
             </div>
             <div className="mb-3">
-              <div className="flex justify-between text-xs text-gray-600 mb-1">
+              <div className="flex justify-between text-xs text-gray-400 mb-1">
                 <span>{raffle.ticketsSold} / {raffle.maxTickets} tickets</span><span>{pct.toFixed(0)}%</span>
               </div>
               <div className="h-1.5 bg-navy-800 rounded-full overflow-hidden">
@@ -339,9 +339,9 @@ function RaffleList() {
             {myCount > 0 && <p className="text-[#53FC18] text-xs font-semibold mb-2">You have {myCount} ticket{myCount > 1 ? "s" : ""}</p>}
             {msg && <p className={`text-xs mb-2 ${msg.type === "success" ? "text-green-400" : "text-red-400"}`}>{msg.text}</p>}
             {!isLoggedIn ? (
-              <p className="text-gray-500 text-xs">Login to buy tickets</p>
+              <p className="text-gray-400 text-xs">Login to buy tickets</p>
             ) : isSoldOut ? (
-              <p className="text-gray-600 text-xs font-semibold uppercase tracking-wide">Sold Out</p>
+              <p className="text-gray-400 text-xs font-semibold uppercase tracking-wide">Sold Out</p>
             ) : (
               <div className="flex items-center gap-2">
                 <select value={qty} onChange={(e) => setQuantities((q) => ({ ...q, [raffle.id]: Number(e.target.value) }))}
@@ -367,14 +367,14 @@ function RaffleList() {
               <div key={r.id} className="bg-navy-900/40 border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-gray-300 text-sm font-semibold truncate">{r.title}</p>
-                  <p className="text-gray-600 text-xs mt-0.5">
+                  <p className="text-gray-400 text-xs mt-0.5">
                     {r.prize} · {new Date(r.endedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </p>
                 </div>
                 {r.winners.length > 0 && (
                   <div className="text-right shrink-0">
                     <p className="text-[#53FC18] text-xs font-bold">🏆 {r.winners[0].displayName}</p>
-                    {r.winners.length > 1 && <p className="text-gray-600 text-[10px]">+{r.winners.length - 1} more</p>}
+                    {r.winners.length > 1 && <p className="text-gray-400 text-[10px]">+{r.winners.length - 1} more</p>}
                   </div>
                 )}
               </div>
@@ -493,7 +493,7 @@ export default function StreamGamesPage() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
           className="mt-12 text-center bg-navy-800/40 border border-white/5 rounded-2xl p-8">
           <h3 className="text-white font-bold text-lg mb-2">Ready to play?</h3>
-          <p className="text-gray-500 text-sm mb-5">Follow on Kick so you never miss a live stream.</p>
+          <p className="text-gray-400 text-sm mb-5">Follow on Kick so you never miss a live stream.</p>
           <a href="https://kick.com/mattyspinsslots" target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-[#53FC18] hover:bg-[#45D615] text-black font-bold px-6 py-3 rounded-xl text-sm transition-all uppercase tracking-widest">
             Follow on Kick <ExternalLink className="w-4 h-4" />
@@ -535,10 +535,10 @@ export default function StreamGamesPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-gray-500 text-xs mt-0.5">{selected.tagline}</p>
+                      <p className="text-gray-400 text-xs mt-0.5">{selected.tagline}</p>
                     </div>
                   </div>
-                  <button onClick={() => setSelected(null)} className="text-gray-600 hover:text-white transition-colors p-1 shrink-0">
+                  <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-white transition-colors p-1 shrink-0">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -581,7 +581,7 @@ export default function StreamGamesPage() {
                     </div>
                   </div>
 
-                  <p className="text-gray-500 text-xs border-t border-white/5 pt-4">{selected.note}</p>
+                  <p className="text-gray-400 text-xs border-t border-white/5 pt-4">{selected.note}</p>
 
                   {selected.link && (
                     <Link

@@ -175,7 +175,7 @@ export default function UsersTable() {
       />
 
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <p className="text-gray-500 text-xs">
+        <p className="text-gray-400 text-xs">
           {total.toLocaleString()} user{total !== 1 ? "s" : ""}
         </p>
         <UsersExportButton query={query} params={buildFilterParams()} />
@@ -209,14 +209,14 @@ export default function UsersTable() {
                       className="accent-gold-500"
                     />
                   </th>
-                  <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-widest py-3 px-4">User</th>
-                  <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-widest py-3 px-4">Rank</th>
-                  <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-widest py-3 px-4">Coins</th>
-                  <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-widest py-3 px-4">Account Type</th>
-                  <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-widest py-3 px-4">Razed</th>
-                  <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-widest py-3 px-4">Joined</th>
-                  <th className="text-left text-gray-500 text-xs font-semibold uppercase tracking-widest py-3 px-4">Last Active</th>
-                  <th className="text-right text-gray-500 text-xs font-semibold uppercase tracking-widest py-3 px-4">Actions</th>
+                  <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-widest py-3 px-4">User</th>
+                  <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-widest py-3 px-4">Rank</th>
+                  <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-widest py-3 px-4">Coins</th>
+                  <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-widest py-3 px-4">Account Type</th>
+                  <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-widest py-3 px-4">Razed</th>
+                  <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-widest py-3 px-4">Joined</th>
+                  <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-widest py-3 px-4">Last Active</th>
+                  <th className="text-right text-gray-400 text-xs font-semibold uppercase tracking-widest py-3 px-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -260,7 +260,7 @@ export default function UsersTable() {
                             {user.rainbetVerified ? "Verified" : "Pending"}
                           </span>
                         ) : (
-                          <span className="text-gray-600">—</span>
+                          <span className="text-gray-400">—</span>
                         )}
                       </td>
                       <td className="py-3.5 px-4 text-gray-400 text-xs">{fmtDate(user.createdAt)}</td>
@@ -272,14 +272,14 @@ export default function UsersTable() {
                               <button
                                 onClick={() => toggleRole(user, "isVip")}
                                 title={user.isVip ? "Remove VIP" : "Grant VIP"}
-                                className={`p-1.5 rounded-lg transition-colors ${user.isVip ? "bg-yellow-500/25 text-yellow-300 hover:bg-yellow-500/40" : "bg-white/4 text-gray-600 hover:text-yellow-300 hover:bg-yellow-500/15"}`}
+                                className={`p-1.5 rounded-lg transition-colors ${user.isVip ? "bg-yellow-500/25 text-yellow-300 hover:bg-yellow-500/40" : "bg-white/4 text-gray-400 hover:text-yellow-300 hover:bg-yellow-500/15"}`}
                               >
                                 <Star className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => toggleRole(user, "isDepositor")}
                                 title={user.isDepositor ? "Remove Depositor" : "Grant Depositor"}
-                                className={`p-1.5 rounded-lg transition-colors ${user.isDepositor ? "bg-green-500/25 text-green-300 hover:bg-green-500/40" : "bg-white/4 text-gray-600 hover:text-green-300 hover:bg-green-500/15"}`}
+                                className={`p-1.5 rounded-lg transition-colors ${user.isDepositor ? "bg-green-500/25 text-green-300 hover:bg-green-500/40" : "bg-white/4 text-gray-400 hover:text-green-300 hover:bg-green-500/15"}`}
                               >
                                 <UserCheck className="w-3.5 h-3.5" />
                               </button>
@@ -288,7 +288,7 @@ export default function UsersTable() {
                           <button
                             onClick={() => setAdjustUser(user)}
                             title="Adjust points"
-                            className="p-1.5 rounded-lg bg-white/4 text-gray-600 hover:text-gold-300 hover:bg-gold-500/15 transition-colors"
+                            className="p-1.5 rounded-lg bg-white/4 text-gray-400 hover:text-gold-300 hover:bg-gold-500/15 transition-colors"
                           >
                             <Coins className="w-3.5 h-3.5" />
                           </button>
@@ -318,7 +318,7 @@ export default function UsersTable() {
           >
             ← Previous
           </button>
-          <span className="text-gray-500 text-sm">Page {page} of {totalPages}</span>
+          <span className="text-gray-400 text-sm">Page {page} of {totalPages}</span>
           <button
             onClick={() => setOffset((o) => o + LIMIT)}
             disabled={page === totalPages}

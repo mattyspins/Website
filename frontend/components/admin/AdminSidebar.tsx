@@ -54,7 +54,7 @@ function NavGroup({ label, items, collapsed, pathname, onNavigate }: {
   return (
     <div className="mb-6">
       {!collapsed && (
-        <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-600">{label}</p>
+        <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</p>
       )}
       <div className="space-y-0.5">
         {items.map(({ href, label: itemLabel, icon: Icon }) => {

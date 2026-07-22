@@ -142,7 +142,7 @@ export default function CreateGameModal({
                 htmlFor="title"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
-                Game Title <span className="text-gray-500">(Optional)</span>
+                Game Title <span className="text-gray-400">(Optional)</span>
               </label>
               <input
                 type="text"
@@ -162,7 +162,7 @@ export default function CreateGameModal({
                 htmlFor="description"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
-                Description <span className="text-gray-500">(Optional)</span>
+                Description <span className="text-gray-400">(Optional)</span>
               </label>
               <textarea
                 id="description"
@@ -202,7 +202,7 @@ export default function CreateGameModal({
                   required
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-400 mt-1">
                 The balance before opening any bonuses
               </p>
             </div>
@@ -227,7 +227,7 @@ export default function CreateGameModal({
                 disabled={loading}
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-400 mt-1">
                 Total number of slot bonuses to open
               </p>
             </div>
@@ -258,7 +258,7 @@ export default function CreateGameModal({
                   x
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-400 mt-1">
                 Average multiplier needed to break even
               </p>
             </div>

@@ -29,7 +29,7 @@ function SlotChip({
 }) {
   if (!slot) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/3 border border-white/5 text-white/25 text-sm italic">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/3 border border-white/5 text-white/45 text-sm italic">
         TBD
       </div>
     );
@@ -59,10 +59,10 @@ function SlotChip({
       )}
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-white truncate">{slot.slotName}</p>
-        <p className="text-[11px] text-white/40 truncate">{game?.provider ?? slot.provider ?? "—"} · Seed {slot.seed}</p>
+        <p className="text-[11px] text-white/50 truncate">{game?.provider ?? slot.provider ?? "—"} · Seed {slot.seed}</p>
       </div>
       {multiplier && (
-        <span className={`text-xs font-bold shrink-0 ${isWinner ? "text-green-400" : "text-white/40"}`}>
+        <span className={`text-xs font-bold shrink-0 ${isWinner ? "text-green-400" : "text-white/50"}`}>
           {Number(multiplier).toFixed(2)}x
         </span>
       )}
@@ -160,13 +160,13 @@ export default function SlotWorldCupBracket({
                           type="number" min="0" placeholder="Bet" value={d[betField]}
                           onChange={(e) => onResultChange?.(match.id, betField, e.target.value)}
                           aria-label={`${slot?.slotName ?? "Slot"} bet`}
-                          className="w-full min-w-0 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-[11px] text-white placeholder:text-white/25 focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
+                          className="w-full min-w-0 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-[11px] text-white placeholder:text-white/45 focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
                         />
                         <input
                           type="number" min="0" placeholder="Payout" value={d[payoutField]}
                           onChange={(e) => onResultChange?.(match.id, payoutField, e.target.value)}
                           aria-label={`${slot?.slotName ?? "Slot"} payout`}
-                          className="w-full min-w-0 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-[11px] text-white placeholder:text-white/25 focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
+                          className="w-full min-w-0 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-[11px] text-white placeholder:text-white/45 focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
                         />
                       </div>
                     )}
@@ -182,7 +182,7 @@ export default function SlotWorldCupBracket({
                   <div className={`bg-white/3 border rounded-xl p-2 space-y-1.5 ${ready ? "border-yellow-400/25" : "border-white/8"}`}>
                     {side(slotA, done && match.winnerId === match.slotAId, mA, "betA", "payoutA")}
                     {bye ? (
-                      <p className="text-[10px] text-white/25 text-center">BYE — advances automatically</p>
+                      <p className="text-[10px] text-white/45 text-center">BYE — advances automatically</p>
                     ) : (
                       side(slotB, done && match.winnerId === match.slotBId, mB, "betB", "payoutB")
                     )}
@@ -196,7 +196,7 @@ export default function SlotWorldCupBracket({
                       </button>
                     )}
                     {!ready && !done && (
-                      <p className="text-[10px] text-white/25 text-center">Waiting on the previous round</p>
+                      <p className="text-[10px] text-white/45 text-center">Waiting on the previous round</p>
                     )}
                   </div>
                 );
@@ -222,7 +222,7 @@ export default function SlotWorldCupBracket({
                         multiplier={match.multiplierB}
                       />
                     )}
-                    {isBye && <p className="text-[10px] text-white/25 text-center">BYE — advances automatically</p>}
+                    {isBye && <p className="text-[10px] text-white/45 text-center">BYE — advances automatically</p>}
                   </div>
                 );
               }
@@ -254,9 +254,9 @@ export default function SlotWorldCupBracket({
                 <div key={match.id} className="bg-white/3 border border-white/8 rounded-xl p-2.5 space-y-1.5">
                   <SlotChip {...chipProps(candA, slotA)} />
                   {!forced && <SlotChip {...chipProps(candB, slotB)} />}
-                  {forced && slotA && <p className="text-[10px] text-white/25 text-center">BYE — advances automatically</p>}
+                  {forced && slotA && <p className="text-[10px] text-white/45 text-center">BYE — advances automatically</p>}
                   {!forced && !slotA && !slotB && (
-                    <p className="text-[10px] text-white/25 text-center py-1">Pick the previous round first</p>
+                    <p className="text-[10px] text-white/45 text-center py-1">Pick the previous round first</p>
                   )}
                 </div>
               );
@@ -356,15 +356,15 @@ export default function SlotWorldCupBracket({
                 )}
               </div>
               <p className="text-sm font-bold text-yellow-300 leading-tight">{champion.slotName}</p>
-              <p className="text-[11px] text-white/40 mt-0.5">
+              <p className="text-[11px] text-white/50 mt-0.5">
                 {findSlot(champion.slotName)?.provider ?? champion.provider ?? "—"}
               </p>
             </div>
           ) : (
             <div className="text-center px-3 opacity-40">
               <div className="text-4xl mb-2 grayscale">🏆</div>
-              <div className="text-[10px] uppercase tracking-widest text-white/25">Champion</div>
-              <p className="text-[11px] text-white/20 mt-1">To be decided</p>
+              <div className="text-[10px] uppercase tracking-widest text-white/45">Champion</div>
+              <p className="text-[11px] text-white/45 mt-1">To be decided</p>
             </div>
           )}
         </div>

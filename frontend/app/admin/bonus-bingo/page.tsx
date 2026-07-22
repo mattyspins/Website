@@ -17,7 +17,7 @@ function statusColor(s: BingoGame["status"]) {
     case "ACTIVE": return "bg-green-500/20 text-green-300 border-green-500/30";
     case "COMPLETED": return "bg-yellow-400/20 text-yellow-300 border-yellow-400/30";
     case "CANCELLED": return "bg-red-500/10 text-red-400 border-red-500/20";
-    default: return "bg-white/8 text-white/40 border-white/10";
+    default: return "bg-white/8 text-white/50 border-white/10";
   }
 }
 
@@ -40,7 +40,7 @@ function LineCelebration({
         <p className="text-green-300 font-black text-2xl tracking-tight">BINGO!</p>
         <p className="text-white font-semibold text-lg">{label} complete!</p>
         <p className="text-yellow-400 font-bold text-base">+{points.toLocaleString()} coins to all claimers</p>
-        <button onClick={onDone} className="mt-1 text-white/30 hover:text-white/60 text-xs transition-colors">dismiss</button>
+        <button onClick={onDone} className="mt-1 text-white/45 hover:text-white/60 text-xs transition-colors">dismiss</button>
       </div>
     </div>
   );
@@ -101,7 +101,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (g:
           ))}
         </div>
         <div className="flex items-center gap-2 mb-6">
-          <span className="text-xs text-white/40 shrink-0">Custom:</span>
+          <span className="text-xs text-white/50 shrink-0">Custom:</span>
           <input
             type="number"
             min={1}
@@ -109,7 +109,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (g:
             onChange={e => setForm({ ...form, linePoints: Number(e.target.value) })}
             className="w-28 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-green-400/50"
           />
-          <span className="text-xs text-white/40">coins</span>
+          <span className="text-xs text-white/50">coins</span>
         </div>
 
         <div className="flex gap-2">
@@ -198,12 +198,12 @@ function AdminBingoGrid({
                     <span className="text-yellow-300 text-lg animate-bounce">★</span>
                     {cell.slotName
                       ? <span className="text-yellow-300/80 text-[9px] line-clamp-1 px-0.5">{cell.slotName}</span>
-                      : <span className="text-white/30 text-[9px]">tap to set slot</span>
+                      : <span className="text-white/45 text-[9px]">tap to set slot</span>
                     }
                   </div>
                 )}
                 {cell.status === "EMPTY" && (
-                  <span className="text-white/10 text-xs">{r * gridSize + c + 1}</span>
+                  <span className="text-white/45 text-xs">{r * gridSize + c + 1}</span>
                 )}
                 {isWonLine && cell.status === "GREEN" && (
                   <div className="absolute inset-0 rounded-xl ring-2 ring-yellow-400/40 pointer-events-none" />
@@ -371,7 +371,7 @@ export default function AdminBingoPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-white">Bonus Bingo Admin</h1>
-            <p className="text-white/40 text-sm mt-0.5">Create and run bonus bingo sessions</p>
+            <p className="text-white/50 text-sm mt-0.5">Create and run bonus bingo sessions</p>
           </div>
           <button
             onClick={() => setShowCreate(true)}
@@ -402,16 +402,16 @@ export default function AdminBingoPage() {
                     <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${statusColor(g.status)}`}>
                       {g.status.replace("_", " ")}
                     </span>
-                    <span className="text-white/30 text-xs">{g.gridSize}×{g.gridSize}</span>
+                    <span className="text-white/45 text-xs">{g.gridSize}×{g.gridSize}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-white/35">
+                  <div className="flex items-center gap-3 text-xs text-white/45">
                     <span>{g.participants.length} players</span>
                     <span>{g.lineWins.length} lines won</span>
                     {isActive && <span className="text-green-400 text-sm">▾</span>}
                     <button
                       onClick={e => { e.stopPropagation(); handleDelete(g.id, g.title); }}
                       disabled={actionLoading}
-                      className="ml-1 px-2 py-1 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all disabled:opacity-30"
+                      className="ml-1 px-2 py-1 rounded-lg text-white/45 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all disabled:opacity-30"
                     >🗑️</button>
                   </div>
                 </div>
@@ -419,7 +419,7 @@ export default function AdminBingoPage() {
             );
           })}
           {games.length === 0 && (
-            <div className="text-center py-16 text-white/30">
+            <div className="text-center py-16 text-white/45">
               <div className="text-5xl mb-3">🟩</div>
               <p className="text-lg">No bingo games yet</p>
               <button onClick={() => setShowCreate(true)} className="mt-4 px-5 py-2.5 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-400 transition-colors text-sm">
@@ -436,7 +436,7 @@ export default function AdminBingoPage() {
               <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
                 <div>
                   <h2 className="text-lg font-bold text-white">{selected.title}</h2>
-                  <p className="text-sm text-white/40 mt-0.5">
+                  <p className="text-sm text-white/50 mt-0.5">
                     {selected.gridSize}×{selected.gridSize} · {selected.linePoints.toLocaleString()} coins/line · {selected.participants.length} participants
                   </p>
                 </div>
@@ -461,7 +461,7 @@ export default function AdminBingoPage() {
                     className={`px-3 py-2 border rounded-lg text-sm flex items-center gap-1.5 transition-colors ${
                       includeWinners
                         ? "border-green-500/50 text-green-300 bg-green-500/10 hover:bg-green-500/20"
-                        : "border-white/10 text-white/40 hover:bg-white/5"
+                        : "border-white/10 text-white/50 hover:bg-white/5"
                     }`}
                   >
                     🏆 {includeWinners ? "Winners in pool" : "Winners excluded"}
@@ -506,7 +506,7 @@ export default function AdminBingoPage() {
                     Participants ({selected.participants.length})
                   </p>
                   {selected.participants.length === 0 ? (
-                    <p className="text-white/30 text-sm">No participants yet.</p>
+                    <p className="text-white/45 text-sm">No participants yet.</p>
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {selected.participants.map(p => {
@@ -524,13 +524,13 @@ export default function AdminBingoPage() {
                           >
                             {p.user.avatarUrl && <img src={p.user.avatarUrl} alt="" className="w-5 h-5 rounded-full" />}
                             <span>{kickName(p.user)}</span>
-                            {p.preferredSlot && <span className="text-white/40 text-xs">🎰 {p.preferredSlot}</span>}
+                            {p.preferredSlot && <span className="text-white/50 text-xs">🎰 {p.preferredSlot}</span>}
                             {hasGreenCell && <span className="text-green-400 text-xs">🟩</span>}
                             <button
                               onClick={() => handleRemoveParticipant(p.userId, kickName(p.user))}
                               disabled={actionLoading}
                               title="Remove participant"
-                              className="ml-1 text-white/20 hover:text-red-400 transition-colors disabled:opacity-30 text-xs leading-none"
+                              className="ml-1 text-white/45 hover:text-red-400 transition-colors disabled:opacity-30 text-xs leading-none"
                             >
                               ✕
                             </button>
@@ -547,11 +547,11 @@ export default function AdminBingoPage() {
                 <div className="space-y-4">
                   {/* Current round status */}
                   <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                    <p className="text-xs text-white/40 uppercase tracking-widest font-bold mb-3">Current Round</p>
+                    <p className="text-xs text-white/50 uppercase tracking-widest font-bold mb-3">Current Round</p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {/* Step 1: Spin */}
                       <div className={`p-3 rounded-xl border ${canSpin ? "border-yellow-400/30 bg-yellow-400/8" : selected.currentCellId ? "border-green-500/20 bg-green-500/5" : "border-white/8 bg-white/3"}`}>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1">Step 1</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">Step 1</p>
                         <p className="text-sm font-semibold text-white mb-2">
                           {selected.currentCellId
                             ? `Cell: Row ${(activeCell?.row ?? 0) + 1}, Col ${(activeCell?.col ?? 0) + 1}`
@@ -568,7 +568,7 @@ export default function AdminBingoPage() {
 
                       {/* Step 2: Draw player */}
                       <div className={`p-3 rounded-xl border ${canDraw ? "border-yellow-400/30 bg-yellow-400/8" : selected.currentUserId ? "border-green-500/20 bg-green-500/5" : "border-white/8 bg-white/3"}`}>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1">Step 2</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">Step 2</p>
                         <p className="text-sm font-semibold text-white mb-2">
                           {selected.currentUserId
                             ? kickName(selected.currentUser)
@@ -585,7 +585,7 @@ export default function AdminBingoPage() {
 
                       {/* Step 3: Result */}
                       <div className={`p-3 rounded-xl border ${canResult && selected.currentUserId ? "border-yellow-400/30 bg-yellow-400/8" : "border-white/8 bg-white/3"}`}>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1">Step 3</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">Step 3</p>
                         <p className="text-sm font-semibold text-white mb-2">
                           {activeCell?.slotName ? `Slot: ${activeCell.slotName}` : "Mark result"}
                         </p>
@@ -614,7 +614,7 @@ export default function AdminBingoPage() {
                     <div className="p-3 bg-yellow-400/8 border border-yellow-400/20 rounded-xl text-yellow-300 text-sm">
                       Waiting for {kickName(selected.currentUser)} to pick their slot on the viewer page…
                       <br />
-                      <span className="text-white/40 text-xs">Or click the active cell on the board below to set it manually.</span>
+                      <span className="text-white/50 text-xs">Or click the active cell on the board below to set it manually.</span>
                     </div>
                   )}
                 </div>
@@ -626,7 +626,7 @@ export default function AdminBingoPage() {
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-5">
                   <h3 className="text-base font-semibold text-white">Board — {selected.gridSize}×{selected.gridSize}</h3>
-                  <div className="flex items-center gap-4 text-xs text-white/40">
+                  <div className="flex items-center gap-4 text-xs text-white/50">
                     <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-500/40 border border-green-500/30 inline-block" /> Won</span>
                     <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-yellow-400/20 border border-yellow-400/60 inline-block animate-pulse" /> Active</span>
                   </div>

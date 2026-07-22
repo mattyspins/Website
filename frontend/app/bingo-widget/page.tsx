@@ -117,7 +117,7 @@ const STATUS_CFG = {
   ACTIVE:       { label: "Live",         dot: "bg-green-400 animate-pulse", text: "text-green-300" },
   COMPLETED:    { label: "Done",          dot: "bg-yellow-400",             text: "text-yellow-300" },
   CANCELLED:    { label: "Cancelled",     dot: "bg-red-400",                text: "text-red-300" },
-  DRAFT:        { label: "Draft",         dot: "bg-white/30",               text: "text-white/40" },
+  DRAFT:        { label: "Draft",         dot: "bg-white/30",               text: "text-white/50" },
 } as const;
 
 // ─── Widget ───────────────────────────────────────────────────────────────────
@@ -212,7 +212,7 @@ export default function BingoWidget() {
       {/* ── Participants ── */}
       {game.participants.length > 0 && (
         <div className="bg-black/70 border border-white/10 rounded-lg px-2 py-1">
-          <p className="text-white/30 text-[8px] uppercase tracking-wider mb-0.5">Players ({game.participants.length})</p>
+          <p className="text-white/45 text-[8px] uppercase tracking-wider mb-0.5">Players ({game.participants.length})</p>
           <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
             {game.participants.slice(0, 10).map(p => {
               const isCurrent = p.userId === game.currentUser?.id;
@@ -228,7 +228,7 @@ export default function BingoWidget() {
             })}
           </div>
           {game.participants.length > 10 && (
-            <p className="text-white/25 text-[8px] mt-0.5">+{game.participants.length - 10} more</p>
+            <p className="text-white/45 text-[8px] mt-0.5">+{game.participants.length - 10} more</p>
           )}
         </div>
       )}
@@ -243,7 +243,7 @@ export default function BingoWidget() {
                 <div key={i} className="flex items-center gap-1 min-w-0">
                   <span className="text-green-400 text-[8px] shrink-0">✦</span>
                   <span className="text-green-300 text-[8px] font-semibold shrink-0 whitespace-nowrap">{lineLabel(lw.lineType, lw.lineIndex)}</span>
-                  {winners.length > 0 && <span className="text-white/40 text-[8px] truncate">{winners.join(", ")}</span>}
+                  {winners.length > 0 && <span className="text-white/50 text-[8px] truncate">{winners.join(", ")}</span>}
                   <span className="text-yellow-400/70 text-[7px] shrink-0 ml-auto">+{lw.pointsEach.toLocaleString()}</span>
                 </div>
               );

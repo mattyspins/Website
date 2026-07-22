@@ -25,7 +25,7 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
   return (
     <div className="bg-navy-900/60 border border-white/8 rounded-xl px-4 py-3 text-center min-w-[70px]">
       <p className="text-white font-black text-2xl tabular-nums">{String(value).padStart(2, "0")}</p>
-      <p className="text-gray-500 text-[10px] uppercase tracking-widest mt-0.5">{label}</p>
+      <p className="text-gray-400 text-[10px] uppercase tracking-widest mt-0.5">{label}</p>
     </div>
   );
 }
@@ -102,7 +102,7 @@ export default function WeeklyRafflePage() {
           </div>
         ) : !raffle ? (
           <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-8 text-center mb-8">
-            <Gift className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+            <Gift className="w-10 h-10 text-gray-400 mx-auto mb-3" />
             <p className="text-gray-400">No raffle is open for this week yet — check back soon.</p>
           </div>
         ) : (
@@ -192,7 +192,7 @@ export default function WeeklyRafflePage() {
                     <span className="text-white font-semibold">${eligibility.wagered.toLocaleString()}</span>
                   </p>
                   {!eligibility.eligible && (
-                    <ul className="text-gray-500 text-xs list-disc list-inside space-y-0.5 mt-1">
+                    <ul className="text-gray-400 text-xs list-disc list-inside space-y-0.5 mt-1">
                       {eligibility.reasons.map((r, i) => (
                         <li key={i}>{r}</li>
                       ))}
@@ -216,7 +216,7 @@ export default function WeeklyRafflePage() {
             Previous Winners
           </h2>
           {history.length === 0 ? (
-            <p className="text-gray-500 text-sm">No completed raffles yet — check back after the first Monday draw.</p>
+            <p className="text-gray-400 text-sm">No completed raffles yet — check back after the first Monday draw.</p>
           ) : (
             <div className="space-y-2">
               {history.map((h) => (

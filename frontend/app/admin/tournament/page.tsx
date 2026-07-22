@@ -69,7 +69,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
           ))}
         </div>
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-xs text-white/40 shrink-0">Custom (e.g. 9, 10, 11, 12):</span>
+          <span className="text-xs text-white/50 shrink-0">Custom (e.g. 9, 10, 11, 12):</span>
           <div className="flex items-center gap-1">
             <button type="button"
               onClick={() => {
@@ -118,7 +118,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
           ))}
         </div>
         <div className="flex items-center gap-2 mb-6">
-          <span className="text-xs text-white/40 shrink-0">Custom:</span>
+          <span className="text-xs text-white/50 shrink-0">Custom:</span>
           <div className="flex items-center gap-1">
             <button type="button"
               onClick={() => {
@@ -150,7 +150,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
               }}
               className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
             >+</button>
-            <span className="text-xs text-white/40 ml-1">min</span>
+            <span className="text-xs text-white/50 ml-1">min</span>
             {![120, 180, 240, 300].includes(form.slotTimerSeconds) && customMins && (
               <span className="text-xs text-yellow-400 font-medium ml-1">
                 = {Math.floor(form.slotTimerSeconds / 60)}m {form.slotTimerSeconds % 60 > 0 ? `${form.slotTimerSeconds % 60}s` : ""}
@@ -234,7 +234,7 @@ function DrawModal({
         {/* Header */}
         <div className="px-6 pt-5 pb-4 border-b border-white/8">
           <h3 className="text-lg font-semibold text-white mb-0.5">Draw Tournament Spots</h3>
-          <p className="text-sm text-white/40">{entries.length || tournament.entryCount} people entered</p>
+          <p className="text-sm text-white/50">{entries.length || tournament.entryCount} people entered</p>
         </div>
 
         {/* Total spots */}
@@ -248,7 +248,7 @@ function DrawModal({
             </div>
           </div>
           {guaranteedCount > 0 && (
-            <div className="mt-2 flex gap-4 text-xs text-white/40">
+            <div className="mt-2 flex gap-4 text-xs text-white/50">
               <span>✓ <span className="text-yellow-400 font-semibold">{guaranteedCount}</span> guaranteed</span>
               <span>🎲 <span className="text-white/70 font-semibold">{randomSpotsLeft}</span> random</span>
             </div>
@@ -257,7 +257,7 @@ function DrawModal({
 
         {/* Entry list */}
         <div className="overflow-y-auto flex-1 px-6 py-3">
-          <p className="text-xs text-white/35 uppercase tracking-widest font-bold mb-3">
+          <p className="text-xs text-white/45 uppercase tracking-widest font-bold mb-3">
             Tick to guarantee entry — rest are random
           </p>
 
@@ -271,7 +271,7 @@ function DrawModal({
               <button onClick={fetchEntries} className="text-xs text-yellow-400 hover:text-yellow-300 underline">Retry</button>
             </div>
           ) : entries.length === 0 ? (
-            <p className="text-white/30 text-sm text-center py-4">No entries yet</p>
+            <p className="text-white/45 text-sm text-center py-4">No entries yet</p>
           ) : (
             <div className="space-y-1.5">
               {entries.map((e) => {
@@ -460,7 +460,7 @@ export default function AdminTournamentPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-white">Tournament Admin</h1>
-            <p className="text-white/40 text-sm mt-0.5">Create and manage viewer tournaments</p>
+            <p className="text-white/50 text-sm mt-0.5">Create and manage viewer tournaments</p>
           </div>
           <button
             onClick={() => setShowCreate(true)}
@@ -484,8 +484,8 @@ export default function AdminTournamentPage() {
               t.status === TournamentStatus.IN_PROGRESS ? "bg-green-500/20 text-green-400 border-green-500/30" :
               t.status === TournamentStatus.REGISTRATION ? "bg-blue-500/20 text-blue-400 border-blue-500/30" :
               t.status === TournamentStatus.SLOT_SELECTION ? "bg-yellow-400/20 text-yellow-300 border-yellow-400/30" :
-              t.status === TournamentStatus.COMPLETED ? "bg-white/5 text-white/30 border-white/10" :
-              "bg-white/5 text-white/30 border-white/10";
+              t.status === TournamentStatus.COMPLETED ? "bg-white/5 text-white/45 border-white/10" :
+              "bg-white/5 text-white/45 border-white/10";
             return (
               <div
                 key={t.id}
@@ -505,14 +505,14 @@ export default function AdminTournamentPage() {
                       {t.status.replace(/_/g, " ")}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-white/35">
+                  <div className="flex items-center gap-3 text-xs text-white/45">
                     <span>{t.maxPlayers} spots</span>
                     <span>{t.entryCount} entered</span>
                     {isActive && <span className="text-yellow-400 text-sm">▾</span>}
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.title); }}
                       disabled={actionLoading}
-                      className="ml-1 px-2 py-1 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all disabled:opacity-30 text-base"
+                      className="ml-1 px-2 py-1 rounded-lg text-white/45 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all disabled:opacity-30 text-base"
                       title="Delete tournament"
                     >
                       🗑️
@@ -531,7 +531,7 @@ export default function AdminTournamentPage() {
               <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
                 <div>
                   <h2 className="text-lg font-bold text-white">{selected.title}</h2>
-                  <p className="text-sm text-white/40 mt-0.5">
+                  <p className="text-sm text-white/50 mt-0.5">
                     {selected.maxPlayers} spots · {selected.entryCount} entries · Timer: {Math.floor(selected.slotTimerSeconds / 60)}m
                   </p>
                 </div>
@@ -603,7 +603,7 @@ export default function AdminTournamentPage() {
                           {p.avatarUrl && <img src={p.avatarUrl} alt="" className="w-7 h-7 rounded-full" />}
                           <div>
                             <p className="text-sm text-white font-medium">{p.displayName}</p>
-                            <p className="text-xs text-white/40">
+                            <p className="text-xs text-white/50">
                               {p.currentSlot ? `Slot: ${p.currentSlot}` : "No slot yet"}
                               {p.slotDeadline && !p.slotConfirmed && ` · expires ${new Date(p.slotDeadline).toLocaleTimeString()}`}
                             </p>
@@ -663,7 +663,7 @@ export default function AdminTournamentPage() {
                         <img src={champ.avatarUrl} alt="" className="w-14 h-14 rounded-full ring-2 ring-yellow-400/60 shadow-[0_0_16px_rgba(250,204,21,0.3)]" />
                       )}
                       <p className="text-white font-bold text-xl">{champ.displayName}</p>
-                      {champ.currentSlot && <p className="text-white/40 text-sm italic">{champ.currentSlot}</p>}
+                      {champ.currentSlot && <p className="text-white/50 text-sm italic">{champ.currentSlot}</p>}
                     </div>
                   )}
                 </div>
@@ -673,7 +673,7 @@ export default function AdminTournamentPage() {
         )}
 
         {tournaments.length === 0 && !loading && (
-          <div className="text-center py-20 text-white/30">
+          <div className="text-center py-20 text-white/45">
             <div className="text-5xl mb-3">🏆</div>
             <p className="text-lg">No tournaments yet</p>
             <button

@@ -121,7 +121,7 @@ export default function DisqualifyWinnerModal({
               disabled={loading}
               required
             />
-            <p className="text-gray-500 text-xs mt-1">
+            <p className="text-gray-400 text-xs mt-1">
               This reason will be logged for record keeping
             </p>
           </div>

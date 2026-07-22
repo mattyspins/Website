@@ -138,7 +138,7 @@ export default function CompletedGameCard({
       {/* Completion Date */}
       {game.completedAt && (
         <div className="text-center">
-          <p className="text-gray-500 text-xs">
+          <p className="text-gray-400 text-xs">
             Completed: {new Date(game.completedAt).toLocaleString()}
           </p>
         </div>

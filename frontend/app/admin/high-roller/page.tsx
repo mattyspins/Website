@@ -52,29 +52,29 @@ function HallOfFamePanel({ summary, onClose }: { summary: HighRollerHallOfFame; 
             <p className="text-4xl mb-1">👑</p>
             <p className="text-white/50 text-xs uppercase tracking-widest mb-1">Champion{summary.champions.length > 1 ? "s" : ""}</p>
             <p className="text-gold-300 font-black text-xl">{summary.champions.map((c) => c.kickUsername).join(" & ")}</p>
-            <p className="text-white/40 text-sm">Longest Streak: {summary.longestStreak}</p>
+            <p className="text-white/50 text-sm">Longest Streak: {summary.longestStreak}</p>
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="bg-white/5 rounded-xl p-3">
-            <p className="text-white/40 text-xs uppercase tracking-wide">Most Accurate</p>
+            <p className="text-white/50 text-xs uppercase tracking-wide">Most Accurate</p>
             <p className="text-white font-semibold truncate">
               {summary.mostAccurate.length > 0 ? `${summary.mostAccurate[0].kickUsername} (${summary.mostAccurate[0].accuracy}%)` : "—"}
             </p>
           </div>
           <div className="bg-white/5 rounded-xl p-3">
-            <p className="text-white/40 text-xs uppercase tracking-wide">Most Correct</p>
+            <p className="text-white/50 text-xs uppercase tracking-wide">Most Correct</p>
             <p className="text-white font-semibold truncate">
               {summary.mostCorrectPredictions.length > 0 ? `${summary.mostCorrectPredictions[0].kickUsername} (${summary.mostCorrectPredictions[0].correctCount})` : "—"}
             </p>
           </div>
           <div className="bg-white/5 rounded-xl p-3">
-            <p className="text-white/40 text-xs uppercase tracking-wide">Rounds Played</p>
+            <p className="text-white/50 text-xs uppercase tracking-wide">Rounds Played</p>
             <p className="text-white font-semibold">{summary.totalRoundsPlayed}</p>
           </div>
           <div className="bg-white/5 rounded-xl p-3">
-            <p className="text-white/40 text-xs uppercase tracking-wide">Biggest Comeback</p>
+            <p className="text-white/50 text-xs uppercase tracking-wide">Biggest Comeback</p>
             <p className="text-white font-semibold truncate">
               {summary.biggestComeback ? `${summary.biggestComeback.kickUsername} (${summary.biggestComeback.streak})` : "—"}
             </p>
@@ -82,7 +82,7 @@ function HallOfFamePanel({ summary, onClose }: { summary: HighRollerHallOfFame; 
         </div>
 
         {summary.mvp && (
-          <p className="text-center text-white/40 text-xs mt-5">⭐ MVP: <span className="text-white font-semibold">{summary.mvp.kickUsername}</span></p>
+          <p className="text-center text-white/50 text-xs mt-5">⭐ MVP: <span className="text-white font-semibold">{summary.mvp.kickUsername}</span></p>
         )}
 
         <button
@@ -344,7 +344,7 @@ export default function AdminHighRollerPage() {
         <div className="mb-8">
           <button
             onClick={() => router.push("/admin")}
-            className="flex items-center gap-1.5 text-white/40 hover:text-white/80 text-sm mb-4 transition-colors group"
+            className="flex items-center gap-1.5 text-white/50 hover:text-white/80 text-sm mb-4 transition-colors group"
           >
             <svg className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -354,7 +354,7 @@ export default function AdminHighRollerPage() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-white">High Roller</h1>
-              <p className="text-white/40 text-sm mt-0.5">Viewers predict Over/Under a multiplier line and build a streak — no elimination, just bragging rights.</p>
+              <p className="text-white/50 text-sm mt-0.5">Viewers predict Over/Under a multiplier line and build a streak — no elimination, just bragging rights.</p>
             </div>
             <a
               href="/high-roller-widget"
@@ -392,7 +392,7 @@ export default function AdminHighRollerPage() {
                 onChange={(e) => setThreshold(e.target.value)}
                 className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-red-400/50 text-sm"
               />
-              <span className="flex items-center px-3 text-white/40 text-sm">x</span>
+              <span className="flex items-center px-3 text-white/50 text-sm">x</span>
             </div>
             <div className="flex gap-1.5 mb-4">
               {[50, 100, 250, 500].map((v) => (
@@ -413,7 +413,7 @@ export default function AdminHighRollerPage() {
 
             <button
               onClick={() => setShowAdvanced((v) => !v)}
-              className="text-xs text-white/40 hover:text-white/70 mb-3 transition-colors"
+              className="text-xs text-white/50 hover:text-white/70 mb-3 transition-colors"
             >
               {showAdvanced ? "− Hide" : "+ Customize"} chat commands
             </button>
@@ -427,7 +427,7 @@ export default function AdminHighRollerPage() {
                   ["Suggest (optional)", suggestKeyword, setSuggestKeyword],
                 ].map(([label, value, setter]: any) => (
                   <div key={label}>
-                    <label className="block text-[10px] text-white/40 mb-1 uppercase tracking-widest">{label}</label>
+                    <label className="block text-[10px] text-white/50 mb-1 uppercase tracking-widest">{label}</label>
                     <input
                       value={value}
                       onChange={(e) => setter(e.target.value)}
@@ -463,7 +463,7 @@ export default function AdminHighRollerPage() {
                     <button
                       onClick={handlePauseToggle}
                       disabled={actionLoading}
-                      className="px-3 py-1.5 border border-white/15 text-white/40 text-xs rounded-lg hover:bg-white/5 disabled:opacity-30 transition-colors"
+                      className="px-3 py-1.5 border border-white/15 text-white/50 text-xs rounded-lg hover:bg-white/5 disabled:opacity-30 transition-colors"
                     >
                       {session.paused ? "Resume" : "Pause"}
                     </button>
@@ -476,13 +476,13 @@ export default function AdminHighRollerPage() {
                     </button>
                   </div>
                 </div>
-                <p className="text-white/40 text-xs mt-1">
+                <p className="text-white/50 text-xs mt-1">
                   Round {session.roundNumber + 1} · Type <code className="bg-white/10 text-red-300 px-1.5 py-0.5 rounded font-mono">{session.joinKeyword}</code> to join · {players.length} {players.length === 1 ? "player" : "players"}
                 </p>
                 <button
                   onClick={handleFinalRoundToggle}
                   disabled={actionLoading}
-                  className={`mt-2 text-xs px-2 py-1 rounded-md transition-colors ${session.finalRound ? "bg-red-500/20 text-red-300 border border-red-500/40" : "text-white/30 hover:text-white/60"}`}
+                  className={`mt-2 text-xs px-2 py-1 rounded-md transition-colors ${session.finalRound ? "bg-red-500/20 text-red-300 border border-red-500/40" : "text-white/45 hover:text-white/60"}`}
                 >
                   {session.finalRound ? "⚠️ Marked as Final Round" : "Mark as Final Round"}
                 </button>
@@ -554,7 +554,7 @@ export default function AdminHighRollerPage() {
                     <button
                       onClick={handleResetRound}
                       disabled={actionLoading}
-                      className="w-full py-2 border border-white/10 text-white/40 rounded-xl hover:bg-white/5 text-xs transition-colors"
+                      className="w-full py-2 border border-white/10 text-white/50 rounded-xl hover:bg-white/5 text-xs transition-colors"
                     >
                       Reset Round (undo lock)
                     </button>
@@ -592,7 +592,7 @@ export default function AdminHighRollerPage() {
                     {lastSuggestionSlot ? (
                       <p className="text-white font-bold text-sm mt-1">🎰 {lastSuggestionSlot}</p>
                     ) : (
-                      <p className="text-white/30 text-xs mt-1">Waiting for {`!sr <slot name>`}…</p>
+                      <p className="text-white/45 text-xs mt-1">Waiting for {`!sr <slot name>`}…</p>
                     )}
                   </div>
                 )}
@@ -607,7 +607,7 @@ export default function AdminHighRollerPage() {
                 <h2 className="text-base font-semibold text-white mb-4">Players ({players.length})</h2>
                 <div className="space-y-1 max-h-52 overflow-y-auto pr-1 mb-3">
                   {players.length === 0 ? (
-                    <p className="text-white/25 text-sm text-center py-4">No one has joined yet</p>
+                    <p className="text-white/45 text-sm text-center py-4">No one has joined yet</p>
                   ) : (
                     players.map((p) => (
                       <div key={p.id} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border ${p.active ? "bg-white/3 border-white/5" : "bg-white/2 border-white/5 opacity-40"}`}>
@@ -622,7 +622,7 @@ export default function AdminHighRollerPage() {
                         <button
                           onClick={() => handleRemovePlayer(p.id)}
                           disabled={actionLoading}
-                          className="text-white/20 hover:text-red-400 transition-colors text-xs shrink-0"
+                          className="text-white/45 hover:text-red-400 transition-colors text-xs shrink-0"
                           title="Remove"
                         >
                           ✕
@@ -632,7 +632,7 @@ export default function AdminHighRollerPage() {
                   )}
                 </div>
                 <div className="pt-3 border-t border-white/8">
-                  <p className="text-white/30 text-xs mb-2">Add viewer manually</p>
+                  <p className="text-white/45 text-xs mb-2">Add viewer manually</p>
                   <div className="flex gap-2">
                     <input
                       value={manualUsername}
@@ -656,20 +656,20 @@ export default function AdminHighRollerPage() {
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                 <h2 className="text-base font-semibold text-white mb-4">Leaderboard</h2>
                 {players.length === 0 ? (
-                  <p className="text-white/25 text-sm text-center py-4">No players yet</p>
+                  <p className="text-white/45 text-sm text-center py-4">No players yet</p>
                 ) : (
                   <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
                     {players.map((p, i) => (
                       <div key={p.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/3 border border-white/5">
-                        <span className="text-white/20 text-xs w-5 shrink-0 text-right">{i + 1}</span>
+                        <span className="text-white/45 text-xs w-5 shrink-0 text-right">{i + 1}</span>
                         <Avatar p={p} size={7} />
                         <div className="min-w-0 flex-1">
                           <p className="text-white/85 text-sm font-medium truncate">{name(p)}</p>
-                          <p className="text-white/30 text-[11px]">{p.roundsPlayed} rounds · {p.accuracy}% acc</p>
+                          <p className="text-white/45 text-[11px]">{p.roundsPlayed} rounds · {p.accuracy}% acc</p>
                         </div>
                         <div className="text-right shrink-0">
                           <p className="text-gold-300 text-sm font-black">🔥{p.currentStreak}</p>
-                          <p className="text-white/25 text-[10px]">best {p.bestStreak}</p>
+                          <p className="text-white/45 text-[10px]">best {p.bestStreak}</p>
                         </div>
                       </div>
                     ))}
@@ -684,11 +684,11 @@ export default function AdminHighRollerPage() {
                   <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
                     {rounds.map((r) => (
                       <div key={r.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/3 border border-white/5 text-sm">
-                        <span className="text-white/30 text-xs w-8 shrink-0">#{r.roundNumber}</span>
+                        <span className="text-white/45 text-xs w-8 shrink-0">#{r.roundNumber}</span>
                         <span className="text-white/50 text-xs shrink-0">Line {fmtMulti(r.threshold)}</span>
                         <span className="text-white font-semibold shrink-0">{fmtMulti(r.slotResult)}</span>
                         <span className={`text-xs font-bold shrink-0 ${r.winningSide === "OVER" ? "text-red-300" : "text-white/60"}`}>{r.winningSide}</span>
-                        <span className="text-white/25 text-[11px] ml-auto shrink-0">{r.numberOver}O / {r.numberUnder}U</span>
+                        <span className="text-white/45 text-[11px] ml-auto shrink-0">{r.numberOver}O / {r.numberUnder}U</span>
                       </div>
                     ))}
                   </div>
@@ -701,22 +701,22 @@ export default function AdminHighRollerPage() {
         {/* ── Past Sessions ── */}
         {history.length > 0 && (
           <div className="mt-10">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30 mb-4">Past Games</p>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/45 mb-4">Past Games</p>
             <div className="space-y-2">
               {history.map((s) => (
                 <div key={s.id} className="flex items-center gap-4 bg-white/3 border border-white/8 rounded-xl px-5 py-4">
                   <span className="text-white/60 text-sm font-semibold shrink-0">{s.title || "High Roller"}</span>
-                  <div className="text-white/15 text-sm shrink-0">·</div>
-                  <span className="text-white/40 text-sm shrink-0">{s.players.length} players</span>
-                  <div className="text-white/15 text-sm shrink-0">·</div>
-                  <span className="text-white/40 text-sm shrink-0">{s.rounds.length} rounds</span>
-                  <span className="text-white/20 text-xs shrink-0 ml-auto">
+                  <div className="text-white/45 text-sm shrink-0">·</div>
+                  <span className="text-white/50 text-sm shrink-0">{s.players.length} players</span>
+                  <div className="text-white/45 text-sm shrink-0">·</div>
+                  <span className="text-white/50 text-sm shrink-0">{s.rounds.length} rounds</span>
+                  <span className="text-white/45 text-xs shrink-0 ml-auto">
                     {new Date(s.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </span>
                   <button
                     onClick={() => handleDeleteSession(s.id)}
                     disabled={actionLoading}
-                    className="ml-2 text-white/20 hover:text-red-400 transition-colors text-sm shrink-0"
+                    className="ml-2 text-white/45 hover:text-red-400 transition-colors text-sm shrink-0"
                     title="Delete"
                   >
                     🗑️
@@ -732,7 +732,7 @@ export default function AdminHighRollerPage() {
       {drawing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
           <div className="text-center">
-            <p className="text-white/40 text-sm font-bold uppercase tracking-[0.3em] mb-4">
+            <p className="text-white/50 text-sm font-bold uppercase tracking-[0.3em] mb-4">
               {drawing.settled ? "🎉 Slot Suggestion Winner" : "Choosing…"}
             </p>
             <p className={`font-black text-4xl sm:text-5xl transition-colors ${drawing.settled ? "text-gold-400" : "text-white"}`}>

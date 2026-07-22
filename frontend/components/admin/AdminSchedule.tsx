@@ -124,8 +124,8 @@ export default function AdminSchedule() {
 
       <div className="bg-navy-800/60 border border-white/6 rounded-xl p-6">
         <h2 className="text-lg font-semibold text-white mb-4">All Events</h2>
-        {loading ? <p className="text-gray-500 text-sm">Loading...</p> : events.length === 0 ? (
-          <p className="text-gray-500 text-sm">No events yet.</p>
+        {loading ? <p className="text-gray-400 text-sm">Loading...</p> : events.length === 0 ? (
+          <p className="text-gray-400 text-sm">No events yet.</p>
         ) : (
           <div className="space-y-3">
             {events.map((event) => (
@@ -135,7 +135,7 @@ export default function AdminSchedule() {
                     <p className="text-white font-medium text-sm truncate">{event.title}</p>
                     {event.isLive && <span className="bg-red-500/20 text-red-400 text-xs font-bold px-1.5 py-0.5 rounded shrink-0">LIVE</span>}
                   </div>
-                  <p className="text-gray-500 text-xs mt-0.5">
+                  <p className="text-gray-400 text-xs mt-0.5">
                     {new Date(event.scheduledAt).toLocaleString()}{event.gameType && ` · ${event.gameType}`}
                   </p>
                 </div>
@@ -143,7 +143,7 @@ export default function AdminSchedule() {
                   className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${event.isLive ? "border-red-500/30 text-red-400 hover:bg-red-500/10" : "border-white/10 text-gray-400 hover:text-white"}`}>
                   <Radio className="w-3 h-3" />{event.isLive ? "End Live" : "Set Live"}
                 </button>
-                <button onClick={() => handleDelete(event.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1">
+                <button onClick={() => handleDelete(event.id)} className="text-gray-400 hover:text-red-400 transition-colors p-1">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>

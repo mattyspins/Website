@@ -279,7 +279,7 @@ function Card({
             className="absolute inset-0 rounded-2xl pointer-events-none"
           />
           <span className="text-4xl sm:text-5xl text-gold-400/80 font-bold">?</span>
-          <span className="text-[10px] sm:text-xs text-white/30 font-semibold uppercase tracking-widest">
+          <span className="text-[10px] sm:text-xs text-white/45 font-semibold uppercase tracking-widest">
             {isSelectable ? "Tap to Reveal" : "Potential Winner"}
           </span>
           {isActive && (phase === "lift" || phase === "flip") && <Sparks active={isActive} />}
@@ -293,7 +293,7 @@ function Card({
           <Trophy className="w-7 h-7 sm:w-8 sm:h-8 text-gold-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]" />
           <p className="text-white font-bold text-sm sm:text-base leading-tight">{winner?.displayName ?? "—"}</p>
           {winner?.ticketNumber !== undefined && (
-            <p className="text-white/40 text-[10px] sm:text-xs">Ticket #{winner.ticketNumber}</p>
+            <p className="text-white/50 text-[10px] sm:text-xs">Ticket #{winner.ticketNumber}</p>
           )}
           {winner?.prizeDescription && (
             <p className="text-gold-400 text-xs sm:text-sm font-semibold">{winner.prizeDescription}</p>

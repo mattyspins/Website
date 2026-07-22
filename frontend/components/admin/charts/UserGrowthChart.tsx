@@ -31,13 +31,13 @@ export default function UserGrowthChart() {
   return (
     <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5">
       <h3 className="text-white font-semibold text-sm mb-1">User Growth</h3>
-      <p className="text-gray-500 text-xs mb-4">New signups &amp; total users, last 30 days</p>
+      <p className="text-gray-400 text-xs mb-4">New signups &amp; total users, last 30 days</p>
       {!data ? (
         <div className="h-64 flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-gold-400 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : data.length === 0 ? (
-        <div className="h-64 flex items-center justify-center text-gray-500 text-sm">No data yet</div>
+        <div className="h-64 flex items-center justify-center text-gray-400 text-sm">No data yet</div>
       ) : (
         <ResponsiveContainer width="100%" height={260}>
           <AreaChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>

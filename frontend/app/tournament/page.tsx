@@ -57,7 +57,7 @@ function SlotModal({
             <SlotImage src={selectedGame.image} name={selectedGame.name} size={52} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white truncate">{selectedGame.name}</p>
-              <p className="text-xs text-white/40 truncate">{selectedGame.provider}</p>
+              <p className="text-xs text-white/50 truncate">{selectedGame.provider}</p>
             </div>
             <VolatilityBadge volatility={selectedGame.volatility} />
           </div>
@@ -120,11 +120,11 @@ function SlotTimerCountdown({ deadline }: { deadline: string | null }) {
 // ─── Status Badge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: TournamentStatus }) {
   const map: Record<TournamentStatus, { label: string; cls: string }> = {
-    [TournamentStatus.DRAFT]: { label: "Draft", cls: "bg-white/8 text-white/40" },
+    [TournamentStatus.DRAFT]: { label: "Draft", cls: "bg-white/8 text-white/50" },
     [TournamentStatus.REGISTRATION]: { label: "Open for Entry", cls: "bg-blue-500/20 text-blue-300 border border-blue-500/30 animate-pulse" },
     [TournamentStatus.SLOT_SELECTION]: { label: "Slot Selection", cls: "bg-yellow-400/20 text-yellow-300 border border-yellow-400/30" },
     [TournamentStatus.IN_PROGRESS]: { label: "Live", cls: "bg-green-500/20 text-green-300 border border-green-500/30" },
-    [TournamentStatus.COMPLETED]: { label: "Completed", cls: "bg-white/8 text-white/40" },
+    [TournamentStatus.COMPLETED]: { label: "Completed", cls: "bg-white/8 text-white/50" },
     [TournamentStatus.CANCELLED]: { label: "Cancelled", cls: "bg-red-500/10 text-red-400" },
   };
   const { label, cls } = map[status];
@@ -139,7 +139,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
       <div className="relative w-full max-w-md bg-[#111] border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
           <div className="flex items-center gap-2.5"><span className="text-xl">🏆</span><h2 className="text-base font-bold text-white">Tournament Rules</h2></div>
-          <button onClick={onClose} className="text-white/30 hover:text-white text-lg">✕</button>
+          <button onClick={onClose} className="text-white/45 hover:text-white text-lg">✕</button>
         </div>
         <div className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto text-sm text-white/70 leading-relaxed">
           <p className="text-white/90">Compete in a single-elimination bracket. The highest multiplier each round advances until one player is crowned <span className="text-yellow-400 font-semibold">Tournament Champion 👑</span>.</p>
@@ -159,7 +159,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
               ))}
             </div>
           </div>
-          <p className="text-white/40 text-xs border-t border-white/5 pt-4">Make sure you&apos;re in stream from the start to secure your place 👊</p>
+          <p className="text-white/50 text-xs border-t border-white/5 pt-4">Make sure you&apos;re in stream from the start to secure your place 👊</p>
         </div>
       </div>
     </div>
@@ -174,7 +174,7 @@ function InstructionsModal({ onClose }: { onClose: () => void }) {
       <div className="relative w-full max-w-md bg-[#111] border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
           <div className="flex items-center gap-2.5"><span className="text-xl">🎮</span><h2 className="text-base font-bold text-white">How to Play</h2></div>
-          <button onClick={onClose} className="text-white/30 hover:text-white text-lg">✕</button>
+          <button onClick={onClose} className="text-white/45 hover:text-white text-lg">✕</button>
         </div>
         <div className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto text-sm text-white/70 leading-relaxed">
           {[
@@ -195,7 +195,7 @@ function InstructionsModal({ onClose }: { onClose: () => void }) {
               {["Pick volatile slots with high max multipliers", "Your slot is locked for the whole tournament — choose wisely", "Once you confirm, there's no going back", "Watch the stream live for the best experience!"].map((t, i) => <li key={i}>• {t}</li>)}
             </ul>
           </div>
-          <p className="text-white/40 text-xs border-t border-white/5 pt-4">Be in stream when it goes live 👊</p>
+          <p className="text-white/50 text-xs border-t border-white/5 pt-4">Be in stream when it goes live 👊</p>
         </div>
       </div>
     </div>
@@ -361,7 +361,7 @@ export default function TournamentPage() {
         {/* ── Active tournament ──────────────────────────────────── */}
         {!activeTournament ? (
           <div className="bg-white/3 border border-white/8 rounded-2xl px-8 py-14 text-center mb-14">
-            <p className="text-white/30 text-xs font-bold uppercase tracking-[0.2em] mb-3">No Active Tournament</p>
+            <p className="text-white/45 text-xs font-bold uppercase tracking-[0.2em] mb-3">No Active Tournament</p>
             <p className="text-white/50 text-base">Check back soon — the next slot bracket will appear here when it kicks off.</p>
           </div>
         ) : (
@@ -372,7 +372,7 @@ export default function TournamentPage() {
                 <h2 className="text-2xl font-bold text-white">{activeTournament.title}</h2>
                 <StatusBadge status={activeTournament.status} />
               </div>
-              <div className="flex items-center gap-4 text-sm text-white/40">
+              <div className="flex items-center gap-4 text-sm text-white/50">
                 <span>{activeTournament.maxPlayers} slots</span>
                 <span>·</span>
                 <span>{activeTournament.entryCount} entered</span>
@@ -396,7 +396,7 @@ export default function TournamentPage() {
             {activeTournament.status === TournamentStatus.SLOT_SELECTION && (
               <div className="bg-white/3 border border-white/8 rounded-xl p-5 mb-4">
                 <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
-                  <p className="text-xs text-white/40 uppercase tracking-widest font-bold">Participants — naming slots</p>
+                  <p className="text-xs text-white/50 uppercase tracking-widest font-bold">Participants — naming slots</p>
                   <SlotTimerCountdown deadline={activeTournament.participants[0]?.slotDeadline ?? null} />
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -404,7 +404,7 @@ export default function TournamentPage() {
                     <div key={p.id} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border ${p.slotConfirmed ? "bg-green-500/10 border-green-500/20 text-green-300" : "bg-white/5 border-white/10 text-white/70"}`}>
                       {p.avatarUrl && <img src={p.avatarUrl} alt="" className="w-4 h-4 rounded-full" />}
                       <span>{p.displayName}</span>
-                      {p.currentSlot && <span className="text-xs text-white/40">· {p.currentSlot}</span>}
+                      {p.currentSlot && <span className="text-xs text-white/50">· {p.currentSlot}</span>}
                       {p.slotConfirmed ? <span className="text-green-400 text-xs">✓</span> : <span className="text-yellow-400 text-xs animate-pulse">⏳</span>}
                     </div>
                   ))}
@@ -443,7 +443,7 @@ export default function TournamentPage() {
         {pastTournaments.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">Recent Tournaments</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/50">Recent Tournaments</p>
               {pastTournaments.length > 3 && (
                 <button onClick={() => setShowAllPast(!showAllPast)}
                   className="text-xs font-bold text-yellow-400 hover:text-yellow-300 transition-colors uppercase tracking-wider">
@@ -466,11 +466,11 @@ export default function TournamentPage() {
                     }
                   }}
                   className="bg-white/3 border border-white/8 rounded-xl p-5 cursor-pointer hover:bg-white/5 hover:border-white/15 focus:outline-none focus:ring-2 focus:ring-yellow-400/60 transition-all group">
-                  <p className="text-white/35 text-xs mb-2 font-medium">
+                  <p className="text-white/45 text-xs mb-2 font-medium">
                     {new Date(t.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase()}
                   </p>
                   <p className="text-white font-bold text-lg leading-tight mb-1 group-hover:text-yellow-200 transition-colors">{t.title}</p>
-                  <p className="text-white/40 text-sm">{t.maxPlayers} slots</p>
+                  <p className="text-white/50 text-sm">{t.maxPlayers} slots</p>
                 </div>
               ))}
             </div>

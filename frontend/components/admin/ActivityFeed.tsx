@@ -70,7 +70,7 @@ export default function ActivityFeed() {
           <div className="w-6 h-6 border-2 border-gold-400 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : items.length === 0 ? (
-        <div className="h-48 flex items-center justify-center text-gray-500 text-sm">No recent activity</div>
+        <div className="h-48 flex items-center justify-center text-gray-400 text-sm">No recent activity</div>
       ) : (
         <div className="divide-y divide-white/5">
           {items.map((item) => (
@@ -80,7 +80,7 @@ export default function ActivityFeed() {
                 {item.type === "points" ? (
                   <p className="text-sm truncate">
                     <span className="text-white font-medium">{item.user.displayName}</span>{" "}
-                    <span className="text-gray-500">
+                    <span className="text-gray-400">
                       {item.amount > 0 ? "received" : "was charged"}{" "}
                     </span>
                     <span className={item.amount > 0 ? "text-green-400 font-semibold" : "text-red-400 font-semibold"}>
@@ -90,12 +90,12 @@ export default function ActivityFeed() {
                 ) : (
                   <p className="text-sm truncate">
                     <span className="text-white font-medium">{item.user.displayName}</span>{" "}
-                    <span className="text-gray-500">redeemed</span>{" "}
+                    <span className="text-gray-400">redeemed</span>{" "}
                     <span className="text-gold-400 font-semibold">{item.itemName}</span>
                   </p>
                 )}
               </div>
-              <time className="text-gray-600 text-xs shrink-0 tabular-nums">{formatTime(item.createdAt)}</time>
+              <time className="text-gray-400 text-xs shrink-0 tabular-nums">{formatTime(item.createdAt)}</time>
             </div>
           ))}
         </div>

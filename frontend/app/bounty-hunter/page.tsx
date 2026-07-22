@@ -85,7 +85,7 @@ export default function BountyHunterPublicPage() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-navy-800/60 border border-white/6 rounded-2xl p-12 text-center">
             <Target className="w-10 h-10 text-amber-400/40 mx-auto mb-4" />
             <p className="text-gray-400 font-semibold">No Bounty Hunter live right now</p>
-            <p className="text-gray-600 text-sm mt-1">Check back during the next stream 👊</p>
+            <p className="text-gray-400 text-sm mt-1">Check back during the next stream 👊</p>
           </motion.div>
         ) : (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">

@@ -40,13 +40,13 @@ export default function AdminRazedUsersPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-gaming font-bold text-white tracking-wide">Razed Users</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Every player wagering under our Razed referral code, linked to a site account or not</p>
+        <p className="text-gray-400 text-sm mt-0.5">Every player wagering under our Razed referral code, linked to a site account or not</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {TOTAL_TILES.map((tile) => (
           <div key={tile.key} className="bg-navy-800/60 border border-white/6 rounded-2xl p-4">
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{tile.label}</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{tile.label}</p>
             <p className="text-2xl font-bold text-white mt-1.5">
               {totals ? `$${Number(totals[tile.key]).toLocaleString()}` : "—"}
             </p>
@@ -61,7 +61,7 @@ export default function AdminRazedUsersPage() {
       ) : (
         <div>
           <div className="flex items-center justify-between gap-3 mb-3">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
               All Wagerers ({filtered.length}{filtered.length !== wagerers.length ? ` of ${wagerers.length}` : ""})
             </p>
             <input
@@ -69,13 +69,13 @@ export default function AdminRazedUsersPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search username…"
-              className="bg-navy-900/60 border border-white/8 rounded-lg px-3 py-1.5 text-white text-sm w-56 focus:outline-none focus:border-gold-500/30 placeholder:text-gray-600"
+              className="bg-navy-900/60 border border-white/8 rounded-lg px-3 py-1.5 text-white text-sm w-56 focus:outline-none focus:border-gold-500/30 placeholder:text-gray-400"
             />
           </div>
           <div className="bg-navy-800/60 border border-white/6 rounded-2xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-navy-800 text-gray-500 text-[10px] uppercase tracking-widest">
+                <thead className="bg-navy-800 text-gray-400 text-[10px] uppercase tracking-widest">
                   <tr>
                     <th className="text-left font-semibold px-4 py-2.5">Razed Username</th>
                     <th className="text-left font-semibold px-4 py-2.5">Site Account</th>
@@ -87,7 +87,7 @@ export default function AdminRazedUsersPage() {
                 <tbody>
                   {filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-6 text-center text-gray-600">
+                      <td colSpan={5} className="px-4 py-6 text-center text-gray-400">
                         {wagerers.length === 0 ? "No wagerers under our code yet." : `No wagerers match "${search}"`}
                       </td>
                     </tr>
@@ -102,7 +102,7 @@ export default function AdminRazedUsersPage() {
                               {!w.verified && <span className="text-yellow-400 text-[10px] font-bold ml-1.5">PENDING</span>}
                             </a>
                           ) : (
-                            <span className="text-gray-600">Not linked</span>
+                            <span className="text-gray-400">Not linked</span>
                           )}
                         </td>
                         <td className="px-4 py-2.5 text-right text-gray-300">${Number(w.weeklyWagered).toLocaleString()}</td>

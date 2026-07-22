@@ -39,7 +39,7 @@ export default function RecentHighlights() {
           Recent wins and achievements will appear here once streaming begins!
         </p>
 
-        <div className="mt-6 flex items-center gap-2 text-sm text-gray-500">
+        <div className="mt-6 flex items-center gap-2 text-sm text-gray-400">
           <Sparkles className="w-4 h-4" />
           <span>Check back during live streams</span>
         </div>

@@ -132,7 +132,7 @@ export default function CompleteGameModal({
                   required
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-400 mt-1">
                 The balance after opening all bonuses
               </p>
             </div>
@@ -143,7 +143,7 @@ export default function CompleteGameModal({
                 htmlFor="winnerReward"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
-                Winner Reward <span className="text-gray-500">(Optional)</span>
+                Winner Reward <span className="text-gray-400">(Optional)</span>
               </label>
               <input
                 type="number"
@@ -155,7 +155,7 @@ export default function CompleteGameModal({
                 className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                 disabled={loading}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-400 mt-1">
                 Coins to award to the winner (leave empty for no reward)
               </p>
             </div>

@@ -187,7 +187,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
                       </div>
                       <div>
                         <h2 className="text-white font-bold text-lg leading-tight">{user.displayName}</h2>
-                        <p className="text-gray-500 text-xs mt-0.5">Joined {new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                        <p className="text-gray-400 text-xs mt-0.5">Joined {new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
                       </div>
                     </div>
                     <button onClick={onClose} className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors shrink-0">
@@ -218,7 +218,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
                       { label: "Razed",         value: user.rainbetUsername ? `${user.rainbetUsername}${user.rainbetVerified ? " ✓" : " (pending)"}` : "Not linked" },
                     ].map(({ label, value }) => (
                       <div key={label} className="bg-navy-800/60 border border-white/6 rounded-xl px-4 py-3">
-                        <p className="text-gray-500 text-[10px] uppercase tracking-widest mb-1">{label}</p>
+                        <p className="text-gray-400 text-[10px] uppercase tracking-widest mb-1">{label}</p>
                         <p className="text-white text-xs font-semibold break-all">{value}</p>
                       </div>
                     ))}
@@ -229,31 +229,31 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
                     <div className="bg-navy-800/60 border border-white/6 rounded-xl px-4 py-3 flex items-center gap-3">
                       <Coins className="w-5 h-5 text-yellow-400 shrink-0" />
                       <div>
-                        <p className="text-gray-500 text-[10px] uppercase tracking-widest">Coins</p>
+                        <p className="text-gray-400 text-[10px] uppercase tracking-widest">Coins</p>
                         <p className="text-white font-bold">{user.points.toLocaleString()}</p>
                       </div>
                     </div>
                     <div className="bg-navy-800/60 border border-white/6 rounded-xl px-4 py-3 flex items-center gap-3">
                       <Trophy className="w-5 h-5 text-gold-400 shrink-0" />
                       <div>
-                        <p className="text-gray-500 text-[10px] uppercase tracking-widest">Wagered</p>
+                        <p className="text-gray-400 text-[10px] uppercase tracking-widest">Wagered</p>
                         <p className="text-white font-bold">${Number(user.totalWagered).toLocaleString()}</p>
                       </div>
                     </div>
                     <div className="bg-navy-800/60 border border-white/6 rounded-xl px-4 py-3 flex items-center gap-3">
                       <Wallet className="w-5 h-5 text-blue-400 shrink-0" />
                       <div>
-                        <p className="text-gray-500 text-[10px] uppercase tracking-widest">Deposited</p>
+                        <p className="text-gray-400 text-[10px] uppercase tracking-widest">Deposited</p>
                         <p className="text-white font-bold">${Number(user.totalDeposited).toLocaleString()}</p>
                       </div>
                     </div>
                     <div className="bg-navy-800/60 border border-white/6 rounded-xl px-4 py-3 flex items-center gap-3">
                       <Clock className="w-5 h-5 text-green-400 shrink-0" />
                       <div>
-                        <p className="text-gray-500 text-[10px] uppercase tracking-widest">Watch Time</p>
+                        <p className="text-gray-400 text-[10px] uppercase tracking-widest">Watch Time</p>
                         <p className="text-white font-bold">{user.totalWatchMinutes > 0 ? fmt(user.totalWatchMinutes) : "—"}</p>
                         {user.firstWatchedAt && (
-                          <p className="text-gray-600 text-[10px] mt-0.5">
+                          <p className="text-gray-400 text-[10px] mt-0.5">
                             Since {new Date(user.firstWatchedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                           </p>
                         )}
@@ -377,14 +377,14 @@ function TxList({ transactions }: { transactions: Tx[] }) {
             >
               <div className="min-w-0 flex items-center gap-1.5">
                 {isGroup && (
-                  isOpen ? <ChevronUp size={11} className="text-gray-500 shrink-0" /> : <ChevronDown size={11} className="text-gray-500 shrink-0" />
+                  isOpen ? <ChevronUp size={11} className="text-gray-400 shrink-0" /> : <ChevronDown size={11} className="text-gray-400 shrink-0" />
                 )}
                 <div>
                   <p className="text-gray-300 text-xs truncate">
                     {g.label}
-                    {isGroup && <span className="text-gray-500 ml-1">×{g.items.length}</span>}
+                    {isGroup && <span className="text-gray-400 ml-1">×{g.items.length}</span>}
                   </p>
-                  <p className="text-gray-600 text-[10px]">{g.date}</p>
+                  <p className="text-gray-400 text-[10px]">{g.date}</p>
                 </div>
               </div>
               <span className={`text-sm font-bold shrink-0 ml-3 ${g.totalAmount >= 0 ? "text-green-400" : "text-red-400"}`}>
@@ -395,7 +395,7 @@ function TxList({ transactions }: { transactions: Tx[] }) {
               <div className="ml-4 border-l border-white/6 pl-2 mb-1">
                 {g.items.map((tx) => (
                   <div key={tx.id} className="flex items-center justify-between py-1 border-b border-white/3 last:border-0">
-                    <p className="text-gray-500 text-[10px]">{new Date(tx.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</p>
+                    <p className="text-gray-400 text-[10px]">{new Date(tx.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</p>
                     <span className={`text-xs font-bold shrink-0 ml-3 ${tx.amount >= 0 ? "text-green-500" : "text-red-500"}`}>
                       {tx.amount >= 0 ? "+" : ""}{tx.amount}
                     </span>

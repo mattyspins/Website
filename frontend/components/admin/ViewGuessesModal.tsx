@@ -138,7 +138,7 @@ export default function ViewGuessesModal({
               </div>
             ) : filteredGuesses.length === 0 ? (
               <div className="bg-gray-800/50 rounded-lg p-12 text-center">
-                <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-400 text-lg">
                   {searchTerm
                     ? "No guesses match your search"
@@ -174,7 +174,7 @@ export default function ViewGuessesModal({
                             {new Date(guess.submittedAt).toLocaleString()}
                           </p>
                           {guess.updatedAt !== guess.submittedAt && (
-                            <p className="text-gray-500 text-xs">
+                            <p className="text-gray-400 text-xs">
                               Updated:{" "}
                               {new Date(guess.updatedAt).toLocaleString()}
                             </p>

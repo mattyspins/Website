@@ -17,7 +17,7 @@ function statusColor(status: BingoGame["status"]) {
     case "ACTIVE": return "bg-green-500/20 text-green-300 border-green-500/30 animate-pulse";
     case "COMPLETED": return "bg-yellow-400/20 text-yellow-300 border-yellow-400/30";
     case "CANCELLED": return "bg-red-500/10 text-red-400 border-red-500/20";
-    default: return "bg-white/8 text-white/40 border-white/10";
+    default: return "bg-white/8 text-white/50 border-white/10";
   }
 }
 
@@ -77,12 +77,12 @@ function BingoGrid({ game, currentUserId }: { game: BingoGame; currentUserId: st
             >
               {/* Row/Col label at top */}
               {r === 0 && (
-                <span className="absolute -top-5 left-0 right-0 text-center text-[10px] text-white/30 font-bold">
+                <span className="absolute -top-5 left-0 right-0 text-center text-[10px] text-white/45 font-bold">
                   C{c + 1}
                 </span>
               )}
               {c === 0 && (
-                <span className="absolute -left-5 top-0 bottom-0 flex items-center text-[10px] text-white/30 font-bold">
+                <span className="absolute -left-5 top-0 bottom-0 flex items-center text-[10px] text-white/45 font-bold">
                   R{r + 1}
                 </span>
               )}
@@ -119,7 +119,7 @@ function BingoGrid({ game, currentUserId }: { game: BingoGame; currentUserId: st
               )}
 
               {cell.status === "EMPTY" && (
-                <span className="text-white/10 text-xs">{r * gridSize + c + 1}</span>
+                <span className="text-white/45 text-xs">{r * gridSize + c + 1}</span>
               )}
 
               {isWonLine && cell.status === "GREEN" && (
@@ -207,7 +207,7 @@ function LineCelebration({
         <p className="text-green-300 font-black text-2xl tracking-tight">BINGO!</p>
         <p className="text-white font-semibold text-lg">{label} complete!</p>
         <p className="text-yellow-400 font-bold text-base">+{points.toLocaleString()} coins to all claimers</p>
-        <button onClick={onDone} className="mt-1 text-white/30 hover:text-white/60 text-xs transition-colors">dismiss</button>
+        <button onClick={onDone} className="mt-1 text-white/45 hover:text-white/60 text-xs transition-colors">dismiss</button>
       </div>
     </div>
   );
@@ -225,7 +225,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
             <span className="text-xl">🟩</span>
             <h2 className="text-base font-bold text-white">How Bonus Bingo Works</h2>
           </div>
-          <button onClick={onClose} className="text-white/30 hover:text-white text-lg">✕</button>
+          <button onClick={onClose} className="text-white/45 hover:text-white text-lg">✕</button>
         </div>
         <div className="px-6 py-5 space-y-5 text-sm text-white/70 leading-relaxed max-h-[75vh] overflow-y-auto">
 
@@ -429,7 +429,7 @@ export default function BonusBingoPage() {
         {!activeGame ? (
           <div className="bg-white/3 border border-white/8 rounded-2xl px-8 py-14 text-center mb-14">
             <p className="text-5xl mb-4">🟩</p>
-            <p className="text-white/30 text-xs font-bold uppercase tracking-[0.2em] mb-3">No Active Game</p>
+            <p className="text-white/45 text-xs font-bold uppercase tracking-[0.2em] mb-3">No Active Game</p>
             <p className="text-white/50 text-base">Check back soon — the next Bonus Bingo will appear here when it goes live.</p>
           </div>
         ) : (
@@ -444,7 +444,7 @@ export default function BonusBingoPage() {
                       {statusLabel(activeGame.status)}
                     </span>
                   </div>
-                  <p className="text-white/40 text-sm mt-1">
+                  <p className="text-white/50 text-sm mt-1">
                     {activeGame.gridSize}×{activeGame.gridSize} grid · {activeGame.linePoints.toLocaleString()} coins per line · {activeGame.participants.length} participants
                   </p>
                 </div>
@@ -470,14 +470,14 @@ export default function BonusBingoPage() {
                   )
                 )}
                 {!user && (activeGame.status === "REGISTRATION" || activeGame.status === "ACTIVE") && (
-                  <p className="text-white/40 text-sm">Login to join</p>
+                  <p className="text-white/50 text-sm">Login to join</p>
                 )}
               </div>
 
               {/* Registration participant list */}
               {activeGame.status === "REGISTRATION" && activeGame.participants.length > 0 && (
                 <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-4">
-                  <p className="text-xs text-white/40 uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
+                  <p className="text-xs text-white/50 uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
                     <Users className="w-3.5 h-3.5" />
                     Participants ({activeGame.participants.length})
                   </p>
@@ -525,7 +525,7 @@ export default function BonusBingoPage() {
 
               {/* No active cell info */}
               {activeGame.status === "ACTIVE" && !activeGame.currentCellId && (
-                <div className="mb-4 p-3 bg-white/3 border border-white/8 rounded-xl text-center text-white/40 text-sm">
+                <div className="mb-4 p-3 bg-white/3 border border-white/8 rounded-xl text-center text-white/50 text-sm">
                   Waiting for the wheel to spin and select the next square…
                 </div>
               )}
@@ -592,7 +592,7 @@ export default function BonusBingoPage() {
         {/* Past games */}
         {pastGames.length > 0 && (
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 mb-4">Recent Games</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/50 mb-4">Recent Games</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {pastGames.slice(0, 6).map(g => (
                 <div key={g.id} className="bg-white/3 border border-white/8 rounded-xl p-5">
@@ -602,11 +602,11 @@ export default function BonusBingoPage() {
                       {statusLabel(g.status)}
                     </span>
                   </div>
-                  <p className="text-white/40 text-xs">
+                  <p className="text-white/50 text-xs">
                     {g.gridSize}×{g.gridSize} · {g.lineWins.length} line{g.lineWins.length !== 1 ? "s" : ""} completed · {g.participants.length} players
                   </p>
                   {g.completedAt && (
-                    <p className="text-white/25 text-xs mt-1">
+                    <p className="text-white/45 text-xs mt-1">
                       {new Date(g.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </p>
                   )}

@@ -38,7 +38,7 @@ export default function SlotWorldCupCelebration({
               <div className="w-10 h-10 rounded bg-yellow-400/20" />
             )}
             <div className="text-left">
-              <p className="text-[10px] uppercase tracking-widest text-white/40">Champion</p>
+              <p className="text-[10px] uppercase tracking-widest text-white/50">Champion</p>
               <p className="text-yellow-300 font-bold leading-tight">{champion.slotName}</p>
             </div>
           </div>

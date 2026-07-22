@@ -52,7 +52,7 @@ export default function AdminTopNav({
         href="/"
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-1.5 text-gray-500 hover:text-white text-xs transition-colors shrink-0"
+        className="flex items-center gap-1.5 text-gray-400 hover:text-white text-xs transition-colors shrink-0"
       >
         <ExternalLink className="w-3.5 h-3.5" /> <span className="hidden sm:inline">View Site</span>
       </a>

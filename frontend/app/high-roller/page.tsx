@@ -102,7 +102,7 @@ function SuggestionDrawOverlay({ candidates, winner, onDone }: { candidates: str
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"
     >
       <div className="text-center">
-        <p className="text-white/40 text-sm font-bold uppercase tracking-[0.3em] mb-4">
+        <p className="text-white/50 text-sm font-bold uppercase tracking-[0.3em] mb-4">
           {settled ? "🎉 Slot Suggestion Winner" : "Choosing…"}
         </p>
         <p className={`font-black text-4xl sm:text-5xl ${settled ? "text-gold-400" : "text-white"}`}>{current}</p>
@@ -308,7 +308,7 @@ export default function HighRollerPage() {
           >
             <Dices className="w-10 h-10 text-red-400/40 mx-auto mb-4" />
             <p className="text-gray-400 font-semibold">No High Roller game live right now</p>
-            <p className="text-gray-600 text-sm mt-1">Check back during the next stream 👊</p>
+            <p className="text-gray-400 text-sm mt-1">Check back during the next stream 👊</p>
           </motion.div>
         ) : (
           <div className="space-y-6">
@@ -327,11 +327,11 @@ export default function HighRollerPage() {
               animate={{ opacity: 1, y: 0 }}
               className="bg-gradient-to-b from-red-500/10 to-navy-800/60 border border-red-500/25 rounded-2xl p-8 text-center"
             >
-              <p className="text-gray-500 text-xs uppercase tracking-widest mb-2">
+              <p className="text-gray-400 text-xs uppercase tracking-widest mb-2">
                 {session.finalRound ? "⚠️ Final Round — " : ""}Over / Under
               </p>
               <p className="text-gold-400 text-5xl font-black">{fmtMulti(session.threshold)}</p>
-              <p className="text-gray-500 text-sm mt-3">
+              <p className="text-gray-400 text-sm mt-3">
                 {session.roundLocked ? "🔒 Predictions locked — spin incoming" : "Predictions open"}
               </p>
             </motion.div>
@@ -340,7 +340,7 @@ export default function HighRollerPage() {
             <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-6">
               <p className="text-white text-xs font-bold uppercase tracking-widest mb-4">Leaderboard</p>
               {players.length === 0 ? (
-                <p className="text-gray-600 text-sm text-center py-6">No one's joined yet — be the first!</p>
+                <p className="text-gray-400 text-sm text-center py-6">No one's joined yet — be the first!</p>
               ) : (
                 <motion.div layout className="space-y-1.5">
                   <AnimatePresence initial={false}>
@@ -356,20 +356,20 @@ export default function HighRollerPage() {
                           i === 0 && p.currentStreak > 0 ? "bg-red-500/8 border-red-500/20" : "bg-white/3 border-white/5"
                         }`}
                       >
-                        <span className="text-gray-600 text-xs w-5 shrink-0 text-right">{i + 1}</span>
+                        <span className="text-gray-400 text-xs w-5 shrink-0 text-right">{i + 1}</span>
                         <Avatar p={p} size={28} />
                         <div className="min-w-0 flex-1">
                           <p className="text-gray-200 text-sm font-medium truncate flex items-center gap-1.5">
                             {i === 0 && p.currentStreak > 0 && <Crown className="w-3.5 h-3.5 text-gold-400 shrink-0" />}
                             {uname(p)}
                           </p>
-                          <p className="text-gray-600 text-xs truncate">{p.roundsPlayed} rounds · {p.accuracy}% accuracy</p>
+                          <p className="text-gray-400 text-xs truncate">{p.roundsPlayed} rounds · {p.accuracy}% accuracy</p>
                         </div>
                         <div className="text-right shrink-0">
                           <span className="flex items-center gap-1 text-gold-400 font-black text-sm">
                             <Flame className="w-3.5 h-3.5" /> {p.currentStreak}
                           </span>
-                          <p className="text-gray-600 text-[11px]">best {p.bestStreak}</p>
+                          <p className="text-gray-400 text-[11px]">best {p.bestStreak}</p>
                         </div>
                       </motion.div>
                     ))}
@@ -437,12 +437,12 @@ export default function HighRollerPage() {
             >
               {reveal.stage === "counting" ? (
                 <>
-                  <p className="text-white/40 text-sm font-bold uppercase tracking-[0.3em] mb-4">Spin Complete…</p>
+                  <p className="text-white/50 text-sm font-bold uppercase tracking-[0.3em] mb-4">Spin Complete…</p>
                   <p className="text-white font-black text-6xl sm:text-7xl tabular-nums">{fmtMulti(displayMultiplier)}</p>
                 </>
               ) : (
                 <>
-                  <p className="text-white/40 text-sm font-bold uppercase tracking-[0.3em] mb-2">Round {reveal.data.roundNumber}</p>
+                  <p className="text-white/50 text-sm font-bold uppercase tracking-[0.3em] mb-2">Round {reveal.data.roundNumber}</p>
                   <p className="text-white font-black text-5xl sm:text-6xl tabular-nums mb-4">{fmtMulti(reveal.data.slotResult)}</p>
                   <p className={`font-black text-4xl sm:text-5xl tracking-wide ${reveal.data.winningSide === "OVER" ? "text-red-400" : "text-gray-200"}`}>
                     {reveal.data.winningSide} WINS!
@@ -502,7 +502,7 @@ export default function HighRollerPage() {
                   <p className="text-white font-bold mt-2">{uname(battle[0])}</p>
                   <p className="text-gold-400 text-sm font-black">🔥 {battle[0].currentStreak}</p>
                 </div>
-                <p className="text-white/30 font-black text-2xl">VS</p>
+                <p className="text-white/45 font-black text-2xl">VS</p>
                 <div>
                   <Avatar p={battle[1]} size={64} />
                   <p className="text-white font-bold mt-2">{uname(battle[1])}</p>
@@ -554,23 +554,23 @@ export default function HighRollerPage() {
 
               <div className="grid grid-cols-2 gap-3 mt-8 text-sm">
                 <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                  <p className="text-white/40 text-xs uppercase tracking-wide">Most Accurate</p>
+                  <p className="text-white/50 text-xs uppercase tracking-wide">Most Accurate</p>
                   <p className="text-white font-semibold truncate">
                     {champion.mostAccurate.length > 0 ? `${champion.mostAccurate[0].kickUsername} (${champion.mostAccurate[0].accuracy}%)` : "—"}
                   </p>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                  <p className="text-white/40 text-xs uppercase tracking-wide">Most Correct</p>
+                  <p className="text-white/50 text-xs uppercase tracking-wide">Most Correct</p>
                   <p className="text-white font-semibold truncate">
                     {champion.mostCorrectPredictions.length > 0 ? `${champion.mostCorrectPredictions[0].kickUsername} (${champion.mostCorrectPredictions[0].correctCount})` : "—"}
                   </p>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                  <p className="text-white/40 text-xs uppercase tracking-wide">Rounds Played</p>
+                  <p className="text-white/50 text-xs uppercase tracking-wide">Rounds Played</p>
                   <p className="text-white font-semibold">{champion.totalRoundsPlayed}</p>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                  <p className="text-white/40 text-xs uppercase tracking-wide">Biggest Comeback</p>
+                  <p className="text-white/50 text-xs uppercase tracking-wide">Biggest Comeback</p>
                   <p className="text-white font-semibold truncate">
                     {champion.biggestComeback ? `${champion.biggestComeback.kickUsername} (${champion.biggestComeback.streak})` : "—"}
                   </p>
@@ -578,9 +578,9 @@ export default function HighRollerPage() {
               </div>
 
               {champion.mvp && (
-                <p className="text-white/40 text-xs mt-6">⭐ MVP: <span className="text-white font-semibold">{champion.mvp.kickUsername}</span></p>
+                <p className="text-white/50 text-xs mt-6">⭐ MVP: <span className="text-white font-semibold">{champion.mvp.kickUsername}</span></p>
               )}
-              <p className="text-white/25 text-xs mt-6">Click anywhere to close</p>
+              <p className="text-white/45 text-xs mt-6">Click anywhere to close</p>
             </motion.div>
           </motion.div>
         )}

@@ -65,7 +65,7 @@ export default function StoreItemCard({
 
       {/* Description */}
       {item.description && (
-        <p className="text-gray-500 text-sm mb-3 line-clamp-2 flex-1">
+        <p className="text-gray-400 text-sm mb-3 line-clamp-2 flex-1">
           {item.description}
         </p>
       )}
@@ -92,7 +92,7 @@ export default function StoreItemCard({
           <span className="text-gold-400 font-bold text-2xl font-gaming">
             {item.price.toLocaleString()}
           </span>
-          <span className="text-gray-500 text-sm">coins</span>
+          <span className="text-gray-400 text-sm">coins</span>
         </div>
 
         {!isAuthenticated ? (
@@ -105,7 +105,7 @@ export default function StoreItemCard({
         ) : isOutOfStock ? (
           <button
             disabled
-            className="bg-navy-900 text-gray-600 text-sm font-semibold px-4 py-2 rounded-lg cursor-not-allowed"
+            className="bg-navy-900 text-gray-400 text-sm font-semibold px-4 py-2 rounded-lg cursor-not-allowed"
           >
             Sold Out
           </button>

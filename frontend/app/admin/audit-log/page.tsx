@@ -75,7 +75,7 @@ export default function AuditLogPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-gaming font-bold text-white tracking-wide">Audit Log</h1>
-          <p className="text-gray-500 text-sm mt-0.5">
+          <p className="text-gray-400 text-sm mt-0.5">
             {total.toLocaleString()} recorded admin action{total !== 1 ? "s" : ""}
           </p>
         </div>
@@ -84,7 +84,7 @@ export default function AuditLogPage() {
           value={actionFilter}
           onChange={(e) => { setActionFilter(e.target.value); setOffset(0); }}
           placeholder="Filter by action (e.g. suspend_user)…"
-          className="bg-navy-800/60 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-gold-400/50 w-64 max-w-full"
+          className="bg-navy-800/60 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-400 focus:outline-none focus:border-gold-400/50 w-64 max-w-full"
         />
       </div>
 
@@ -94,7 +94,7 @@ export default function AuditLogPage() {
             <div className="w-8 h-8 border-2 border-gold-400 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : logs.length === 0 ? (
-          <div className="h-48 flex items-center justify-center text-gray-500 text-sm">No audit log entries found</div>
+          <div className="h-48 flex items-center justify-center text-gray-400 text-sm">No audit log entries found</div>
         ) : (
           <div className="divide-y divide-white/5">
             {logs.map((log) => (
@@ -107,13 +107,13 @@ export default function AuditLogPage() {
                         {log.action}
                       </span>
                       {log.targetType && (
-                        <span className="text-gray-500"> · {log.targetType}{log.targetId ? ` #${log.targetId.slice(0, 8)}` : ""}</span>
+                        <span className="text-gray-400"> · {log.targetType}{log.targetId ? ` #${log.targetId.slice(0, 8)}` : ""}</span>
                       )}
                     </p>
-                    {log.reason && <p className="text-gray-500 text-xs mt-1">{log.reason}</p>}
+                    {log.reason && <p className="text-gray-400 text-xs mt-1">{log.reason}</p>}
                     <ChangesPreview changes={log.changes} />
                   </div>
-                  <time className="text-gray-600 text-xs shrink-0 tabular-nums">{formatTime(log.timestamp)}</time>
+                  <time className="text-gray-400 text-xs shrink-0 tabular-nums">{formatTime(log.timestamp)}</time>
                 </div>
               </div>
             ))}
@@ -130,7 +130,7 @@ export default function AuditLogPage() {
           >
             ← Previous
           </button>
-          <span className="text-gray-500 text-sm">Page {page} of {totalPages}</span>
+          <span className="text-gray-400 text-sm">Page {page} of {totalPages}</span>
           <button
             onClick={() => setOffset((o) => o + limit)}
             disabled={page === totalPages}

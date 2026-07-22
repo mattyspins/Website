@@ -145,7 +145,7 @@ export default function AdminWeeklyRafflePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-gaming font-bold text-white tracking-wide">Weekly Raffle</h1>
-        <p className="text-gray-500 text-sm mt-0.5">
+        <p className="text-gray-400 text-sm mt-0.5">
           One eligibility-based raffle per calendar week, drawn every Monday
         </p>
       </div>
@@ -200,8 +200,8 @@ export default function AdminWeeklyRafflePage() {
       {!raffle && (
         <div className="bg-navy-800/60 border border-white/6 rounded-xl p-6">
           <h2 className="text-white font-semibold mb-1">Create this week's raffle</h2>
-          <p className="text-gray-500 text-sm mb-4">No raffle exists yet for the current week (Monday–Monday, UTC).</p>
-          <label className="block text-xs text-gray-500 mb-1">Minimum weekly wager under code ($)</label>
+          <p className="text-gray-400 text-sm mb-4">No raffle exists yet for the current week (Monday–Monday, UTC).</p>
+          <label className="block text-xs text-gray-400 mb-1">Minimum weekly wager under code ($)</label>
           <div className="flex gap-2 max-w-xs">
             <input
               type="number"
@@ -262,7 +262,7 @@ export default function AdminWeeklyRafflePage() {
                 </div>
               ) : (
                 <div className="mb-4">
-                  <label className="block text-xs text-gray-500 mb-1">Minimum weekly wager under code ($)</label>
+                  <label className="block text-xs text-gray-400 mb-1">Minimum weekly wager under code ($)</label>
                   <div className="flex gap-2 max-w-xs">
                     <input
                       type="number"
@@ -309,7 +309,7 @@ export default function AdminWeeklyRafflePage() {
                   <Trophy className="w-6 h-6 text-gold-400" />
                   <div>
                     <p className="text-white font-semibold">{raffle.winner.displayName} won this week's raffle</p>
-                    <p className="text-gray-500 text-xs">
+                    <p className="text-gray-400 text-xs">
                       Drawn {raffle.drawnAt && new Date(raffle.drawnAt).toLocaleString()}
                     </p>
                   </div>
@@ -328,7 +328,7 @@ export default function AdminWeeklyRafflePage() {
           <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5">
             <h3 className="text-white font-semibold text-sm mb-3">Previous Winners</h3>
             {history.length === 0 ? (
-              <p className="text-gray-500 text-sm">No completed raffles yet.</p>
+              <p className="text-gray-400 text-sm">No completed raffles yet.</p>
             ) : (
               <div className="space-y-2">
                 {history.map((h) => (

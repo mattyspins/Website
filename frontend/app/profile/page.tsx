@@ -386,7 +386,7 @@ export default function ProfilePage() {
               </div>
               <button
                 onClick={() => setBannerDismissed(true)}
-                className="text-gray-600 hover:text-gray-400 transition-colors shrink-0 text-sm"
+                className="text-gray-400 hover:text-gray-400 transition-colors shrink-0 text-sm"
               >
                 ✕
               </button>
@@ -415,9 +415,9 @@ export default function ProfilePage() {
             <div className="flex-1 min-w-0">
               <h2 className="text-white text-xl font-bold mb-1 truncate">{user.displayName}</h2>
               {user.kickUsername && (
-                <p className="text-gray-500 text-sm flex items-center gap-2">
+                <p className="text-gray-400 text-sm flex items-center gap-2">
                   <span className="text-[#53FC18]">Kick</span>
-                  <span className="text-gray-600">·</span>
+                  <span className="text-gray-400">·</span>
                   <span className="text-gray-400">{user.kickUsername}</span>
                   {user.kickVerified && (
                     <span className="bg-[#53FC18]/15 text-[#53FC18] border border-[#53FC18]/25 text-xs font-semibold px-2 py-0.5 rounded">
@@ -427,7 +427,7 @@ export default function ProfilePage() {
                 </p>
               )}
               {joinedDate && (
-                <p className="text-gray-600 text-xs mt-1">Joined {joinedDate}</p>
+                <p className="text-gray-400 text-xs mt-1">Joined {joinedDate}</p>
               )}
             </div>
           </div>
@@ -435,18 +435,18 @@ export default function ProfilePage() {
           {/* Stats row: COINS + WAGERED */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-navy-900/60 border border-white/6 rounded-xl p-4 text-center">
-              <p className="text-gray-500 text-xs font-semibold tracking-widest uppercase mb-2">Coins</p>
+              <p className="text-gray-400 text-xs font-semibold tracking-widest uppercase mb-2">Coins</p>
               <p className="text-white font-gaming font-bold text-3xl leading-none">
                 {user.points.toLocaleString()}
               </p>
-              <p className="text-gray-600 text-xs mt-1.5">Current Balance</p>
+              <p className="text-gray-400 text-xs mt-1.5">Current Balance</p>
             </div>
             <div className="bg-navy-900/60 border border-white/6 rounded-xl p-4 text-center">
-              <p className="text-gray-500 text-xs font-semibold tracking-widest uppercase mb-2">Wagered</p>
+              <p className="text-gray-400 text-xs font-semibold tracking-widest uppercase mb-2">Wagered</p>
               <p className="text-gold-400 font-gaming font-bold text-3xl leading-none">
                 ${totalWagered.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
               </p>
-              <p className="text-gray-600 text-xs mt-1.5">Total on Razed</p>
+              <p className="text-gray-400 text-xs mt-1.5">Total on Razed</p>
             </div>
           </div>
         </motion.div>
@@ -461,9 +461,9 @@ export default function ProfilePage() {
           <div className="w-10 h-10 rounded-full bg-gold-500/15 flex items-center justify-center shrink-0 text-xl">🎁</div>
           <div className="flex-1 min-w-0">
             <p className="text-white font-semibold text-sm">Daily Check-in</p>
-            <p className="text-gray-500 text-xs mt-0.5">Claim 5 free coins every day just for visiting.</p>
+            <p className="text-gray-400 text-xs mt-0.5">Claim 5 free coins every day just for visiting.</p>
             {checkinMsg && (
-              <p className={`text-xs mt-1 ${checkinMsg.includes("+") ? "text-green-400" : "text-gray-500"}`}>{checkinMsg}</p>
+              <p className={`text-xs mt-1 ${checkinMsg.includes("+") ? "text-green-400" : "text-gray-400"}`}>{checkinMsg}</p>
             )}
           </div>
           <button
@@ -471,7 +471,7 @@ export default function ProfilePage() {
             disabled={checkinClaimed || checkinLoading}
             className={`shrink-0 font-semibold text-xs px-4 py-2 rounded-lg transition-all ${
               checkinClaimed
-                ? "bg-white/5 text-gray-600 cursor-default"
+                ? "bg-white/5 text-gray-400 cursor-default"
                 : "bg-gold-500 hover:bg-gold-600 text-white"
             }`}
           >
@@ -490,7 +490,7 @@ export default function ProfilePage() {
             <div className="w-1 h-5 bg-gold-500 rounded-full" />
             <h3 className="text-white font-semibold">Link Your Razed Account</h3>
           </div>
-          <p className="text-gray-500 text-sm mb-5 ml-3.5">
+          <p className="text-gray-400 text-sm mb-5 ml-3.5">
             Verify your Razed username to track your wager and claim leaderboard rewards.
           </p>
 
@@ -511,7 +511,7 @@ export default function ProfilePage() {
                 <p className="text-gold-400 font-semibold text-sm">
                   {user.rainbetVerified ? "Razed account verified" : "Razed account submitted"}
                 </p>
-                <p className="text-gray-500 text-xs truncate">
+                <p className="text-gray-400 text-xs truncate">
                   {user.rainbetUsername} · {user.rainbetVerified ? "Verified" : "Pending admin verification"}
                 </p>
               </div>
@@ -524,7 +524,7 @@ export default function ProfilePage() {
               </span>
               <button
                 onClick={() => { setEditingRazed(true); setRazedInput(""); setRazedMsg(null); }}
-                className="text-gray-500 hover:text-white text-xs font-semibold shrink-0 underline underline-offset-2"
+                className="text-gray-400 hover:text-white text-xs font-semibold shrink-0 underline underline-offset-2"
               >
                 Change
               </button>
@@ -550,7 +550,7 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => { setEditingRazed(false); setRazedInput(""); setRazedMsg(null); }}
-                    className="w-full sm:w-auto text-gray-500 hover:text-white text-xs font-semibold px-3 py-3 whitespace-nowrap"
+                    className="w-full sm:w-auto text-gray-400 hover:text-white text-xs font-semibold px-3 py-3 whitespace-nowrap"
                   >
                     Cancel
                   </button>
@@ -577,7 +577,7 @@ export default function ProfilePage() {
             <div className="w-1 h-5 bg-[#53FC18] rounded-full" />
             <h3 className="text-white font-semibold">Link Your Kick Account</h3>
           </div>
-          <p className="text-gray-500 text-sm mb-5 ml-3.5">
+          <p className="text-gray-400 text-sm mb-5 ml-3.5">
             Verify your Kick username to earn coins from chat and appear on the leaderboard.
           </p>
 
@@ -590,9 +590,9 @@ export default function ProfilePage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[#53FC18] font-semibold text-sm">Kick account verified</p>
-                <p className="text-gray-500 text-xs truncate">{user.kickUsername} · Earning coins for chat &amp; viewing</p>
+                <p className="text-gray-400 text-xs truncate">{user.kickUsername} · Earning coins for chat &amp; viewing</p>
               </div>
-              <button onClick={handleUnlinkKick} className="text-gray-600 hover:text-red-400 text-xs transition-colors shrink-0">
+              <button onClick={handleUnlinkKick} className="text-gray-400 hover:text-red-400 text-xs transition-colors shrink-0">
                 Unlink
               </button>
             </div>
@@ -606,7 +606,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-yellow-400 font-semibold text-sm">Kick username set — not yet verified</p>
-                  <p className="text-gray-500 text-xs truncate">{user.kickUsername}</p>
+                  <p className="text-gray-400 text-xs truncate">{user.kickUsername}</p>
                 </div>
                 <span className="bg-yellow-500/15 text-yellow-400 border border-yellow-500/25 text-xs font-semibold px-2 py-0.5 rounded shrink-0">
                   PENDING
@@ -650,12 +650,12 @@ export default function ProfilePage() {
                   </svg>
                 </span>
               </div>
-              <p className="text-gray-600 text-xs text-center">
+              <p className="text-gray-400 text-xs text-center">
                 Listening for your message… Expires in 10 minutes.
               </p>
               <button
                 onClick={handleKickCancel}
-                className="text-gray-600 hover:text-gray-400 text-xs transition-colors w-full text-center pt-1"
+                className="text-gray-400 hover:text-gray-400 text-xs transition-colors w-full text-center pt-1"
               >
                 Cancel
               </button>
@@ -692,10 +692,10 @@ export default function ProfilePage() {
               </div>
               <div>
                 <p className="text-white font-semibold text-sm">Purchase History</p>
-                <p className="text-gray-500 text-xs mt-0.5">View your store order history</p>
+                <p className="text-gray-400 text-xs mt-0.5">View your store order history</p>
               </div>
             </div>
-            <svg className="w-4 h-4 text-gray-600 group-hover:text-gold-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            <svg className="w-4 h-4 text-gray-400 group-hover:text-gold-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </a>
         </motion.div>
 
@@ -716,7 +716,7 @@ export default function ProfilePage() {
                 <div key={entry.raffleId} className="flex items-center justify-between py-2.5 border-b border-white/4 last:border-0 gap-3">
                   <div className="min-w-0">
                     <p className="text-gray-300 text-sm truncate">{entry.title}</p>
-                    <p className="text-gray-600 text-xs mt-0.5">
+                    <p className="text-gray-400 text-xs mt-0.5">
                       {entry.ticketsHeld} ticket{entry.ticketsHeld !== 1 ? "s" : ""}
                       {entry.endDate ? ` · ${new Date(entry.endDate).toLocaleDateString()}` : ""}
                     </p>
@@ -726,7 +726,7 @@ export default function ProfilePage() {
                       ? "bg-gold-500/15 text-gold-400 border-gold-500/25"
                       : entry.status === "ACTIVE"
                       ? "bg-green-500/15 text-green-400 border-green-500/25"
-                      : "bg-white/5 text-gray-500 border-white/8"
+                      : "bg-white/5 text-gray-400 border-white/8"
                   }`}>
                     {entry.isWinner ? "WON" : entry.status === "ACTIVE" ? "ACTIVE" : "ENTERED"}
                   </span>
@@ -750,8 +750,8 @@ export default function ProfilePage() {
 
           {transactions.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500 text-sm">Nothing here yet.</p>
-              <p className="text-gray-600 text-xs mt-1">
+              <p className="text-gray-400 text-sm">Nothing here yet.</p>
+              <p className="text-gray-400 text-xs mt-1">
                 Coins show up once you start earning from chat activity or games.
               </p>
             </div>
@@ -764,7 +764,7 @@ export default function ProfilePage() {
                 >
                   <div>
                     <p className="text-gray-300 text-sm">{tx.description}</p>
-                    <p className="text-gray-600 text-xs">{new Date(tx.createdAt).toLocaleDateString()}</p>
+                    <p className="text-gray-400 text-xs">{new Date(tx.createdAt).toLocaleDateString()}</p>
                   </div>
                   <span className={`font-semibold text-sm ${tx.amount >= 0 ? "text-prize" : "text-red-400"}`}>
                     {tx.amount >= 0 ? "+" : ""}{tx.amount.toLocaleString()}

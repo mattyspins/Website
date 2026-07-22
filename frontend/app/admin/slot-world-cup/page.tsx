@@ -343,7 +343,7 @@ export default function AdminSlotWorldCupPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-gaming font-bold text-white tracking-wide">Slot World Cup</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Nominate, seed, and run the community slot bracket tournament.</p>
+        <p className="text-gray-400 text-sm mt-0.5">Nominate, seed, and run the community slot bracket tournament.</p>
       </div>
 
       {completedView ? (
@@ -363,7 +363,7 @@ export default function AdminSlotWorldCupPage() {
           <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5">
             <h3 className="text-white font-semibold mb-3">Final Leaderboard</h3>
             {completedLeaderboard.length === 0 ? (
-              <p className="text-white/30 text-sm text-center py-6">No predictions were submitted.</p>
+              <p className="text-white/45 text-sm text-center py-6">No predictions were submitted.</p>
             ) : (
               <div className="space-y-1">
                 {completedLeaderboard.slice(0, 10).map((e) => (
@@ -384,7 +384,7 @@ export default function AdminSlotWorldCupPage() {
           <h2 className="text-white font-semibold mb-4">Create Tournament</h2>
           <input
             value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Summer Slot World Cup"
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 mb-3 focus:outline-none focus:border-yellow-400/40"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/45 mb-3 focus:outline-none focus:border-yellow-400/40"
           />
           <div className="flex gap-2 mb-3">
             {[8, 12, 16].map((s) => (
@@ -394,10 +394,10 @@ export default function AdminSlotWorldCupPage() {
               </button>
             ))}
           </div>
-          <label className="block text-xs text-gray-500 mb-1">Nomination command (viewers type this in Kick chat)</label>
+          <label className="block text-xs text-gray-400 mb-1">Nomination command (viewers type this in Kick chat)</label>
           <input
             value={nominationCommand} onChange={(e) => setNominationCommand(e.target.value)} placeholder="!wc"
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 mb-4 font-mono focus:outline-none focus:border-yellow-400/40"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/45 mb-4 font-mono focus:outline-none focus:border-yellow-400/40"
           />
           <button onClick={handleCreate} disabled={actionLoading}
             className="w-full py-2.5 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 disabled:opacity-40 text-sm">
@@ -409,7 +409,7 @@ export default function AdminSlotWorldCupPage() {
           <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5 flex items-center justify-between flex-wrap gap-3">
             <div>
               <h2 className="text-white font-bold text-lg">{active.title}</h2>
-              <p className="text-xs text-gray-500 mt-0.5">{active.status} · {active.size} slots · Round {active.currentRound}/{active.totalRounds}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{active.status} · {active.size} slots · Round {active.currentRound}/{active.totalRounds}</p>
             </div>
             <button onClick={() => withAction(() => slotWorldCupApi.cancel(active.id))} disabled={actionLoading}
               className="px-3 py-1.5 border border-red-500/40 text-red-400 rounded-lg hover:bg-red-500/10 text-xs font-medium disabled:opacity-40">
@@ -617,7 +617,7 @@ export default function AdminSlotWorldCupPage() {
           {(active.matches?.length ?? 0) > 0 && (
             <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5">
               <h3 className="text-white font-semibold mb-1">Bracket</h3>
-              <p className="text-xs text-gray-500 mb-3">
+              <p className="text-xs text-gray-400 mb-3">
                 Enter the bet + payout on each live matchup — the multiplier is calculated as you type and the higher one wins.
               </p>
               {/* Results are entered on the matchup itself rather than in a separate
@@ -671,12 +671,12 @@ export default function AdminSlotWorldCupPage() {
                     {t.status === SlotWorldCupStatus.COMPLETED ? "Completed" : "Cancelled"}
                   </span>
                   <span className="flex-1 text-white truncate">{t.title}</span>
-                  <span className="text-white/40 text-xs shrink-0">{t.size} slots · {new Date(t.createdAt).toLocaleDateString()}</span>
+                  <span className="text-white/50 text-xs shrink-0">{t.size} slots · {new Date(t.createdAt).toLocaleDateString()}</span>
                   <button
                     onClick={() => handleDeleteTournament(t)}
                     disabled={actionLoading}
                     aria-label={`Delete ${t.title}`}
-                    className="shrink-0 text-white/30 hover:text-red-400 disabled:opacity-40 px-1.5 py-0.5 text-xs font-semibold"
+                    className="shrink-0 text-white/45 hover:text-red-400 disabled:opacity-40 px-1.5 py-0.5 text-xs font-semibold"
                   >
                     Delete
                   </button>

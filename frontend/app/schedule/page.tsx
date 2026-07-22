@@ -65,8 +65,8 @@ export default function SchedulePage() {
         ) : events.length === 0 ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
             <Calendar className="w-12 h-12 text-gray-700 mx-auto mb-4" />
-            <p className="text-gray-500">No upcoming streams scheduled yet.</p>
-            <p className="text-gray-600 text-sm mt-1">Check back soon or follow on Discord for announcements.</p>
+            <p className="text-gray-400">No upcoming streams scheduled yet.</p>
+            <p className="text-gray-400 text-sm mt-1">Check back soon or follow on Discord for announcements.</p>
           </motion.div>
         ) : (
           <div className="space-y-8">
@@ -74,7 +74,7 @@ export default function SchedulePage() {
               <motion.div key={day} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: di * 0.05 }}>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="h-px flex-1 bg-white/5" />
-                  <span className="text-gray-500 text-xs font-semibold uppercase tracking-widest">{day}</span>
+                  <span className="text-gray-400 text-xs font-semibold uppercase tracking-widest">{day}</span>
                   <div className="h-px flex-1 bg-white/5" />
                 </div>
                 <div className="space-y-3">
@@ -112,14 +112,14 @@ export default function SchedulePage() {
                           <div className="flex items-center gap-3 mt-1 flex-wrap">
                             <span className="text-gold-400 text-sm font-medium">{time}</span>
                             {event.gameType && (
-                              <span className="flex items-center gap-1 text-gray-500 text-xs">
+                              <span className="flex items-center gap-1 text-gray-400 text-xs">
                                 <Gamepad2 className="w-3 h-3" />
                                 {event.gameType}
                               </span>
                             )}
                           </div>
                           {event.description && (
-                            <p className="text-gray-500 text-sm mt-1.5">{event.description}</p>
+                            <p className="text-gray-400 text-sm mt-1.5">{event.description}</p>
                           )}
                         </div>
                       </div>

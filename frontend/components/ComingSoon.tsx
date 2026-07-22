@@ -128,7 +128,7 @@ export default function ComingSoon({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
-          className="mt-8 text-gray-500 text-sm"
+          className="mt-8 text-gray-400 text-sm"
         >
           Stay tuned for updates! Follow us on Discord for the latest news.
         </motion.p>

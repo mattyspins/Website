@@ -174,7 +174,7 @@ export default function AdminLeaderboardsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8">
           <div className="flex items-center gap-3">
-            <a href="/admin" className="text-gray-500 hover:text-white text-sm transition-colors">← Admin</a>
+            <a href="/admin" className="text-gray-400 hover:text-white text-sm transition-colors">← Admin</a>
             <span className="text-gray-700">/</span>
             <h1 className="text-white font-bold text-xl">Wager Leaderboard</h1>
           </div>
@@ -219,7 +219,7 @@ export default function AdminLeaderboardsPage() {
               <>
                 {currentActiveMeta ? (
                   <>
-                    <p className="text-gray-500 text-xs mb-4">
+                    <p className="text-gray-400 text-xs mb-4">
                       {formatLondon(currentActiveMeta.startDate, "d MMM")}
                       {" – "}
                       {formatLondon(currentActiveMeta.endDate, "d MMM yyyy, HH:mm")}
@@ -227,7 +227,7 @@ export default function AdminLeaderboardsPage() {
                       {" · "}
                       <span className={
                         currentActiveMeta.phase === "upcoming" ? "text-blue-400" :
-                        currentActiveMeta.phase === "active" ? "text-green-400" : "text-gray-500"
+                        currentActiveMeta.phase === "active" ? "text-green-400" : "text-gray-400"
                       }>
                         {currentActiveMeta.phase}
                       </span>
@@ -235,14 +235,14 @@ export default function AdminLeaderboardsPage() {
                     <div className="space-y-1 mb-4">
                       {currentActiveMeta.prizes.map((p) => (
                         <div key={p.position} className="flex items-center gap-3 text-sm">
-                          <span className="text-gray-500 w-8 shrink-0">#{p.position}</span>
+                          <span className="text-gray-400 w-8 shrink-0">#{p.position}</span>
                           <span className="text-white font-semibold">${p.amount}</span>
                         </div>
                       ))}
                     </div>
                   </>
                 ) : (
-                  <p className="text-gray-500 text-sm mb-4">
+                  <p className="text-gray-400 text-sm mb-4">
                     No race is currently running. Create one to start tracking standings and prizes.
                   </p>
                 )}
@@ -263,7 +263,7 @@ export default function AdminLeaderboardsPage() {
                   />
                 </div>
 
-                <p className="text-gray-500 text-[11px] mb-1.5">Schedule (Europe/London time)</p>
+                <p className="text-gray-400 text-[11px] mb-1.5">Schedule (Europe/London time)</p>
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div>
                     <label className="text-gray-400 text-xs mb-1 block">Start Date</label>
@@ -305,8 +305,8 @@ export default function AdminLeaderboardsPage() {
                 <div className="space-y-1.5 mb-3 max-h-60 overflow-y-auto pr-1">
                   {formPrizes.map((p, i) => (
                     <div key={p.position} className="flex items-center gap-3">
-                      <span className="text-gray-500 text-xs w-10 shrink-0">#{p.position}</span>
-                      <span className="text-gray-600 text-xs shrink-0">$</span>
+                      <span className="text-gray-400 text-xs w-10 shrink-0">#{p.position}</span>
+                      <span className="text-gray-400 text-xs shrink-0">$</span>
                       <input
                         type="number" min={0}
                         value={p.amount}
@@ -355,12 +355,12 @@ export default function AdminLeaderboardsPage() {
           <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-6">
             <h2 className="text-white font-bold text-sm mb-4">Current Race Standings</h2>
             {!activeRace || activeRace.standings.length === 0 ? (
-              <p className="text-gray-600 text-sm text-center py-8">No wagers recorded yet this race</p>
+              <p className="text-gray-400 text-sm text-center py-8">No wagers recorded yet this race</p>
             ) : (
               <div className="space-y-1 max-h-72 overflow-y-auto pr-1">
                 {activeRace.standings.map((row) => (
                   <div key={row.userId ?? row.displayName} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-white/3">
-                    <span className="text-gray-600 text-xs w-5 shrink-0 text-right">{row.position}</span>
+                    <span className="text-gray-400 text-xs w-5 shrink-0 text-right">{row.position}</span>
                     <span className="text-gray-200 text-sm flex-1 truncate">{row.kickUsername ?? row.displayName}</span>
                     {row.prizeAmount !== null && <span className="text-gold-400 text-[10px] font-bold shrink-0">${row.prizeAmount}</span>}
                     <span className="text-white text-xs font-semibold shrink-0">${Number(row.wagered).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -374,7 +374,7 @@ export default function AdminLeaderboardsPage() {
         {/* All races (past + current) */}
         {races.length > 0 && (
           <div className="mb-10">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">All Races</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">All Races</p>
             <div className="space-y-2">
               {races.map((r) => (
                 <div key={r.id} className="bg-navy-800/50 border border-white/6 rounded-xl p-4 flex items-center gap-3">
@@ -386,9 +386,9 @@ export default function AdminLeaderboardsPage() {
                     {" – "}
                     {formatLondon(r.endDate, "d MMM yyyy, HH:mm")}
                   </span>
-                  <span className="text-gray-500 text-xs shrink-0">{r.prizes.length} position{r.prizes.length !== 1 ? "s" : ""} · ${r.totalPrizePool}</span>
+                  <span className="text-gray-400 text-xs shrink-0">{r.prizes.length} position{r.prizes.length !== 1 ? "s" : ""} · ${r.totalPrizePool}</span>
                   {r.status === "active" && (
-                    <button onClick={() => handleDeleteRace(r.id)} className="text-gray-600 hover:text-red-400 transition-colors shrink-0">
+                    <button onClick={() => handleDeleteRace(r.id)} className="text-gray-400 hover:text-red-400 transition-colors shrink-0">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -401,7 +401,7 @@ export default function AdminLeaderboardsPage() {
         {/* Payout history */}
         {history.length > 0 && (
           <div className="mb-10">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Payout History</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Payout History</p>
             <div className="space-y-2">
               {history.map((entry) => (
                 <div key={entry.id} className="bg-navy-800/50 border border-white/6 rounded-xl p-4">

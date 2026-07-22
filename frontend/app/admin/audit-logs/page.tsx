@@ -68,7 +68,7 @@ function PointRow({ item }: { item: PointActivity }) {
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-white font-medium text-sm">{item.user.displayName}</span>
           {isAdmin && item.admin && (
-            <span className="text-white/30 text-xs">via <span className="text-white/50">{item.admin.displayName}</span></span>
+            <span className="text-white/45 text-xs">via <span className="text-white/50">{item.admin.displayName}</span></span>
           )}
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
             isAdd ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"
@@ -76,18 +76,18 @@ function PointRow({ item }: { item: PointActivity }) {
             {isAdd ? "+" : ""}{item.amount.toLocaleString()} coins
           </span>
           {item.transactionType && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/30 uppercase tracking-wide">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/45 uppercase tracking-wide">
               {item.transactionType.replace(/_/g, " ")}
             </span>
           )}
         </div>
         {item.reason && (
-          <p className="text-white/40 text-xs mt-0.5 truncate">{item.reason}</p>
+          <p className="text-white/50 text-xs mt-0.5 truncate">{item.reason}</p>
         )}
       </div>
 
       {/* Time */}
-      <time className="text-white/25 text-xs shrink-0 tabular-nums">
+      <time className="text-white/45 text-xs shrink-0 tabular-nums">
         {formatTime(item.createdAt)}
       </time>
     </div>
@@ -107,25 +107,25 @@ function StoreRow({ item }: { item: StoreActivity }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-white font-medium text-sm">{item.user.displayName}</span>
-          <span className="text-white/30 text-xs">redeemed</span>
+          <span className="text-white/45 text-xs">redeemed</span>
           <span className="text-yellow-300 text-sm font-semibold">{item.itemName}</span>
-          {item.quantity > 1 && <span className="text-white/40 text-xs">×{item.quantity}</span>}
+          {item.quantity > 1 && <span className="text-white/50 text-xs">×{item.quantity}</span>}
           <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400">
             −{item.totalPrice.toLocaleString()} coins
           </span>
           <span className={`text-[10px] px-1.5 py-0.5 rounded bg-white/5 uppercase tracking-wide ${
-            item.status === "completed" ? "text-green-400" : "text-white/30"
+            item.status === "completed" ? "text-green-400" : "text-white/45"
           }`}>
             {item.status}
           </span>
         </div>
         {item.itemCategory && (
-          <p className="text-white/30 text-xs mt-0.5">{item.itemCategory}</p>
+          <p className="text-white/45 text-xs mt-0.5">{item.itemCategory}</p>
         )}
       </div>
 
       {/* Time */}
-      <time className="text-white/25 text-xs shrink-0 tabular-nums">
+      <time className="text-white/45 text-xs shrink-0 tabular-nums">
         {formatTime(item.createdAt)}
       </time>
     </div>
@@ -198,7 +198,7 @@ export default function ActivityPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-white">Activity Log</h1>
-            <p className="text-white/40 text-sm mt-0.5">
+            <p className="text-white/50 text-sm mt-0.5">
               Points added/removed · Store redemptions · {total.toLocaleString()} total records
             </p>
           </div>
@@ -237,7 +237,7 @@ export default function ActivityPage() {
               onChange={e => setSearchInput(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") { setSearch(searchInput); setPage(1); } }}
               placeholder="Search by username…"
-              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-yellow-400/50 min-w-0"
+              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-white/45 focus:outline-none focus:border-yellow-400/50 min-w-0"
             />
             <button
               onClick={() => { setSearch(searchInput); setPage(1); }}
@@ -248,7 +248,7 @@ export default function ActivityPage() {
             {search && (
               <button
                 onClick={() => { setSearch(""); setSearchInput(""); setPage(1); }}
-                className="px-3 py-1.5 border border-white/10 rounded-lg text-white/40 hover:bg-white/5 text-sm transition-colors"
+                className="px-3 py-1.5 border border-white/10 rounded-lg text-white/50 hover:bg-white/5 text-sm transition-colors"
               >
                 Clear
               </button>
@@ -263,7 +263,7 @@ export default function ActivityPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
             </div>
           ) : items.length === 0 ? (
-            <div className="text-center py-16 text-white/30">
+            <div className="text-center py-16 text-white/45">
               <p className="text-3xl mb-2">📋</p>
               <p>No activity found</p>
             </div>
@@ -288,7 +288,7 @@ export default function ActivityPage() {
             >
               ← Previous
             </button>
-            <span className="text-white/40 text-sm">Page {page} of {totalPages}</span>
+            <span className="text-white/50 text-sm">Page {page} of {totalPages}</span>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}

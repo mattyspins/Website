@@ -46,7 +46,7 @@ function CountdownUnits({ ms }: { ms: number }) {
       {segments.map((seg) => (
         <div key={seg.label} className="bg-navy-900/70 border border-white/8 rounded-xl px-4 py-2.5 min-w-[68px] text-center">
           <p className="text-2xl font-bold font-gaming text-gold-400 tabular-nums">{String(seg.value).padStart(2, "0")}</p>
-          <p className="text-gray-500 text-[10px] font-semibold uppercase tracking-wider mt-0.5">{seg.label}</p>
+          <p className="text-gray-400 text-[10px] font-semibold uppercase tracking-wider mt-0.5">{seg.label}</p>
         </div>
       ))}
     </div>
@@ -143,7 +143,7 @@ export default function LeaderboardPage() {
       <div className="min-h-screen flex items-center justify-center pt-16">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-2 border-gold-500/30 border-t-gold-500 rounded-full animate-spin" />
-          <p className="text-gray-500 text-sm">Loading leaderboard…</p>
+          <p className="text-gray-400 text-sm">Loading leaderboard…</p>
         </div>
       </div>
     );
@@ -177,7 +177,7 @@ export default function LeaderboardPage() {
 
           {race && (
             <>
-              <p className="text-gray-500 text-xs font-semibold uppercase tracking-widest mb-3">
+              <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-3">
                 {race.phase === "upcoming" ? "Starts In" : race.phase === "active" ? "Ends In" : "Leaderboard Finished"}
               </p>
               {race.phase !== "ended" ? (
@@ -189,7 +189,7 @@ export default function LeaderboardPage() {
                 </p>
               )}
 
-              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-6 text-xs text-gray-500">
+              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-6 text-xs text-gray-400">
                 <span className="flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5 text-gold-400" /> ${race.totalPrizePool} prize pool</span>
                 <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-gold-400" /> {race.prizes.length} paid position{race.prizes.length !== 1 ? "s" : ""}</span>
                 <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-gold-400" /> {formatLondon(race.startDate)} – {formatLondon(race.endDate)}</span>
@@ -202,13 +202,13 @@ export default function LeaderboardPage() {
           <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-12 text-center mb-12">
             <Trophy className="w-10 h-10 text-gold-400/40 mx-auto mb-4" />
             <p className="text-gray-400 font-semibold">No race is running right now</p>
-            <p className="text-gray-600 text-sm mt-1">Check back soon for the next one</p>
+            <p className="text-gray-400 text-sm mt-1">Check back soon for the next one</p>
           </div>
         ) : race.standings.length === 0 ? (
           <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-12 text-center mb-12">
             <Trophy className="w-10 h-10 text-gold-400/40 mx-auto mb-4" />
             <p className="text-gray-400 font-semibold">No wagers recorded yet this race</p>
-            <p className="text-gray-600 text-sm mt-1">Wagers sync automatically from Razed — check back soon</p>
+            <p className="text-gray-400 text-sm mt-1">Wagers sync automatically from Razed — check back soon</p>
           </div>
         ) : (
           <>
@@ -252,7 +252,7 @@ export default function LeaderboardPage() {
                       {row.prizeAmount !== null ? (
                         <span className="text-gold-400 font-bold text-sm">${row.prizeAmount}</span>
                       ) : (
-                        <span className="text-gray-600 text-sm">—</span>
+                        <span className="text-gray-400 text-sm">—</span>
                       )}
                     </span>
                   </motion.div>
@@ -265,7 +265,7 @@ export default function LeaderboardPage() {
         {/* Past winners */}
         {history.length > 0 && (
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30 mb-4 flex items-center gap-2">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/45 mb-4 flex items-center gap-2">
               <Crown className="w-3.5 h-3.5" />
               Past Winners
             </p>

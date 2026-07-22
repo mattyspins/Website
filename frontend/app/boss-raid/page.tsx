@@ -91,7 +91,7 @@ export default function BossRaidPublicPage() {
           >
             <Swords className="w-10 h-10 text-amber-400/40 mx-auto mb-4" />
             <p className="text-gray-400 font-semibold">No Boss Raid live right now</p>
-            <p className="text-gray-600 text-sm mt-1">Check back during the next stream 👊</p>
+            <p className="text-gray-400 text-sm mt-1">Check back during the next stream 👊</p>
           </motion.div>
         ) : (
           <motion.div

@@ -131,7 +131,7 @@ export default function GuessSubmissionForm({
             required
           />
         </div>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-gray-400 mt-1">
           Enter the amount you think the final balance will be
         </p>
       </div>

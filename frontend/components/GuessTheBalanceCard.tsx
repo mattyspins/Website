@@ -155,7 +155,7 @@ export default function GuessTheBalanceCard({
             </div>
           ) : isAuthenticated ? (
             <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-3 text-center">
-              <p className="text-gray-500 text-sm">You didn't submit a guess for this game</p>
+              <p className="text-gray-400 text-sm">You didn't submit a guess for this game</p>
             </div>
           ) : null}
         </div>
@@ -163,7 +163,7 @@ export default function GuessTheBalanceCard({
 
       {/* Timestamps */}
       <div className="mt-4 pt-4 border-t border-gray-700">
-        <div className="flex justify-between text-xs text-gray-500">
+        <div className="flex justify-between text-xs text-gray-400">
           {game.openedAt && (
             <span>Opened: {new Date(game.openedAt).toLocaleString()}</span>
           )}

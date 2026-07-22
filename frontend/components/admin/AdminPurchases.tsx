@@ -210,7 +210,7 @@ export default function AdminPurchases() {
       {/* Purchases List */}
       {filteredPurchases.length === 0 ? (
         <div className="bg-black/50 backdrop-blur-lg border border-yellow-500/30 rounded-2xl p-12 text-center">
-          <ShoppingBag className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+          <ShoppingBag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-white mb-2">
             No Purchases Found
           </h3>
@@ -252,7 +252,7 @@ export default function AdminPurchases() {
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Customer</p>
+                      <p className="text-xs text-gray-400 mb-1">Customer</p>
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-yellow-400" />
                         <p
@@ -265,7 +265,7 @@ export default function AdminPurchases() {
                     </div>
 
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Quantity</p>
+                      <p className="text-xs text-gray-400 mb-1">Quantity</p>
                       <div className="flex items-center gap-2">
                         <Package className="w-4 h-4 text-blue-400" />
                         <p className="text-sm text-white">
@@ -275,14 +275,14 @@ export default function AdminPurchases() {
                     </div>
 
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Total</p>
+                      <p className="text-xs text-gray-400 mb-1">Total</p>
                       <p className="text-sm font-bold text-yellow-400">
                         {purchase.totalPrice.toLocaleString()} pts
                       </p>
                     </div>
 
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Date</p>
+                      <p className="text-xs text-gray-400 mb-1">Date</p>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-green-400" />
                         <p className="text-sm text-white">

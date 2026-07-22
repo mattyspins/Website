@@ -130,7 +130,7 @@ export default function AuthCallback() {
                 Authentication Failed
               </h2>
               <p className="text-gray-400">{message}</p>
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-sm text-gray-400 mt-2">
                 Redirecting to home page...
               </p>
             </>

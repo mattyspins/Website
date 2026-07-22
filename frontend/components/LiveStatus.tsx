@@ -29,7 +29,7 @@ export default function LiveStatus() {
           notifications!
         </p>
 
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-400">
           Follow MattySpins on Kick for live stream notifications
         </p>
       </div>

@@ -149,8 +149,8 @@ export default function RafflePage() {
         ) : raffles.length === 0 ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
             <Ticket className="w-12 h-12 text-gray-700 mx-auto mb-4" />
-            <p className="text-gray-500">No active raffles right now.</p>
-            <p className="text-gray-600 text-sm mt-1">Check back soon — new raffles are added regularly.</p>
+            <p className="text-gray-400">No active raffles right now.</p>
+            <p className="text-gray-400 text-sm mt-1">Check back soon — new raffles are added regularly.</p>
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -178,7 +178,7 @@ export default function RafflePage() {
                     <h3 className="text-white font-semibold leading-snug">{raffle.title}</h3>
                     <div className="shrink-0 bg-gold-500/10 border border-gold-500/20 rounded-lg px-2.5 py-1 text-center">
                       <p className="text-gold-400 font-bold text-sm leading-none">{raffle.ticketPrice}</p>
-                      <p className="text-gray-600 text-[10px]">coins</p>
+                      <p className="text-gray-400 text-[10px]">coins</p>
                     </div>
                   </div>
 
@@ -187,10 +187,10 @@ export default function RafflePage() {
                     <p className="text-gray-300 text-sm font-medium">{raffle.prize}</p>
                   </div>
                   {raffle.description && (
-                    <p className="text-gray-500 text-xs mb-3 leading-relaxed">{raffle.description}</p>
+                    <p className="text-gray-400 text-xs mb-3 leading-relaxed">{raffle.description}</p>
                   )}
 
-                  <div className="flex items-center gap-1.5 text-gray-500 text-xs mb-3">
+                  <div className="flex items-center gap-1.5 text-gray-400 text-xs mb-3">
                     <Clock className="w-3 h-3" />
                     <span>{timeLeft(raffle.endsAt)}</span>
                     {raffle.numberOfWinners > 1 && (
@@ -200,7 +200,7 @@ export default function RafflePage() {
 
                   {/* Progress bar */}
                   <div className="mb-4">
-                    <div className="flex justify-between text-xs text-gray-600 mb-1">
+                    <div className="flex justify-between text-xs text-gray-400 mb-1">
                       <span>{raffle.ticketsSold} / {raffle.maxTickets} tickets</span>
                       <span>{pct.toFixed(0)}%</span>
                     </div>
@@ -222,12 +222,12 @@ export default function RafflePage() {
                   {/* Buy controls */}
                   <div className="mt-auto">
                     {!isLoggedIn ? (
-                      <div className="flex items-center gap-2 text-gray-500 text-xs">
+                      <div className="flex items-center gap-2 text-gray-400 text-xs">
                         <Lock className="w-3.5 h-3.5" />
                         <span>Login to buy tickets</span>
                       </div>
                     ) : isSoldOut ? (
-                      <p className="text-gray-600 text-xs font-semibold uppercase tracking-wide">Sold Out</p>
+                      <p className="text-gray-400 text-xs font-semibold uppercase tracking-wide">Sold Out</p>
                     ) : (
                       <div className="flex items-center gap-2">
                         <select
@@ -257,7 +257,7 @@ export default function RafflePage() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
           className="mt-12 bg-navy-800/40 border border-white/5 rounded-xl p-6">
           <h3 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">How Raffles Work</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-500">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-400">
             <div className="flex items-start gap-3">
               <span className="text-gold-400 mt-0.5">01</span>
               <div>

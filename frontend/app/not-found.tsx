@@ -106,7 +106,7 @@ export default function NotFound() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.2, duration: 0.6 }}
-          className="mt-8 text-gray-500 text-sm"
+          className="mt-8 text-gray-400 text-sm"
         >
           <p>
             "Even the best gamblers sometimes bet on the wrong URL!" -

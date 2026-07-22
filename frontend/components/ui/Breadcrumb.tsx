@@ -42,7 +42,7 @@ export default function Breadcrumb({ items, className = "" }: BreadcrumbProps) {
           transition={{ delay: index * 0.1 }}
           className="flex items-center space-x-2"
         >
-          <ChevronRight className="w-4 h-4 text-gray-500" />
+          <ChevronRight className="w-4 h-4 text-gray-400" />
 
           {item.href ? (
             <Link

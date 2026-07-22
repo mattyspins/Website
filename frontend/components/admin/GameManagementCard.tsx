@@ -313,7 +313,7 @@ export default function GameManagementCard({
 
         {/* Timestamps */}
         <div className="mt-4 pt-4 border-t border-gray-700">
-          <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
+          <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
             <div>
               <span className="block">Created:</span>
               <span>{new Date(game.createdAt).toLocaleString()}</span>

@@ -123,7 +123,7 @@ export default function KingOfTheHillPage() {
           >
             <Crown className="w-10 h-10 text-gold-400/40 mx-auto mb-4" />
             <p className="text-gray-400 font-semibold">No King of the Hill live right now</p>
-            <p className="text-gray-600 text-sm mt-1">Check back during the next stream 👊</p>
+            <p className="text-gray-400 text-sm mt-1">Check back during the next stream 👊</p>
           </motion.div>
         ) : (
           <div className="space-y-6">
@@ -149,15 +149,15 @@ export default function KingOfTheHillPage() {
                     <Avatar u={kingEntry.user} size={96} ring />
                   </div>
                   <p className="text-gold-400 text-2xl font-black">{uname(kingEntry.user)}</p>
-                  {kingRound.slotName && <p className="text-gray-500 text-sm mt-1">{kingRound.slotName}</p>}
+                  {kingRound.slotName && <p className="text-gray-400 text-sm mt-1">{kingRound.slotName}</p>}
                   <p className="text-white font-black text-4xl mt-3">{fmtMulti(kingRound.multiplier)}</p>
-                  <p className="text-gray-600 text-xs mt-2 uppercase tracking-widest">Reigning King</p>
+                  <p className="text-gray-400 text-xs mt-2 uppercase tracking-widest">Reigning King</p>
                 </>
               ) : (
                 <>
                   <Crown className="w-10 h-10 text-gold-400/30 mx-auto mb-3" />
                   <p className="text-gray-400 font-semibold">The throne is empty</p>
-                  <p className="text-gray-600 text-sm mt-1">Waiting for the first challenger to climb the hill</p>
+                  <p className="text-gray-400 text-sm mt-1">Waiting for the first challenger to climb the hill</p>
                 </>
               )}
             </motion.div>
@@ -183,7 +183,7 @@ export default function KingOfTheHillPage() {
             <div className="bg-navy-800/60 border border-white/6 rounded-2xl p-6">
               <p className="text-white text-xs font-bold uppercase tracking-widest mb-4">Climbs this session</p>
               {climbs.length === 0 ? (
-                <p className="text-gray-600 text-sm text-center py-6">No results yet — be the first to climb!</p>
+                <p className="text-gray-400 text-sm text-center py-6">No results yet — be the first to climb!</p>
               ) : (
                 <div className="space-y-1.5">
                   {climbs.map((r, i) => (
@@ -193,13 +193,13 @@ export default function KingOfTheHillPage() {
                         r.isKing ? "bg-gold-500/8 border-gold-500/20" : "bg-white/3 border-white/5"
                       }`}
                     >
-                      <span className="text-gray-600 text-xs w-5 shrink-0 text-right">{i + 1}</span>
+                      <span className="text-gray-400 text-xs w-5 shrink-0 text-right">{i + 1}</span>
                       <Avatar u={r.user} size={28} />
                       <div className="min-w-0 flex-1">
                         <p className="text-gray-200 text-sm font-medium truncate">{uname(r.user)}</p>
-                        {r.slotName && <p className="text-gray-600 text-xs truncate">{r.slotName}</p>}
+                        {r.slotName && <p className="text-gray-400 text-xs truncate">{r.slotName}</p>}
                       </div>
-                      <span className={`text-sm font-black shrink-0 ${r.isKing ? "text-gold-400" : "text-gray-500"}`}>
+                      <span className={`text-sm font-black shrink-0 ${r.isKing ? "text-gold-400" : "text-gray-400"}`}>
                         {r.isKing && "👑 "}{fmtMulti(r.multiplier)}
                       </span>
                     </div>

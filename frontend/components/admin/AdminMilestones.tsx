@@ -113,7 +113,7 @@ export default function AdminMilestones() {
     <div className="space-y-6">
       <div className="bg-navy-800/60 border border-white/6 rounded-xl p-6">
         <h2 className="text-lg font-semibold text-white mb-1">Wager Milestone Management</h2>
-        <p className="text-gray-500 text-sm mb-6">
+        <p className="text-gray-400 text-sm mb-6">
           Search a user and update their total Razed wagered amount to unlock milestones.
         </p>
 
@@ -142,15 +142,15 @@ export default function AdminMilestones() {
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
                 <p className="text-white font-semibold">{userName}</p>
-                <p className="text-gray-500 text-xs">{userId}</p>
+                <p className="text-gray-400 text-xs">{userId}</p>
               </div>
               <div className="flex gap-4 text-right">
                 <div>
-                  <p className="text-gray-500 text-xs">Wagered</p>
+                  <p className="text-gray-400 text-xs">Wagered</p>
                   <p className="text-gold-400 font-bold">${(currentWager ?? 0).toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs">Deposited</p>
+                  <p className="text-gray-400 text-xs">Deposited</p>
                   <p className="text-blue-400 font-bold">${(currentDeposited ?? 0).toLocaleString()}</p>
                 </div>
               </div>
@@ -166,7 +166,7 @@ export default function AdminMilestones() {
                     className={`rounded-lg px-2 py-1.5 text-center text-xs font-medium border ${
                       unlocked
                         ? "bg-gold-500/10 border-gold-500/30 text-gold-400"
-                        : "bg-white/3 border-white/5 text-gray-600"
+                        : "bg-white/3 border-white/5 text-gray-400"
                     }`}
                   >
                     {t.name}
@@ -175,7 +175,7 @@ export default function AdminMilestones() {
                 );
               })}
             </div>
-            <p className="text-gray-500 text-xs">{unlockedCount} / {TIERS.length} milestones unlocked</p>
+            <p className="text-gray-400 text-xs">{unlockedCount} / {TIERS.length} milestones unlocked</p>
 
             {/* Update wager + deposit */}
             <div className="grid grid-cols-2 gap-3 pt-2">

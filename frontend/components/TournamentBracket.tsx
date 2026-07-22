@@ -94,14 +94,14 @@ function MatchCard({
             ${isWinner ? "bg-gradient-to-r from-yellow-500/15 to-transparent" : ""}
             ${isLoser ? "opacity-35" : ""}
           `}>
-            <span className="text-[10px] text-white/25 w-3.5 shrink-0 font-mono mt-1">{p?.seed ?? "—"}</span>
+            <span className="text-[10px] text-white/45 w-3.5 shrink-0 font-mono mt-1">{p?.seed ?? "—"}</span>
 
             {slotGame ? (
               <SlotImage src={slotGame.image} name={slotGame.name} size={40} />
             ) : p?.avatarUrl ? (
               <img src={p.avatarUrl} alt="" className={`w-10 h-10 rounded-lg shrink-0 ring-1 ${isWinner ? "ring-yellow-400/60" : "ring-white/10"}`} />
             ) : (
-              <div className={`w-10 h-10 rounded-lg shrink-0 flex items-center justify-center text-sm font-bold ring-1 ${isWinner ? "bg-yellow-400/20 text-yellow-300 ring-yellow-400/40" : "bg-white/8 text-white/40 ring-white/10"}`}>
+              <div className={`w-10 h-10 rounded-lg shrink-0 flex items-center justify-center text-sm font-bold ring-1 ${isWinner ? "bg-yellow-400/20 text-yellow-300 ring-yellow-400/40" : "bg-white/8 text-white/50 ring-white/10"}`}>
                 {p?.displayName?.[0]?.toUpperCase() ?? "?"}
               </div>
             )}
@@ -109,7 +109,7 @@ function MatchCard({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 {slotGame && p?.avatarUrl && <img src={p.avatarUrl} alt="" className="w-4 h-4 rounded-full shrink-0" />}
-                <div className={`text-sm font-semibold truncate ${isLoser ? "line-through text-white/40" : isWinner ? "text-yellow-300" : "text-white/90"}`}>
+                <div className={`text-sm font-semibold truncate ${isLoser ? "line-through text-white/50" : isWinner ? "text-yellow-300" : "text-white/90"}`}>
                   {p?.displayName ?? "TBD"}
                 </div>
                 {isWinner && <span className="text-sm shrink-0">👑</span>}
@@ -143,16 +143,16 @@ function MatchCard({
       {/* TBD placeholders */}
       {Array.from({ length: Math.max(0, 2 - match.participants.length) }).map((_, i) => (
         <div key={`tbd-${i}`} className={`flex items-center gap-2.5 px-3 py-2.5 ${i === 0 && match.participants.length === 0 ? "border-b border-white/8" : ""}`}>
-          <span className="text-[10px] text-white/15 w-3.5 font-mono">—</span>
+          <span className="text-[10px] text-white/45 w-3.5 font-mono">—</span>
           <div className="w-6 h-6 rounded-full bg-white/5 ring-1 ring-white/8 shrink-0" />
-          <span className="text-sm text-white/20 italic">TBD</span>
+          <span className="text-sm text-white/45 italic">TBD</span>
         </div>
       ))}
 
       {/* Admin: multiplier result entry */}
       {canDeclare && (
         <div className="border-t border-white/8 px-3 pt-2.5 pb-3 space-y-2">
-          <p className="text-[10px] uppercase tracking-widest text-white/25 font-bold">Enter Results</p>
+          <p className="text-[10px] uppercase tracking-widest text-white/45 font-bold">Enter Results</p>
           {match.participants.map((mp) => {
             const p = participantMap[mp.participantId];
             const mult = getMultiplier(mp.participantId);
@@ -174,7 +174,7 @@ function MatchCard({
                   onChange={(e) => setCosts((prev) => ({ ...prev, [mp.participantId]: e.target.value }))}
                   className="w-16 bg-white/5 border border-white/10 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
                 />
-                <span className="text-white/20 text-xs shrink-0">÷</span>
+                <span className="text-white/45 text-xs shrink-0">÷</span>
                 <input
                   type="number"
                   min="0"
@@ -184,7 +184,7 @@ function MatchCard({
                   onChange={(e) => setPayouts((prev) => ({ ...prev, [mp.participantId]: e.target.value }))}
                   className="w-16 bg-white/5 border border-white/10 rounded px-2 py-1 text-white text-xs focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
                 />
-                <span className={`text-xs font-bold ml-0.5 w-12 shrink-0 ${isLeader && mult !== null ? "text-yellow-300" : "text-white/25"}`}>
+                <span className={`text-xs font-bold ml-0.5 w-12 shrink-0 ${isLeader && mult !== null ? "text-yellow-300" : "text-white/45"}`}>
                   {mult !== null ? `${mult.toFixed(2)}x` : "—"}
                   {isLeader && mult !== null && " ↑"}
                 </span>
@@ -250,7 +250,7 @@ export default function TournamentBracket({
 
   const getRoundColor = (round: number) => {
     if (round === currentRound) return "bg-yellow-400/20 text-yellow-300 border border-yellow-400/30";
-    if (round < (currentRound || 0)) return "bg-white/5 text-white/30 border border-white/5";
+    if (round < (currentRound || 0)) return "bg-white/5 text-white/45 border border-white/5";
     return "bg-white/5 text-white/50 border border-white/10";
   };
 
@@ -347,14 +347,14 @@ export default function TournamentBracket({
                       <p className="text-[10px] text-white/50 truncate max-w-[120px]">{slotGame.name}</p>
                     </div>
                   ) : (
-                    <div className="text-white/40 text-[10px] mt-1 italic">{winner.currentSlot}</div>
+                    <div className="text-white/50 text-[10px] mt-1 italic">{winner.currentSlot}</div>
                   );
                 })()}
               </div>
             ) : (
               <div className="text-center">
                 <div className="text-3xl opacity-20 mb-1">🏆</div>
-                <div className="text-[10px] text-white/20 uppercase tracking-widest">Champion</div>
+                <div className="text-[10px] text-white/45 uppercase tracking-widest">Champion</div>
               </div>
             )}
           </div>

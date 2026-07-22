@@ -257,7 +257,7 @@ export default function ModeratorDashboard() {
                         <p className="text-white font-semibold">
                           {user.displayName}
                         </p>
-                        <p className="text-gray-500 text-sm">
+                        <p className="text-gray-400 text-sm">
                           {user.discordId}
                         </p>
                       </div>
@@ -268,7 +268,7 @@ export default function ModeratorDashboard() {
                           {user.kickUsername}
                         </span>
                       ) : (
-                        <span className="text-gray-500">Not verified</span>
+                        <span className="text-gray-400">Not verified</span>
                       )}
                     </td>
                     <td className="py-3 px-4">
@@ -370,7 +370,7 @@ export default function ModeratorDashboard() {
                     placeholder="7"
                     className="w-full px-4 py-2 bg-black/50 border border-red-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-red-500"
                   />
-                  <p className="text-gray-500 text-xs mt-1">
+                  <p className="text-gray-400 text-xs mt-1">
                     Leave empty for permanent suspension
                   </p>
                 </div>

@@ -48,7 +48,7 @@ function CrownReveal({ entry, round, onClose }: { entry: KothEntry; round: KothR
         </div>
         <p className="text-white font-black text-3xl tracking-tight text-center">{name(entry.user)}</p>
         <p className="text-yellow-300 font-black text-2xl">{fmtMulti(round.multiplier)}</p>
-        {round.slotName && <p className="text-white/40 text-sm">{round.slotName}</p>}
+        {round.slotName && <p className="text-white/50 text-sm">{round.slotName}</p>}
         <button
           onClick={onClose}
           className="mt-2 px-8 py-3 bg-yellow-400 text-black font-bold rounded-xl hover:bg-yellow-300 transition-colors text-sm"
@@ -217,7 +217,7 @@ export default function AdminKingOfTheHillPage() {
         <div className="mb-8">
           <button
             onClick={() => router.push("/admin")}
-            className="flex items-center gap-1.5 text-white/40 hover:text-white/80 text-sm mb-4 transition-colors group"
+            className="flex items-center gap-1.5 text-white/50 hover:text-white/80 text-sm mb-4 transition-colors group"
           >
             <svg className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -227,7 +227,7 @@ export default function AdminKingOfTheHillPage() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-white">King of the Hill</h1>
-              <p className="text-white/40 text-sm mt-0.5">Viewers type !king (optionally with a slot) to join — draw a challenger, record their slot result, crown the king</p>
+              <p className="text-white/50 text-sm mt-0.5">Viewers type !king (optionally with a slot) to join — draw a challenger, record their slot result, crown the king</p>
             </div>
             <a
               href="/king-of-the-hill-widget"
@@ -282,12 +282,12 @@ export default function AdminKingOfTheHillPage() {
                   <button
                     onClick={handleClose}
                     disabled={actionLoading}
-                    className="px-3 py-1.5 border border-white/15 text-white/40 text-xs rounded-lg hover:bg-white/5 disabled:opacity-30 transition-colors"
+                    className="px-3 py-1.5 border border-white/15 text-white/50 text-xs rounded-lg hover:bg-white/5 disabled:opacity-30 transition-colors"
                   >
                     Close Session
                   </button>
                 </div>
-                <p className="text-white/40 text-xs mt-1">
+                <p className="text-white/50 text-xs mt-1">
                   Type <code className="bg-white/10 text-yellow-300 px-1.5 py-0.5 rounded font-mono">!king</code> (or <code className="bg-white/10 text-yellow-300 px-1.5 py-0.5 rounded font-mono">!king &lt;slot&gt;</code>) in Kick chat to join · {entries.length} {entries.length === 1 ? "viewer" : "viewers"}
                 </p>
               </div>
@@ -301,12 +301,12 @@ export default function AdminKingOfTheHillPage() {
                     <Avatar u={kingEntry.user} size={12} />
                     <div className="min-w-0 flex-1">
                       <p className="text-white font-bold truncate">{name(kingEntry.user)}</p>
-                      {kingRound.slotName && <p className="text-white/40 text-xs truncate">{kingRound.slotName}</p>}
+                      {kingRound.slotName && <p className="text-white/50 text-xs truncate">{kingRound.slotName}</p>}
                     </div>
                     <p className="text-yellow-300 font-black text-xl shrink-0">{fmtMulti(kingRound.multiplier)}</p>
                   </div>
                 ) : (
-                  <p className="text-white/25 text-sm text-center py-4">No king yet — draw a challenger to claim the hill</p>
+                  <p className="text-white/45 text-sm text-center py-4">No king yet — draw a challenger to claim the hill</p>
                 )}
               </div>
 
@@ -328,12 +328,12 @@ export default function AdminKingOfTheHillPage() {
                       <Avatar u={drawnEntry.user} size={9} />
                       <div className="min-w-0 flex-1">
                         <p className="text-white font-bold truncate">{name(drawnEntry.user)}</p>
-                        <p className="text-white/30 text-xs">is up next</p>
+                        <p className="text-white/45 text-xs">is up next</p>
                       </div>
                     </div>
 
                     <div>
-                      <p className="text-xs text-white/40 mb-1.5">
+                      <p className="text-xs text-white/50 mb-1.5">
                         Slot from <code className="bg-white/10 text-yellow-300 px-1 py-0.5 rounded font-mono">!king &lt;slot&gt;</code> or <code className="bg-white/10 text-yellow-300 px-1 py-0.5 rounded font-mono">!slot &lt;name&gt;</code> in chat — or pick for them:
                       </p>
                       <SlotPicker
@@ -381,7 +381,7 @@ export default function AdminKingOfTheHillPage() {
                     <button
                       onClick={handleCancelDraw}
                       disabled={actionLoading}
-                      className="w-full py-2 border border-white/10 text-white/40 rounded-xl hover:bg-white/5 text-xs transition-colors"
+                      className="w-full py-2 border border-white/10 text-white/50 rounded-xl hover:bg-white/5 text-xs transition-colors"
                     >
                       Cancel Draw
                     </button>
@@ -398,18 +398,18 @@ export default function AdminKingOfTheHillPage() {
                 <h2 className="text-base font-semibold text-white mb-4">Waiting Pool ({waiting.length})</h2>
                 <div className="space-y-1 max-h-52 overflow-y-auto pr-1 mb-3">
                   {waiting.length === 0 ? (
-                    <p className="text-white/25 text-sm text-center py-4">No one waiting</p>
+                    <p className="text-white/45 text-sm text-center py-4">No one waiting</p>
                   ) : (
                     waiting.map((e) => (
                       <div key={e.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/3 border border-white/5">
                         <Avatar u={e.user} size={7} />
                         <span className="text-white/80 text-sm font-medium truncate">{name(e.user)}</span>
                         <div className="ml-auto flex items-center gap-2 shrink-0">
-                          {e.slotName && <span className="text-white/40 text-xs truncate">🎰 {e.slotName}</span>}
+                          {e.slotName && <span className="text-white/50 text-xs truncate">🎰 {e.slotName}</span>}
                           <button
                             onClick={() => handleRemoveEntry(e.id)}
                             disabled={actionLoading}
-                            className="text-white/20 hover:text-red-400 transition-colors text-xs shrink-0"
+                            className="text-white/45 hover:text-red-400 transition-colors text-xs shrink-0"
                             title="Remove"
                           >
                             ✕
@@ -420,7 +420,7 @@ export default function AdminKingOfTheHillPage() {
                   )}
                 </div>
                 <div className="pt-3 border-t border-white/8">
-                  <p className="text-white/30 text-xs mb-2">Add viewer manually</p>
+                  <p className="text-white/45 text-xs mb-2">Add viewer manually</p>
                   <div className="flex gap-2">
                     <input
                       value={manualUsername}
@@ -444,16 +444,16 @@ export default function AdminKingOfTheHillPage() {
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                 <h2 className="text-base font-semibold text-white mb-4">Climbs ({climbs.length})</h2>
                 {climbs.length === 0 ? (
-                  <p className="text-white/25 text-sm text-center py-4">No results yet</p>
+                  <p className="text-white/45 text-sm text-center py-4">No results yet</p>
                 ) : (
                   <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
                     {climbs.map((r, i) => (
                       <div key={r.id} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border ${r.isKing ? "bg-yellow-400/8 border-yellow-400/20" : "bg-white/3 border-white/5"}`}>
-                        <span className="text-white/20 text-xs w-5 shrink-0 text-right">{i + 1}</span>
+                        <span className="text-white/45 text-xs w-5 shrink-0 text-right">{i + 1}</span>
                         <Avatar u={r.user} size={7} />
                         <div className="min-w-0 flex-1">
                           <p className="text-white/85 text-sm font-medium truncate">{name(r.user)}</p>
-                          {r.slotName && <p className="text-white/30 text-[11px] truncate">{r.slotName}</p>}
+                          {r.slotName && <p className="text-white/45 text-[11px] truncate">{r.slotName}</p>}
                         </div>
                         <span className={`text-sm font-black shrink-0 ${r.isKing ? "text-yellow-300" : "text-white/50"}`}>
                           {r.isKing && "👑 "}{fmtMulti(r.multiplier)}
@@ -470,7 +470,7 @@ export default function AdminKingOfTheHillPage() {
         {/* ── Past Sessions ── */}
         {history.length > 0 && (
           <div className="mt-10">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/30 mb-4">Past Sessions</p>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/45 mb-4">Past Sessions</p>
             <div className="space-y-2">
               {history.map((s) => {
                 const finalKingRound = s.rounds.find((r) => r.isKing);
@@ -478,9 +478,9 @@ export default function AdminKingOfTheHillPage() {
                 return (
                   <div key={s.id} className="flex items-center gap-4 bg-white/3 border border-white/8 rounded-xl px-5 py-4">
                     <span className="text-white/60 text-sm font-semibold shrink-0">{s.label || "King of the Hill"}</span>
-                    <div className="text-white/15 text-sm shrink-0">·</div>
-                    <span className="text-white/40 text-sm shrink-0">{s.entries.length} entries</span>
-                    <div className="text-white/15 text-sm shrink-0">·</div>
+                    <div className="text-white/45 text-sm shrink-0">·</div>
+                    <span className="text-white/50 text-sm shrink-0">{s.entries.length} entries</span>
+                    <div className="text-white/45 text-sm shrink-0">·</div>
                     {finalKingEntry && finalKingRound ? (
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <span className="text-yellow-400 text-sm shrink-0">👑</span>
@@ -489,15 +489,15 @@ export default function AdminKingOfTheHillPage() {
                         <span className="text-yellow-300 text-xs font-bold shrink-0">{fmtMulti(finalKingRound.multiplier)}</span>
                       </div>
                     ) : (
-                      <span className="text-white/25 text-sm flex-1">No king crowned</span>
+                      <span className="text-white/45 text-sm flex-1">No king crowned</span>
                     )}
-                    <span className="text-white/20 text-xs shrink-0 ml-auto">
+                    <span className="text-white/45 text-xs shrink-0 ml-auto">
                       {new Date(s.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                     </span>
                     <button
                       onClick={() => handleDeleteSession(s.id)}
                       disabled={actionLoading}
-                      className="ml-2 text-white/20 hover:text-red-400 transition-colors text-sm shrink-0"
+                      className="ml-2 text-white/45 hover:text-red-400 transition-colors text-sm shrink-0"
                       title="Delete"
                     >
                       🗑️

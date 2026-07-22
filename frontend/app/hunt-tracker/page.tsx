@@ -28,7 +28,7 @@ function StatCard({ label, value, valueClass = "text-white" }: { label: string; 
   return (
     <div className="bg-[#14102a]/80 border border-white/8 rounded-2xl p-5 flex flex-col gap-1">
       <span className={`text-2xl font-bold font-gaming ${valueClass}`}>{value}</span>
-      <span className="text-gray-500 text-sm">{label}</span>
+      <span className="text-gray-400 text-sm">{label}</span>
     </div>
   );
 }
@@ -47,20 +47,20 @@ function SlotStatCard({
         {slot?.image ? (
           <img src={slot.image} alt={slot.slotName} className="w-full h-full object-cover rounded-xl" />
         ) : (
-          <div className="flex flex-col items-center gap-1 text-gray-600">
+          <div className="flex flex-col items-center gap-1 text-gray-400">
             <ImageOff className="w-5 h-5" />
             <span className="text-[9px] uppercase tracking-wide text-center leading-tight px-1">No Image</span>
           </div>
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-gray-500 text-xs mb-1">{label}</p>
+        <p className="text-gray-400 text-xs mb-1">{label}</p>
         <p className="text-white font-semibold truncate">{slot?.slotName ?? "–"}</p>
-        <p className="text-gray-600 text-xs truncate">{slot?.provider ?? ""}</p>
+        <p className="text-gray-400 text-xs truncate">{slot?.provider ?? ""}</p>
       </div>
       <div className="text-right shrink-0">
         <p className="text-white font-bold">{value ?? "N/A"}</p>
-        <p className="text-gray-600 text-[10px]">–</p>
+        <p className="text-gray-400 text-[10px]">–</p>
       </div>
     </div>
   );
@@ -129,10 +129,10 @@ function CreateHuntModal({
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden sm:flex items-center gap-1.5 text-gray-600 text-xs border border-white/8 rounded-lg px-2.5 py-1">
+            <span className="hidden sm:flex items-center gap-1.5 text-gray-400 text-xs border border-white/8 rounded-lg px-2.5 py-1">
               <span className="font-mono">Tab</span> to navigate
             </span>
-            <button onClick={onClose} className="text-gray-600 hover:text-white transition-colors">
+            <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -157,7 +157,7 @@ function CreateHuntModal({
           <div>
             <label className="text-sm text-gray-400 mb-2 block">Start Cost</label>
             <div className={`flex items-center bg-[#1a1535] border rounded-xl px-4 py-3 gap-2 focus-within:border-gold-500 transition-colors ${errors.startCost ? "border-red-500" : "border-white/10"}`}>
-              <span className="text-gray-500 font-semibold">{CURRENCY_SYMBOLS[currency]}</span>
+              <span className="text-gray-400 font-semibold">{CURRENCY_SYMBOLS[currency]}</span>
               <input
                 type="number"
                 min="0"
@@ -186,7 +186,7 @@ function CreateHuntModal({
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
 
@@ -352,7 +352,7 @@ export default function HuntTrackerPage() {
               BONUS <span className="text-gold-400">HUNT TRACKER</span>
             </h1>
           </div>
-          <p className="text-gray-500 text-sm ml-9">Track your bonus hunts, stats and results.</p>
+          <p className="text-gray-400 text-sm ml-9">Track your bonus hunts, stats and results.</p>
         </motion.div>
 
 
@@ -393,7 +393,7 @@ export default function HuntTrackerPage() {
             <h2 className="text-white font-bold text-lg">Activity</h2>
             <div className="flex items-center gap-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -417,14 +417,14 @@ export default function HuntTrackerPage() {
             {/* Header */}
             <div className="hidden sm:grid grid-cols-[1fr_120px_80px_120px_100px] px-5 py-3 border-b border-white/6">
               {["Hunt Title", "Start Cost", "Bonuses", "Profit/Loss", "Actions"].map((h) => (
-                <span key={h} className="text-gray-600 text-xs uppercase tracking-widest font-semibold">{h}</span>
+                <span key={h} className="text-gray-400 text-xs uppercase tracking-widest font-semibold">{h}</span>
               ))}
             </div>
 
             {filtered.length === 0 ? (
               <div className="py-16 text-center">
                 <Target className="w-10 h-10 text-gray-700 mx-auto mb-3" />
-                <p className="text-gray-600 text-sm">
+                <p className="text-gray-400 text-sm">
                   {search ? "No hunts match your search." : "No hunts yet. Create your first one!"}
                 </p>
               </div>
@@ -461,7 +461,7 @@ export default function HuntTrackerPage() {
                               <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-gold-500/15 text-gold-400 border border-gold-500/30">OPENING</span>
                             )}
                           </div>
-                          <p className="text-gray-600 text-xs">{fmtDate(hunt.date)}</p>
+                          <p className="text-gray-400 text-xs">{fmtDate(hunt.date)}</p>
                         </div>
                       </div>
 
@@ -492,21 +492,21 @@ export default function HuntTrackerPage() {
                         )}
                         <button
                           onClick={() => router.push(`/hunt-tracker/${hunt.id}`)}
-                          className="p-1.5 text-gray-600 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+                          className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
                           title="View"
                         >
                           <Search className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setEditHunt(hunt)}
-                          className="p-1.5 text-gray-600 hover:text-gold-400 rounded-lg hover:bg-white/5 transition-colors"
+                          className="p-1.5 text-gray-400 hover:text-gold-400 rounded-lg hover:bg-white/5 transition-colors"
                           title="Edit"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setDeleteTarget(hunt)}
-                          className="p-1.5 text-gray-600 hover:text-red-400 rounded-lg hover:bg-white/5 transition-colors"
+                          className="p-1.5 text-gray-400 hover:text-red-400 rounded-lg hover:bg-white/5 transition-colors"
                           title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -515,7 +515,7 @@ export default function HuntTrackerPage() {
                     </motion.div>
                   );
                 })}
-                <div className="px-5 py-3 text-center text-gray-600 text-xs border-t border-white/5">
+                <div className="px-5 py-3 text-center text-gray-400 text-xs border-t border-white/5">
                   {filtered.length} hunt{filtered.length !== 1 ? "s" : ""} total
                 </div>
               </div>

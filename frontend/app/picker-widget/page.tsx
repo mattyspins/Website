@@ -63,7 +63,7 @@ export default function PickerWidgetPage() {
       <div className="p-2 w-[220px]">
         <div className="bg-black/55 border border-white/8 rounded-xl px-3 py-3 text-center">
           <p className="text-2xl mb-1">🎯</p>
-          <p className="text-white/25 text-[10px] tracking-widest uppercase">No Active Draw</p>
+          <p className="text-white/45 text-[10px] tracking-widest uppercase">No Active Draw</p>
         </div>
       </div>
     );

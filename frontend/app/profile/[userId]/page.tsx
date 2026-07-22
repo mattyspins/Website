@@ -70,7 +70,7 @@ export default function PublicProfilePage() {
       <div className="min-h-screen pt-20 pb-16 px-4 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-400 text-lg font-semibold">User not found</p>
-          <p className="text-gray-600 text-sm mt-1">This profile doesn&apos;t exist or has been removed.</p>
+          <p className="text-gray-400 text-sm mt-1">This profile doesn&apos;t exist or has been removed.</p>
         </div>
       </div>
     );
@@ -107,24 +107,24 @@ export default function PublicProfilePage() {
                   <span className="text-gold-400 text-xs font-semibold">Razed ✓</span>
                 )}
               </div>
-              <p className="text-gray-600 text-xs mt-1">Joined {joinedDate}</p>
+              <p className="text-gray-400 text-xs mt-1">Joined {joinedDate}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-3">
             <div className="bg-navy-900/60 border border-white/6 rounded-xl p-4 text-center">
-              <p className="text-gray-500 text-xs font-semibold tracking-widest uppercase mb-1.5">Wagered</p>
+              <p className="text-gray-400 text-xs font-semibold tracking-widest uppercase mb-1.5">Wagered</p>
               <p className="text-gold-400 font-gaming font-bold text-2xl leading-none">
                 ${profile.totalWagered.toLocaleString("en-US", { maximumFractionDigits: 0 })}
               </p>
-              <p className="text-gray-600 text-xs mt-1">Total on Razed</p>
+              <p className="text-gray-400 text-xs mt-1">Total on Razed</p>
             </div>
             <div className="bg-navy-900/60 border border-white/6 rounded-xl p-4 text-center">
-              <p className="text-gray-500 text-xs font-semibold tracking-widest uppercase mb-1.5">Milestones</p>
+              <p className="text-gray-400 text-xs font-semibold tracking-widest uppercase mb-1.5">Milestones</p>
               <p className="text-white font-gaming font-bold text-2xl leading-none">
-                {profile.unlockedCount} <span className="text-gray-600 text-lg">/ {profile.tiers.length}</span>
+                {profile.unlockedCount} <span className="text-gray-400 text-lg">/ {profile.tiers.length}</span>
               </p>
-              <p className="text-gray-600 text-xs mt-1">Unlocked</p>
+              <p className="text-gray-400 text-xs mt-1">Unlocked</p>
             </div>
           </div>
         </motion.div>
@@ -141,12 +141,12 @@ export default function PublicProfilePage() {
                 <div key={tier.id}
                   className={`bg-navy-800/60 border ${colors.border} rounded-xl p-4 flex flex-col items-center text-center ${tier.unlocked ? "" : "opacity-50"}`}>
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${tier.unlocked ? "bg-gold-500/15" : "bg-white/5"}`}>
-                    {tier.unlocked ? <CheckCircle className="w-6 h-6 text-gold-400" /> : <Lock className="w-5 h-5 text-gray-600" />}
+                    {tier.unlocked ? <CheckCircle className="w-6 h-6 text-gold-400" /> : <Lock className="w-5 h-5 text-gray-400" />}
                   </div>
                   <span className={`text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded mb-1 ${colors.badge}`}>
                     {tier.name}
                   </span>
-                  <p className={`text-lg font-bold ${tier.unlocked ? "text-gold-400" : "text-gray-600"}`}>
+                  <p className={`text-lg font-bold ${tier.unlocked ? "text-gold-400" : "text-gray-400"}`}>
                     ${tier.reward}
                   </p>
                   {tier.claimStatus === "approved" && (

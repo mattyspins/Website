@@ -182,7 +182,7 @@ export default function NotificationsPage() {
             </div>
           ) : notifications.length === 0 ? (
             <div className="glass rounded-lg p-12 text-center">
-              <Bell className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+              <Bell className="w-16 h-16 mx-auto mb-4 text-gray-400" />
               <h3 className="text-xl font-semibold text-white mb-2">
                 {filter === "unread"
                   ? "No unread notifications"
@@ -237,7 +237,7 @@ export default function NotificationsPage() {
                       <p className="text-gray-300 mb-2">
                         {notification.message}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-400">
                         {formatDistanceToNow(new Date(notification.createdAt), {
                           addSuffix: true,
                         })}

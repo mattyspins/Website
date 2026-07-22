@@ -134,7 +134,7 @@ export default function RewardsPage() {
             className="flex items-center gap-2 bg-gold-500/8 border border-gold-500/20 rounded-lg px-4 py-3 mb-4 hover:border-gold-500/40 transition-colors"
           >
             <span className="text-gold-400 text-sm font-semibold">Link your accounts →</span>
-            <span className="text-gray-500 text-xs">Connect Kick & Razed in your profile to track wagering progress</span>
+            <span className="text-gray-400 text-xs">Connect Kick & Razed in your profile to track wagering progress</span>
           </a>
           <ul className="space-y-3">
             {REQUIREMENTS.map((req, i) => (

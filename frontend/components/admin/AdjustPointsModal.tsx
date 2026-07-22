@@ -71,30 +71,30 @@ export default function AdjustPointsModal({ userIds, userLabel, onClose, onSucce
               </div>
               <h2 className="text-white font-semibold text-sm">Adjust Points — {userLabel}</h2>
             </div>
-            <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+            <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
               <X className="w-4 h-4" />
             </button>
           </div>
 
           <div className="space-y-3">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Amount (use a negative number to deduct)</label>
+              <label className="block text-xs text-gray-400 mb-1">Amount (use a negative number to deduct)</label>
               <input
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="e.g. 500 or -200"
-                className="w-full bg-navy-800/60 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-gold-400/50"
+                className="w-full bg-navy-800/60 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-400 focus:outline-none focus:border-gold-400/50"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Reason</label>
+              <label className="block text-xs text-gray-400 mb-1">Reason</label>
               <textarea
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 rows={3}
                 placeholder="Why is this adjustment being made?"
-                className="w-full bg-navy-800/60 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-gold-400/50 resize-none"
+                className="w-full bg-navy-800/60 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-400 focus:outline-none focus:border-gold-400/50 resize-none"
               />
             </div>
           </div>

@@ -22,7 +22,7 @@ function StatusBadge({ status }: { status: SlotWorldCupStatus }) {
     [SlotWorldCupStatus.BRACKET_SET]: { label: "Bracket Set", cls: "bg-white/8 text-white/50" },
     [SlotWorldCupStatus.PREDICTIONS_OPEN]: { label: "Predictions Open", cls: "bg-yellow-400/20 text-yellow-300 border border-yellow-400/30 animate-pulse" },
     [SlotWorldCupStatus.IN_PROGRESS]: { label: "Live", cls: "bg-green-500/20 text-green-300 border border-green-500/30" },
-    [SlotWorldCupStatus.COMPLETED]: { label: "Completed", cls: "bg-white/8 text-white/40" },
+    [SlotWorldCupStatus.COMPLETED]: { label: "Completed", cls: "bg-white/8 text-white/50" },
     [SlotWorldCupStatus.CANCELLED]: { label: "Cancelled", cls: "bg-red-500/10 text-red-400" },
   };
   const { label, cls } = map[status];
@@ -43,7 +43,7 @@ function NominationPanel({
     <div className="bg-white/3 border border-white/8 rounded-2xl p-6 mb-6">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
         <h3 className="text-lg font-bold text-white">Most Requested Slots</h3>
-        <p className="text-xs text-white/40">Nominate in chat with <span className="text-yellow-400 font-mono">{tournament.nominationCommand} &lt;slot name&gt;</span></p>
+        <p className="text-xs text-white/50">Nominate in chat with <span className="text-yellow-400 font-mono">{tournament.nominationCommand} &lt;slot name&gt;</span></p>
       </div>
 
       {tournament.nominationsOpen && user && (
@@ -52,7 +52,7 @@ function NominationPanel({
             value={slotName}
             onChange={(e) => setSlotName(e.target.value)}
             placeholder="Nominate a slot (e.g. Gates of Olympus)"
-            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-yellow-400/40"
+            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/45 focus:outline-none focus:border-yellow-400/40"
           />
           <button
             onClick={async () => { if (slotName.trim()) { await onNominate(slotName.trim()); setSlotName(""); } }}
@@ -68,30 +68,30 @@ function NominationPanel({
       )}
 
       {rankings.length === 0 ? (
-        <p className="text-white/30 text-sm text-center py-6">No nominations yet — be the first!</p>
+        <p className="text-white/45 text-sm text-center py-6">No nominations yet — be the first!</p>
       ) : (
         <div className="space-y-1.5">
           {rankings.slice(0, 20).map((r) => (
             <div key={r.rank} className={`flex items-center gap-3 px-3 py-2 rounded-lg ${r.rank <= tournament.size ? "bg-yellow-400/8 border border-yellow-400/15" : "bg-white/3"}`}>
-              <span className={`text-sm font-bold w-6 text-center ${r.rank <= tournament.size ? "text-yellow-400" : "text-white/30"}`}>{r.rank}</span>
+              <span className={`text-sm font-bold w-6 text-center ${r.rank <= tournament.size ? "text-yellow-400" : "text-white/45"}`}>{r.rank}</span>
               <span className="flex-1 text-sm text-white truncate">{r.slotName}</span>
-              <span className="text-xs text-white/40">{r.votes} vote{r.votes === 1 ? "" : "s"}</span>
+              <span className="text-xs text-white/50">{r.votes} vote{r.votes === 1 ? "" : "s"}</span>
             </div>
           ))}
         </div>
       )}
-      <p className="text-[11px] text-white/25 mt-4">Top {tournament.size} nominations qualify once nominations close.</p>
+      <p className="text-[11px] text-white/45 mt-4">Top {tournament.size} nominations qualify once nominations close.</p>
     </div>
   );
 }
 
 function LeaderboardTable({ leaderboard }: { leaderboard: SlotWorldCupLeaderboardEntry[] }) {
-  if (leaderboard.length === 0) return <p className="text-white/30 text-sm text-center py-6">No predictions submitted yet.</p>;
+  if (leaderboard.length === 0) return <p className="text-white/45 text-sm text-center py-6">No predictions submitted yet.</p>;
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-white/40 text-xs uppercase tracking-wider border-b border-white/8">
+          <tr className="text-white/50 text-xs uppercase tracking-wider border-b border-white/8">
             <th className="text-left py-2 px-2">Rank</th>
             <th className="text-left py-2 px-2">Player</th>
             <th className="text-right py-2 px-2">Score</th>
@@ -250,7 +250,7 @@ export default function SlotWorldCupPage() {
 
         {!tournament ? (
           <div className="bg-white/3 border border-white/8 rounded-2xl px-8 py-14 text-center">
-            <p className="text-white/30 text-xs font-bold uppercase tracking-[0.2em] mb-3">No Active Slot World Cup</p>
+            <p className="text-white/45 text-xs font-bold uppercase tracking-[0.2em] mb-3">No Active Slot World Cup</p>
             <p className="text-white/50 text-base">Check back soon — the next bracket will appear here.</p>
           </div>
         ) : (
@@ -260,7 +260,7 @@ export default function SlotWorldCupPage() {
                 <h2 className="text-2xl font-bold text-white">{tournament.title}</h2>
                 <StatusBadge status={tournament.status} />
               </div>
-              <span className="text-sm text-white/40">{tournament.size} slots</span>
+              <span className="text-sm text-white/50">{tournament.size} slots</span>
             </div>
 
             {tournament.status === SlotWorldCupStatus.NOMINATION && (

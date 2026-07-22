@@ -141,7 +141,7 @@ function CreateModal({
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               placeholder="e.g. Weekly Giveaway"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/25 text-sm focus:outline-none focus:border-yellow-400/50"
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/45 text-sm focus:outline-none focus:border-yellow-400/50"
             />
           </div>
 
@@ -152,10 +152,10 @@ function CreateModal({
               value={form.prize}
               onChange={(e) => setForm({ ...form, prize: e.target.value })}
               placeholder="e.g. $50 Gift Card"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/25 text-sm focus:outline-none focus:border-yellow-400/50 mb-2"
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/45 text-sm focus:outline-none focus:border-yellow-400/50 mb-2"
             />
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-xs text-white/40 shrink-0">Coins:</span>
+              <span className="text-xs text-white/50 shrink-0">Coins:</span>
               {[100, 250, 500, 1000, 2500].map((v) => (
                 <button
                   key={v}
@@ -176,7 +176,7 @@ function CreateModal({
           {/* Description */}
           <div>
             <label className="block text-sm text-white/60 mb-1">
-              Description <span className="text-white/25">(optional)</span>
+              Description <span className="text-white/45">(optional)</span>
             </label>
             <input
               value={form.description}
@@ -184,7 +184,7 @@ function CreateModal({
                 setForm({ ...form, description: e.target.value })
               }
               placeholder="e.g. Enter for a chance to win!"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/25 text-sm focus:outline-none focus:border-yellow-400/50"
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/45 text-sm focus:outline-none focus:border-yellow-400/50"
             />
           </div>
 
@@ -213,7 +213,7 @@ function CreateModal({
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-white/40 shrink-0">Custom:</span>
+              <span className="text-xs text-white/50 shrink-0">Custom:</span>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -284,7 +284,7 @@ function CreateModal({
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-white/40 shrink-0">Custom:</span>
+              <span className="text-xs text-white/50 shrink-0">Custom:</span>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -359,7 +359,7 @@ function CreateModal({
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-white/40 shrink-0">Custom:</span>
+              <span className="text-xs text-white/50 shrink-0">Custom:</span>
               <input
                 type="datetime-local"
                 value={form.customEndDate}
@@ -401,7 +401,7 @@ function CreateModal({
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-white/40 shrink-0">Custom:</span>
+              <span className="text-xs text-white/50 shrink-0">Custom:</span>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -477,7 +477,7 @@ function CreateModal({
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-white/40 shrink-0">Custom:</span>
+              <span className="text-xs text-white/50 shrink-0">Custom:</span>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -527,9 +527,9 @@ function CreateModal({
           <div>
             <label className="block text-sm text-white/60 mb-1">
               Min Wager Requirement{" "}
-              <span className="text-white/25">(optional)</span>
+              <span className="text-white/45">(optional)</span>
             </label>
-            <p className="text-xs text-white/30 mb-2">
+            <p className="text-xs text-white/45 mb-2">
               Require users to have wagered a minimum amount to enter
             </p>
             <div className="grid grid-cols-4 gap-2 mb-2">
@@ -558,7 +558,7 @@ function CreateModal({
               ))}
             </div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-xs text-white/40 shrink-0">Custom:</span>
+              <span className="text-xs text-white/50 shrink-0">Custom:</span>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -674,9 +674,9 @@ function ParticipantsModal({
       <div className="bg-navy-900 border border-white/10 rounded-xl w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh]">
         <div className="px-6 pt-5 pb-4 border-b border-white/8">
           <h3 className="text-lg font-semibold text-white">Participants</h3>
-          <p className="text-white/40 text-sm mt-0.5 truncate">{title}</p>
+          <p className="text-white/50 text-sm mt-0.5 truncate">{title}</p>
           {!loading && (
-            <p className="text-white/30 text-xs mt-1.5">
+            <p className="text-white/45 text-xs mt-1.5">
               {participants.length} participant
               {participants.length !== 1 ? "s" : ""} · {totalTickets} ticket
               {totalTickets !== 1 ? "s" : ""}
@@ -690,7 +690,7 @@ function ParticipantsModal({
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400" />
             </div>
           ) : participants.length === 0 ? (
-            <p className="text-white/30 text-sm text-center py-16">
+            <p className="text-white/45 text-sm text-center py-16">
               No tickets sold yet
             </p>
           ) : (
@@ -700,7 +700,7 @@ function ParticipantsModal({
                   key={p.userId}
                   className="flex items-center gap-3 px-6 py-3"
                 >
-                  <span className="text-white/25 text-xs font-bold w-5 shrink-0">
+                  <span className="text-white/45 text-xs font-bold w-5 shrink-0">
                     {i + 1}
                   </span>
                   {p.avatarUrl ? (
@@ -718,7 +718,7 @@ function ParticipantsModal({
                     <p className="text-white text-sm font-medium truncate">
                       {p.kickUsername ?? p.displayName}
                     </p>
-                    <p className="text-white/30 text-xs">
+                    <p className="text-white/45 text-xs">
                       {p.totalSpent.toLocaleString()} coins spent
                     </p>
                   </div>
@@ -916,7 +916,7 @@ export default function AdminRafflePage() {
 
   const STATUS_COLOR: Record<string, string> = {
     active: "bg-green-500/20 text-green-400 border-green-500/30",
-    ended: "bg-white/5 text-white/30 border-white/10",
+    ended: "bg-white/5 text-white/45 border-white/10",
     cancelled: "bg-red-500/10 text-red-400 border-red-500/20",
   };
 
@@ -942,7 +942,7 @@ export default function AdminRafflePage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-white">Raffle Admin</h1>
-            <p className="text-white/40 text-sm mt-0.5">
+            <p className="text-white/50 text-sm mt-0.5">
               Create and manage viewer raffles
             </p>
           </div>
@@ -997,7 +997,7 @@ export default function AdminRafflePage() {
                       {r.status}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-white/35">
+                  <div className="flex items-center gap-3 text-xs text-white/45">
                     <span className="text-yellow-400/70 font-medium truncate max-w-[120px]">
                       🎁 {r.prize}
                     </span>
@@ -1013,7 +1013,7 @@ export default function AdminRafflePage() {
                         handleDelete(r.id, r.title);
                       }}
                       disabled={actionLoading}
-                      className="ml-1 px-2 py-1 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all disabled:opacity-30 text-base"
+                      className="ml-1 px-2 py-1 rounded-lg text-white/45 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all disabled:opacity-30 text-base"
                       title="Delete raffle"
                     >
                       🗑️
@@ -1035,7 +1035,7 @@ export default function AdminRafflePage() {
                     {selected.title}
                   </h2>
                   {selected.description && (
-                    <p className="text-white/40 text-sm mt-0.5">
+                    <p className="text-white/50 text-sm mt-0.5">
                       {selected.description}
                     </p>
                   )}
@@ -1097,7 +1097,7 @@ export default function AdminRafflePage() {
 
               {/* Tickets progress */}
               <div className="mb-2">
-                <div className="flex justify-between text-xs text-white/40 mb-1.5">
+                <div className="flex justify-between text-xs text-white/50 mb-1.5">
                   <span>Tickets sold</span>
                   <span className="font-semibold text-white">
                     {selected.ticketsSold} / {selected.maxTickets}
@@ -1110,7 +1110,7 @@ export default function AdminRafflePage() {
                   />
                 </div>
                 {selected.ticketsSold === 0 && selected.status === "active" && (
-                  <p className="text-xs text-white/25 mt-1.5">
+                  <p className="text-xs text-white/45 mt-1.5">
                     No tickets sold yet — Draw Winners is disabled until at
                     least 1 ticket is sold.
                   </p>
@@ -1130,7 +1130,7 @@ export default function AdminRafflePage() {
                 </p>
 
                 {winners.length === 0 ? (
-                  <p className="text-white/30 text-sm text-center">
+                  <p className="text-white/45 text-sm text-center">
                     Loading winners…
                   </p>
                 ) : (
@@ -1173,7 +1173,7 @@ export default function AdminRafflePage() {
                               {ORDINAL[w.position] ?? `#${w.position}`} Place
                             </p>
                             {w.prizeDescription && (
-                              <p className="text-[11px] text-white/35 mt-0.5">
+                              <p className="text-[11px] text-white/45 mt-0.5">
                                 {w.prizeDescription}
                               </p>
                             )}
@@ -1192,7 +1192,7 @@ export default function AdminRafflePage() {
                 <p className="text-red-400 font-semibold">
                   This raffle was cancelled
                 </p>
-                <p className="text-white/30 text-sm mt-1">
+                <p className="text-white/45 text-sm mt-1">
                   All tickets were refunded to buyers.
                 </p>
               </div>
@@ -1201,7 +1201,7 @@ export default function AdminRafflePage() {
         )}
 
         {raffles.length === 0 && !loading && (
-          <div className="text-center py-20 text-white/30">
+          <div className="text-center py-20 text-white/45">
             <div className="text-5xl mb-3">🎟️</div>
             <p className="text-lg">No raffles yet</p>
             <button

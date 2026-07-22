@@ -73,7 +73,7 @@ export default function AdminMilestoneClaims() {
       <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h2 className="text-lg font-semibold text-white">Milestone Claims</h2>
-          <p className="text-gray-500 text-sm mt-0.5">
+          <p className="text-gray-400 text-sm mt-0.5">
             {pendingCount > 0
               ? <span className="text-yellow-400 font-semibold">{pendingCount} pending claim{pendingCount !== 1 ? "s" : ""} waiting for review</span>
               : "No pending claims"}
@@ -95,7 +95,7 @@ export default function AdminMilestoneClaims() {
               className={`px-4 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition-colors border ${
                 filter === f
                   ? "bg-gold-500/15 border-gold-500/30 text-gold-400"
-                  : "bg-white/3 border-white/8 text-gray-500 hover:text-white"
+                  : "bg-white/3 border-white/8 text-gray-400 hover:text-white"
               }`}
             >
               {f} <span className="ml-1 opacity-60">({count})</span>
@@ -106,11 +106,11 @@ export default function AdminMilestoneClaims() {
 
       {/* Claims list */}
       {loading ? (
-        <div className="text-center py-12 text-gray-500 text-sm">Loading claims...</div>
+        <div className="text-center py-12 text-gray-400 text-sm">Loading claims...</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 bg-navy-800/40 border border-white/5 rounded-xl">
           <CheckCircle className="w-10 h-10 text-gray-700 mx-auto mb-3" />
-          <p className="text-gray-500 text-sm">No {filter === "all" ? "" : filter} claims</p>
+          <p className="text-gray-400 text-sm">No {filter === "all" ? "" : filter} claims</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -124,7 +124,7 @@ export default function AdminMilestoneClaims() {
                   <p className="text-white font-semibold">{claim.user.displayName}</p>
                   {statusBadge(claim.status)}
                 </div>
-                <div className="flex items-center gap-3 flex-wrap text-xs text-gray-500">
+                <div className="flex items-center gap-3 flex-wrap text-xs text-gray-400">
                   <span>{claim.user.discordId}</span>
                   {claim.user.kickUsername && <span>Kick: {claim.user.kickUsername}</span>}
                   {claim.user.rainbetUsername && <span>Razed: {claim.user.rainbetUsername}</span>}
@@ -134,8 +134,8 @@ export default function AdminMilestoneClaims() {
               {/* Tier + reward */}
               <div className="text-center shrink-0">
                 <p className="text-white font-bold text-lg">${claim.reward}</p>
-                <p className="text-gray-500 text-xs">{claim.tierName} tier</p>
-                <p className="text-gray-600 text-xs mt-0.5">
+                <p className="text-gray-400 text-xs">{claim.tierName} tier</p>
+                <p className="text-gray-400 text-xs mt-0.5">
                   {new Date(claim.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </p>
               </div>

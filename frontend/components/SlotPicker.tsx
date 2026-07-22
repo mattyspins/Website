@@ -15,7 +15,7 @@ function SlotImage({ src, name, size = 32 }: { src: string; name: string; size?:
   if (error || !src) {
     return (
       <div
-        className="rounded-lg bg-white/10 flex items-center justify-center text-white/40 font-bold shrink-0"
+        className="rounded-lg bg-white/10 flex items-center justify-center text-white/50 font-bold shrink-0"
         style={{ width: size, height: size, fontSize: size * 0.35 }}
       >
         {name[0]?.toUpperCase()}
@@ -156,12 +156,12 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
           onFocus={() => setOpen(true)}
           placeholder={placeholder}
           disabled={disabled}
-          className="flex-1 bg-transparent text-white placeholder:text-white/30 text-sm focus:outline-none min-w-0"
+          className="flex-1 bg-transparent text-white placeholder:text-white/45 text-sm focus:outline-none min-w-0"
         />
         {query && (
           <button
             onClick={(e) => { e.stopPropagation(); setQuery(""); onChange(""); setOpen(true); }}
-            className="text-white/30 hover:text-white/60 text-lg leading-none shrink-0"
+            className="text-white/45 hover:text-white/60 text-lg leading-none shrink-0"
           >
             ×
           </button>
@@ -221,7 +221,7 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
                 All Providers
               </button>
               {filteredProviders.length === 0 ? (
-                <div className="px-3 py-1.5 text-[11px] text-white/30">No matching providers</div>
+                <div className="px-3 py-1.5 text-[11px] text-white/45">No matching providers</div>
               ) : (
                 filteredProviders.map(([name, count]) => (
                   <button
@@ -232,7 +232,7 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
                     }`}
                   >
                     <span className="truncate">{name}</span>
-                    <span className="text-white/30 shrink-0">{count}</span>
+                    <span className="text-white/45 shrink-0">{count}</span>
                   </button>
                 ))
               )}
@@ -252,7 +252,7 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
                     : v === "Medium"  ? "bg-blue-500/30 text-blue-300 border-blue-500/50"
                     : v === "High"    ? "bg-orange-500/30 text-orange-300 border-orange-500/50"
                     :                   "bg-red-500/30 text-red-300 border-red-500/50"
-                    : "bg-white/5 text-white/40 border-white/10 hover:bg-white/10 hover:text-white/70"
+                    : "bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:text-white/70"
                 }`}
               >
                 {v === "" ? "All Vol." : v}
@@ -301,13 +301,13 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-yellow-300 truncate">Use &quot;{query.trim()}&quot;</p>
-                  <p className="text-xs text-white/35">Custom slot — not in list</p>
+                  <p className="text-xs text-white/45">Custom slot — not in list</p>
                 </div>
               </div>
             )}
 
             {results.length === 0 && !isCustom ? (
-              <div className="px-4 py-3 text-white/30 text-sm text-center">No slots found</div>
+              <div className="px-4 py-3 text-white/45 text-sm text-center">No slots found</div>
             ) : (
               results.map((game) => (
                 <div
@@ -322,7 +322,7 @@ export default function SlotPicker({ value, onChange, placeholder = "Search for 
                     <p className={`text-sm font-medium truncate ${value === game.name ? "text-yellow-300" : "text-white"}`}>
                       {game.name}
                     </p>
-                    <p className="text-xs text-white/35 truncate">{game.provider}</p>
+                    <p className="text-xs text-white/45 truncate">{game.provider}</p>
                   </div>
                   <VolatilityBadge volatility={game.volatility} />
                   {value === game.name && <span className="text-yellow-400 shrink-0 text-sm">✓</span>}

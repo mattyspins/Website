@@ -117,7 +117,7 @@ export default function WeeklyRaffleParticipants({ raffleId, onCountChange }: Pr
   return (
     <div>
       <div className="relative mb-3">
-        <Search className="w-3.5 h-3.5 text-gray-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+        <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           value={participantSearch}
@@ -128,9 +128,9 @@ export default function WeeklyRaffleParticipants({ raffleId, onCountChange }: Pr
         {participantSearch.trim().length >= 2 && (
           <div className="absolute z-10 mt-1 w-full bg-navy-900 border border-white/10 rounded-lg shadow-xl max-h-56 overflow-y-auto">
             {searching ? (
-              <p className="text-gray-500 text-xs px-3 py-2">Searching…</p>
+              <p className="text-gray-400 text-xs px-3 py-2">Searching…</p>
             ) : searchResults.length === 0 ? (
-              <p className="text-gray-500 text-xs px-3 py-2">No users found.</p>
+              <p className="text-gray-400 text-xs px-3 py-2">No users found.</p>
             ) : (
               searchResults.map((u) => (
                 <button
@@ -141,7 +141,7 @@ export default function WeeklyRaffleParticipants({ raffleId, onCountChange }: Pr
                 >
                   <span>{u.displayName}</span>
                   {preview?.participants.some((p) => p.id === u.id) ? (
-                    <span className="text-gray-500 text-xs">Already in</span>
+                    <span className="text-gray-400 text-xs">Already in</span>
                   ) : (
                     <UserPlus className="w-3.5 h-3.5 text-gold-400 shrink-0" />
                   )}
@@ -152,7 +152,7 @@ export default function WeeklyRaffleParticipants({ raffleId, onCountChange }: Pr
         )}
       </div>
 
-      <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+      <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
         <Users className="w-3.5 h-3.5" />
         {loadingPreview ? "Loading…" : `${preview?.count ?? 0} participant${preview?.count === 1 ? "" : "s"}`}
       </div>
@@ -174,7 +174,7 @@ export default function WeeklyRaffleParticipants({ raffleId, onCountChange }: Pr
                 onClick={() => handleRemoveParticipant(p)}
                 disabled={removingId === p.id}
                 title="Remove from raffle"
-                className="opacity-0 group-hover:opacity-100 disabled:opacity-40 text-gray-500 hover:text-red-400 transition-all"
+                className="opacity-0 group-hover:opacity-100 disabled:opacity-40 text-gray-400 hover:text-red-400 transition-all"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -182,17 +182,17 @@ export default function WeeklyRaffleParticipants({ raffleId, onCountChange }: Pr
           </div>
         ))}
         {!loadingPreview && (preview?.participants.length ?? 0) === 0 && (
-          <p className="text-gray-500 text-sm">No participants yet.</p>
+          <p className="text-gray-400 text-sm">No participants yet.</p>
         )}
       </div>
 
       {excluded.length > 0 && (
         <div className="mt-4 pt-3 border-t border-white/6">
-          <h4 className="text-gray-500 text-xs font-semibold mb-2">Removed by admin</h4>
+          <h4 className="text-gray-400 text-xs font-semibold mb-2">Removed by admin</h4>
           <div className="space-y-1.5">
             {excluded.map((u) => (
               <div key={u.id} className="flex items-center justify-between text-sm px-2 py-1 rounded-lg">
-                <span className="text-gray-500">{u.displayName}</span>
+                <span className="text-gray-400">{u.displayName}</span>
                 <button
                   onClick={() => handleRestoreParticipant(u)}
                   disabled={restoringId === u.id}

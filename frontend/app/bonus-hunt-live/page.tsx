@@ -52,7 +52,7 @@ function SlotImg({ src, alt }: { src: string; alt: string }) {
   if (err || !src) {
     return (
       <div
-        className="rounded-lg bg-[#1a1535] border border-white/8 flex items-center justify-center shrink-0 text-gray-600 font-bold"
+        className="rounded-lg bg-[#1a1535] border border-white/8 flex items-center justify-center shrink-0 text-gray-400 font-bold"
         style={{ width: 40, height: 40, fontSize: 14 }}
       >
         {alt?.[0]?.toUpperCase() ?? "?"}
@@ -136,7 +136,7 @@ function HowToPlayModal({ onClose }: { onClose: () => void }) {
             <span className="text-xl">🎮</span>
             <h2 className="text-base font-bold text-white">How to Play</h2>
           </div>
-          <button onClick={onClose} className="text-gray-600 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
         </div>
         <div className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto text-sm text-white/70 leading-relaxed">
           {steps.map(({ step, body }, i) => (
@@ -158,7 +158,7 @@ function HowToPlayModal({ onClose }: { onClose: () => void }) {
               ].map((t, i) => <li key={i}>• {t}</li>)}
             </ul>
           </div>
-          <p className="text-white/40 text-xs border-t border-white/5 pt-4">
+          <p className="text-white/50 text-xs border-t border-white/5 pt-4">
             Bonus Hunt streams take place every Friday 🏆
           </p>
         </div>
@@ -184,7 +184,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
             <span className="text-xl">📋</span>
             <h2 className="text-base font-bold text-white">Rules</h2>
           </div>
-          <button onClick={onClose} className="text-gray-600 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
         </div>
         <div className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto text-sm text-white/70 leading-relaxed">
           <p className="text-white/90">
@@ -235,7 +235,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          <p className="text-white/40 text-xs border-t border-white/5 pt-4">
+          <p className="text-white/50 text-xs border-t border-white/5 pt-4">
             Tune in every Friday for the weekly Bonus Hunt 👊
           </p>
         </div>
@@ -290,7 +290,7 @@ export default function BonusHuntLivePage() {
             <Zap className="w-9 h-9 text-gold-400" />
           </div>
           <h2 className="text-white font-bold text-2xl mb-2">No Active Hunt</h2>
-          <p className="text-gray-500 text-sm mb-8 max-w-xs mx-auto">
+          <p className="text-gray-400 text-sm mb-8 max-w-xs mx-auto">
             There&apos;s no bonus hunt running right now. Check back during the next stream!
           </p>
           <Link
@@ -309,7 +309,7 @@ export default function BonusHuntLivePage() {
       <div className="min-h-screen pt-20 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-gold-500/40 border-t-gold-400 rounded-full animate-spin" />
-          <p className="text-gray-500 text-sm">Loading hunt…</p>
+          <p className="text-gray-400 text-sm">Loading hunt…</p>
         </div>
       </div>
     );
@@ -353,19 +353,19 @@ export default function BonusHuntLivePage() {
           <div className="grid grid-cols-3 gap-3 mb-5">
             <div className="bg-[#14102a]/80 border border-white/8 rounded-2xl p-4 text-center">
               <p className="text-white font-bold text-2xl">{hunt!.bonuses.length}</p>
-              <p className="text-gray-500 text-xs mt-1">Bonuses</p>
+              <p className="text-gray-400 text-xs mt-1">Bonuses</p>
             </div>
             <div className="bg-[#14102a]/80 border border-white/8 rounded-2xl p-4 text-center">
               <p className="text-gold-400 font-bold text-2xl">
                 {sym}{hunt!.startCost.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
-              <p className="text-gray-500 text-xs mt-1">Start</p>
+              <p className="text-gray-400 text-xs mt-1">Start</p>
             </div>
             <div className="bg-[#14102a]/80 border border-white/8 rounded-2xl p-4 text-center">
               <p className={`font-bold text-2xl ${profit >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                 {profit >= 0 ? "+" : "-"}{sym}{Math.abs(profit).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
-              <p className="text-gray-500 text-xs mt-1">Profit</p>
+              <p className="text-gray-400 text-xs mt-1">Profit</p>
             </div>
           </div>
 
@@ -373,10 +373,10 @@ export default function BonusHuntLivePage() {
           <div className="bg-[#0f0c1e]/80 border border-white/8 rounded-2xl overflow-hidden">
             {/* Table header */}
             <div className="grid grid-cols-[1fr_80px_100px_80px] px-5 py-3 border-b border-white/6">
-              <span className="text-gray-600 text-xs uppercase tracking-widest font-semibold">Game</span>
-              <span className="text-gray-600 text-xs uppercase tracking-widest font-semibold text-right">Bet</span>
-              <span className="text-gray-600 text-xs uppercase tracking-widest font-semibold text-right">Payout</span>
-              <span className="text-gray-600 text-xs uppercase tracking-widest font-semibold text-right">Multi</span>
+              <span className="text-gray-400 text-xs uppercase tracking-widest font-semibold">Game</span>
+              <span className="text-gray-400 text-xs uppercase tracking-widest font-semibold text-right">Bet</span>
+              <span className="text-gray-400 text-xs uppercase tracking-widest font-semibold text-right">Payout</span>
+              <span className="text-gray-400 text-xs uppercase tracking-widest font-semibold text-right">Multi</span>
             </div>
 
             <AnimatePresence initial={false}>
@@ -405,7 +405,7 @@ export default function BonusHuntLivePage() {
                           <span className="text-white font-semibold text-sm truncate">{bonus.slotName}</span>
                           <BadgePill badge={bonus.badge} custom={bonus.customBadge} />
                         </div>
-                        <p className="text-gray-500 text-xs">{bonus.provider}</p>
+                        <p className="text-gray-400 text-xs">{bonus.provider}</p>
                       </div>
                     </div>
 
@@ -416,7 +416,7 @@ export default function BonusHuntLivePage() {
 
                     {/* Payout */}
                     <span className={`text-sm font-semibold text-right ${
-                      bonus.payout === null ? "text-gray-600" : isProfit ? "text-emerald-400" : "text-red-400"
+                      bonus.payout === null ? "text-gray-400" : isProfit ? "text-emerald-400" : "text-red-400"
                     }`}>
                       {bonus.payout !== null
                         ? `${sym}${bonus.payout.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -426,7 +426,7 @@ export default function BonusHuntLivePage() {
 
                     {/* Multi */}
                     <span className={`text-sm font-bold text-right ${
-                      multi === null ? "text-gray-600" : isProfit ? "text-emerald-400" : "text-red-400"
+                      multi === null ? "text-gray-400" : isProfit ? "text-emerald-400" : "text-red-400"
                     }`}>
                       {multi !== null ? `${multi.toFixed(2)}x` : "–"}
                     </span>
@@ -436,7 +436,7 @@ export default function BonusHuntLivePage() {
             </AnimatePresence>
 
             {hunt!.bonuses.length === 0 && (
-              <div className="py-12 text-center text-gray-600 text-sm">
+              <div className="py-12 text-center text-gray-400 text-sm">
                 No bonuses added yet — check back soon!
               </div>
             )}

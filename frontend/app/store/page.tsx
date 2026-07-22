@@ -99,7 +99,7 @@ export default function StorePage() {
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
             Spend Your <span className="text-gold-400">Coins</span>
           </h1>
-          <p className="text-gray-500 text-base">
+          <p className="text-gray-400 text-base">
             Limited items, exclusive drops. Once they&apos;re gone,
             they&apos;re gone.
           </p>
@@ -160,8 +160,8 @@ export default function StorePage() {
         >
           {filteredItems.length === 0 ? (
             <div className="text-center py-24">
-              <p className="text-gray-500 text-lg mb-2">No items available</p>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-400 text-lg mb-2">No items available</p>
+              <p className="text-gray-400 text-sm">
                 {selectedCategory
                   ? "Try a different category."
                   : "Items will be added soon. Check back later!"}
@@ -219,7 +219,7 @@ export default function StorePage() {
           <h3 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">
             How to Earn Coins
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-500">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-400">
             <div className="flex items-start gap-3">
               <span className="text-gold-400 mt-0.5">01</span>
               <div>

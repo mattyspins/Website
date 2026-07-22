@@ -53,7 +53,7 @@ export default function AdminDashboard() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-gaming font-bold text-white tracking-wide">Dashboard</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Overview of platform health and activity</p>
+        <p className="text-gray-400 text-sm mt-0.5">Overview of platform health and activity</p>
       </div>
 
       <AdminStats />
@@ -66,7 +66,7 @@ export default function AdminDashboard() {
       <ActivityFeed />
 
       <div>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
           Quick Access
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -82,9 +82,9 @@ export default function AdminDashboard() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-white font-semibold text-sm">{title}</p>
-                  <ExternalLink className="w-3.5 h-3.5 text-gray-600 group-hover:text-gray-400 transition-colors shrink-0" />
+                  <ExternalLink className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-400 transition-colors shrink-0" />
                 </div>
-                <p className="text-gray-500 text-xs mt-0.5 leading-relaxed">{desc}</p>
+                <p className="text-gray-400 text-xs mt-0.5 leading-relaxed">{desc}</p>
               </div>
             </a>
           ))}
@@ -92,10 +92,10 @@ export default function AdminDashboard() {
       </div>
 
       <div>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
           OBS Widget Links
         </h2>
-        <p className="text-gray-600 text-xs mb-3">Copy these URLs into OBS as Browser Sources.</p>
+        <p className="text-gray-400 text-xs mb-3">Copy these URLs into OBS as Browser Sources.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {OBS_WIDGETS.map(({ href, label, desc }) => (
             <div key={href} className="bg-navy-800/60 border border-white/6 rounded-xl p-4 flex items-start gap-3">
@@ -104,7 +104,7 @@ export default function AdminDashboard() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-white font-semibold text-sm">{label}</p>
-                <p className="text-gray-500 text-xs mt-0.5">{desc}</p>
+                <p className="text-gray-400 text-xs mt-0.5">{desc}</p>
                 <button
                   onClick={() => navigator.clipboard.writeText(`${window.location.origin}${href}`)}
                   className="mt-2 text-indigo-400 hover:text-indigo-300 text-xs font-mono truncate block w-full text-left transition-colors"
