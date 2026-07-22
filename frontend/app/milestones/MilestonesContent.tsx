@@ -31,10 +31,21 @@ function formatWager(n: number) {
     : `$${(n / 1_000).toFixed(0)}K`;
 }
 
-export default function MilestonesPage() {
-  const [tiers, setTiers] = useState<MilestoneTier[]>([]);
-  const [totalWagered, setTotalWagered] = useState(0);
-  const [loading, setLoading] = useState(true);
+interface Props {
+  // Server-fetched in page.tsx without a token — /api/milestones is public
+  // and returns the anonymous view (every tier locked) when called without
+  // auth, which is a correct, safe seed for a not-yet-identified visitor. The
+  // mount effect below always re-fetches with whatever token is actually in
+  // localStorage, which corrects this to the real, personalized progress for
+  // a logged-in viewer almost immediately — this can only remove the initial
+  // spinner, never show stale or wrong data for longer than one fetch.
+  initialData?: { tiers: MilestoneTier[]; totalWagered: number };
+}
+
+export default function MilestonesPage({ initialData }: Props) {
+  const [tiers, setTiers] = useState<MilestoneTier[]>(initialData?.tiers ?? []);
+  const [totalWagered, setTotalWagered] = useState(initialData?.totalWagered ?? 0);
+  const [loading, setLoading] = useState(initialData === undefined);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [claiming, setClaiming] = useState<number | null>(null);
   const [claimMsgs, setClaimMsgs] = useState<Record<number, string>>({});

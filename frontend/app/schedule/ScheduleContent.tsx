@@ -26,9 +26,16 @@ function groupByDay(events: StreamEvent[]) {
   return map;
 }
 
-export default function SchedulePage() {
-  const [events, setEvents] = useState<StreamEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+interface Props {
+  // Server-fetched in page.tsx so the schedule is real on first paint instead
+  // of a spinner. Absent/undefined means the server fetch failed or didn't
+  // run — falls back to exactly the original start-loading-then-fetch flow.
+  initialEvents?: StreamEvent[];
+}
+
+export default function SchedulePage({ initialEvents }: Props) {
+  const [events, setEvents] = useState<StreamEvent[]>(initialEvents ?? []);
+  const [loading, setLoading] = useState(initialEvents === undefined);
 
   useEffect(() => {
     fetch(API_ENDPOINTS.STREAM_EVENTS)

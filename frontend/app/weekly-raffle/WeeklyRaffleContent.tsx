@@ -30,14 +30,24 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
   );
 }
 
-export default function WeeklyRafflePage() {
+interface Props {
+  // Server-fetched in page.tsx — the current raffle + history are public data,
+  // so they're seeded here for a real first paint. Eligibility/eligibleCount
+  // stay client-only below since they require the viewer's own auth token,
+  // which the server has no access to (it lives only in browser localStorage).
+  // Absent means the server fetch failed/didn't run — falls back to the
+  // original `raffle: undefined` "still loading" sentinel exactly as before.
+  initialData?: { raffle: WeeklyRaffle | null; history: WeeklyRaffle[] };
+}
+
+export default function WeeklyRafflePage({ initialData }: Props) {
   const [authed, setAuthed] = useState(false);
   const [checkedAuth, setCheckedAuth] = useState(false);
 
-  const [raffle, setRaffle] = useState<WeeklyRaffle | null | undefined>(undefined);
+  const [raffle, setRaffle] = useState<WeeklyRaffle | null | undefined>(initialData ? initialData.raffle : undefined);
   const [eligibility, setEligibility] = useState<WeeklyRaffleEligibility | null>(null);
   const [eligibleCount, setEligibleCount] = useState<number | null>(null);
-  const [history, setHistory] = useState<WeeklyRaffle[]>([]);
+  const [history, setHistory] = useState<WeeklyRaffle[]>(initialData?.history ?? []);
 
   const remainingMs = useCountdown(raffle?.weekEnd ?? null);
 
