@@ -5,6 +5,7 @@ import { createError } from '@/middleware/errorHandler';
 import { BossRaid, BossRaidStatus, BossRaidEntryStatus, Prisma } from '@prisma/client';
 import { logger } from '@/utils/logger';
 import { PointsService } from '@/services/PointsService';
+import { KickChatService } from '@/services/KickChatService';
 import {
   BOSS_ROSTER,
   BossKey,
@@ -490,6 +491,7 @@ export class BossRaidService {
   // crediting the others. Unlinked kick-only entrants have no User row to credit and
   // are silently skipped (still shown on the leaderboard/victory screen either way).
   private static async distributeRewards(raidId: string) {
+    const raid = await prisma.bossRaid.findUnique({ where: { id: raidId }, select: { bossKey: true, defeated: true } });
     const rounds = await prisma.bossRaidRound.findMany({
       where: { raidId },
       select: { entryId: true, damageDealt: true, entry: { select: { userId: true, kickUsername: true } } },
@@ -505,6 +507,14 @@ export class BossRaidService {
     const top3 = Array.from(totals.values())
       .sort((a, b) => b.damage - a.damage)
       .slice(0, 3);
+
+    if (top3.length > 0) {
+      const bossName = raid && isBossKey(raid.bossKey) ? BOSS_ROSTER[raid.bossKey].name : 'the boss';
+      const verb = raid?.defeated ? 'defeated' : 'raid ended';
+      void KickChatService.sendChatMessage(
+        `🐉 ${bossName} ${verb}! Top damage: @${top3[0].kickUsername} (${top3[0].damage.toLocaleString()} dmg)`
+      );
+    }
 
     const ordinals = ['1st', '2nd', '3rd'];
     for (let i = 0; i < top3.length; i++) {

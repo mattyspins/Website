@@ -4,6 +4,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import { createError } from '@/middleware/errorHandler';
 import { KingOfTheHillStatus, KothEntryStatus, Prisma } from '@prisma/client';
 import { logger } from '@/utils/logger';
+import { KickChatService } from '@/services/KickChatService';
 
 const USER_SELECT = { id: true, displayName: true, kickUsername: true, avatarUrl: true } as const;
 
@@ -329,6 +330,7 @@ export class KingOfTheHillService {
     if (!round) throw createError.notFound('No pending round for this entry');
 
     const multiplier = Math.round((payoutAmount / betAmount) * 100) / 100;
+    let dethronedTheKing = false;
 
     await prisma.$transaction(async (tx) => {
       const currentKingEntry = await tx.kingOfTheHillEntry.findFirst({
@@ -340,6 +342,7 @@ export class KingOfTheHillService {
 
       const kingMultiplier = kingRound?.multiplier ? Number(kingRound.multiplier) : null;
       const dethrones = kingMultiplier === null || multiplier > kingMultiplier;
+      dethronedTheKing = dethrones;
 
       await tx.kingOfTheHillRound.update({
         where: { id: round.id },
@@ -370,6 +373,11 @@ export class KingOfTheHillService {
     });
 
     logger.info(`KingOfTheHill ${entry.sessionId}: entry ${entryId} scored ${multiplier}x`);
+
+    if (dethronedTheKing) {
+      void KickChatService.sendChatMessage(`👑 @${entry.kickUsername} has taken the throne with a ${multiplier}x!`);
+    }
+
     return this.emitSession(entry.sessionId, io);
   }
 }

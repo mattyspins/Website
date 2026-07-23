@@ -3,6 +3,7 @@ import { prisma } from '@/config/database';
 import { logger } from '@/utils/logger';
 import { createError } from '@/middleware/errorHandler';
 import { NotificationService } from '@/services/NotificationService';
+import { KickChatService } from '@/services/KickChatService';
 import {
   CreateGameDTO,
   CompleteGameDTO,
@@ -208,6 +209,13 @@ export class GuessTheBalanceService {
       logger.info(
         `Game ${gameId} completed. Winner: ${winner?.userId || 'none'}, Reward: ${data.winnerReward || 0}`
       );
+
+      if (updatedGame.winner) {
+        const w = updatedGame.winner;
+        void KickChatService.sendChatMessage(
+          `🎯 ${w.kickUsername ? `@${w.kickUsername}` : w.displayName} guessed closest and wins Guess the Balance!`
+        );
+      }
 
       return this.formatGameWithWinnerResponse(
         updatedGame,
@@ -703,9 +711,19 @@ export class GuessTheBalanceService {
         },
       });
 
+      const isFirstSubmit = guess.submittedAt.getTime() === guess.updatedAt.getTime();
       logger.info(
-        `User ${userId} ${guess.submittedAt === guess.updatedAt ? 'submitted' : 'updated'} guess for game ${gameId}: ${guessAmount}`
+        `User ${userId} ${isFirstSubmit ? 'submitted' : 'updated'} guess for game ${gameId}: ${guessAmount}`
       );
+
+      // Only the first submission announces — someone tweaking their guess before
+      // the lock shouldn't spam chat with a new message every time.
+      if (isFirstSubmit) {
+        const guesser = await prisma.user.findUnique({ where: { id: userId }, select: { displayName: true, kickUsername: true } });
+        void KickChatService.sendChatMessage(
+          `🎯 ${guesser?.kickUsername ? `@${guesser.kickUsername}` : guesser?.displayName ?? 'A viewer'} locked in a guess for the balance!`
+        );
+      }
 
       return {
         id: guess.id,

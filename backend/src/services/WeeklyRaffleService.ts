@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/config/database';
 import { createError } from '@/middleware/errorHandler';
 import { logger } from '@/utils/logger';
+import { KickChatService } from '@/services/KickChatService';
 
 // Extensible eligibility-requirement union — add new "type" values here and
 // teach evaluateRequirement() how to check them, no schema migration needed.
@@ -17,7 +18,7 @@ interface EligibleUser {
   isManual?: boolean;
 }
 
-const USER_SUMMARY_SELECT = { id: true, displayName: true, avatarUrl: true } as const;
+const USER_SUMMARY_SELECT = { id: true, displayName: true, avatarUrl: true, kickUsername: true } as const;
 
 export class WeeklyRaffleService {
   // Monday 00:00 UTC of the week containing `referenceDate`, through the following Monday.
@@ -234,6 +235,14 @@ export class WeeklyRaffleService {
     logger.info(`Weekly raffle ${raffleId} drawn by admin ${adminId}, winner ${payload.raffle.winnerUserId}`);
     io?.to(`weeklyRaffle:${raffleId}`).emit('weeklyRaffle:drawn', payload);
     io?.emit('weeklyRaffle:drawn', payload);
+
+    const w = payload.raffle.winner;
+    if (w) {
+      void KickChatService.sendChatMessage(
+        `🎁 ${w.kickUsername ? `@${w.kickUsername}` : w.displayName} won this week's raffle!`
+      );
+    }
+
     return payload;
   }
 

@@ -5,6 +5,7 @@ import { PointsService } from '@/services/PointsService';
 import { RedisService } from '@/config/redis';
 import { createError } from '@/middleware/errorHandler';
 import { logger } from '@/utils/logger';
+import { KickChatService } from '@/services/KickChatService';
 import { BingoStatus, CellStatus, Prisma } from '@prisma/client';
 
 const drawCycleKey = (gameId: string) => `bingo_draw_cycle:${gameId}`;
@@ -177,8 +178,12 @@ export class BingoBoardService {
   }
 
   // identity.userId is set for the authenticated website "Join" button; identity.kickUsername
-  // is set (and userId optionally resolved) for the "!join" Kick chat command.
-  static async join(gameId: string, identity: Identity, preferredSlot?: string | null, io?: SocketIOServer) {
+  // is set (and userId optionally resolved) for the "!join" Kick chat command. Note that a
+  // verified linked chatter has BOTH set, so identity alone can't tell the two callers apart
+  // — `viaWebsite` is passed explicitly by the caller instead, purely to decide whether this
+  // method should send its own chat announcement (the "!join" chat path already announces
+  // itself unconditionally from KickChatService.processBingoJoin, so this must stay false there).
+  static async join(gameId: string, identity: Identity, preferredSlot?: string | null, io?: SocketIOServer, viaWebsite = false) {
     const game = await prisma.bonusBingo.findUnique({ where: { id: gameId } });
     if (!game) throw createError.notFound('Bingo game not found');
     if (
@@ -219,6 +224,16 @@ export class BingoBoardService {
       await prisma.bingoParticipant.create({
         data: { gameId, userId, kickUsername, preferredSlot: preferredSlot?.slice(0, 100) || null },
       });
+
+      // Only the website "Join" button needs its own announcement here — the
+      // "!join" chat command path already gets one from
+      // KickChatService.processBingoJoin, so announcing here too would double it.
+      if (viaWebsite && identity.userId) {
+        const joinedUser = await prisma.user.findUnique({ where: { id: identity.userId }, select: { displayName: true, kickUsername: true } });
+        void KickChatService.sendChatMessage(
+          `🅱️ ${joinedUser?.kickUsername ? `@${joinedUser.kickUsername}` : joinedUser?.displayName ?? 'A viewer'} joined Bonus Bingo!`
+        );
+      }
     }
 
     const updated = await prisma.bonusBingo.findUnique({
@@ -526,11 +541,11 @@ export class BingoBoardService {
 
       const uniqueWinners = [...new Set(line.winners)];
       for (const winnerId of uniqueWinners) {
-        const isRealUser = await prisma.user.findUnique({
+        const realUser = await prisma.user.findUnique({
           where: { id: winnerId },
-          select: { id: true },
+          select: { id: true, displayName: true, kickUsername: true },
         });
-        if (!isRealUser) continue;
+        if (!realUser) continue;
         try {
           await PointsService.addPoints({
             userId: winnerId,
@@ -541,6 +556,9 @@ export class BingoBoardService {
           });
           logger.info(
             `Bingo: awarded ${game.linePoints} pts to user ${winnerId} for line ${line.lineType}:${line.lineIndex}`
+          );
+          void KickChatService.sendChatMessage(
+            `🟩 ${realUser.kickUsername ? `@${realUser.kickUsername}` : realUser.displayName} completed a bingo line!`
           );
         } catch (err) {
           logger.error(`Bingo: failed to award points to ${winnerId}`, err);

@@ -4,6 +4,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import { createError } from '@/middleware/errorHandler';
 import { HighRollerStatus, HighRollerPrediction, Prisma } from '@prisma/client';
 import { logger } from '@/utils/logger';
+import { KickChatService } from '@/services/KickChatService';
 
 const STREAK_MILESTONES = [5, 10, 15, 20, 25] as const;
 
@@ -606,6 +607,11 @@ export class HighRollerService {
     const withRounds = players.filter((p) => p.roundsPlayed > 0);
     const maxBestStreak = Math.max(0, ...players.map((p) => p.bestStreak));
     const champions = players.filter((p) => p.bestStreak === maxBestStreak && maxBestStreak > 0);
+
+    if (champions.length > 0) {
+      const names = champions.map((p) => `@${p.kickUsername}`).join(', ');
+      void KickChatService.sendChatMessage(`🎲 High Roller ends! ${names} wins with a streak of ${maxBestStreak}!`);
+    }
 
     const maxAccuracy = withRounds.length > 0 ? Math.max(...withRounds.map((p) => accuracyOf(p))) : 0;
     const mostAccurate = withRounds.filter((p) => accuracyOf(p) === maxAccuracy);

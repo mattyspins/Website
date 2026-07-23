@@ -5,6 +5,7 @@ import { createError } from '@/middleware/errorHandler';
 import { BountyHunter, BountyHunterStatus, BountyHunterEntryStatus, Prisma } from '@prisma/client';
 import { logger } from '@/utils/logger';
 import { PointsService } from '@/services/PointsService';
+import { KickChatService } from '@/services/KickChatService';
 
 const USER_SELECT = { id: true, displayName: true, kickUsername: true, avatarUrl: true } as const;
 
@@ -475,6 +476,14 @@ export class BountyHunterService {
     }
 
     logger.info(`BountyHunter ${huntId}: claimed by entry ${best.entryId} at ${best.multiplier}x (target ${hunt.target}x)`);
+
+    const winnerEntry = hunt.entries.find((e) => e.id === best.entryId);
+    if (winnerEntry) {
+      void KickChatService.sendChatMessage(
+        `🎯 @${winnerEntry.kickUsername} claimed the bounty, landing ${Number(best.multiplier)}x (target was ${hunt.target}x)!`
+      );
+    }
+
     return this.emitAndReturn(huntId, io);
   }
 

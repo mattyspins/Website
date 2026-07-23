@@ -3,6 +3,7 @@ import { RedisService } from '@/config/redis';
 import { logger } from '@/utils/logger';
 import { createError, CustomError } from '@/middleware/errorHandler';
 import { StatisticsService } from '@/services/StatisticsService';
+import { KickChatService } from '@/services/KickChatService';
 import crypto from 'crypto';
 import type { Prisma } from '@prisma/client';
 
@@ -650,6 +651,23 @@ export class RaffleService {
       logger.info(
         `Winners selected for raffle ${raffleId}: ${result.length} winners`
       );
+
+      if (result.length > 0) {
+        const [raffleMeta, winnerUsers] = await Promise.all([
+          prisma.raffle.findUnique({ where: { id: raffleId }, select: { title: true } }),
+          prisma.user.findMany({
+            where: { id: { in: result.map((w) => w.userId) } },
+            select: { id: true, displayName: true, kickUsername: true },
+          }),
+        ]);
+        const names = result.map((w) => {
+          const u = winnerUsers.find((x) => x.id === w.userId);
+          return u?.kickUsername ? `@${u.kickUsername}` : u?.displayName ?? 'a viewer';
+        });
+        void KickChatService.sendChatMessage(
+          `🎉 ${names.join(', ')} won the "${raffleMeta?.title ?? 'raffle'}"!`
+        );
+      }
 
       return result;
     } catch (error) {

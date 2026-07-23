@@ -9,6 +9,7 @@ import {
 } from '@prisma/client';
 import { logger } from '@/utils/logger';
 import { PointsService } from '@/services/PointsService';
+import { KickChatService } from '@/services/KickChatService';
 
 // ─── Config types ────────────────────────────────────────────────────────────
 
@@ -850,6 +851,13 @@ export class SlotWorldCupService {
     }
 
     io?.to(`slotWorldCup:${tournamentId}`).emit('slotWorldCup:completed', { tournamentId, championId, runnerUpId });
+
+    const championSlot = await prisma.slotWorldCupSlot.findUnique({ where: { id: championId }, select: { slotName: true } });
+    const topPredictor = leaderboard[0];
+    void KickChatService.sendChatMessage(
+      `🌍 ${championSlot?.slotName ?? 'The champion'} wins the Slot World Cup!` +
+        (topPredictor ? ` Top predictor: ${topPredictor.displayName} (${topPredictor.score} pts)` : '')
+    );
   }
 
   // ─── Internal ─────────────────────────────────────────────────────────────

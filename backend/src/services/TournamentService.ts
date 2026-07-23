@@ -2,6 +2,7 @@ import { randomInt } from 'crypto';
 import { prisma } from '@/config/database';
 import createError from 'http-errors';
 import { Server as SocketIOServer } from 'socket.io';
+import { KickChatService } from '@/services/KickChatService';
 import {
   TournamentStatus,
   MatchStatus,
@@ -153,6 +154,11 @@ export class TournamentService {
     if (existing) throw createError(409, 'Already entered');
 
     await prisma.tournamentEntry.create({ data: { tournamentId, userId } });
+
+    const enteredUser = await prisma.user.findUnique({ where: { id: userId }, select: { displayName: true, kickUsername: true } });
+    void KickChatService.sendChatMessage(
+      `🎟️ ${enteredUser?.kickUsername ? `@${enteredUser.kickUsername}` : enteredUser?.displayName ?? 'A viewer'} entered the "${t.title}" tournament raffle!`
+    );
 
     const updated = await TournamentService.getTournamentWithRelations(tournamentId);
     const response = await TournamentService.formatTournament(updated);
@@ -584,6 +590,14 @@ export class TournamentService {
           data: { finalPosition: 1 },
         }),
       ]);
+
+      const champion = await prisma.tournamentParticipant.findUnique({
+        where: { id: winnerId },
+        include: { user: { select: { displayName: true, kickUsername: true } } },
+      });
+      void KickChatService.sendChatMessage(
+        `🏆 ${champion?.user.kickUsername ? `@${champion.user.kickUsername}` : champion?.user.displayName ?? 'A viewer'} is crowned "${match.tournament.title}" Tournament Champion!`
+      );
     }
 
     const updated = await TournamentService.getTournamentWithRelations(match.tournamentId);
