@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Play, ExternalLink, Users, Trophy, Coins, Target } from "lucide-react";
 import Link from "next/link";
 
-// Cinematic "expo-out" curve — matches IntroSplash, no bounce.
+// Cinematic "expo-out" curve — matches WelcomeSplash, no bounce.
 const EASE = [0.16, 1, 0.3, 1] as const;
 // Hero content starts revealing right as the intro splash's panels clear.
 const REVEAL_DELAY = 0.45;

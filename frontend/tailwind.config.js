@@ -84,7 +84,7 @@ module.exports = {
           200: "#0e0c13",
           300: "#070509",
         },
-        // Premium landing-page palette (Hero / IntroSplash only — rest of the
+        // Premium landing-page palette (Hero / WelcomeSplash only — rest of the
         // site keeps navy/gold). Hex values match the brand spec exactly.
         ink: {
           DEFAULT: "#090B10", // page background

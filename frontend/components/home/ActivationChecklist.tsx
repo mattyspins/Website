@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { API_ENDPOINTS } from "@/lib/api";
 import { getAccessToken } from "@/lib/authPersistence";
 
-// Matches Hero and IntroSplash — the homepage shares one curve.
+// Matches Hero and WelcomeSplash — the homepage shares one curve.
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 interface LinkStep {

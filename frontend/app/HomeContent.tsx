@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import Hero from "@/components/Hero";
 import StreamScheduleSection from "@/components/StreamScheduleSection";
 import ActivationChecklist from "@/components/home/ActivationChecklist";
-import IntroSplash from "@/components/home/IntroSplash";
+import WelcomeSplash from "@/components/home/WelcomeSplash";
 
 export default function HomeContent() {
   const searchParams = useSearchParams();
@@ -37,7 +37,7 @@ export default function HomeContent() {
 
   return (
     <div className="min-h-screen">
-      <IntroSplash />
+      <WelcomeSplash />
 
       {toast && (
         <motion.div
