@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Trophy, Crown, Calendar, Users } from "lucide-react";
-import { wagerLeaderboardApi, ActiveRace, RaceHistoryEntry, RaceStandingRow } from "@/lib/api/wagerLeaderboard";
+import { wagerLeaderboardApi, ActiveRace, RaceHistoryEntry, RaceStandingRow, RaceType } from "@/lib/api/wagerLeaderboard";
 import { formatLondon } from "@/lib/londonTime";
 import { API_ENDPOINTS } from "@/lib/api";
 
@@ -105,6 +105,9 @@ function PodiumCard({ row }: { row: RaceStandingRow }) {
 }
 
 interface Props {
+  // Which independent leaderboard this instance renders — Weekly and Monthly
+  // races run concurrently, each with their own schedule and prizes.
+  type: RaceType;
   // Fetched server-side in page.tsx before the page ever reaches the browser,
   // so the first paint (and what a crawler sees) already has real standings
   // instead of a spinner. `null`/absent means the server fetch didn't run or
@@ -115,7 +118,7 @@ interface Props {
   initialData?: { race: ActiveRace | null; history: RaceHistoryEntry[] } | null;
 }
 
-export default function LeaderboardPage({ initialData = null }: Props) {
+export default function LeaderboardPage({ type, initialData = null }: Props) {
   const [race, setRace] = useState<ActiveRace | null>(initialData?.race ?? null);
   const [history, setHistory] = useState<RaceHistoryEntry[]>(initialData?.history ?? []);
   const [loading, setLoading] = useState(initialData === null);
@@ -124,7 +127,7 @@ export default function LeaderboardPage({ initialData = null }: Props) {
   useEffect(() => {
     const load = async () => {
       try {
-        const [r, h] = await Promise.all([wagerLeaderboardApi.getActive(), wagerLeaderboardApi.getHistory()]);
+        const [r, h] = await Promise.all([wagerLeaderboardApi.getActive(type), wagerLeaderboardApi.getHistory(type)]);
         setRace(r);
         setHistory(h);
       } catch { /* ignore */ }
@@ -133,7 +136,7 @@ export default function LeaderboardPage({ initialData = null }: Props) {
     load();
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [type]);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -165,6 +168,7 @@ export default function LeaderboardPage({ initialData = null }: Props) {
   const rest = top10.filter((r) => r.position > 3);
   const myRow = myUserId ? race?.standings.find((r) => r.userId === myUserId) : undefined;
   const showMyRankBanner = myRow && myRow.position > 3;
+  const typeLabel = type === "WEEKLY" ? "Weekly" : "Monthly";
 
   return (
     <div className="min-h-screen pt-20 pb-16 px-4">
@@ -174,15 +178,15 @@ export default function LeaderboardPage({ initialData = null }: Props) {
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
           <span className="inline-flex items-center gap-2 bg-gold-500/10 border border-gold-500/30 text-gold-400 text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded mb-4">
             <Trophy className="w-3.5 h-3.5" />
-            Wager Race
+            {typeLabel} Race
           </span>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-gaming text-white mb-4 tracking-wide">
             {race ? (
               <>
-                <span className="text-gold-400">${race.totalPrizePool}</span> LEADERBOARD ON RAZED
+                <span className="text-gold-400">${race.totalPrizePool}</span> {typeLabel.toUpperCase()} LEADERBOARD ON RAZED
               </>
             ) : (
-              <>WAGER <span className="text-gold-400">LEADERBOARD</span></>
+              <>{typeLabel.toUpperCase()} <span className="text-gold-400">LEADERBOARD</span></>
             )}
           </h1>
 

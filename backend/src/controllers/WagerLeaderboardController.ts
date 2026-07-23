@@ -1,19 +1,33 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '@/middleware/auth';
-import { WagerLeaderboardService } from '@/services/WagerLeaderboardService';
+import { WagerLeaderboardService, RaceType } from '@/services/WagerLeaderboardService';
 import { RazedWagerSyncService } from '@/services/RazedWagerSyncService';
 
 const asyncHandler = (fn: (req: AuthenticatedRequest, res: Response, next: NextFunction) => Promise<void>) =>
   (req: AuthenticatedRequest, res: Response, next: NextFunction) => fn(req, res, next).catch(next);
 
+function parseType(value: unknown): RaceType | null {
+  return value === 'WEEKLY' || value === 'MONTHLY' ? value : null;
+}
+
 export class WagerLeaderboardController {
-  static getActive = asyncHandler(async (_req, res) => {
-    const race = await WagerLeaderboardService.getActiveRace();
+  static getActive = asyncHandler(async (req, res) => {
+    const type = parseType(req.query.type);
+    if (!type) {
+      res.status(400).json({ error: "type must be 'WEEKLY' or 'MONTHLY'" });
+      return;
+    }
+    const race = await WagerLeaderboardService.getActiveRace(type);
     res.json({ success: true, race });
   });
 
-  static getHistory = asyncHandler(async (_req, res) => {
-    const races = await WagerLeaderboardService.getRaceHistory();
+  static getHistory = asyncHandler(async (req, res) => {
+    const type = parseType(req.query.type);
+    if (!type) {
+      res.status(400).json({ error: "type must be 'WEEKLY' or 'MONTHLY'" });
+      return;
+    }
+    const races = await WagerLeaderboardService.getRaceHistory(type);
     res.json({ success: true, races });
   });
 
@@ -32,19 +46,25 @@ export class WagerLeaderboardController {
     res.json({ success: true, totals });
   });
 
-  static listRaces = asyncHandler(async (_req, res) => {
-    const races = await WagerLeaderboardService.listRaces();
+  static listRaces = asyncHandler(async (req, res) => {
+    const type = parseType(req.query.type);
+    if (!type) {
+      res.status(400).json({ error: "type must be 'WEEKLY' or 'MONTHLY'" });
+      return;
+    }
+    const races = await WagerLeaderboardService.listRaces(type);
     res.json({ success: true, races });
   });
 
   static createRace = asyncHandler(async (req, res) => {
     const { startDate, endDate, totalPrizePool, prizes } = req.body;
-    if (!startDate || !endDate || totalPrizePool === undefined || !Array.isArray(prizes)) {
-      res.status(400).json({ error: 'startDate, endDate, totalPrizePool, and prizes are required' });
+    const type = parseType(req.body.type);
+    if (!type || !startDate || !endDate || totalPrizePool === undefined || !Array.isArray(prizes)) {
+      res.status(400).json({ error: "type ('WEEKLY'|'MONTHLY'), startDate, endDate, totalPrizePool, and prizes are required" });
       return;
     }
     try {
-      const race = await WagerLeaderboardService.createRace({ startDate, endDate, totalPrizePool: Number(totalPrizePool), prizes });
+      const race = await WagerLeaderboardService.createRace({ type, startDate, endDate, totalPrizePool: Number(totalPrizePool), prizes });
       res.json({ success: true, race });
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });

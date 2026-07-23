@@ -17,6 +17,7 @@ interface RacePrize {
 }
 
 type RacePhase = 'upcoming' | 'active' | 'ended';
+export type RaceType = 'WEEKLY' | 'MONTHLY';
 
 /**
  * `startDate`/`endDate` carry exact times (e.g. 18:30 BST) for display/countdown/status
@@ -105,10 +106,10 @@ export class WagerLeaderboardService {
     });
   }
 
-  /** The single currently-running race (admin ensures only one is active at a time), with live standings. */
-  static async getActiveRace() {
+  /** The single currently-running race of this type (admin ensures only one is active per type at a time), with live standings. */
+  static async getActiveRace(type: RaceType) {
     const race = await prisma.wagerRace.findFirst({
-      where: { status: 'active' },
+      where: { status: 'active', type },
       include: { prizes: { orderBy: { position: 'asc' } } },
       orderBy: { startDate: 'desc' },
     });
@@ -117,6 +118,7 @@ export class WagerLeaderboardService {
     const standings = await WagerLeaderboardService.computeStandings(race.startDate, race.endDate, race.prizes, 50);
     return {
       id: race.id,
+      type: race.type as RaceType,
       startDate: race.startDate.toISOString(),
       endDate: race.endDate.toISOString(),
       totalPrizePool: race.totalPrizePool,
@@ -126,9 +128,9 @@ export class WagerLeaderboardService {
     };
   }
 
-  static async getRaceHistory(limit = 10) {
+  static async getRaceHistory(type: RaceType, limit = 10) {
     const races = await prisma.wagerRace.findMany({
-      where: { status: 'ended' },
+      where: { status: 'ended', type },
       include: {
         payouts: {
           include: { user: { select: { id: true, displayName: true, kickUsername: true, avatarUrl: true } } },
@@ -141,6 +143,7 @@ export class WagerLeaderboardService {
 
     return races.map((race) => ({
       id: race.id,
+      type: race.type as RaceType,
       startDate: race.startDate.toISOString(),
       endDate: race.endDate.toISOString(),
       totalPrizePool: race.totalPrizePool,
@@ -293,13 +296,15 @@ export class WagerLeaderboardService {
 
   // ── Admin: race management ──────────────────────────────────────────────
 
-  static async listRaces() {
+  static async listRaces(type: RaceType) {
     const races = await prisma.wagerRace.findMany({
+      where: { type },
       include: { prizes: { orderBy: { position: 'asc' } } },
       orderBy: { startDate: 'desc' },
     });
     return races.map((r) => ({
       id: r.id,
+      type: r.type as RaceType,
       startDate: r.startDate.toISOString(),
       endDate: r.endDate.toISOString(),
       totalPrizePool: r.totalPrizePool,
@@ -334,7 +339,7 @@ export class WagerLeaderboardService {
     }
   }
 
-  static async createRace(input: { startDate: string; endDate: string; totalPrizePool: number; prizes: RacePrize[] }) {
+  static async createRace(input: { type: RaceType; startDate: string; endDate: string; totalPrizePool: number; prizes: RacePrize[] }) {
     const startDate = new Date(input.startDate);
     const endDate = new Date(input.endDate);
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
@@ -345,13 +350,14 @@ export class WagerLeaderboardService {
     }
     WagerLeaderboardService.validatePrizes(input.prizes, input.totalPrizePool);
 
-    const existingActive = await prisma.wagerRace.findFirst({ where: { status: 'active' } });
+    const existingActive = await prisma.wagerRace.findFirst({ where: { status: 'active', type: input.type } });
     if (existingActive) {
-      throw new Error('A race is already active. End or delete it before creating a new one.');
+      throw new Error(`A ${input.type.toLowerCase()} race is already active. End or delete it before creating a new one.`);
     }
 
     const race = await prisma.wagerRace.create({
       data: {
+        type: input.type,
         startDate,
         endDate,
         totalPrizePool: input.totalPrizePool,
@@ -362,6 +368,7 @@ export class WagerLeaderboardService {
 
     return {
       id: race.id,
+      type: race.type as RaceType,
       startDate: race.startDate.toISOString(),
       endDate: race.endDate.toISOString(),
       totalPrizePool: race.totalPrizePool,
@@ -414,6 +421,7 @@ export class WagerLeaderboardService {
     if (!race) throw new Error('Race not found');
     return {
       id: race.id,
+      type: race.type as RaceType,
       startDate: race.startDate.toISOString(),
       endDate: race.endDate.toISOString(),
       totalPrizePool: race.totalPrizePool,

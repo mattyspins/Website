@@ -17,9 +17,11 @@ export interface RacePrize {
 }
 
 export type RacePhase = "upcoming" | "active" | "ended";
+export type RaceType = "WEEKLY" | "MONTHLY";
 
 export interface ActiveRace {
   id: string;
+  type: RaceType;
   startDate: string;
   endDate: string;
   totalPrizePool: number;
@@ -40,6 +42,7 @@ export interface RaceHistoryWinner {
 
 export interface RaceHistoryEntry {
   id: string;
+  type: RaceType;
   startDate: string;
   endDate: string;
   totalPrizePool: number;
@@ -48,6 +51,7 @@ export interface RaceHistoryEntry {
 
 export interface AdminRace {
   id: string;
+  type: RaceType;
   startDate: string;
   endDate: string;
   totalPrizePool: number;
@@ -87,15 +91,18 @@ export interface WagererTotals {
 }
 
 export const wagerLeaderboardApi = {
-  getActive: () => api.get("/api/wager-leaderboard/active").then((d) => d.race as ActiveRace | null),
-  getHistory: () => api.get("/api/wager-leaderboard/history").then((d) => d.races as RaceHistoryEntry[]),
+  getActive: (type: RaceType) =>
+    api.get(`/api/wager-leaderboard/active?type=${type}`).then((d) => d.race as ActiveRace | null),
+  getHistory: (type: RaceType) =>
+    api.get(`/api/wager-leaderboard/history?type=${type}`).then((d) => d.races as RaceHistoryEntry[]),
   getAdminWagers: () => api.get("/api/wager-leaderboard/admin/wagers").then((d) => d.users as AdminWagerRow[]),
   getAllWagerers: () =>
     api.get("/api/wager-leaderboard/admin/all-wagerers").then((d) => d.wagerers as AllWagererRow[]),
   getWagerTotals: () =>
     api.get("/api/wager-leaderboard/admin/wager-totals").then((d) => d.totals as WagererTotals),
-  listRaces: () => api.get("/api/wager-leaderboard/admin/races").then((d) => d.races as AdminRace[]),
-  createRace: (race: { startDate: string; endDate: string; totalPrizePool: number; prizes: RacePrize[] }) =>
+  listRaces: (type: RaceType) =>
+    api.get(`/api/wager-leaderboard/admin/races?type=${type}`).then((d) => d.races as AdminRace[]),
+  createRace: (race: { type: RaceType; startDate: string; endDate: string; totalPrizePool: number; prizes: RacePrize[] }) =>
     api.post("/api/wager-leaderboard/admin/races", race).then((d) => d.race as AdminRace),
   updateRace: (raceId: string, race: { startDate?: string; endDate?: string; totalPrizePool?: number; prizes?: RacePrize[] }) =>
     api.put(`/api/wager-leaderboard/admin/races/${raceId}`, race).then((d) => d.race as AdminRace),

@@ -911,6 +911,7 @@ model RazedUnlinkedWager {
 
 model WagerRace {
   id             String   @id @default(uuid())
+  type           String   @default("MONTHLY") // "WEEKLY" | "MONTHLY" — one active race per type, otherwise fully independent
   startDate      DateTime @map("start_date")
   endDate        DateTime @map("end_date")
   totalPrizePool Int      @default(0) @map("total_prize_pool")
@@ -920,7 +921,7 @@ model WagerRace {
   prizes  WagerRacePrize[]
   payouts WagerRacePayout[]
 
-  @@index([status, startDate, endDate])
+  @@index([type, status, startDate, endDate])
   @@map("wager_races")
 }
 
