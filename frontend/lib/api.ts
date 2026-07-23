@@ -124,6 +124,8 @@ export const API_ENDPOINTS = {
     `${API_URL}/api/admin/users/${userId}/points`,
   ADMIN_USER: (userId: string) =>
     `${API_URL}/api/admin/users/${userId}`,
+  ADMIN_USER_PROFILE: (userId: string) =>
+    `${API_URL}/api/admin/users/${userId}/profile`,
   ADMIN_USER_MODERATOR: (userId: string) =>
     `${API_URL}/api/admin/users/${userId}/moderator`,
   ADMIN_USER_VIP: (userId: string) =>

@@ -330,12 +330,11 @@ export default function AuthButtons({ inline = false, onNavigate }: AuthButtonsP
         whileTap={{ scale: 0.95 }}
         onClick={handleKickLogin}
         aria-label="Link your Kick account"
-        className="btn-glow tap-target flex items-center space-x-2 bg-[#53FC18] hover:bg-[#45D615] text-black px-4 py-2 rounded-lg transition-all duration-300 font-semibold"
+        className="btn-glow tap-target flex items-center justify-center w-10 h-10 bg-[#53FC18] hover:bg-[#45D615] rounded-lg transition-all duration-300"
       >
-        <div aria-hidden="true" className="w-5 h-5 bg-black rounded-sm flex items-center justify-center">
-          <span className="text-[#53FC18] text-xs font-bold">K</span>
-        </div>
-        <span>Kick</span>
+        <svg aria-hidden="true" viewBox="0 0 32 32" className="w-5 h-5" fill="black">
+          <path d="M4 4h6v6.4h2.4V8.8h2.4V4h6v8h-2.4v2.4h-2.4v2.4h2.4V19.2h2.4v8h-6v-4.8h-2.4v-2.4H10.4V27.2H4z" />
+        </svg>
       </motion.button>
     </div>
   );

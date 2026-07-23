@@ -63,6 +63,10 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
   const [wagerSaving, setWagerSaving] = useState(false);
   const [wagerMsg, setWagerMsg] = useState("");
 
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState("");
+  const [nameSaving, setNameSaving] = useState(false);
+
   const token = () => localStorage.getItem("access_token") ?? "";
 
   useEffect(() => {
@@ -154,6 +158,32 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
     } catch { setWagerMsg("Network error."); } finally { setWagerSaving(false); }
   };
 
+  const startEditName = () => {
+    if (!user) return;
+    setNameValue(user.displayName);
+    setEditingName(true);
+  };
+
+  const handleSaveName = async () => {
+    if (!user || !nameValue.trim() || nameValue.trim() === user.displayName) {
+      setEditingName(false);
+      return;
+    }
+    setNameSaving(true);
+    try {
+      const res = await fetch(API_ENDPOINTS.ADMIN_USER_PROFILE(user.id), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+        body: JSON.stringify({ displayName: nameValue.trim() }),
+      });
+      if (res.ok) {
+        setUser((u) => u ? { ...u, displayName: nameValue.trim() } : u);
+        onRefresh();
+        setEditingName(false);
+      }
+    } catch { /* ignore */ } finally { setNameSaving(false); }
+  };
+
   return (
     <AnimatePresence>
       {userId && (
@@ -186,7 +216,39 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
                         }
                       </div>
                       <div>
-                        <h2 className="text-white font-bold text-lg leading-tight">{user.displayName}</h2>
+                        {editingName ? (
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              autoFocus
+                              value={nameValue}
+                              onChange={(e) => setNameValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleSaveName();
+                                if (e.key === "Escape") setEditingName(false);
+                              }}
+                              disabled={nameSaving}
+                              className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white font-bold text-base leading-tight w-40 focus:outline-none focus:border-yellow-500/50"
+                            />
+                            <button
+                              onClick={handleSaveName}
+                              disabled={nameSaving}
+                              className="w-6 h-6 rounded-md bg-yellow-500/15 hover:bg-yellow-500/25 flex items-center justify-center text-yellow-400 transition-colors shrink-0"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 group">
+                            <h2 className="text-white font-bold text-lg leading-tight">{user.displayName}</h2>
+                            <button
+                              onClick={startEditName}
+                              className="w-5 h-5 rounded flex items-center justify-center text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                              aria-label="Edit display name"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
                         <p className="text-gray-400 text-xs mt-0.5">Joined {new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
                       </div>
                     </div>
