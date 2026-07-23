@@ -283,6 +283,18 @@ export default function AuthButtons({ inline = false, onNavigate }: AuthButtonsP
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
+        onClick={handleKickLogin}
+        aria-label="Link your Kick account"
+        className="btn-glow tap-target flex items-center justify-center w-10 h-10 bg-[#53FC18] hover:bg-[#45D615] rounded-lg transition-all duration-300 opacity-60 hover:opacity-100"
+      >
+        <svg aria-hidden="true" viewBox="0 0 32 32" className="w-5 h-5" fill="black">
+          <path d="M4 4h6v6.4h2.4V8.8h2.4V4h6v8h-2.4v2.4h-2.4v2.4h2.4V19.2h2.4v8h-6v-4.8h-2.4v-2.4H10.4V27.2H4z" />
+        </svg>
+      </motion.button>
+
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         onClick={handleDiscordLogin}
         disabled={isLoading}
         // The visible label is just "Discord" to fit the navbar; the accessible
@@ -323,18 +335,6 @@ export default function AuthButtons({ inline = false, onNavigate }: AuthButtonsP
             <span>Discord</span>
           </>
         )}
-      </motion.button>
-
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={handleKickLogin}
-        aria-label="Link your Kick account"
-        className="btn-glow tap-target flex items-center justify-center w-10 h-10 bg-[#53FC18] hover:bg-[#45D615] rounded-lg transition-all duration-300"
-      >
-        <svg aria-hidden="true" viewBox="0 0 32 32" className="w-5 h-5" fill="black">
-          <path d="M4 4h6v6.4h2.4V8.8h2.4V4h6v8h-2.4v2.4h-2.4v2.4h2.4V19.2h2.4v8h-6v-4.8h-2.4v-2.4H10.4V27.2H4z" />
-        </svg>
       </motion.button>
     </div>
   );
