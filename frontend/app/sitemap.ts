@@ -20,6 +20,7 @@ const ROUTES: Array<{
   { path: "/stream-games", priority: 0.9, changeFrequency: "daily" },
   { path: "/store", priority: 0.8, changeFrequency: "weekly" },
   { path: "/schedule", priority: 0.8, changeFrequency: "daily" },
+  { path: "/raffles", priority: 0.8, changeFrequency: "daily" },
   { path: "/weekly-raffle", priority: 0.8, changeFrequency: "daily" },
   { path: "/milestones", priority: 0.7, changeFrequency: "weekly" },
   { path: "/rewards", priority: 0.7, changeFrequency: "weekly" },

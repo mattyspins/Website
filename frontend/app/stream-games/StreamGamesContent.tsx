@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Ticket, Swords, Zap, Trophy, Skull, Users, Grid3X3, ExternalLink, Clock, X, Radio, Dices, Gift, Globe } from "lucide-react";
+import { Crown, Ticket, Swords, Zap, Trophy, Skull, Users, Grid3X3, ExternalLink, Clock, X, Radio, Dices, Globe } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -166,27 +166,6 @@ const GAMES: Game[] = [
     howItWorks: ["Every multiplier over 1000x during the month qualifies for the Royal Rumble 👀", "Any player who hits a 1000x+ earns a place in the event", "Qualified players return for the monthly showdown", "Players take turns choosing bonus buys / slots", "The battle continues until one player is crowned Royal Rumble Champion 👑"],
     rewards: ["BONUS BUY prize 🎁", "Website points", "Giveaway entries", "Community rewards"],
     note: "Every 1000x could secure your spot 🔥",
-  },
-  {
-    id: "raffles", name: "Raffles",
-    tagline: "Spend coins on tickets for a chance to win prizes",
-    icon: <Ticket className="w-6 h-6" />, color: "text-gold-400", iconBg: "bg-gold-500/15", border: "border-gold-500/20",
-    description: "Use the coins you earn from the community to enter raffles for real prizes. More tickets = better odds. Winners are announced in Discord.",
-    howItWorks: ["Earn coins through stream activity, check-ins, and community games", "Spend coins on raffle tickets — each ticket is one entry", "When the raffle ends, a winner is drawn at random", "Winners are announced in Discord — open a ticket to claim 🏆"],
-    rewards: ["Cash prizes", "Community rewards", "Special event prizes"],
-    note: "Active raffles are shown below 👊",
-    link: "/raffle", linkLabel: "View Active Raffles",
-  },
-  {
-    id: "weekly-raffle", name: "Weekly Raffle",
-    tagline: "Wager under the code, get entered automatically",
-    icon: <Gift className="w-6 h-6" />, color: "text-purple-400", iconBg: "bg-purple-500/15", border: "border-purple-500/20",
-    badge: "NEW", badgeColor: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-    description: "Every week, anyone who meets that week's wagering requirement under the Razed affiliate code is automatically entered — no tickets to buy. One winner is drawn live every Monday with a suspenseful elimination reveal.",
-    howItWorks: ["Connect and verify your Razed account", "Wager at least the week's minimum under the affiliate code", "You're automatically entered — no purchase needed", "Every Monday, Matty draws the winner live", "Miss this week? A new raffle opens for the next week"],
-    rewards: ["Cash prizes", "Community rewards"],
-    note: "Check your eligibility and progress anytime on the Weekly Raffle page 👊",
-    link: "/weekly-raffle", linkLabel: "View Weekly Raffle",
   },
 ];
 
