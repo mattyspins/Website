@@ -154,7 +154,7 @@ export default function LeaderboardPage({ type, initialData = null }: Props) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center pt-16">
+      <div className="flex items-center justify-center pt-12 pb-16">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-2 border-gold-500/30 border-t-gold-500 rounded-full animate-spin" />
           <p className="text-gray-400 text-sm">Loading leaderboard…</p>
@@ -171,7 +171,7 @@ export default function LeaderboardPage({ type, initialData = null }: Props) {
   const typeLabel = type === "WEEKLY" ? "Weekly" : "Monthly";
 
   return (
-    <div className="min-h-screen pt-20 pb-16 px-4">
+    <div className="pt-8 pb-16 px-4">
       <div className="max-w-4xl mx-auto">
 
         {/* Hero */}

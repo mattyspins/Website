@@ -22,8 +22,10 @@ export default function LeaderboardTabs({ monthlyInitialData, weeklyInitialData 
   const [tab, setTab] = useState<"monthly" | "weekly">("monthly");
 
   return (
-    <div>
-      <div className="flex justify-center pt-6">
+    <div className="min-h-screen">
+      {/* pt-20 clears the fixed navbar — LeaderboardContent below no longer
+          adds its own top padding since this tab bar now sits above it. */}
+      <div className="flex justify-center pt-20">
         <div className="inline-flex bg-navy-800/60 border border-white/8 rounded-full p-1 gap-1">
           {TABS.map((t) => (
             <button
