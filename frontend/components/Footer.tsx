@@ -30,7 +30,7 @@ const LEGAL_LINKS = [
 
 export default function Footer() {
   return (
-    <footer className="bg-navy-900/80 border-t border-gold-500/10 mt-20">
+    <footer className="relative z-10 bg-navy-900/80 border-t border-gold-500/10 mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
         {/* Main grid */}
