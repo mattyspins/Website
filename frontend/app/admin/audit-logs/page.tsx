@@ -73,7 +73,7 @@ function PointRow({ item }: { item: PointActivity }) {
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
             isAdd ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"
           }`}>
-            {isAdd ? "+" : ""}{item.amount.toLocaleString()} coins
+            {isAdd ? "+" : ""}{item.amount.toLocaleString()} Matty Coins
           </span>
           {item.transactionType && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/45 uppercase tracking-wide">
@@ -111,7 +111,7 @@ function StoreRow({ item }: { item: StoreActivity }) {
           <span className="text-yellow-300 text-sm font-semibold">{item.itemName}</span>
           {item.quantity > 1 && <span className="text-white/50 text-xs">×{item.quantity}</span>}
           <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400">
-            −{item.totalPrice.toLocaleString()} coins
+            −{item.totalPrice.toLocaleString()} Matty Coins
           </span>
           <span className={`text-[10px] px-1.5 py-0.5 rounded bg-white/5 uppercase tracking-wide ${
             item.status === "completed" ? "text-green-400" : "text-white/45"

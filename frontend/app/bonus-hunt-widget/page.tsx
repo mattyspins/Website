@@ -333,7 +333,7 @@ export default function BonusHuntWidget() {
             }}>
               <span style={{ fontSize: 16 }}>🪙</span>
               <span style={{ color: gold, fontSize: 13, fontWeight: 800 }}>
-                {fmtCoins(winner.reward)} coins
+                {fmtCoins(winner.reward)} Matty Coins
               </span>
               <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 9 }}>awarded</span>
             </div>

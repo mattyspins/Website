@@ -151,12 +151,12 @@ export default function CompleteGameModal({
                 value={winnerReward}
                 onChange={(e) => setWinnerReward(e.target.value)}
                 min="0"
-                placeholder="Coins to award winner"
+                placeholder="Matty Coins to award winner"
                 className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                 disabled={loading}
               />
               <p className="text-xs text-gray-400 mt-1">
-                Coins to award to the winner (leave empty for no reward)
+                Matty Coins to award to the winner (leave empty for no reward)
               </p>
             </div>
 

@@ -211,7 +211,7 @@ export default function UsersTable() {
                   </th>
                   <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-widest py-3 px-4">User</th>
                   <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-widest py-3 px-4">Rank</th>
-                  <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-widest py-3 px-4">Coins</th>
+                  <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-widest py-3 px-4">Matty Coins</th>
                   <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-widest py-3 px-4">Account Type</th>
                   <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-widest py-3 px-4">Razed</th>
                   <th className="text-left text-gray-400 text-xs font-semibold uppercase tracking-widest py-3 px-4">Joined</th>

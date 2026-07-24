@@ -131,11 +131,11 @@ export default function RafflePage() {
             RAFF<span className="text-gold-400">LES</span>
           </h1>
           <p className="text-gray-400 text-sm max-w-md mx-auto">
-            Spend your coins on tickets for a chance to win prizes. More tickets = better odds.
+            Spend your Matty Coins on tickets for a chance to win prizes. More tickets = better odds.
           </p>
           {isLoggedIn && (
             <p className="text-gold-400 font-semibold mt-3">
-              Your balance: <span className="font-gaming">{userCoins.toLocaleString()}</span> coins
+              Your balance: <span className="font-gaming">{userCoins.toLocaleString()}</span> Matty Coins
             </p>
           )}
         </motion.div>
@@ -178,7 +178,7 @@ export default function RafflePage() {
                     <h3 className="text-white font-semibold leading-snug">{raffle.title}</h3>
                     <div className="shrink-0 bg-gold-500/10 border border-gold-500/20 rounded-lg px-2.5 py-1 text-center">
                       <p className="text-gold-400 font-bold text-sm leading-none">{raffle.ticketPrice}</p>
-                      <p className="text-gray-400 text-[10px]">coins</p>
+                      <p className="text-gray-400 text-[10px]">Matty Coins</p>
                     </div>
                   </div>
 
@@ -242,7 +242,7 @@ export default function RafflePage() {
                           disabled={buying === raffle.id || !canAfford}
                           className="flex-1 bg-gold-500 hover:bg-gold-600 disabled:opacity-40 text-white font-bold py-2 rounded-lg text-xs tracking-wider uppercase transition-all"
                         >
-                          {buying === raffle.id ? "..." : `Buy · ${totalCost} coins`}
+                          {buying === raffle.id ? "..." : `Buy · ${totalCost} Matty Coins`}
                         </button>
                       </div>
                     )}
@@ -262,7 +262,7 @@ export default function RafflePage() {
               <span className="text-gold-400 mt-0.5">01</span>
               <div>
                 <p className="text-gray-300 font-medium">Buy Tickets</p>
-                <p>Spend coins to enter. Each ticket gives you one entry into the draw.</p>
+                <p>Spend Matty Coins to enter. Each ticket gives you one entry into the draw.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">

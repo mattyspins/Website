@@ -90,7 +90,7 @@ export default function SlotWorldCupFinishModal({ championName, defaults, onConf
           <h2 id={titleId} className="text-xl font-bold text-white text-center mb-1">End World Cup?</h2>
           <p className="text-white/50 text-sm text-center mb-5">
             <span className="text-yellow-300 font-semibold">{championName}</span> will be crowned champion.
-            Set the coin reward for each place — this pays out immediately once confirmed.
+            Set the Matty Coin reward for each place — this pays out immediately once confirmed.
           </p>
 
           <div className="space-y-3 mb-6">

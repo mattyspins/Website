@@ -75,7 +75,7 @@ export default function ProfilePage() {
       const d = await res.json();
       if (d.success) {
         setCheckinClaimed(true);
-        setCheckinMsg(`+${d.reward} coins claimed!`);
+        setCheckinMsg(`+${d.reward} Matty Coins claimed!`);
         setUser((u) => u ? { ...u, points: d.newBalance } : u);
         window.dispatchEvent(new Event("coins-updated"));
       } else {
@@ -373,7 +373,7 @@ export default function ProfilePage() {
               <div className="flex-1 min-w-0">
                 <p className="text-white font-semibold text-sm mb-0.5">You&apos;re in! Discord linked.</p>
                 <p className="text-gray-400 text-sm">
-                  Your Discord is connected. Now link your Kick username below so you can earn coins from chat and show up on the leaderboard.
+                  Your Discord is connected. Now link your Kick username below so you can earn Matty Coins from chat and show up on the leaderboard.
                 </p>
                 <button
                   onClick={() => {
@@ -435,7 +435,7 @@ export default function ProfilePage() {
           {/* Stats row: COINS + WAGERED */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-navy-900/60 border border-white/6 rounded-xl p-4 text-center">
-              <p className="text-gray-400 text-xs font-semibold tracking-widest uppercase mb-2">Coins</p>
+              <p className="text-gray-400 text-xs font-semibold tracking-widest uppercase mb-2">Matty Coins</p>
               <p className="text-white font-gaming font-bold text-3xl leading-none">
                 {user.points.toLocaleString()}
               </p>
@@ -461,7 +461,7 @@ export default function ProfilePage() {
           <div className="w-10 h-10 rounded-full bg-gold-500/15 flex items-center justify-center shrink-0 text-xl">🎁</div>
           <div className="flex-1 min-w-0">
             <p className="text-white font-semibold text-sm">Daily Check-in</p>
-            <p className="text-gray-400 text-xs mt-0.5">Claim 5 free coins every day just for visiting.</p>
+            <p className="text-gray-400 text-xs mt-0.5">Claim 5 free Matty Coins every day just for visiting.</p>
             {checkinMsg && (
               <p className={`text-xs mt-1 ${checkinMsg.includes("+") ? "text-green-400" : "text-gray-400"}`}>{checkinMsg}</p>
             )}
@@ -475,7 +475,7 @@ export default function ProfilePage() {
                 : "bg-gold-500 hover:bg-gold-600 text-white"
             }`}
           >
-            {checkinLoading ? "..." : checkinClaimed ? "Claimed ✓" : "Claim 5 Coins"}
+            {checkinLoading ? "..." : checkinClaimed ? "Claimed ✓" : "Claim 5 Matty Coins"}
           </button>
         </motion.div>
 
@@ -578,7 +578,7 @@ export default function ProfilePage() {
             <h3 className="text-white font-semibold">Link Your Kick Account</h3>
           </div>
           <p className="text-gray-400 text-sm mb-5 ml-3.5">
-            Verify your Kick username to earn coins from chat and appear on the leaderboard.
+            Verify your Kick username to earn Matty Coins from chat and appear on the leaderboard.
           </p>
 
           {kickVerified ? (
@@ -590,7 +590,7 @@ export default function ProfilePage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[#53FC18] font-semibold text-sm">Kick account verified</p>
-                <p className="text-gray-400 text-xs truncate">{user.kickUsername} · Earning coins for chat &amp; viewing</p>
+                <p className="text-gray-400 text-xs truncate">{user.kickUsername} · Earning Matty Coins for chat &amp; viewing</p>
               </div>
               <button onClick={handleUnlinkKick} className="text-gray-400 hover:text-red-400 text-xs transition-colors shrink-0">
                 Unlink
@@ -650,7 +650,8 @@ export default function ProfilePage() {
                   </svg>
                 </span>
               </div>
-              <p className="text-gray-400 text-xs text-center">
+              <p className="text-gray-400 text-xs text-center flex items-center justify-center gap-2">
+                <span className="w-3 h-3 border-2 border-[#53FC18]/30 border-t-[#53FC18] rounded-full animate-spin shrink-0" />
                 Listening for your message… Expires in 10 minutes.
               </p>
               <button
@@ -752,7 +753,7 @@ export default function ProfilePage() {
             <div className="text-center py-8">
               <p className="text-gray-400 text-sm">Nothing here yet.</p>
               <p className="text-gray-400 text-xs mt-1">
-                Coins show up once you start earning from chat activity or games.
+                Matty Coins show up once you start earning from chat activity or games.
               </p>
             </div>
           ) : (

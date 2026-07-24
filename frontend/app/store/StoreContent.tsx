@@ -109,7 +109,7 @@ export default function StorePage({ initialData = null }: Props) {
             Shop
           </span>
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
-            Spend Your <span className="text-gold-400">Coins</span>
+            Spend Your <span className="text-gold-400">Matty Coins</span>
           </h1>
           <p className="text-gray-400 text-base">
             Limited items, exclusive drops. Once they&apos;re gone,
@@ -221,7 +221,7 @@ export default function StorePage({ initialData = null }: Props) {
           </div>
         </motion.div>
 
-        {/* How to earn coins */}
+        {/* How to earn Matty Coins */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -229,7 +229,7 @@ export default function StorePage({ initialData = null }: Props) {
           className="mt-12 bg-navy-800/40 border border-white/5 rounded-xl p-6"
         >
           <h3 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">
-            How to Earn Coins
+            How to Earn Matty Coins
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-400">
             <div className="flex items-start gap-3">
@@ -237,7 +237,7 @@ export default function StorePage({ initialData = null }: Props) {
               <div>
                 <p className="text-gray-300 font-medium">Watch Streams</p>
                 <p>
-                  Link your Kick account and earn coins for watching live
+                  Link your Kick account and earn Matty Coins for watching live
                   streams
                 </p>
               </div>
@@ -246,7 +246,7 @@ export default function StorePage({ initialData = null }: Props) {
               <span className="text-gold-400 mt-0.5">02</span>
               <div>
                 <p className="text-gray-300 font-medium">Guess the Balance</p>
-                <p>Win coin rewards by correctly predicting bonus hunt endings</p>
+                <p>Win Matty Coin rewards by correctly predicting bonus hunt endings</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -254,7 +254,7 @@ export default function StorePage({ initialData = null }: Props) {
               <div>
                 <p className="text-gray-300 font-medium">Community Events</p>
                 <p>
-                  Participate in giveaways and events for bonus coin rewards
+                  Participate in giveaways and events for bonus Matty Coin rewards
                 </p>
               </div>
             </div>

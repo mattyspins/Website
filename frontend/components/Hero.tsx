@@ -71,8 +71,8 @@ export default function Hero() {
           transition={{ delay: delay(REVEAL_DELAY + 0.2), duration: 0.4, ease: EASE }}
           className="text-premtext-secondary text-base md:text-lg mb-10 max-w-2xl mx-auto leading-relaxed"
         >
-          Earn coins just for watching on Kick. Compete on live wager
-          leaderboards, play stream games, and redeem your coins for exclusive
+          Earn Matty Coins just for watching on Kick. Compete on live wager
+          leaderboards, play stream games, and redeem your Matty Coins for exclusive
           rewards.
         </motion.p>
 
@@ -140,8 +140,8 @@ export default function Hero() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
           {[
             { href: "/leaderboard", icon: Trophy, title: "Leaderboard", desc: "Compete for cash prizes in monthly wager races" },
-            { href: "/bonus-hunt", icon: Target, title: "Guess the Balance", desc: "Predict bonus hunt endings and earn coins" },
-            { href: "/store", icon: Coins, title: "Coin Store", desc: "Spend your coins on exclusive drops and rewards" },
+            { href: "/bonus-hunt", icon: Target, title: "Guess the Balance", desc: "Predict bonus hunt endings and earn Matty Coins" },
+            { href: "/store", icon: Coins, title: "Matty Coin Store", desc: "Spend your Matty Coins on exclusive drops and rewards" },
           ].map(({ href, icon: Icon, title, desc }, i) => (
             <motion.div
               key={href}

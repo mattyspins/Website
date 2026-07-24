@@ -121,7 +121,7 @@ export default function ActivationChecklist() {
       title: "Link your Kick account",
       desc: steps.kick.pending
         ? `Waiting on verification for ${steps.kick.username}.`
-        : "This is what earns you coins for watching the stream.",
+        : "This is what earns you Matty Coins for watching the stream.",
       done: steps.kick.done,
       pending: steps.kick.pending,
       href: "/profile",
@@ -130,7 +130,7 @@ export default function ActivationChecklist() {
     {
       key: "checkin",
       title: "Claim your daily check-in",
-      desc: `Free ${steps.dailyCheckIn.reward} coins, every day. Takes one click.`,
+      desc: `Free ${steps.dailyCheckIn.reward} Matty Coins, every day. Takes one click.`,
       done: steps.dailyCheckIn.done,
       pending: false,
       onClaim: handleClaim,
@@ -138,7 +138,7 @@ export default function ActivationChecklist() {
     {
       key: "raffle",
       title: "Enter your first raffle",
-      desc: "Spend coins on tickets for a shot at the prize pool.",
+      desc: "Spend Matty Coins on tickets for a shot at the prize pool.",
       done: steps.firstRaffle.done,
       pending: false,
       href: "/raffle",

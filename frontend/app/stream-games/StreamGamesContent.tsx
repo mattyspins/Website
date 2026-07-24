@@ -53,8 +53,8 @@ const GAMES: Game[] = [
     icon: <span className="text-xl leading-none">🐉</span>, color: "text-amber-400", iconBg: "bg-amber-500/15", border: "border-amber-500/20",
     badge: "NEW", badgeColor: "bg-amber-500/15 text-amber-400 border-amber-500/30",
     description: "A cooperative community stream game. Viewers join the raid, take turns picking a slot, and every multiplier lands as damage on a shared boss with real HP and unique abilities. Land the most damage to top the leaderboard and earn rewards when the boss falls 🐉",
-    howItWorks: ["Type the raid keyword shown on stream to join", "One viewer is drawn at a time to pick a slot with !slot <name>", "The streamer plays it — the multiplier becomes damage to the boss", "Different bosses have unique passive abilities that change the fight", "Top 3 damage dealers earn coin rewards when the boss is defeated 🏆"],
-    rewards: ["Website coins", "Community rewards", "Bragging rights on the leaderboard"],
+    howItWorks: ["Type the raid keyword shown on stream to join", "One viewer is drawn at a time to pick a slot with !slot <name>", "The streamer plays it — the multiplier becomes damage to the boss", "Different bosses have unique passive abilities that change the fight", "Top 3 damage dealers earn Matty Coin rewards when the boss is defeated 🏆"],
+    rewards: ["Website Matty Coins", "Community rewards", "Bragging rights on the leaderboard"],
     note: "Only one raid boss is active at a time — watch stream for the keyword 👊",
     link: "/boss-raid", linkLabel: "View Live Boss Raid",
   },
@@ -65,7 +65,7 @@ const GAMES: Game[] = [
     badge: "NEW", badgeColor: "bg-amber-500/15 text-amber-400 border-amber-500/30",
     description: "Matty secretly sets a target multiplier. Hunters join the pool, take turns playing a slot, and whoever lands closest to the hidden target claims the bounty pot. Nobody close enough? The bounty rolls over — bigger pot, wider claim zone, new secret target 🎯",
     howItWorks: ["Type the bounty keyword shown on stream to join (optionally with a slot)", "One hunter is drawn at a time and plays their slot", "Each result's distance from the secret target is revealed as a heat level — never the target itself", "Landing inside the claim zone qualifies you for the bounty", "The closest qualifying shot claims the pot when Matty settles the bounty", "Nobody qualifies? The bounty rolls over with a bigger pot and wider claim zone 🔥"],
-    rewards: ["Website coins", "Community rewards", "Bragging rights on the bounty board"],
+    rewards: ["Website Matty Coins", "Community rewards", "Bragging rights on the bounty board"],
     note: "Only one bounty is active at a time — watch stream for the keyword 👊",
     link: "/bounty-hunter", linkLabel: "View Live Bounty Hunter",
   },
@@ -115,8 +115,8 @@ const GAMES: Game[] = [
     icon: <Globe className="w-6 h-6" />, color: "text-yellow-400", iconBg: "bg-yellow-500/15", border: "border-yellow-500/20",
     badge: "NEW", badgeColor: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
     description: "Chat nominates the slots with !wc, the top picks are seeded into a single-elimination bracket, and every viewer predicts the winner of every matchup. Score points round by round, earn upset and perfect bracket bonuses, and climb the live leaderboard.",
-    howItWorks: ["Nominate a slot in chat with !wc <slot name>", "The most-voted slots are seeded into the bracket", "Predict every matchup before the first round starts", "Predictions lock automatically once the bracket goes live", "Score points for correct picks — more for later rounds", "Top predictors win coins when the champion is crowned 🏆"],
-    rewards: ["Website coins", "Leaderboard bragging rights", "Perfect bracket bonus"],
+    howItWorks: ["Nominate a slot in chat with !wc <slot name>", "The most-voted slots are seeded into the bracket", "Predict every matchup before the first round starts", "Predictions lock automatically once the bracket goes live", "Score points for correct picks — more for later rounds", "Top predictors win Matty Coins when the champion is crowned 🏆"],
+    rewards: ["Website Matty Coins", "Leaderboard bragging rights", "Perfect bracket bonus"],
     note: "Get your prediction bracket in before the first matchup starts — it locks automatically 👊",
     link: "/slot-world-cup", linkLabel: "View Slot World Cup",
   },
@@ -272,7 +272,7 @@ function RaffleList() {
   return (
     <div className="space-y-4">
       {isLoggedIn && (
-        <p className="text-gold-400 text-sm font-semibold">Balance: <span className="font-gaming">{userCoins.toLocaleString()}</span> coins</p>
+        <p className="text-gold-400 text-sm font-semibold">Balance: <span className="font-gaming">{userCoins.toLocaleString()}</span> Matty Coins</p>
       )}
       {raffles.length === 0 && (
         <div className="text-center py-6">
@@ -299,7 +299,7 @@ function RaffleList() {
               </div>
               <div className="shrink-0 bg-gold-500/10 border border-gold-500/20 rounded-lg px-2.5 py-1 text-center">
                 <p className="text-gold-400 font-bold text-sm leading-none">{raffle.ticketPrice}</p>
-                <p className="text-gray-400 text-[10px]">coins</p>
+                <p className="text-gray-400 text-[10px]">Matty Coins</p>
               </div>
             </div>
             {raffle.description && <p className="text-gray-400 text-xs mb-2">{raffle.description}</p>}
@@ -329,7 +329,7 @@ function RaffleList() {
                 </select>
                 <button onClick={() => handleBuy(raffle)} disabled={buying === raffle.id || userCoins < totalCost}
                   className="flex-1 bg-gold-500 hover:bg-gold-600 disabled:opacity-40 text-white font-bold py-2 rounded-lg text-xs tracking-wider uppercase transition-all">
-                  {buying === raffle.id ? "…" : `Buy · ${totalCost} coins`}
+                  {buying === raffle.id ? "…" : `Buy · ${totalCost} Matty Coins`}
                 </button>
               </div>
             )}

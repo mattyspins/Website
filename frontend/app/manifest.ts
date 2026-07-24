@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "MattySpins — Watch, play, and earn",
     short_name: "MattySpins",
     description:
-      "Earn coins for watching the stream, compete on live leaderboards, play stream games, and redeem rewards.",
+      "Earn Matty Coins for watching the stream, compete on live leaderboards, play stream games, and redeem rewards.",
     start_url: "/",
     scope: "/",
     display: "standalone",

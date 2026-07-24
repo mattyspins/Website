@@ -126,7 +126,7 @@ export default function BonusHuntPage() {
             </h1>
           </div>
           <p className="text-gray-300 text-base sm:text-lg">
-            Predict the final balance of bonus hunts and win coins!
+            Predict the final balance of bonus hunts and win Matty Coins!
           </p>
         </motion.div>
 

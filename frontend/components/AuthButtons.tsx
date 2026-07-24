@@ -200,7 +200,7 @@ export default function AuthButtons({ inline = false, onNavigate }: AuthButtonsP
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-white font-semibold text-sm truncate">{user.displayName}</p>
-              <p className="text-gold-400 text-xs font-medium">{user.points.toLocaleString()} coins</p>
+              <p className="text-gold-400 text-xs font-medium">{user.points.toLocaleString()} Matty Coins</p>
             </div>
             {(user.isAdmin || user.isModerator) && (
               <span className="text-xs px-1.5 py-0.5 rounded font-bold bg-gold-500/20 text-gold-400 border border-gold-500/30 shrink-0">

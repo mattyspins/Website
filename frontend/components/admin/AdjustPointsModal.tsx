@@ -24,7 +24,7 @@ export default function AdjustPointsModal({ userIds, userLabel, onClose, onSucce
   const submit = async () => {
     const amountNum = parseInt(amount, 10);
     if (!amountNum || Number.isNaN(amountNum)) {
-      error("Invalid amount", "Enter a non-zero number of coins.");
+      error("Invalid amount", "Enter a non-zero number of Matty Coins.");
       return;
     }
     if (!reason.trim()) {
@@ -42,7 +42,7 @@ export default function AdjustPointsModal({ userIds, userLabel, onClose, onSucce
         body: JSON.stringify(isBulk ? { userIds, amount: amountNum, reason } : { amount: amountNum, reason }),
       });
       if (res.ok) {
-        success("Points adjusted", `${amountNum > 0 ? "+" : ""}${amountNum.toLocaleString()} coins for ${userLabel}.`);
+        success("Points adjusted", `${amountNum > 0 ? "+" : ""}${amountNum.toLocaleString()} Matty Coins for ${userLabel}.`);
         onSuccess();
       } else {
         const data = await res.json().catch(() => ({}));

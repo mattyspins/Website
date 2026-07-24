@@ -39,7 +39,7 @@ function LineCelebration({
         <div className="text-5xl animate-bounce">🏆</div>
         <p className="text-green-300 font-black text-2xl tracking-tight">BINGO!</p>
         <p className="text-white font-semibold text-lg">{label} complete!</p>
-        <p className="text-yellow-400 font-bold text-base">+{points.toLocaleString()} coins to all claimers</p>
+        <p className="text-yellow-400 font-bold text-base">+{points.toLocaleString()} Matty Coins to all claimers</p>
         <button onClick={onDone} className="mt-1 text-white/45 hover:text-white/60 text-xs transition-colors">dismiss</button>
       </div>
     </div>
@@ -88,7 +88,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (g:
           ))}
         </div>
 
-        <label className="block text-sm text-white/60 mb-2">Coins per line win</label>
+        <label className="block text-sm text-white/60 mb-2">Matty Coins per line win</label>
         <div className="grid grid-cols-4 gap-2 mb-2">
           {[250, 500, 1000, 2500].map(n => (
             <button
@@ -109,7 +109,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (g:
             onChange={e => setForm({ ...form, linePoints: Number(e.target.value) })}
             className="w-28 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-green-400/50"
           />
-          <span className="text-xs text-white/50">coins</span>
+          <span className="text-xs text-white/50">Matty Coins</span>
         </div>
 
         <div className="flex gap-2">
@@ -437,7 +437,7 @@ export default function AdminBingoPage() {
                 <div>
                   <h2 className="text-lg font-bold text-white">{selected.title}</h2>
                   <p className="text-sm text-white/50 mt-0.5">
-                    {selected.gridSize}×{selected.gridSize} · {selected.linePoints.toLocaleString()} coins/line · {selected.participants.length} participants
+                    {selected.gridSize}×{selected.gridSize} · {selected.linePoints.toLocaleString()} Matty Coins/line · {selected.participants.length} participants
                   </p>
                 </div>
 
@@ -651,7 +651,7 @@ export default function AdminBingoPage() {
                             {winnerNames.length > 0 ? `Winners: ${winnerNames.join(", ")}` : "No claimers"}
                           </p>
                         </div>
-                        <span className="text-yellow-400 font-bold text-sm shrink-0">+{lw.pointsEach.toLocaleString()} coins each</span>
+                        <span className="text-yellow-400 font-bold text-sm shrink-0">+{lw.pointsEach.toLocaleString()} Matty Coins each</span>
                       </div>
                     );
                   })}

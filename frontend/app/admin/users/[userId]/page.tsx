@@ -222,8 +222,8 @@ export default function AdminUserPage() {
       if (res.ok) {
         setUser((u) => u ? { ...u, points: u.points + amount } : u);
         setCoinsAmount(""); setCoinsReason("");
-        setCoinsMsg(`✓ ${coinsOp === "add" ? "Added" : "Removed"} ${Math.abs(amount).toLocaleString()} coins`);
-      } else { setCoinsMsg("Failed to update coins."); }
+        setCoinsMsg(`✓ ${coinsOp === "add" ? "Added" : "Removed"} ${Math.abs(amount).toLocaleString()} Matty Coins`);
+      } else { setCoinsMsg("Failed to update Matty Coins."); }
     } catch { setCoinsMsg("Network error."); } finally { setCoinsSaving(false); }
   };
 
@@ -323,7 +323,7 @@ export default function AdminUserPage() {
   const totalEntries = engagement?.games.reduce((n, g) => n + g.entries, 0) ?? 0;
 
   const stats = [
-    { icon: <Coins className="w-4 h-4" />,        label: "BALANCE",            value: user.points.toLocaleString(),                            accent: "#4fbfd1", valueColor: "#e8e8ec" },
+    { icon: <Coins className="w-4 h-4" />,        label: "MATTY COINS",            value: user.points.toLocaleString(),                            accent: "#4fbfd1", valueColor: "#e8e8ec" },
     { icon: <TrendingUp className="w-4 h-4" />,   label: "TOTAL EARNED",       value: (user.totalEarned ?? 0).toLocaleString(),                accent: "#4fd18b", valueColor: "#4fd18b" },
     { icon: <ShoppingCart className="w-4 h-4" />, label: "TOTAL SPENT",        value: (user.totalSpent ?? 0).toLocaleString(),                 accent: "#f16060", valueColor: "#e8e8ec" },
     { icon: <Trophy className="w-4 h-4" />,       label: "WAGERED (WEEK)",     value: `$${Number(user.weeklyWagered ?? 0).toLocaleString()}`,  accent: ACCENT,    valueColor: "#e8e8ec" },
@@ -651,7 +651,7 @@ export default function AdminUserPage() {
             {/* ADJUST COINS */}
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }}>
               <Card className="p-[22px]">
-                <h2 className="font-mono text-[13px] font-semibold tracking-[1.5px] mb-1.5">ADJUST COINS</h2>
+                <h2 className="font-mono text-[13px] font-semibold tracking-[1.5px] mb-1.5">ADJUST MATTY COINS</h2>
                 <div className="text-[12.5px] text-[#8a8a93] mb-4">Current balance: <b style={{ color: ACCENT }}>{user.points.toLocaleString()}</b></div>
                 <div className="flex gap-2 mb-3">
                   <button onClick={() => setCoinsOp("add")}
@@ -668,7 +668,7 @@ export default function AdminUserPage() {
                 {/* Labels are visually hidden (the card heading already gives
                     context) but present for screen readers — a placeholder is
                     not a label: it disappears on first keystroke. */}
-                <label htmlFor="coins-amount" className="sr-only">Amount of coins</label>
+                <label htmlFor="coins-amount" className="sr-only">Amount of Matty Coins</label>
                 <input id="coins-amount" type="number" min="1" value={coinsAmount} onChange={(e) => setCoinsAmount(e.target.value)} placeholder="Amount"
                   className="w-full px-3 py-2.5 mb-2.5 rounded-[9px] bg-surface text-content text-[13px] border border-white/10 focus:outline-none focus:border-warning/40" />
                 <label htmlFor="coins-reason" className="sr-only">Reason for adjustment (required)</label>
@@ -747,17 +747,17 @@ export default function AdminUserPage() {
 
             {showCoinsConfirm && (
               <ConfirmDialog
-                title={coinsOp === "add" ? "Add coins?" : "Remove coins?"}
+                title={coinsOp === "add" ? "Add Matty Coins?" : "Remove Matty Coins?"}
                 // State the exact before → after so the admin confirms a number,
                 // not an intention.
                 message={
-                  `${coinsOp === "add" ? "Add" : "Remove"} ${Math.abs(Number(coinsAmount) || 0).toLocaleString()} coins ` +
+                  `${coinsOp === "add" ? "Add" : "Remove"} ${Math.abs(Number(coinsAmount) || 0).toLocaleString()} Matty Coins ` +
                   `${coinsOp === "add" ? "to" : "from"} ${user.displayName}. ` +
                   `Balance will go from ${user.points.toLocaleString()} to ` +
                   `${(user.points + (coinsOp === "add" ? 1 : -1) * Math.abs(Number(coinsAmount) || 0)).toLocaleString()}. ` +
                   `Reason: "${coinsReason.trim()}". This is recorded in the audit log.`
                 }
-                confirmText={coinsOp === "add" ? "Add coins" : "Remove coins"}
+                confirmText={coinsOp === "add" ? "Add Matty Coins" : "Remove Matty Coins"}
                 confirmColor={coinsOp === "add" ? "green" : "red"}
                 loading={coinsSaving}
                 onCancel={() => setShowCoinsConfirm(false)}

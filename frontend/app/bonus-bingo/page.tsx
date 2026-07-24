@@ -206,7 +206,7 @@ function LineCelebration({
         <div className="text-5xl animate-bounce">🏆</div>
         <p className="text-green-300 font-black text-2xl tracking-tight">BINGO!</p>
         <p className="text-white font-semibold text-lg">{label} complete!</p>
-        <p className="text-yellow-400 font-bold text-base">+{points.toLocaleString()} coins to all claimers</p>
+        <p className="text-yellow-400 font-bold text-base">+{points.toLocaleString()} Matty Coins to all claimers</p>
         <button onClick={onDone} className="mt-1 text-white/45 hover:text-white/60 text-xs transition-colors">dismiss</button>
       </div>
     </div>
@@ -239,7 +239,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
               { text: "Matty plays that bonus live on stream", highlight: null },
               { text: "Bonus profits → the square turns green 🟩 and the viewer claims it", highlight: null },
               { text: "Bonus doesn't profit → the square resets and can be spun again later", highlight: null },
-              { text: "Complete a full line (row, column, or diagonal) → coins awarded to every claimer on that line!", highlight: null },
+              { text: "Complete a full line (row, column, or diagonal) → Matty Coins awarded to every claimer on that line!", highlight: null },
             ].map(({ text, highlight }, i) => (
               <li key={i} className="flex gap-3">
                 <span className="text-green-400 font-bold shrink-0 w-4">{i + 1}.</span>
@@ -274,7 +274,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
           <div className="bg-white/5 border border-white/8 rounded-xl p-4">
             <p className="text-white font-bold mb-2 text-xs uppercase tracking-widest">🎁 Rewards</p>
             <div className="flex flex-wrap gap-2">
-              {["Website coins", "Giveaway entries", "Community rewards", "Special events"].map((r) => (
+              {["Website Matty Coins", "Giveaway entries", "Community rewards", "Special events"].map((r) => (
                 <span key={r} className="bg-white/5 border border-white/10 text-white/60 text-xs px-3 py-1 rounded-lg">{r}</span>
               ))}
             </div>
@@ -409,7 +409,7 @@ export default function BonusBingoPage() {
             </span>
           </h1>
           <p className="text-white/45 text-base sm:text-lg max-w-lg mx-auto">
-            Complete a line on the bingo board to win coins. A wheel picks the square, a viewer picks the slot.
+            Complete a line on the bingo board to win Matty Coins. A wheel picks the square, a viewer picks the slot.
           </p>
           <div className="flex items-center justify-center gap-3 mt-6">
             <button
@@ -445,7 +445,7 @@ export default function BonusBingoPage() {
                     </span>
                   </div>
                   <p className="text-white/50 text-sm mt-1">
-                    {activeGame.gridSize}×{activeGame.gridSize} grid · {activeGame.linePoints.toLocaleString()} coins per line · {activeGame.participants.length} participants
+                    {activeGame.gridSize}×{activeGame.gridSize} grid · {activeGame.linePoints.toLocaleString()} Matty Coins per line · {activeGame.participants.length} participants
                   </p>
                 </div>
 
@@ -570,7 +570,7 @@ export default function BonusBingoPage() {
                             <p className="text-white/50 text-xs mt-0.5">Winners: {winnerNames.join(", ")}</p>
                           )}
                         </div>
-                        <span className="text-yellow-400 font-bold text-sm shrink-0">+{lw.pointsEach.toLocaleString()} coins each</span>
+                        <span className="text-yellow-400 font-bold text-sm shrink-0">+{lw.pointsEach.toLocaleString()} Matty Coins each</span>
                       </div>
                     );
                   })}

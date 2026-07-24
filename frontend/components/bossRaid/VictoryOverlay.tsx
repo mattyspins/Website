@@ -54,7 +54,7 @@ export default function VictoryOverlay({ raid, onClose }: { raid: BossRaid; onCl
               <div style={{ fontWeight: 800, fontSize: 14, marginTop: 6 }}>{p.user.displayName}</div>
               <div style={{ fontSize: 11, color: "oklch(0.6 0.02 260)" }}>🎰 {p.slotName ?? "—"}</div>
               <div style={{ fontFamily: "'Orbitron',sans-serif", fontWeight: 800, fontSize: 15, color: "oklch(0.85 0.14 85)", marginTop: 4 }}>{p.damage.toLocaleString()} dmg</div>
-              <div style={{ fontSize: 12, color: "oklch(0.8 0.13 85)", fontWeight: 700, marginTop: 2 }}>🪙 {REWARD_COINS[i]} coins</div>
+              <div style={{ fontSize: 12, color: "oklch(0.8 0.13 85)", fontWeight: 700, marginTop: 2 }}>🪙 {REWARD_COINS[i]} Matty Coins</div>
             </div>
           ))}
         </div>

@@ -106,7 +106,7 @@ function LineAlertBanner({ alert, onDone }: { alert: { lineType: string; lineInd
         <div className="text-5xl animate-bounce">🏆</div>
         <p className="text-green-300 font-black text-4xl tracking-tight">BINGO!</p>
         <p className="text-white font-semibold text-base">{lineLabel(alert.lineType, alert.lineIndex)} complete!</p>
-        <p className="text-yellow-400 font-bold text-sm">+{alert.points.toLocaleString()} coins</p>
+        <p className="text-yellow-400 font-bold text-sm">+{alert.points.toLocaleString()} Matty Coins</p>
       </div>
     </div>
   );

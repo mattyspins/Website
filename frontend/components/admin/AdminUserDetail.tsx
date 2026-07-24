@@ -127,9 +127,9 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
       if (res.ok) {
         setUser((u) => u ? { ...u, points: u.points + amount } : u);
         setCoinsAmount(""); setCoinsReason("");
-        setCoinsMsg(`✓ ${coinsOp === "add" ? "Added" : "Removed"} ${Math.abs(amount).toLocaleString()} coins`);
+        setCoinsMsg(`✓ ${coinsOp === "add" ? "Added" : "Removed"} ${Math.abs(amount).toLocaleString()} Matty Coins`);
         onRefresh();
-      } else { setCoinsMsg("Failed to update coins."); }
+      } else { setCoinsMsg("Failed to update Matty Coins."); }
     } catch { setCoinsMsg("Network error."); } finally { setCoinsSaving(false); }
   };
 
@@ -291,7 +291,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
                     <div className="bg-navy-800/60 border border-white/6 rounded-xl px-4 py-3 flex items-center gap-3">
                       <Coins className="w-5 h-5 text-yellow-400 shrink-0" />
                       <div>
-                        <p className="text-gray-400 text-[10px] uppercase tracking-widest">Coins</p>
+                        <p className="text-gray-400 text-[10px] uppercase tracking-widest">Matty Coins</p>
                         <p className="text-white font-bold">{user.points.toLocaleString()}</p>
                       </div>
                     </div>
@@ -337,7 +337,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
 
                   {/* Adjust coins */}
                   <div className="bg-navy-800/60 border border-white/6 rounded-xl p-4 space-y-3">
-                    <p className="text-white text-xs font-bold uppercase tracking-widest">Adjust Coins</p>
+                    <p className="text-white text-xs font-bold uppercase tracking-widest">Adjust Matty Coins</p>
                     <div className="flex rounded-lg overflow-hidden border border-white/8">
                       <button onClick={() => setCoinsOp("add")} className={`flex-1 py-2 text-xs font-bold transition-colors ${coinsOp === "add" ? "bg-green-600 text-white" : "bg-black/30 text-gray-400"}`}>+ Add</button>
                       <button onClick={() => setCoinsOp("remove")} className={`flex-1 py-2 text-xs font-bold transition-colors ${coinsOp === "remove" ? "bg-red-600 text-white" : "bg-black/30 text-gray-400"}`}>− Remove</button>

@@ -155,14 +155,14 @@ function CreateModal({
               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/45 text-sm focus:outline-none focus:border-yellow-400/50 mb-2"
             />
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-xs text-white/50 shrink-0">Coins:</span>
+              <span className="text-xs text-white/50 shrink-0">Matty Coins:</span>
               {[100, 250, 500, 1000, 2500].map((v) => (
                 <button
                   key={v}
                   type="button"
-                  onClick={() => setForm({ ...form, prize: `${v} coins` })}
+                  onClick={() => setForm({ ...form, prize: `${v} Matty Coins` })}
                   className={`text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors ${
-                    form.prize === `${v} coins`
+                    form.prize === `${v} Matty Coins`
                       ? "bg-yellow-400 text-black border-yellow-400"
                       : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10"
                   }`}
@@ -191,7 +191,7 @@ function CreateModal({
           {/* Ticket Price */}
           <div>
             <label className="block text-sm text-white/60 mb-1">
-              Ticket Price (coins)
+              Ticket Price (Matty Coins)
             </label>
             <div className="grid grid-cols-4 gap-2 mb-2">
               {[50, 100, 250, 500].map((v) => (
@@ -232,7 +232,7 @@ function CreateModal({
                 <input
                   type="text"
                   inputMode="numeric"
-                  placeholder="coins"
+                  placeholder="Matty Coins"
                   value={customTicketPrice}
                   onChange={(e) => {
                     setCustomTicketPrice(e.target.value);
@@ -719,7 +719,7 @@ function ParticipantsModal({
                       {p.kickUsername ?? p.displayName}
                     </p>
                     <p className="text-white/45 text-xs">
-                      {p.totalSpent.toLocaleString()} coins spent
+                      {p.totalSpent.toLocaleString()} Matty Coins spent
                     </p>
                   </div>
                   <span className="text-yellow-400 text-sm font-bold shrink-0">
@@ -1043,7 +1043,7 @@ export default function AdminRafflePage() {
                     <span className="text-yellow-400 font-medium">
                       🎁 {selected.prize}
                     </span>
-                    <span>💎 {selected.ticketPrice} coins/ticket</span>
+                    <span>💎 {selected.ticketPrice} Matty Coins/ticket</span>
                     <span>
                       🏆 {selected.numberOfWinners} winner
                       {selected.numberOfWinners !== 1 ? "s" : ""}

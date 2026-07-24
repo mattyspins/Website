@@ -4,7 +4,7 @@ import { Ticket, Gift, ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Raffles",
-  description: "Two ways to win on MattySpins — spend coins on ticket raffles, or wager under the code to enter the weekly raffle automatically.",
+  description: "Two ways to win on MattySpins — spend Matty Coins on ticket raffles, or wager under the code to enter the weekly raffle automatically.",
   alternates: { canonical: "/raffles" },
 };
 
@@ -12,14 +12,14 @@ const RAFFLE_HUBS = [
   {
     id: "raffles",
     name: "Ticket Raffles",
-    tagline: "Spend coins on tickets for a chance to win prizes",
+    tagline: "Spend Matty Coins on tickets for a chance to win prizes",
     icon: <Ticket className="w-7 h-7" />,
     color: "text-gold-400",
     iconBg: "bg-gold-500/15",
     border: "border-gold-500/20",
     howItWorks: [
-      "Earn coins through stream activity, check-ins, and community games",
-      "Spend coins on raffle tickets — each ticket is one entry",
+      "Earn Matty Coins through stream activity, check-ins, and community games",
+      "Spend Matty Coins on raffle tickets — each ticket is one entry",
       "When the raffle ends, a winner is drawn at random",
       "Winners are announced in Discord — open a ticket to claim 🏆",
     ],
@@ -62,7 +62,7 @@ export default function Page() {
             RAFF<span className="text-gold-400">LES</span>
           </h1>
           <p className="text-gray-400 text-sm max-w-xl mx-auto">
-            Two ways to win — spend coins on ticket raffles, or just meet the weekly wager requirement to get entered automatically.
+            Two ways to win — spend Matty Coins on ticket raffles, or just meet the weekly wager requirement to get entered automatically.
           </p>
         </div>
 

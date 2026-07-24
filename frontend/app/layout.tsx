@@ -16,7 +16,7 @@ const SITE_NAME = "MattySpins";
 // who has never heard of the channel.
 const TAGLINE = "Watch, play, and earn — turn stream time into rewards";
 const DESCRIPTION =
-  "Earn coins just for watching MattySpins on Kick, compete on live wager leaderboards, play chat-driven stream games like Boss Raid and Bonus Bingo, and redeem your coins for real rewards.";
+  "Earn Matty Coins just for watching MattySpins on Kick, compete on live wager leaderboards, play chat-driven stream games like Boss Raid and Bonus Bingo, and redeem your Matty Coins for real rewards.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

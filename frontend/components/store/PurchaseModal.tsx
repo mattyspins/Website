@@ -156,7 +156,7 @@ export default function PurchaseModal({
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-400">Price per item:</span>
               <span className="text-yellow-400 font-semibold">
-                {item.price.toLocaleString()} coins
+                {item.price.toLocaleString()} Matty Coins
               </span>
             </div>
             {item.stock !== -1 && (
@@ -210,7 +210,7 @@ export default function PurchaseModal({
           {/* Purchase Summary */}
           <div className="bg-gray-800/50 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-gray-400">Your Coins:</span>
+              <span className="text-gray-400">Your Matty Coins:</span>
               <span className="text-white font-semibold">
                 {userPoints.toLocaleString()}
               </span>
@@ -254,7 +254,7 @@ export default function PurchaseModal({
                 <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0" />
                 <p className="text-yellow-300 text-sm">
                   You need {(totalPrice - userPoints).toLocaleString()} more
-                  coins for this purchase.
+                  Matty Coins for this purchase.
                 </p>
               </div>
             </div>

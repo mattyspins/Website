@@ -4,8 +4,8 @@ import { API_URL } from "@/lib/api";
 import type { StoreItem, StoreCategory } from "@/types/store";
 
 export const metadata: Metadata = {
-  title: "Coin Store",
-  description: "Spend your MattySpins coins on exclusive rewards and drops.",
+  title: "Matty Coin Store",
+  description: "Spend your MattySpins Matty Coins on exclusive rewards and drops.",
   alternates: { canonical: "/store" },
 };
 

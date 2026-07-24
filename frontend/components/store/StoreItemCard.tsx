@@ -92,7 +92,7 @@ export default function StoreItemCard({
           <span className="text-gold-400 font-bold text-2xl font-gaming">
             {item.price.toLocaleString()}
           </span>
-          <span className="text-gray-400 text-sm">coins</span>
+          <span className="text-gray-400 text-sm">Matty Coins</span>
         </div>
 
         {!isAuthenticated ? (
