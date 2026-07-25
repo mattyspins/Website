@@ -113,8 +113,11 @@ export class AuthService {
 
       const user = await prisma.user.upsert({
         where: { discordId: discordUser.id },
+        // displayName is intentionally NOT re-synced here on every login — once a
+        // user exists, their name (whether left as the Discord default or manually
+        // customized via the admin panel) is theirs to keep. Re-syncing it from
+        // Discord on every login was silently reverting admin-edited display names.
         update: {
-          displayName,
           avatarUrl,
           isAdmin,
           lastActiveAt: new Date(),
