@@ -18,6 +18,7 @@ export interface CreateTournamentDTO {
   title: string;
   maxPlayers: number;
   slotTimerSeconds: number;
+  keyword?: string;
 }
 
 export interface DrawWinnersDTO {
@@ -70,6 +71,7 @@ export interface TournamentResponse {
   id: string;
   title: string;
   status: TournamentStatus;
+  keyword: string;
   maxPlayers: number;
   slotTimerSeconds: number;
   currentRound: number;

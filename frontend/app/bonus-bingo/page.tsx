@@ -215,7 +215,7 @@ function LineCelebration({
 
 // ─── Rules Modal ──────────────────────────────────────────────────────────────
 
-function RulesModal({ onClose }: { onClose: () => void }) {
+function RulesModal({ onClose, keyword }: { onClose: () => void; keyword: string }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
@@ -232,7 +232,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
           {/* Steps */}
           <ol className="space-y-3">
             {[
-              { text: "Registration opens — join via the website or type !join in Kick chat (verified users only)", highlight: "!join" },
+              { text: `Registration opens — join via the website or type ${keyword} in Kick chat (verified users only)`, highlight: keyword },
               { text: "A random square on the bingo board is selected by the wheel", highlight: null },
               { text: "A random participant is drawn from the pool", highlight: null },
               { text: "The selected viewer picks their slot — on the website or by typing !slot <name> in Kick chat", highlight: "!slot <name>" },
@@ -260,7 +260,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
           <div className="bg-white/5 border border-white/8 rounded-xl p-4 space-y-2">
             <p className="text-white font-bold text-xs uppercase tracking-widest mb-3">💬 Kick Chat Commands</p>
             {[
-              { cmd: "!join <slot>", desc: "Join the game — the slot is optional and just sets your default pick for whenever you're drawn" },
+              { cmd: `${keyword} <slot>`, desc: "Join the game — the slot is optional and just sets your default pick for whenever you're drawn" },
               { cmd: "!slot <name>", desc: "Set (or change) your slot when you're the selected player" },
             ].map(({ cmd, desc }) => (
               <div key={cmd} className="flex items-start gap-3">
@@ -617,7 +617,7 @@ export default function BonusBingoPage() {
         )}
       </div>
 
-      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
+      {showRules && <RulesModal onClose={() => setShowRules(false)} keyword={activeGame?.keyword ?? "!join"} />}
 
       {lineAlert && (
         <LineCelebration

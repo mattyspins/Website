@@ -59,6 +59,7 @@ export class TournamentService {
       id: t.id,
       title: t.title,
       status: t.status as TournamentStatus,
+      keyword: t.keyword,
       maxPlayers: t.maxPlayers,
       slotTimerSeconds: t.slotTimerSeconds,
       currentRound: t.currentRound,
@@ -120,6 +121,7 @@ export class TournamentService {
     const tournament = await prisma.tournament.create({
       data: {
         title: dto.title,
+        keyword: dto.keyword?.trim() || '!jointourney',
         maxPlayers: dto.maxPlayers,
         slotTimerSeconds: dto.slotTimerSeconds,
         createdById: adminId,
@@ -127,6 +129,21 @@ export class TournamentService {
       include: { participants: { include: { user: true } }, matches: { include: { participants: { include: { participant: { include: { user: true } } } } } }, _count: { select: { entries: true } } },
     });
     return TournamentService.formatTournament(tournament);
+  }
+
+  // ─── ADMIN: Set keyword ─────────────────────────────────────────────────────
+
+  static async setKeyword(id: string, keyword: string, io?: SocketIOServer): Promise<TournamentResponse> {
+    const trimmed = keyword.trim();
+    if (!trimmed) throw createError(400, 'Keyword cannot be empty');
+    const t = await prisma.tournament.findUnique({ where: { id } });
+    if (!t) throw createError(404, 'Tournament not found');
+
+    await prisma.tournament.update({ where: { id }, data: { keyword: trimmed } });
+    const updated = await TournamentService.getTournamentWithRelations(id);
+    const response = await TournamentService.formatTournament(updated);
+    io?.to(`tournament:${id}`).emit('tournament:updated', response);
+    return response;
   }
 
   // ─── ADMIN: Open registration ──────────────────────────────────────────────

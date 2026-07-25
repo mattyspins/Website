@@ -13,10 +13,11 @@ import {
 import { API_ENDPOINTS } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { useConfirm } from "@/components/admin/useConfirm";
+import { useToast } from "@/components/ui/ToastProvider";
 
 // ─── Create Modal ─────────────────────────────────────────────────────────────
 function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t: Tournament) => void }) {
-  const [form, setForm] = useState({ title: "", maxPlayers: 8, slotTimerSeconds: 180 });
+  const [form, setForm] = useState({ title: "", maxPlayers: 8, slotTimerSeconds: 180, keyword: "!jointourney" });
   const [customMins, setCustomMins] = useState("");
   const [customPlayers, setCustomPlayers] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,6 +25,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
 
   const submit = async () => {
     if (!form.title.trim()) { setError("Title required"); return; }
+    if (!form.keyword.trim()) { setError("Entry keyword required"); return; }
     setLoading(true);
     setError(null);
     try {
@@ -50,6 +52,17 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
           className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white mb-4 focus:outline-none focus:border-yellow-400/50"
           placeholder="e.g. Sunday Showdown"
         />
+
+        <label className="block text-sm text-white/60 mb-1">Entry keyword</label>
+        <input
+          value={form.keyword}
+          onChange={(e) => setForm({ ...form, keyword: e.target.value })}
+          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white mb-1 focus:outline-none focus:border-yellow-400/50"
+          placeholder="!jointourney"
+        />
+        <p className="text-xs text-white/40 mb-4">
+          Viewers type this in Kick chat to enter the draw — the website &quot;Enter Draw&quot; button always works too.
+        </p>
 
         <label className="block text-sm text-white/60 mb-1">Max Players</label>
         <div className="grid grid-cols-4 gap-2 mb-2">
@@ -336,6 +349,7 @@ function DrawModal({
 // ─── Main Admin Page ──────────────────────────────────────────────────────────
 export default function AdminTournamentPage() {
   const router = useRouter();
+  const { success } = useToast();
   const [authLoading, setAuthLoading] = useState(true);
 
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -346,6 +360,7 @@ export default function AdminTournamentPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [showDraw, setShowDraw] = useState(false);
   const [winnerMatchId, setWinnerMatchId] = useState<string | null>(null);
+  const [keywordInput, setKeywordInput] = useState("");
   const { confirm, dialog: confirmDialog } = useConfirm();
 
   useEffect(() => {
@@ -373,6 +388,8 @@ export default function AdminTournamentPage() {
   }, []);
 
   useEffect(() => { loadTournaments(); }, [loadTournaments]);
+
+  useEffect(() => { setKeywordInput(selected?.keyword ?? ""); }, [selected?.id, selected?.keyword]);
 
   // WebSocket
   useEffect(() => {
@@ -441,6 +458,11 @@ export default function AdminTournamentPage() {
   const handleRevertWinner = async (matchId: string) => {
     if (!(await confirm({ title: "Revert this result?", message: "The match will go back to Active and the loser will be restored.", confirmText: "Revert", confirmColor: "yellow" }))) return;
     withAction(() => tournamentApi.revertMatchWinner(matchId));
+  };
+
+  const handleSaveKeyword = () => {
+    if (!selected || !keywordInput.trim()) return;
+    withAction(() => tournamentApi.setKeyword(selected.id, keywordInput.trim())).then(() => success("Keyword saved", ""));
   };
 
   if (authLoading || loading) {
@@ -587,6 +609,28 @@ export default function AdminTournamentPage() {
                     </button>
                   )}
                 </div>
+              </div>
+
+              {/* Entry keyword */}
+              <div className="mb-4 pb-4 border-b border-white/8">
+                <label className="block text-sm text-white/60 mb-1">Entry keyword</label>
+                <div className="flex items-center gap-2 max-w-sm">
+                  <input
+                    value={keywordInput}
+                    onChange={(e) => setKeywordInput(e.target.value)}
+                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-yellow-400/50"
+                  />
+                  <button
+                    onClick={handleSaveKeyword}
+                    disabled={actionLoading || keywordInput.trim() === selected.keyword}
+                    className="px-3 py-2 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-300 disabled:opacity-40 transition-colors text-sm whitespace-nowrap"
+                  >
+                    💾 Save
+                  </button>
+                </div>
+                <p className="text-xs text-white/40 mt-1">
+                  Viewers type this in Kick chat to enter — the website &quot;Enter Draw&quot; button is always available too.
+                </p>
               </div>
 
               {/* Slot selection participant list with reroll */}

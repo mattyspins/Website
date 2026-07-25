@@ -41,8 +41,13 @@ export const tournamentApi = {
   },
 
   // Admin
-  create: async (payload: { title: string; maxPlayers: number; slotTimerSeconds: number }): Promise<Tournament> => {
+  create: async (payload: { title: string; maxPlayers: number; slotTimerSeconds: number; keyword?: string }): Promise<Tournament> => {
     const data = await api.post('/api/tournaments', payload);
+    return data.tournament;
+  },
+
+  setKeyword: async (id: string, keyword: string): Promise<Tournament> => {
+    const data = await api.post(`/api/tournaments/${id}/keyword`, { keyword });
     return data.tournament;
   },
 

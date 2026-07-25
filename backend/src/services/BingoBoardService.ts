@@ -134,10 +134,11 @@ export class BingoBoardService {
   }
 
   static async create(
-    dto: { title: string; gridSize: number; linePoints: number },
+    dto: { title: string; gridSize: number; linePoints: number; keyword?: string },
     createdById: string
   ) {
     const { title, gridSize, linePoints } = dto;
+    const keyword = dto.keyword?.trim() || '!join';
     const cells: { row: number; col: number }[] = [];
     for (let r = 0; r < gridSize; r++) {
       for (let c = 0; c < gridSize; c++) {
@@ -148,6 +149,7 @@ export class BingoBoardService {
     const game = await prisma.bonusBingo.create({
       data: {
         title,
+        keyword,
         gridSize,
         linePoints,
         createdById,
@@ -158,6 +160,20 @@ export class BingoBoardService {
 
     logger.info(`Bingo game created: ${game.id} (${gridSize}x${gridSize})`);
     return toGameResponse(game);
+  }
+
+  static async setKeyword(id: string, keyword: string, io?: SocketIOServer) {
+    const trimmed = keyword.trim();
+    if (!trimmed) throw createError.badRequest('Keyword cannot be empty');
+    const game = await prisma.bonusBingo.findUnique({ where: { id } });
+    if (!game) throw createError.notFound('Bingo game not found');
+
+    const updated = await prisma.bonusBingo.update({
+      where: { id },
+      data: { keyword: trimmed },
+      include: BINGO_INCLUDE,
+    });
+    return this.broadcastAndReturn(io, id, updated);
   }
 
   static async openRegistration(id: string, io?: SocketIOServer) {

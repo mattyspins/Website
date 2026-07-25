@@ -148,12 +148,10 @@ export class KickChatService {
       await this.processVerification(kickUsername, match[1].toUpperCase());
     }
 
-    // Check for bingo join command: !join (optionally "!join <slot name>" as a default
-    // slot pre-filled whenever this viewer is next drawn — still overridable per cell)
-    const joinMatch = content.match(/^!join(?:\s+(.+))?$/i);
-    if (joinMatch) {
-      await this.processBingoJoin(kickUsername, joinMatch[1]?.trim() || null);
-    }
+    // Bingo entry keyword is admin-configurable per game (default "!join"), so look up
+    // the active game first and compare against its own keyword the same way Boss Raid's
+    // handleKeyword does — optionally followed by a slot name as a default pre-fill.
+    await this.processBingoJoinKeyword(kickUsername, content);
 
     // Check for slot selection command: !slot <name>
     const slotMatch = content.match(/^!slot\s+(.+)/i);
@@ -178,10 +176,8 @@ export class KickChatService {
     // above), so fetch the active session once and compare against its own keyword fields.
     await this.processHighRollerCommand(kickUsername, content);
 
-    // Check for tournament join command: !jointourney
-    if (content.trim().toLowerCase() === '!jointourney') {
-      await this.processTournamentJoin(kickUsername);
-    }
+    // Tournament entry keyword is admin-configurable per tournament (default "!jointourney")
+    await this.processTournamentJoin(kickUsername, content);
 
     // Slot World Cup nomination — command is admin-configurable per tournament
     // (set at creation, e.g. "!wc"), so look up the active one and compare
@@ -265,13 +261,24 @@ export class KickChatService {
   // "!join <slot>" from someone already in the pool updates their default slot for
   // future draws (BingoBoardService.join handles that — including refusing it if
   // they're mid-turn right now, since "!slot" is the right command for that).
-  private static async processBingoJoin(kickUsername: string, preferredSlot: string | null): Promise<void> {
-    const normalized = kickUsername.trim().toLowerCase();
-
-    // Find the bingo game open for registration or already active
+  private static async processBingoJoinKeyword(kickUsername: string, content: string): Promise<void> {
     const game = await prisma.bonusBingo.findFirst({
       where: { status: { in: [BingoStatus.REGISTRATION, BingoStatus.ACTIVE] } },
     });
+    if (!game) return;
+
+    const escaped = game.keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`^${escaped}(?:\\s+(.+))?$`, 'i');
+    const m = content.trim().match(re);
+    if (!m) return;
+
+    await this.processBingoJoin(kickUsername, game.id, m[1]?.trim() || null);
+  }
+
+  private static async processBingoJoin(kickUsername: string, gameId: string, preferredSlot: string | null): Promise<void> {
+    const normalized = kickUsername.trim().toLowerCase();
+
+    const game = await prisma.bonusBingo.findUnique({ where: { id: gameId } });
     if (!game) return;
 
     const existing = await prisma.bingoParticipant.findUnique({
@@ -334,7 +341,18 @@ export class KickChatService {
     }
   }
 
-  private static async processTournamentJoin(kickUsername: string): Promise<void> {
+  private static async processTournamentJoin(kickUsername: string, content: string): Promise<void> {
+    // Tournament join keyword is admin-configurable per tournament (default "!jointourney").
+    // Stays silent (no chat spam) if the message doesn't match any active tournament's
+    // keyword — the website's "Enter Draw" button remains a second, always-available way in.
+    const tournament = await prisma.tournament.findFirst({
+      where: { status: TournamentStatus.REGISTRATION },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, keyword: true },
+    });
+    if (!tournament) return;
+    if (content.trim().toLowerCase() !== tournament.keyword.trim().toLowerCase()) return;
+
     // Find the verified user by Kick username
     const user = await prisma.user.findFirst({
       where: { kickUsername: { equals: kickUsername, mode: 'insensitive' }, kickVerified: true },
@@ -345,19 +363,9 @@ export class KickChatService {
       return;
     }
 
-    const tournament = await prisma.tournament.findFirst({
-      where: { status: TournamentStatus.REGISTRATION },
-      orderBy: { createdAt: 'desc' },
-      select: { id: true },
-    });
-    if (!tournament) {
-      await this.sendChatMessage(`@${kickUsername} there's no tournament registration open right now.`);
-      return;
-    }
-
     try {
       await TournamentService.enterRaffle(tournament.id, user.id, this.io ?? undefined);
-      logger.info(`KickChatService: ${kickUsername} joined tournament ${tournament.id} via !jointourney`);
+      logger.info(`KickChatService: ${kickUsername} joined tournament ${tournament.id} via keyword`);
       await this.sendChatMessage(`🏆 @${kickUsername} has entered the tournament draw!`);
     } catch (err) {
       const message = (err as Error).message;

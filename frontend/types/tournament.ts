@@ -52,6 +52,7 @@ export interface Tournament {
   id: string;
   title: string;
   status: TournamentStatus;
+  keyword: string;
   maxPlayers: number;
   slotTimerSeconds: number;
   currentRound: number;

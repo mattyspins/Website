@@ -14,7 +14,10 @@ const createSchema = z.object({
   title: z.string().min(1).max(100),
   maxPlayers: z.number().int().min(2).max(64).default(8),
   slotTimerSeconds: z.number().int().min(60).max(600).default(180),
+  keyword: z.string().min(1).max(30).optional(),
 });
+
+const keywordSchema = z.object({ keyword: z.string().min(1).max(30) });
 
 const drawSchema = z.object({ count: z.number().int().min(2).max(64) });
 const slotSchema = z.object({ slotCall: z.string().min(1).max(100) });
@@ -27,6 +30,12 @@ export class TournamentController {
     const dto = createSchema.parse(req.body);
     const result = await TournamentService.create(dto, req.user!.id);
     res.status(201).json({ success: true, tournament: result });
+  });
+
+  static setKeyword = asyncHandler(async (req, res) => {
+    const { keyword } = keywordSchema.parse(req.body);
+    const result = await TournamentService.setKeyword(req.params.id, keyword, _io);
+    res.json({ success: true, tournament: result });
   });
 
   static openRegistration = asyncHandler(async (req, res) => {

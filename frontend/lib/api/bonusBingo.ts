@@ -36,6 +36,7 @@ export interface BingoGame {
   title: string;
   gridSize: number;
   status: "DRAFT" | "REGISTRATION" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+  keyword: string;
   linePoints: number;
   currentCellId: string | null;
   currentUserId: string | null;
@@ -61,8 +62,10 @@ export const bingoApi = {
     api.post(`/api/bonus-bingo/${id}/cells/${cellId}/slot`, { slotName }).then(d => d.game as BingoGame),
 
   // Admin
-  create: (data: { title: string; gridSize: number; linePoints: number }) =>
+  create: (data: { title: string; gridSize: number; linePoints: number; keyword?: string }) =>
     api.post(`/api/bonus-bingo`, data).then(d => d.game as BingoGame),
+  setKeyword: (id: string, keyword: string) =>
+    api.post(`/api/bonus-bingo/${id}/keyword`, { keyword }).then(d => d.game as BingoGame),
   openRegistration: (id: string) =>
     api.post(`/api/bonus-bingo/${id}/open-registration`).then(d => d.game as BingoGame),
   startGame: (id: string) => api.post(`/api/bonus-bingo/${id}/start`).then(d => d.game as BingoGame),

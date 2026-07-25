@@ -25,7 +25,10 @@ const createSchema = z.object({
   title: z.string().min(1).max(100),
   gridSize: z.number().int().refine(n => [3, 4, 5].includes(n), 'gridSize must be 3, 4, or 5').default(5),
   linePoints: z.number().int().min(1).max(100000).default(500),
+  keyword: z.string().min(1).max(30).optional(),
 });
+
+const keywordSchema = z.object({ keyword: z.string().min(1).max(30) });
 
 const slotSchema = z.object({ slotName: z.string().min(1).max(100) });
 const resultSchema = z.object({ won: z.boolean() });
@@ -48,6 +51,12 @@ export class BingoBoardController {
     const dto = createSchema.parse(req.body);
     const game = await BingoBoardService.create(dto, req.user!.id);
     res.status(201).json({ success: true, game });
+  });
+
+  static setKeyword = asyncHandler(async (req, res) => {
+    const { keyword } = keywordSchema.parse(req.body);
+    const game = await BingoBoardService.setKeyword(req.params.id, keyword, _io);
+    res.json({ success: true, game });
   });
 
   static openRegistration = asyncHandler(async (req, res) => {

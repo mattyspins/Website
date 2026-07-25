@@ -19,6 +19,7 @@ router.post('/:id/cells/:cellId/slot', authMiddleware, limiter, BingoBoardContro
 
 // Admin
 router.post('/', authMiddleware, adminMiddleware, adminLimiter, BingoBoardController.create);
+router.post('/:id/keyword', authMiddleware, adminMiddleware, adminLimiter, BingoBoardController.setKeyword);
 router.post('/:id/open-registration', authMiddleware, adminMiddleware, adminLimiter, BingoBoardController.openRegistration);
 router.post('/:id/start', authMiddleware, adminMiddleware, adminLimiter, BingoBoardController.startGame);
 router.post('/:id/spin-cell', authMiddleware, adminMiddleware, adminLimiter, BingoBoardController.spinCell);

@@ -8,6 +8,7 @@ import { getSocket } from "@/lib/socket";
 import SlotPicker from "@/components/SlotPicker";
 import { kickName, lineLabel, getLineWinners } from "@/lib/bingoUtils";
 import { useConfirm } from "@/components/admin/useConfirm";
+import { useToast } from "@/components/ui/ToastProvider";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -49,12 +50,13 @@ function LineCelebration({
 // ─── Create Modal ─────────────────────────────────────────────────────────────
 
 function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (g: BingoGame) => void }) {
-  const [form, setForm] = useState({ title: "", gridSize: 5, linePoints: 500 });
+  const [form, setForm] = useState({ title: "", gridSize: 5, linePoints: 500, keyword: "!join" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
     if (!form.title.trim()) { setError("Title required"); return; }
+    if (!form.keyword.trim()) { setError("Entry keyword required"); return; }
     setLoading(true); setError(null);
     try { onCreate(await bingoApi.create(form)); }
     catch (e: any) { setError(e.message); }
@@ -74,6 +76,17 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (g:
           className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white mb-5 focus:outline-none focus:border-green-400/50"
           placeholder="e.g. Friday Bingo #1"
         />
+
+        <label className="block text-sm text-white/60 mb-1">Entry keyword</label>
+        <input
+          value={form.keyword}
+          onChange={e => setForm({ ...form, keyword: e.target.value })}
+          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white mb-1 focus:outline-none focus:border-green-400/50"
+          placeholder="!join"
+        />
+        <p className="text-xs text-white/40 mb-5">
+          Viewers type this in Kick chat to join — optionally followed by their preferred slot name.
+        </p>
 
         <label className="block text-sm text-white/60 mb-2">Grid Size</label>
         <div className="grid grid-cols-3 gap-2 mb-5">
@@ -243,6 +256,7 @@ function AdminBingoGrid({
 
 export default function AdminBingoPage() {
   const router = useRouter();
+  const { success } = useToast();
   const [authLoading, setAuthLoading] = useState(true);
   const [games, setGames] = useState<BingoGame[]>([]);
   const [selected, setSelected] = useState<BingoGame | null>(null);
@@ -252,6 +266,7 @@ export default function AdminBingoPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [lineAlert, setLineAlert] = useState<{ lineType: string; lineIndex: number; points: number } | null>(null);
   const [includeWinners, setIncludeWinners] = useState(false);
+  const [keywordInput, setKeywordInput] = useState("");
   const { confirm, dialog: confirmDialog } = useConfirm();
 
   // Auth check
@@ -274,6 +289,8 @@ export default function AdminBingoPage() {
   }, []);
 
   useEffect(() => { loadGames(); }, [loadGames]);
+
+  useEffect(() => { setKeywordInput(selected?.keyword ?? ""); }, [selected?.id, selected?.keyword]);
 
   // Socket: keep selected game in sync
   useEffect(() => {
@@ -351,6 +368,10 @@ export default function AdminBingoPage() {
   };
   const handleSetSlot = (cellId: string, slotName: string) =>
     withAction(() => bingoApi.setSlot(selected!.id, cellId, slotName));
+  const handleSaveKeyword = () => {
+    if (!selected || !keywordInput.trim()) return;
+    withAction(() => bingoApi.setKeyword(selected.id, keywordInput.trim())).then(() => success("Keyword saved", ""));
+  };
 
   if (authLoading || loading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -497,6 +518,28 @@ export default function AdminBingoPage() {
                     </button>
                   )}
                 </div>
+              </div>
+
+              {/* Entry keyword */}
+              <div className="mb-4 pb-4 border-b border-white/8">
+                <label className="block text-sm text-white/60 mb-1">Entry keyword</label>
+                <div className="flex items-center gap-2 max-w-sm">
+                  <input
+                    value={keywordInput}
+                    onChange={(e) => setKeywordInput(e.target.value)}
+                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green-400/50"
+                  />
+                  <button
+                    onClick={handleSaveKeyword}
+                    disabled={actionLoading || keywordInput.trim() === selected.keyword}
+                    className="px-3 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-400 disabled:opacity-40 transition-colors text-sm whitespace-nowrap"
+                  >
+                    💾 Save
+                  </button>
+                </div>
+                <p className="text-xs text-white/40 mt-1">
+                  Viewers type this in Kick chat to join — optionally followed by their preferred slot name.
+                </p>
               </div>
 
               {/* Participant list — always visible, admin can remove */}

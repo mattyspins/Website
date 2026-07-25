@@ -420,6 +420,7 @@ model Tournament {
   id               String                  @id @default(uuid())
   title            String
   status           TournamentStatus        @default(DRAFT)
+  keyword          String                  @default("!jointourney") @map("keyword")
   maxPlayers       Int                     @default(8) @map("max_players")
   slotTimerSeconds Int                     @default(180) @map("slot_timer_seconds")
   currentRound     Int                     @default(0) @map("current_round")
@@ -785,6 +786,7 @@ enum CellStatus {
 model BonusBingo {
   id                  String             @id @default(uuid())
   title               String
+  keyword             String             @default("!join") @map("keyword")
   gridSize            Int                @default(5) @map("grid_size")
   status              BingoStatus        @default(DRAFT)
   linePoints          Int                @default(500) @map("line_points")
