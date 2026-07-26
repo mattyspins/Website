@@ -7,6 +7,7 @@ import {
   ArrowLeft, Coins, Trophy, Clock, Check, Activity, Link as LinkIcon,
   Shield, Star, UserCheck, Ban, TrendingUp, ShoppingCart, Monitor, Receipt,
   Gamepad2, Ticket, Gift, Target, Zap, Grid3x3, Dices, Swords, Crosshair, Mountain,
+  Pencil, X,
 } from "lucide-react";
 import { API_ENDPOINTS } from "@/lib/api";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -151,6 +152,12 @@ export default function AdminUserPage() {
   const [showCoinsConfirm, setShowCoinsConfirm] = useState(false);
   const [showWagerConfirm, setShowWagerConfirm] = useState(false);
 
+  // Display name
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState("");
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameMsg, setNameMsg] = useState("");
+
   // Razed recheck
   const [razedChecking, setRazedChecking] = useState(false);
 
@@ -207,6 +214,40 @@ export default function AdminUserPage() {
       body: JSON.stringify(body),
     });
     if (res.ok) setUser((u) => u ? { ...u, [field]: !current } : u);
+  };
+
+  const startEditName = () => {
+    if (!user) return;
+    setNameValue(user.displayName);
+    setNameMsg("");
+    setEditingName(true);
+  };
+
+  const handleSaveName = async () => {
+    if (!user || !nameValue.trim() || nameValue.trim() === user.displayName) {
+      setEditingName(false);
+      return;
+    }
+    setNameSaving(true); setNameMsg("");
+    try {
+      const res = await fetch(API_ENDPOINTS.ADMIN_USER_PROFILE(user.id), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+        body: JSON.stringify({ displayName: nameValue.trim() }),
+      });
+      if (res.ok) {
+        setUser((u) => u ? { ...u, displayName: nameValue.trim() } : u);
+        setEditingName(false);
+        success("Display name updated", nameValue.trim());
+      } else {
+        const d = await res.json().catch(() => null);
+        setNameMsg(d?.error?.message || `Rename failed (${res.status}).`);
+      }
+    } catch {
+      setNameMsg("Network error — name not saved.");
+    } finally {
+      setNameSaving(false);
+    }
   };
 
   const handleCoins = async () => {
@@ -359,7 +400,37 @@ export default function AdminUserPage() {
               </div>
               <div>
                 <div className="flex items-center gap-3 flex-wrap">
-                  <h1 className="font-mono text-[26px] font-bold tracking-[0.5px] m-0">{user.displayName}</h1>
+                  {editingName ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        autoFocus
+                        value={nameValue}
+                        onChange={(e) => setNameValue(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") setEditingName(false); }}
+                        className="font-mono text-[20px] font-bold tracking-[0.5px] bg-[#161619] border border-white/15 rounded-lg px-2.5 py-1 focus:outline-none focus:border-[color:var(--accent)]"
+                        style={{ color: "#e8e8ec" }}
+                      />
+                      <button onClick={handleSaveName} disabled={nameSaving}
+                        className="w-7 h-7 rounded-md flex items-center justify-center disabled:opacity-40"
+                        style={{ background: "rgba(79,209,139,0.14)", color: "#4fd18b" }} aria-label="Save name">
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => setEditingName(false)} disabled={nameSaving}
+                        className="w-7 h-7 rounded-md flex items-center justify-center disabled:opacity-40"
+                        style={{ background: "rgba(255,255,255,0.06)", color: "#9a9aa3" }} aria-label="Cancel">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <h1 className="font-mono text-[26px] font-bold tracking-[0.5px] m-0">{user.displayName}</h1>
+                      <button onClick={startEditName}
+                        className="w-6 h-6 rounded-md flex items-center justify-center text-[#6b6b73] hover:text-[#e8e8ec] hover:bg-white/5 transition-colors"
+                        aria-label="Edit display name">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                   {isVerified && (
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-[3px] rounded-full"
                       style={{ color: "#4fd18b", background: "rgba(79,209,139,0.12)", border: "1px solid rgba(79,209,139,0.28)" }}>
@@ -373,6 +444,7 @@ export default function AdminUserPage() {
                     </span>
                   )}
                 </div>
+                {nameMsg && <p className="text-[#f16060] text-xs mt-1">{nameMsg}</p>}
                 <div className="font-mono text-[13px] text-[#6b6b73] mt-1.5">{user.discordId}</div>
                 <div className="flex gap-2 mt-3">
                   <span className="text-[11.5px] font-semibold px-[11px] py-1 rounded-full text-[#c9c9d0]"
