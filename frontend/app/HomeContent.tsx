@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Hero from "@/components/Hero";
-import StreamScheduleSection from "@/components/StreamScheduleSection";
+import LiveStatusSection from "@/components/LiveStatusSection";
 import ActivationChecklist from "@/components/home/ActivationChecklist";
 import WelcomeSplash from "@/components/home/WelcomeSplash";
 
@@ -56,7 +56,7 @@ export default function HomeContent() {
 
       <Hero />
       <ActivationChecklist />
-      <StreamScheduleSection />
+      <LiveStatusSection />
     </div>
   );
 }

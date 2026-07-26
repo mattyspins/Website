@@ -8,7 +8,6 @@ import { Menu, X } from "lucide-react";
 import AuthButtons from "./AuthButtons";
 
 const navItems = [
-  { name: "Home", href: "/" },
   { name: "Leaderboard", href: "/leaderboard" },
   { name: "Raffles", href: "/raffles" },
   { name: "Milestones", href: "/milestones" },

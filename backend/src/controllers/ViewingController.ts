@@ -346,8 +346,13 @@ export class ViewingController {
     async (req: AuthenticatedRequest, res: Response) => {
       try {
         const streamInfo = await KickService.getMattySpinsStreamInfo();
+        // Kick's channel payload has no top-level `is_live`/`title` fields — live
+        // status and stream metadata only exist nested under `livestream`, which
+        // is null when offline. This previously read the wrong fields and always
+        // reported offline.
+        const live = streamInfo?.livestream ?? null;
 
-        if (!streamInfo) {
+        if (!live) {
           return res.json({
             success: true,
             data: {
@@ -361,14 +366,14 @@ export class ViewingController {
         res.json({
           success: true,
           data: {
-            isLive: streamInfo.is_live,
+            isLive: true,
             stream: {
-              id: streamInfo.id,
-              title: streamInfo.title,
-              viewerCount: streamInfo.viewer_count,
-              startedAt: streamInfo.started_at,
-              thumbnail: streamInfo.thumbnail,
-              category: streamInfo.category,
+              id: live.id,
+              title: live.session_title,
+              viewerCount: live.viewer_count,
+              startedAt: live.created_at,
+              thumbnail: live.thumbnail?.url ?? null,
+              category: live.categories?.[0]?.name ?? null,
             },
           },
         });

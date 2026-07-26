@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {
-  LayoutDashboard, Users, ClipboardList, ShoppingBag, Calendar, Medal,
+  LayoutDashboard, Users, ClipboardList, ShoppingBag, Medal,
   Trophy, Target, Ticket, Zap, Grid3X3, Dices, FileText, Activity, Shield, X, Gift, Swords, Coins, Crosshair, Globe,
 } from "lucide-react";
 
@@ -21,7 +21,6 @@ const MAIN_NAV: NavItem[] = [
 const OPERATIONS_NAV: NavItem[] = [
   { href: "/admin/claims", label: "Claims", icon: ClipboardList },
   { href: "/admin/store", label: "Store", icon: ShoppingBag },
-  { href: "/admin/schedule", label: "Schedule", icon: Calendar },
   { href: "/admin/milestones", label: "Milestones", icon: Medal },
   { href: "/admin/audit-logs", label: "Activity Feed", icon: Activity },
   { href: "/admin/audit-log", label: "Audit Log", icon: FileText },
