@@ -66,6 +66,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState("");
   const [nameSaving, setNameSaving] = useState(false);
+  const [nameMsg, setNameMsg] = useState("");
 
   const token = () => localStorage.getItem("access_token") ?? "";
 
@@ -161,6 +162,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
   const startEditName = () => {
     if (!user) return;
     setNameValue(user.displayName);
+    setNameMsg("");
     setEditingName(true);
   };
 
@@ -170,6 +172,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
       return;
     }
     setNameSaving(true);
+    setNameMsg("");
     try {
       const res = await fetch(API_ENDPOINTS.ADMIN_USER_PROFILE(user.id), {
         method: "PATCH",
@@ -180,8 +183,14 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
         setUser((u) => u ? { ...u, displayName: nameValue.trim() } : u);
         onRefresh();
         setEditingName(false);
+      } else {
+        // Silently swallowing this made a failed rename look like it worked.
+        const data = await res.json().catch(() => null);
+        setNameMsg(data?.error || data?.message || `Rename failed (${res.status}).`);
       }
-    } catch { /* ignore */ } finally { setNameSaving(false); }
+    } catch {
+      setNameMsg("Network error — name not saved.");
+    } finally { setNameSaving(false); }
   };
 
   return (
@@ -249,6 +258,7 @@ export default function AdminUserDetail({ userId, onClose, onRefresh }: Props) {
                             </button>
                           </div>
                         )}
+                        {nameMsg && <p className="text-red-400 text-xs mt-1">{nameMsg}</p>}
                         <p className="text-gray-400 text-xs mt-0.5">Joined {new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
                       </div>
                     </div>

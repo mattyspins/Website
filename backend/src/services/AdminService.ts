@@ -1210,9 +1210,15 @@ export class AdminService {
           throw createError.notFound('User not found');
         }
 
+        // Only ever write the fields we explicitly support — `updates` comes
+        // straight off the request body.
+        const data: { displayName?: string; isAdmin?: boolean } = {};
+        if (updates.displayName !== undefined) data.displayName = updates.displayName;
+        if (updates.isAdmin !== undefined) data.isAdmin = updates.isAdmin;
+
         await tx.user.update({
           where: { id: userId },
-          data: updates,
+          data,
         });
 
         // Create audit log
@@ -1226,10 +1232,15 @@ export class AdminService {
               displayName: user.displayName,
               isAdmin: user.isAdmin,
             },
-            newValues: updates,
+            newValues: data,
           },
         });
       });
+
+      // Bust the cached session, or the user keeps seeing their old display
+      // name from Redis until the 1h session cache expires. TTL matches the
+      // session cache so the signal can't lapse before the user's next /auth/me.
+      await RedisService.set(`invalidate:${userId}`, '1', 3600);
 
       logger.info(`Admin ${adminId} updated user profile ${userId}`);
     } catch (error) {
