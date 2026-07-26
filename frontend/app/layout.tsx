@@ -2,11 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import AuroraBackground from "@/components/AuroraBackground";
 import ToastProvider from "@/components/ui/ToastProvider";
-import ViewingSessionTracker from "@/components/ViewingSessionTracker";
+import SiteChrome from "@/components/SiteChrome";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -105,7 +102,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const isObs = headers().get("x-obs-route") === "1";
-  const isAdmin = headers().get("x-admin-route") === "1";
 
   if (isObs) {
     return (
@@ -120,24 +116,9 @@ export default function RootLayout({
     );
   }
 
-  // Admin gets its own shell (sidebar + top nav, built per-page) instead of the
-  // public site's Navbar/AuroraBackground/Footer chrome.
-  if (isAdmin) {
-    return (
-      <html lang="en-GB">
-        <head>
-          <link rel="icon" href="/favicon.ico" />
-        </head>
-        <body className={inter.className}>
-          <a href="#main-content" className="sr-only focus:not-sr-only">
-            Skip to main content
-          </a>
-          <ToastProvider>{children}</ToastProvider>
-        </body>
-      </html>
-    );
-  }
-
+  // Admin gets its own shell (sidebar + top nav) instead of the public site's
+  // Navbar/AuroraBackground/Footer chrome — SiteChrome makes that call per
+  // navigation, since this layout only renders on a full page load.
   return (
     <html lang="en-GB">
       <head>
@@ -173,13 +154,7 @@ export default function RootLayout({
           Skip to main content
         </a>
         <ToastProvider>
-          <AuroraBackground />
-          <Navbar />
-          <ViewingSessionTracker />
-          <main id="main-content" className="relative z-10 min-h-screen">
-            {children}
-          </main>
-          <Footer />
+          <SiteChrome>{children}</SiteChrome>
         </ToastProvider>
       </body>
     </html>
