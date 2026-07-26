@@ -281,9 +281,12 @@ export class RazedWagerSyncService {
    * paid out yet. This is real money, not site currency, so it does NOT auto-credit anything —
    * it only creates the payout history rows so admins know who's owed what and can pay them out
    * manually, then marks the race "ended". Safe to call repeatedly — the per-race/per-user
-   * unique payout rows guard against double-recording even if interrupted mid-run. Only linked
-   * site accounts can be paid out (a payout must be attributed to a real user), so unlinked
-   * Razed wagerers who'd otherwise place in the money are skipped.
+   * unique payout rows guard against double-recording even if interrupted mid-run. Winners who
+   * haven't linked a site account are recorded against their Razed username instead — they're
+   * owed the money either way, and skipping them left an unexplained hole in the payout history.
+   *
+   * Also re-checks already-ended races, so a race that ended while unlinked winners were being
+   * dropped gets its missing positions filled in.
    */
   static async processRacePayoutsIfDue(): Promise<void> {
     // Races now carry an exact end time (e.g. 18:30 BST) rather than a whole UTC day, so
@@ -292,7 +295,7 @@ export class RazedWagerSyncService {
     const now = new Date();
 
     const dueRaces = await prisma.wagerRace.findMany({
-      where: { status: 'active', endDate: { lt: now } },
+      where: { endDate: { lt: now }, status: { in: ['active', 'ended'] } },
       include: { prizes: { orderBy: { position: 'asc' } } },
     });
 
@@ -305,28 +308,38 @@ export class RazedWagerSyncService {
       );
 
       for (const row of standings) {
-        if (!row.userId || row.prizeAmount === null) continue;
+        if (row.prizeAmount === null) continue;
 
-        const existingPayout = await prisma.wagerRacePayout.findUnique({
-          where: { raceId_userId: { raceId: race.id, userId: row.userId } },
-        });
+        const existingPayout = row.userId
+          ? await prisma.wagerRacePayout.findUnique({
+              where: { raceId_userId: { raceId: race.id, userId: row.userId } },
+            })
+          : await prisma.wagerRacePayout.findUnique({
+              where: {
+                raceId_razedUsername: { raceId: race.id, razedUsername: row.displayName },
+              },
+            });
         if (existingPayout) continue;
 
         await prisma.wagerRacePayout.create({
           data: {
             raceId: race.id,
             userId: row.userId,
+            razedUsername: row.userId ? null : row.displayName,
             position: row.position,
             wagered: Number(row.wagered),
             prizeAmount: row.prizeAmount,
           },
         });
 
-        logger.info(`RazedWagerSyncService: recorded $${row.prizeAmount} owed to user ${row.userId} for #${row.position} in race ${race.id} (pay out manually)`);
+        const who = row.userId ? `user ${row.userId}` : `unlinked Razed user ${row.displayName}`;
+        logger.info(`RazedWagerSyncService: recorded $${row.prizeAmount} owed to ${who} for #${row.position} in race ${race.id} (pay out manually)`);
       }
 
-      await prisma.wagerRace.update({ where: { id: race.id }, data: { status: 'ended' } });
-      logger.info(`RazedWagerSyncService: race ${race.id} ended and payouts recorded`);
+      if (race.status !== 'ended') {
+        await prisma.wagerRace.update({ where: { id: race.id }, data: { status: 'ended' } });
+        logger.info(`RazedWagerSyncService: race ${race.id} ended and payouts recorded`);
+      }
     }
   }
 }

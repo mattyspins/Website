@@ -31,11 +31,14 @@ export interface ActiveRace {
 }
 
 export interface RaceHistoryWinner {
+  id: string;
   position: number;
-  userId: string;
+  /** null when the winner wagers under our Razed code but hasn't linked a site account. */
+  userId: string | null;
   displayName: string;
   kickUsername: string | null;
   avatarUrl: string | null;
+  linked: boolean;
   wagered: string;
   prizeAmount: number;
 }

@@ -380,8 +380,13 @@ export default function LeaderboardTypePanel({ type }: Props) {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {entry.winners.map((w) => (
-                    <span key={w.userId} className="text-xs text-gray-300 bg-navy-900/60 border border-white/5 rounded-lg px-2.5 py-1">
+                    <span key={w.id} className="text-xs text-gray-300 bg-navy-900/60 border border-white/5 rounded-lg px-2.5 py-1">
                       #{w.position} {w.kickUsername ?? w.displayName} — ${w.prizeAmount}
+                      {!w.linked && (
+                        <span className="ml-1.5 text-[10px] text-amber-400/80 uppercase tracking-wide" title="Wagers under our Razed code but has no linked site account">
+                          unlinked
+                        </span>
+                      )}
                     </span>
                   ))}
                 </div>

@@ -938,18 +938,24 @@ model WagerRacePrize {
   @@map("wager_race_prizes")
 }
 
+// A winner is owed real money whether or not they've linked a site account, so
+// exactly one of `userId` (linked) or `razedUsername` (unlinked Razed wagerer)
+// is set. Recording only linked winners used to leave silent holes in the payout
+// history — an unlinked #1 simply vanished from the list.
 model WagerRacePayout {
-  id          String    @id @default(uuid())
-  raceId      String    @map("race_id")
-  userId      String    @map("user_id")
-  position    Int
-  wagered     Decimal   @db.Decimal(14, 2)
-  prizeAmount Int       @map("prize_amount")
-  paidAt      DateTime  @default(now()) @map("paid_at")
-  race        WagerRace @relation(fields: [raceId], references: [id], onDelete: Cascade)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String    @id @default(uuid())
+  raceId        String    @map("race_id")
+  userId        String?   @map("user_id")
+  razedUsername String?   @map("razed_username")
+  position      Int
+  wagered       Decimal   @db.Decimal(14, 2)
+  prizeAmount   Int       @map("prize_amount")
+  paidAt        DateTime  @default(now()) @map("paid_at")
+  race          WagerRace @relation(fields: [raceId], references: [id], onDelete: Cascade)
+  user          User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([raceId, userId])
+  @@unique([raceId, razedUsername])
   @@map("wager_race_payouts")
 }
 

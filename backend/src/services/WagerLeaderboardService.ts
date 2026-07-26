@@ -148,11 +148,14 @@ export class WagerLeaderboardService {
       endDate: race.endDate.toISOString(),
       totalPrizePool: race.totalPrizePool,
       winners: race.payouts.map((p) => ({
+        id: p.id,
         position: p.position,
         userId: p.userId,
-        displayName: p.user.displayName,
-        kickUsername: p.user.kickUsername,
-        avatarUrl: p.user.avatarUrl,
+        // Unlinked winners have no site account, so their Razed username is all we have.
+        displayName: p.user?.displayName ?? p.razedUsername ?? 'Unknown',
+        kickUsername: p.user?.kickUsername ?? null,
+        avatarUrl: p.user?.avatarUrl ?? null,
+        linked: p.userId !== null,
         wagered: p.wagered.toString(),
         prizeAmount: p.prizeAmount,
       })),
