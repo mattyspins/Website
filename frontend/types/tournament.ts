@@ -15,12 +15,6 @@ export enum MatchStatus {
   COMPLETED = 'COMPLETED',
 }
 
-export enum TournamentScoringMethod {
-  TOTAL_MULTIPLIER = 'TOTAL_MULTIPLIER',
-  HIGHEST_SINGLE_WIN = 'HIGHEST_SINGLE_WIN',
-  FINAL_BALANCE = 'FINAL_BALANCE',
-}
-
 export enum TournamentEntrySource {
   WEB = 'WEB',
   CHAT = 'CHAT',
@@ -64,12 +58,7 @@ export interface Tournament {
   keyword: string;
   maxPlayers: number;
   currentRound: number;
-  registrationOpensAt: string | null;
-  registrationClosesAt: string | null;
   allowDuplicateSlots: boolean;
-  eligibleSlots: string[];
-  scoringMethod: TournamentScoringMethod;
-  spinsPerMatch: number | null;
   betAmountPerSpin: string | null;
   prizePoolDisplay: string | null;
   seedCommitmentHash: string | null;
@@ -130,24 +119,11 @@ export interface DrawStatus {
   reserves: DrawReservePlayer[];
 }
 
-export interface AuditLogEntry {
-  id: string;
-  action: string;
-  adminId: string | null;
-  adminName: string | null;
-  createdAt: string;
-}
-
 export interface UpdateTournamentInput {
   title?: string;
   keyword?: string;
   maxPlayers?: number;
-  registrationOpensAt?: string | null;
-  registrationClosesAt?: string | null;
   allowDuplicateSlots?: boolean;
-  eligibleSlots?: string[];
-  scoringMethod?: TournamentScoringMethod;
-  spinsPerMatch?: number | null;
   betAmountPerSpin?: number | null;
   prizePoolDisplay?: string | null;
 }

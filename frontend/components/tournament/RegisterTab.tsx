@@ -1,26 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Tournament, TournamentStatus, MyEntryResponse } from "@/types/tournament";
-import EligibleSlotGrid from "./EligibleSlotGrid";
-
-function useCountdown(target: number | null) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (target === null) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [target]);
-  return target === null ? null : Math.max(0, target - now);
-}
-
-function fmt(ms: number): string {
-  const s = Math.floor(ms / 1000);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-}
+import SlotPicker, { SlotImage } from "@/components/SlotPicker";
+import { findSlot } from "@/lib/slotGames";
 
 interface Props {
   tournament: Tournament;
@@ -32,22 +15,12 @@ interface Props {
 
 export default function RegisterTab({ tournament, myEntry, isLoggedIn, actionLoading, onEnter }: Props) {
   const [slot, setSlot] = useState("");
-  const closesAtMs = tournament.registrationClosesAt ? new Date(tournament.registrationClosesAt).getTime() : null;
-  const remaining = useCountdown(tournament.status === TournamentStatus.REGISTRATION ? closesAtMs : null);
   const registrationOpen = tournament.status === TournamentStatus.REGISTRATION;
+  const selectedGame = findSlot(slot);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-7">
       <div>
-        {registrationOpen && (
-          <>
-            <div className="tt-display text-xl text-white mb-1">REGISTRATION CLOSES IN</div>
-            <div className="tt-display text-5xl text-[color:var(--tt-gold)] leading-none mb-4">
-              {remaining !== null ? fmt(remaining) : "—"}
-            </div>
-          </>
-        )}
-
         {!registrationOpen ? (
           <p className="text-white/50 text-sm">Registration for this tournament isn&apos;t open right now.</p>
         ) : !isLoggedIn ? (
@@ -55,9 +28,18 @@ export default function RegisterTab({ tournament, myEntry, isLoggedIn, actionLoa
         ) : !myEntry?.entered ? (
           <>
             <label className="block text-xs uppercase tracking-wide text-white/50 mb-1.5">Choose your slot</label>
-            <div className="mb-5">
-              <EligibleSlotGrid slots={tournament.eligibleSlots} selected={slot} onSelect={setSlot} disabled={actionLoading} />
+            <div className="mb-3">
+              <SlotPicker value={slot} onChange={setSlot} disabled={actionLoading} />
             </div>
+            {selectedGame && (
+              <div className="flex items-center gap-3 mb-4 px-3 py-2.5 rounded bg-[color:var(--tt-bg-elevated)] border border-[color:var(--tt-border)]">
+                <SlotImage src={selectedGame.image} name={selectedGame.name} size={44} />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">{selectedGame.name}</p>
+                  <p className="text-xs text-white/50 truncate">{selectedGame.provider}</p>
+                </div>
+              </div>
+            )}
             <button
               onClick={() => onEnter(slot)}
               disabled={!slot || actionLoading}
@@ -69,11 +51,9 @@ export default function RegisterTab({ tournament, myEntry, isLoggedIn, actionLoa
             >
               {actionLoading ? "SUBMITTING…" : "SUBMIT ENTRY"}
             </button>
-            {tournament.eligibleSlots.length > 0 && (
-              <p className="text-[11px] text-white/40 mt-2.5">
-                Or type <strong className="text-white/65">{tournament.keyword} {tournament.eligibleSlots[0]}</strong> in chat — same draw pool, one entry per viewer.
-              </p>
-            )}
+            <p className="text-[11px] text-white/40 mt-2.5">
+              Or type <strong className="text-white/65">{tournament.keyword} &lt;slot name&gt;</strong> in chat — same draw pool, one entry per viewer.
+            </p>
           </>
         ) : (
           <div className="bg-[color:var(--tt-gold-soft)] border border-[color:var(--tt-gold-border)] rounded p-5">
@@ -92,7 +72,7 @@ export default function RegisterTab({ tournament, myEntry, isLoggedIn, actionLoa
           <li>{tournament.maxPlayers} players drawn at random once registration locks.</li>
           <li>Remaining entrants become ordered reserves.</li>
           <li>One slot per player{tournament.allowDuplicateSlots ? "" : " — no duplicates in the bracket"}.</li>
-          <li>Each match: {tournament.spinsPerMatch ?? 5} bonus-buy spins, same bet size. Highest total multiplier wins.</li>
+          <li>Each match: bonus-buy spins at the same bet size. Highest total multiplier wins.</li>
           <li>Ties: highest single spin wins; still tied → sudden-death spin.</li>
           <li>Single elimination — lose once, you&apos;re out.</li>
         </ul>

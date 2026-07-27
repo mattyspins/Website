@@ -12,7 +12,6 @@ import SetupPanel from "@/components/admin/tournament/SetupPanel";
 import RegistrationsPanel from "@/components/admin/tournament/RegistrationsPanel";
 import ParticipantsPanel from "@/components/admin/tournament/ParticipantsPanel";
 import BracketPanel from "@/components/admin/tournament/BracketPanel";
-import AuditLogPanel from "@/components/admin/tournament/AuditLogPanel";
 
 const STATUS_COLOR: Record<TournamentStatus, string> = {
   [TournamentStatus.DRAFT]: "bg-white/5 text-white/45 border-white/10",
@@ -123,13 +122,12 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
   );
 }
 
-type Tab = "setup" | "registrations" | "participants" | "bracket" | "audit";
+type Tab = "setup" | "registrations" | "participants" | "bracket";
 const TABS: { id: Tab; label: string }[] = [
   { id: "setup", label: "Tournament Setup" },
   { id: "registrations", label: "Registrations" },
   { id: "participants", label: "Participants" },
   { id: "bracket", label: "Bracket & Matches" },
-  { id: "audit", label: "Audit Log" },
 ];
 
 // ─── Main Admin Page ──────────────────────────────────────────────────────────
@@ -146,6 +144,7 @@ export default function AdminTournamentPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const { confirm, dialog: confirmDialog } = useConfirm();
 
   useEffect(() => {
@@ -165,7 +164,11 @@ export default function AdminTournamentPage() {
     try {
       const data = await tournamentApi.getAll();
       setTournaments(data);
-      setSelected((prev) => prev ? data.find((t) => t.id === prev.id) ?? data[0] ?? null : data[0] ?? null);
+      setSelected((prev) => {
+        if (prev) return data.find((t) => t.id === prev.id) ?? data[0] ?? null;
+        const active = data.find((t) => ![TournamentStatus.COMPLETED, TournamentStatus.CANCELLED].includes(t.status));
+        return active ?? data[0] ?? null;
+      });
     } catch {
       setError("Failed to load tournaments");
     } finally {
@@ -264,9 +267,14 @@ export default function AdminTournamentPage() {
           </div>
         )}
 
-        {/* Tournament list — vertical cards */}
-        <div className="space-y-2 mb-6">
-          {tournaments.map((t) => {
+        {/* Tournament list — active tournaments up top; completed/cancelled ones
+            tuck away in a collapsed History section instead of piling up
+            above the working panel as more tournaments accumulate. */}
+        {(() => {
+          const activeTournaments = tournaments.filter((t) => ![TournamentStatus.COMPLETED, TournamentStatus.CANCELLED].includes(t.status));
+          const pastTournaments = tournaments.filter((t) => [TournamentStatus.COMPLETED, TournamentStatus.CANCELLED].includes(t.status));
+
+          const renderCard = (t: Tournament) => {
             const isActive = selected?.id === t.id;
             return (
               <div
@@ -303,8 +311,30 @@ export default function AdminTournamentPage() {
                 </div>
               </div>
             );
-          })}
-        </div>
+          };
+
+          return (
+            <>
+              {activeTournaments.length > 0 && (
+                <div className="space-y-2 mb-3">
+                  {activeTournaments.map(renderCard)}
+                </div>
+              )}
+
+              {pastTournaments.length > 0 && (
+                <div className="mb-6">
+                  <button
+                    onClick={() => setShowHistory((s) => !s)}
+                    className="text-xs font-bold uppercase tracking-wide text-white/45 hover:text-white/70 transition-colors mb-2"
+                  >
+                    {showHistory ? "▾" : "▸"} History ({pastTournaments.length})
+                  </button>
+                  {showHistory && <div className="space-y-2">{pastTournaments.map(renderCard)}</div>}
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {selected && (
           <div className="flex gap-6 items-start">
@@ -380,7 +410,6 @@ export default function AdminTournamentPage() {
                   onError={setError}
                 />
               )}
-              {tab === "audit" && <AuditLogPanel tournament={selected} />}
             </div>
           </div>
         )}

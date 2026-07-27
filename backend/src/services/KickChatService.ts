@@ -351,7 +351,7 @@ export class KickChatService {
     const tournament = await prisma.tournament.findFirst({
       where: { status: TournamentStatus.REGISTRATION },
       orderBy: { createdAt: 'desc' },
-      select: { id: true, keyword: true, eligibleSlots: true },
+      select: { id: true, keyword: true },
     });
     if (!tournament) return;
 
@@ -382,19 +382,14 @@ export class KickChatService {
 
     const slotArg = m[1]?.trim();
     if (!slotArg) {
-      await this.sendChatMessage(`@${kickUsername} include a slot name to join — e.g. "${tournament.keyword} ${tournament.eligibleSlots[0] ?? 'Sweet Bonanza'}"`);
-      return;
-    }
-    const matchedSlot = tournament.eligibleSlots.find((s) => s.toLowerCase() === slotArg.toLowerCase());
-    if (!matchedSlot) {
-      await this.sendChatMessage(`@${kickUsername} that slot isn't in this tournament's pool — check the website for eligible slots.`);
+      await this.sendChatMessage(`@${kickUsername} include a slot name to join — e.g. "${tournament.keyword} Sweet Bonanza"`);
       return;
     }
 
     try {
-      await TournamentService.enterRaffle(tournament.id, user.id, matchedSlot, TournamentEntrySource.CHAT, this.io ?? undefined);
-      logger.info(`KickChatService: ${kickUsername} joined tournament ${tournament.id} via keyword (slot: ${matchedSlot})`);
-      await this.sendChatMessage(`🏆 @${kickUsername} has entered the tournament with ${matchedSlot}!`);
+      await TournamentService.enterRaffle(tournament.id, user.id, slotArg, TournamentEntrySource.CHAT, this.io ?? undefined);
+      logger.info(`KickChatService: ${kickUsername} joined tournament ${tournament.id} via keyword (slot: ${slotArg})`);
+      await this.sendChatMessage(`🏆 @${kickUsername} has entered the tournament with ${slotArg}!`);
     } catch (err) {
       const message = (err as Error).message;
       if (message === 'Already entered') {

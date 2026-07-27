@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { TournamentService } from '@/services/TournamentService';
 import { Server as SocketIOServer } from 'socket.io';
 import { AuthenticatedRequest } from '@/middleware/auth';
-import { TournamentScoringMethod, TournamentEntrySource } from '@/types/tournament';
+import { TournamentEntrySource } from '@/types/tournament';
 
 let _io: SocketIOServer | undefined;
 export const setTournamentIO = (io: SocketIOServer) => { _io = io; };
@@ -21,12 +21,7 @@ const updateTournamentSchema = z.object({
   title: z.string().min(1).max(100).optional(),
   keyword: z.string().min(1).max(30).optional(),
   maxPlayers: z.number().int().min(2).max(64).optional(),
-  registrationOpensAt: z.string().datetime().nullable().optional(),
-  registrationClosesAt: z.string().datetime().nullable().optional(),
   allowDuplicateSlots: z.boolean().optional(),
-  eligibleSlots: z.array(z.string().min(1).max(100)).max(50).optional(),
-  scoringMethod: z.nativeEnum(TournamentScoringMethod).optional(),
-  spinsPerMatch: z.number().int().min(1).max(50).nullable().optional(),
   betAmountPerSpin: z.number().min(0).nullable().optional(),
   prizePoolDisplay: z.string().max(100).nullable().optional(),
 });
@@ -132,13 +127,6 @@ export class TournamentController {
   static resumeMatch = asyncHandler(async (req, res) => {
     const result = await TournamentService.resumeMatch(req.params.matchId, req.user!.id, _io);
     res.json({ success: true, match: result });
-  });
-
-  static getAuditLog = asyncHandler(async (req, res) => {
-    const limit = req.query.limit ? Number(req.query.limit) : 50;
-    const offset = req.query.offset ? Number(req.query.offset) : 0;
-    const entries = await TournamentService.getAuditLog(req.params.id, limit, offset);
-    res.json({ success: true, entries });
   });
 
   static cancel = asyncHandler(async (req, res) => {

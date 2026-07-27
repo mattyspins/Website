@@ -5,7 +5,6 @@ import {
   TournamentMatch,
   TournamentEntry,
   DrawStatus,
-  AuditLogEntry,
   UpdateTournamentInput,
 } from '@/types/tournament';
 
@@ -131,10 +130,5 @@ export const tournamentApi = {
   resumeMatch: async (matchId: string): Promise<TournamentMatch> => {
     const data = await api.post(`/api/tournaments/matches/${matchId}/resume`);
     return data.match;
-  },
-
-  getAuditLog: async (id: string, limit = 50, offset = 0): Promise<AuditLogEntry[]> => {
-    const data = await api.get(`/api/tournaments/${id}/audit-log?limit=${limit}&offset=${offset}`);
-    return data.entries;
   },
 };

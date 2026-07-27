@@ -56,6 +56,4 @@ router.delete('/matches/:matchId/winner', authMiddleware, adminMiddleware, admin
 router.post('/matches/:matchId/pause', authMiddleware, adminMiddleware, adminLimiter, TournamentController.pauseMatch);
 router.post('/matches/:matchId/resume', authMiddleware, adminMiddleware, adminLimiter, TournamentController.resumeMatch);
 
-router.get('/:id/audit-log', authMiddleware, adminMiddleware, adminLimiter, TournamentController.getAuditLog);
-
 export default router;

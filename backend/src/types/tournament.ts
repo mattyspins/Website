@@ -17,12 +17,6 @@ export enum MatchStatus {
   COMPLETED = 'COMPLETED',
 }
 
-export enum TournamentScoringMethod {
-  TOTAL_MULTIPLIER = 'TOTAL_MULTIPLIER',
-  HIGHEST_SINGLE_WIN = 'HIGHEST_SINGLE_WIN',
-  FINAL_BALANCE = 'FINAL_BALANCE',
-}
-
 export enum TournamentEntrySource {
   WEB = 'WEB',
   CHAT = 'CHAT',
@@ -38,12 +32,7 @@ export interface UpdateTournamentDTO {
   title?: string;
   keyword?: string;
   maxPlayers?: number;
-  registrationOpensAt?: string | null;
-  registrationClosesAt?: string | null;
   allowDuplicateSlots?: boolean;
-  eligibleSlots?: string[];
-  scoringMethod?: TournamentScoringMethod;
-  spinsPerMatch?: number | null;
   betAmountPerSpin?: number | null;
   prizePoolDisplay?: string | null;
 }
@@ -125,12 +114,7 @@ export interface TournamentResponse {
   keyword: string;
   maxPlayers: number;
   currentRound: number;
-  registrationOpensAt: string | null;
-  registrationClosesAt: string | null;
   allowDuplicateSlots: boolean;
-  eligibleSlots: string[];
-  scoringMethod: TournamentScoringMethod;
-  spinsPerMatch: number | null;
   betAmountPerSpin: string | null;
   prizePoolDisplay: string | null;
   // Published the moment registration locks, before the draw runs — proves
@@ -160,12 +144,4 @@ export interface DrawStatusResponse {
   eligiblePool: { entryId: string; userId: string; displayName: string; avatarUrl: string | null; slot: string | null }[];
   selected: { entryId: string; seed: number; userId: string; displayName: string; avatarUrl: string | null; slot: string | null }[];
   reserves: ReserveResponse[];
-}
-
-export interface AuditLogEntryResponse {
-  id: string;
-  action: string;
-  adminId: string | null;
-  adminName: string | null;
-  createdAt: string;
 }

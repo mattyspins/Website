@@ -423,48 +423,37 @@ enum MatchStatus {
   COMPLETED
 }
 
-enum TournamentScoringMethod {
-  TOTAL_MULTIPLIER
-  HIGHEST_SINGLE_WIN
-  FINAL_BALANCE
-}
-
 enum TournamentEntrySource {
   WEB
   CHAT
 }
 
 model Tournament {
-  id                   String                  @id @default(uuid())
-  title                String
-  status               TournamentStatus        @default(DRAFT)
-  keyword              String                  @default("!jointourney") @map("keyword")
-  maxPlayers           Int                     @default(8) @map("max_players")
-  currentRound         Int                     @default(0) @map("current_round")
-  registrationOpensAt  DateTime?               @map("registration_opens_at")
-  registrationClosesAt DateTime?               @map("registration_closes_at")
-  allowDuplicateSlots  Boolean                 @default(false) @map("allow_duplicate_slots")
-  eligibleSlots        String[]                @default([]) @map("eligible_slots")
-  scoringMethod        TournamentScoringMethod @default(TOTAL_MULTIPLIER) @map("scoring_method")
-  spinsPerMatch        Int?                    @default(5) @map("spins_per_match")
-  betAmountPerSpin     Decimal?                @map("bet_amount_per_spin") @db.Decimal(10, 2)
-  prizePoolDisplay     String?                 @map("prize_pool_display")
+  id                  String                  @id @default(uuid())
+  title               String
+  status              TournamentStatus        @default(DRAFT)
+  keyword             String                  @default("!jointourney") @map("keyword")
+  maxPlayers          Int                     @default(8) @map("max_players")
+  currentRound        Int                     @default(0) @map("current_round")
+  allowDuplicateSlots Boolean                 @default(false) @map("allow_duplicate_slots")
+  betAmountPerSpin    Decimal?                @map("bet_amount_per_spin") @db.Decimal(10, 2)
+  prizePoolDisplay    String?                 @map("prize_pool_display")
   // Commit-reveal draw fairness: seedCommitmentHash (sha256 of drawSeed) is
   // published the moment registration locks, before anyone can know who's
   // eligible for the draw — proving the outcome wasn't picked after the
   // fact. drawSeed itself stays server-only until drawExecutedAt is set.
-  seedCommitmentHash   String?                 @map("seed_commitment_hash")
-  drawSeed             String?                 @map("draw_seed")
-  drawExecutedAt       DateTime?               @map("draw_executed_at")
-  drawResult           Json?                   @map("draw_result")
-  createdById          String                  @map("created_by_id")
-  createdAt            DateTime                @default(now()) @map("created_at")
-  updatedAt            DateTime                @updatedAt @map("updated_at")
-  createdBy            User                    @relation("TournamentCreator", fields: [createdById], references: [id])
-  participants         TournamentParticipant[]
-  matches              TournamentMatch[]
-  entries              TournamentEntry[]
-  bans                 TournamentBan[]
+  seedCommitmentHash  String?                 @map("seed_commitment_hash")
+  drawSeed            String?                 @map("draw_seed")
+  drawExecutedAt      DateTime?               @map("draw_executed_at")
+  drawResult          Json?                   @map("draw_result")
+  createdById         String                  @map("created_by_id")
+  createdAt           DateTime                @default(now()) @map("created_at")
+  updatedAt           DateTime                @updatedAt @map("updated_at")
+  createdBy           User                    @relation("TournamentCreator", fields: [createdById], references: [id])
+  participants        TournamentParticipant[]
+  matches             TournamentMatch[]
+  entries             TournamentEntry[]
+  bans                TournamentBan[]
 
   @@map("tournaments")
 }
