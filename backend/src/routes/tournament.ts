@@ -29,21 +29,33 @@ router.get('/:id', tournamentLimiter, TournamentController.getById);
 router.get('/:id/my-entry', authMiddleware, tournamentLimiter, TournamentController.getMyEntry);
 router.post('/:id/enter', authMiddleware, tournamentLimiter, TournamentController.enterRaffle);
 router.delete('/:id/enter', authMiddleware, tournamentLimiter, TournamentController.leaveRaffle);
-router.post('/:id/slot', authMiddleware, tournamentLimiter, TournamentController.setInitialSlot);
-router.post('/matches/:matchId/slot', authMiddleware, tournamentLimiter, TournamentController.setMatchSlot);
-router.post('/matches/:matchId/confirm', authMiddleware, tournamentLimiter, TournamentController.confirmMatchSlot);
 
 // ─── Admin ────────────────────────────────────────────────────────────────────
 router.post('/', authMiddleware, adminMiddleware, adminLimiter, TournamentController.create);
-router.post('/:id/keyword', authMiddleware, adminMiddleware, adminLimiter, TournamentController.setKeyword);
+router.patch('/:id', authMiddleware, adminMiddleware, adminLimiter, TournamentController.updateTournament);
 router.post('/:id/open-registration', authMiddleware, adminMiddleware, adminLimiter, TournamentController.openRegistration);
-router.get('/:id/entries', authMiddleware, adminMiddleware, adminLimiter, TournamentController.getEntries);
-router.post('/:id/draw', authMiddleware, adminMiddleware, adminLimiter, TournamentController.drawWinners);
+router.post('/:id/lock', authMiddleware, adminMiddleware, adminLimiter, TournamentController.lockRegistration);
+router.get('/:id/draw', authMiddleware, adminMiddleware, adminLimiter, TournamentController.getDrawStatus);
+router.post('/:id/draw/run', authMiddleware, adminMiddleware, adminLimiter, TournamentController.runDraw);
 router.post('/:id/start', authMiddleware, adminMiddleware, adminLimiter, TournamentController.startTournament);
 router.post('/:id/cancel', authMiddleware, adminMiddleware, adminLimiter, TournamentController.cancel);
 router.delete('/:id', authMiddleware, adminMiddleware, adminLimiter, TournamentController.deleteTournament);
-router.post('/:id/participants/:participantId/reroll', authMiddleware, adminMiddleware, adminLimiter, TournamentController.rerollParticipant);
+
+router.get('/:id/entries', authMiddleware, adminMiddleware, adminLimiter, TournamentController.getEntries);
+router.post('/:id/entries/:entryId/invalidate', authMiddleware, adminMiddleware, adminLimiter, TournamentController.invalidateEntry);
+router.post('/:id/entries/:entryId/restore', authMiddleware, adminMiddleware, adminLimiter, TournamentController.restoreEntry);
+
+router.post('/:id/ban', authMiddleware, adminMiddleware, adminLimiter, TournamentController.banUser);
+router.delete('/:id/ban/:userId', authMiddleware, adminMiddleware, adminLimiter, TournamentController.unbanUser);
+
+router.post('/:id/participants/:participantId/replace', authMiddleware, adminMiddleware, adminLimiter, TournamentController.replaceParticipant);
+
+router.post('/matches/:matchId/result', authMiddleware, adminMiddleware, adminLimiter, TournamentController.setMatchResult);
 router.post('/matches/:matchId/winner', authMiddleware, adminMiddleware, adminLimiter, TournamentController.declareMatchWinner);
 router.delete('/matches/:matchId/winner', authMiddleware, adminMiddleware, adminLimiter, TournamentController.revertMatchWinner);
+router.post('/matches/:matchId/pause', authMiddleware, adminMiddleware, adminLimiter, TournamentController.pauseMatch);
+router.post('/matches/:matchId/resume', authMiddleware, adminMiddleware, adminLimiter, TournamentController.resumeMatch);
+
+router.get('/:id/audit-log', authMiddleware, adminMiddleware, adminLimiter, TournamentController.getAuditLog);
 
 export default router;

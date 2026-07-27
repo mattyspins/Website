@@ -16,6 +16,7 @@ import { BossRaidService } from '@/services/BossRaidService';
 import { BountyHunterService } from '@/services/BountyHunterService';
 import { SlotWorldCupService } from '@/services/SlotWorldCupService';
 import { BingoStatus, TournamentStatus, HighRollerPrediction, HighRollerStatus, SlotWorldCupStatus } from '@prisma/client';
+import { TournamentEntrySource } from '@/types/tournament';
 
 const KICK_CHANNEL_NAME = process.env['KICK_CHANNEL_NAME'] || 'mattyspins';
 // Set KICK_CHATROOM_ID in .env — find it by opening kick.com/mattyspins and checking the chatroom ID in network tab
@@ -341,17 +342,23 @@ export class KickChatService {
     }
   }
 
+  // Tournament join keyword is admin-configurable per tournament (default "!jointourney"),
+  // and now takes an optional trailing slot argument since slot is chosen at entry time —
+  // e.g. "!jointourney Gates of Olympus". Stays silent (no chat spam) if the message doesn't
+  // match any active tournament's keyword — the website's registration form remains a
+  // second, always-available way in.
   private static async processTournamentJoin(kickUsername: string, content: string): Promise<void> {
-    // Tournament join keyword is admin-configurable per tournament (default "!jointourney").
-    // Stays silent (no chat spam) if the message doesn't match any active tournament's
-    // keyword — the website's "Enter Draw" button remains a second, always-available way in.
     const tournament = await prisma.tournament.findFirst({
       where: { status: TournamentStatus.REGISTRATION },
       orderBy: { createdAt: 'desc' },
-      select: { id: true, keyword: true },
+      select: { id: true, keyword: true, eligibleSlots: true },
     });
     if (!tournament) return;
-    if (content.trim().toLowerCase() !== tournament.keyword.trim().toLowerCase()) return;
+
+    const escaped = tournament.keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`^${escaped}(?:\\s+(.+))?$`, 'i');
+    const m = content.trim().match(re);
+    if (!m) return;
 
     // Find the verified user by Kick username
     const user = await prisma.user.findFirst({
@@ -363,10 +370,31 @@ export class KickChatService {
       return;
     }
 
+    // Banned viewers are turned away without a public callout — no reason to
+    // broadcast a moderation action in chat.
+    const banned = await prisma.tournamentBan.findUnique({
+      where: { tournamentId_userId: { tournamentId: tournament.id, userId: user.id } },
+    });
+    if (banned) {
+      logger.warn(`KickChatService: banned user ${kickUsername} attempted to join tournament ${tournament.id}`);
+      return;
+    }
+
+    const slotArg = m[1]?.trim();
+    if (!slotArg) {
+      await this.sendChatMessage(`@${kickUsername} include a slot name to join — e.g. "${tournament.keyword} ${tournament.eligibleSlots[0] ?? 'Sweet Bonanza'}"`);
+      return;
+    }
+    const matchedSlot = tournament.eligibleSlots.find((s) => s.toLowerCase() === slotArg.toLowerCase());
+    if (!matchedSlot) {
+      await this.sendChatMessage(`@${kickUsername} that slot isn't in this tournament's pool — check the website for eligible slots.`);
+      return;
+    }
+
     try {
-      await TournamentService.enterRaffle(tournament.id, user.id, this.io ?? undefined);
-      logger.info(`KickChatService: ${kickUsername} joined tournament ${tournament.id} via keyword`);
-      await this.sendChatMessage(`🏆 @${kickUsername} has entered the tournament draw!`);
+      await TournamentService.enterRaffle(tournament.id, user.id, matchedSlot, TournamentEntrySource.CHAT, this.io ?? undefined);
+      logger.info(`KickChatService: ${kickUsername} joined tournament ${tournament.id} via keyword (slot: ${matchedSlot})`);
+      await this.sendChatMessage(`🏆 @${kickUsername} has entered the tournament with ${matchedSlot}!`);
     } catch (err) {
       const message = (err as Error).message;
       if (message === 'Already entered') {

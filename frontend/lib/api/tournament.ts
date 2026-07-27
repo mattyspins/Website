@@ -1,5 +1,13 @@
 import { api } from '@/lib/api';
-import { Tournament, MyEntryResponse, TournamentMatch } from '@/types/tournament';
+import {
+  Tournament,
+  MyEntryResponse,
+  TournamentMatch,
+  TournamentEntry,
+  DrawStatus,
+  AuditLogEntry,
+  UpdateTournamentInput,
+} from '@/types/tournament';
 
 export const tournamentApi = {
   getAll: async (): Promise<Tournament[]> => {
@@ -17,37 +25,22 @@ export const tournamentApi = {
     return data;
   },
 
-  enter: async (id: string): Promise<void> => {
-    await api.post(`/api/tournaments/${id}/enter`);
+  enter: async (id: string, slot: string): Promise<void> => {
+    await api.post(`/api/tournaments/${id}/enter`, { slot });
   },
 
   leave: async (id: string): Promise<void> => {
     await api.delete(`/api/tournaments/${id}/enter`);
   },
 
-  setInitialSlot: async (id: string, slotCall: string): Promise<Tournament> => {
-    const data = await api.post(`/api/tournaments/${id}/slot`, { slotCall });
-    return data.tournament;
-  },
-
-  setMatchSlot: async (matchId: string, slotCall: string): Promise<TournamentMatch> => {
-    const data = await api.post(`/api/tournaments/matches/${matchId}/slot`, { slotCall });
-    return data.match;
-  },
-
-  confirmMatchSlot: async (matchId: string): Promise<TournamentMatch> => {
-    const data = await api.post(`/api/tournaments/matches/${matchId}/confirm`);
-    return data.match;
-  },
-
   // Admin
-  create: async (payload: { title: string; maxPlayers: number; slotTimerSeconds: number; keyword?: string }): Promise<Tournament> => {
+  create: async (payload: { title: string; maxPlayers: number; keyword?: string }): Promise<Tournament> => {
     const data = await api.post('/api/tournaments', payload);
     return data.tournament;
   },
 
-  setKeyword: async (id: string, keyword: string): Promise<Tournament> => {
-    const data = await api.post(`/api/tournaments/${id}/keyword`, { keyword });
+  updateTournament: async (id: string, payload: UpdateTournamentInput): Promise<Tournament> => {
+    const data = await api.patch(`/api/tournaments/${id}`, payload);
     return data.tournament;
   },
 
@@ -56,13 +49,18 @@ export const tournamentApi = {
     return data.tournament;
   },
 
-  getEntries: async (id: string): Promise<{ id: string; userId: string; displayName: string; avatarUrl: string | null; enteredAt: string }[]> => {
-    const data = await api.get(`/api/tournaments/${id}/entries`);
-    return data.entries;
+  lockRegistration: async (id: string): Promise<Tournament> => {
+    const data = await api.post(`/api/tournaments/${id}/lock`);
+    return data.tournament;
   },
 
-  drawWinners: async (id: string, count: number, guaranteedUserIds: string[] = []): Promise<Tournament> => {
-    const data = await api.post(`/api/tournaments/${id}/draw`, { count, guaranteedUserIds });
+  getDrawStatus: async (id: string): Promise<DrawStatus> => {
+    const data = await api.get(`/api/tournaments/${id}/draw`);
+    return data.draw;
+  },
+
+  runDraw: async (id: string): Promise<Tournament> => {
+    const data = await api.post(`/api/tournaments/${id}/draw/run`);
     return data.tournament;
   },
 
@@ -80,9 +78,39 @@ export const tournamentApi = {
     await api.delete(`/api/tournaments/${id}`);
   },
 
-  rerollParticipant: async (tournamentId: string, participantId: string): Promise<Tournament> => {
-    const data = await api.post(`/api/tournaments/${tournamentId}/participants/${participantId}/reroll`);
+  getEntries: async (id: string): Promise<TournamentEntry[]> => {
+    const data = await api.get(`/api/tournaments/${id}/entries`);
+    return data.entries;
+  },
+
+  invalidateEntry: async (tournamentId: string, entryId: string): Promise<Tournament> => {
+    const data = await api.post(`/api/tournaments/${tournamentId}/entries/${entryId}/invalidate`);
     return data.tournament;
+  },
+
+  restoreEntry: async (tournamentId: string, entryId: string): Promise<Tournament> => {
+    const data = await api.post(`/api/tournaments/${tournamentId}/entries/${entryId}/restore`);
+    return data.tournament;
+  },
+
+  banUser: async (tournamentId: string, userId: string, reason?: string): Promise<Tournament> => {
+    const data = await api.post(`/api/tournaments/${tournamentId}/ban`, { userId, reason });
+    return data.tournament;
+  },
+
+  unbanUser: async (tournamentId: string, userId: string): Promise<Tournament> => {
+    const data = await api.delete(`/api/tournaments/${tournamentId}/ban/${userId}`);
+    return data.tournament;
+  },
+
+  replaceParticipant: async (tournamentId: string, participantId: string): Promise<Tournament> => {
+    const data = await api.post(`/api/tournaments/${tournamentId}/participants/${participantId}/replace`);
+    return data.tournament;
+  },
+
+  setMatchResult: async (matchId: string, participantId: string, resultText: string): Promise<TournamentMatch> => {
+    const data = await api.post(`/api/tournaments/matches/${matchId}/result`, { participantId, resultText });
+    return data.match;
   },
 
   declareMatchWinner: async (matchId: string, winnerId: string): Promise<Tournament> => {
@@ -93,5 +121,20 @@ export const tournamentApi = {
   revertMatchWinner: async (matchId: string): Promise<Tournament> => {
     const data = await api.delete(`/api/tournaments/matches/${matchId}/winner`);
     return data.tournament;
+  },
+
+  pauseMatch: async (matchId: string): Promise<TournamentMatch> => {
+    const data = await api.post(`/api/tournaments/matches/${matchId}/pause`);
+    return data.match;
+  },
+
+  resumeMatch: async (matchId: string): Promise<TournamentMatch> => {
+    const data = await api.post(`/api/tournaments/matches/${matchId}/resume`);
+    return data.match;
+  },
+
+  getAuditLog: async (id: string, limit = 50, offset = 0): Promise<AuditLogEntry[]> => {
+    const data = await api.get(`/api/tournaments/${id}/audit-log?limit=${limit}&offset=${offset}`);
+    return data.entries;
   },
 };

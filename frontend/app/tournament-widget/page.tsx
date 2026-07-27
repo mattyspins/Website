@@ -4,30 +4,37 @@ import { useEffect, useState, useCallback } from "react";
 import { getSocket } from "@/lib/socket";
 import { Tournament, TournamentStatus, MatchStatus, TournamentMatch } from "@/types/tournament";
 import { BingoGame } from "@/lib/api/bonusBingo";
+import { bebasNeue, manrope } from "@/lib/tournamentFonts";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
+const ACTIVE_STATUSES = [TournamentStatus.REGISTRATION, TournamentStatus.LOCKED, TournamentStatus.DRAWN, TournamentStatus.IN_PROGRESS];
+
 const STATUS_CFG: Record<string, { label: string; dot: string; text: string }> = {
-  DRAFT:          { label: "Draft",            dot: "bg-white/30",                text: "text-white/50" },
-  REGISTRATION:   { label: "Registration",     dot: "bg-blue-400",                text: "text-blue-300" },
-  SLOT_SELECTION: { label: "Picking Slots",    dot: "bg-amber-400 animate-pulse", text: "text-amber-300" },
-  IN_PROGRESS:    { label: "Live",             dot: "bg-green-400 animate-pulse", text: "text-green-300" },
-  COMPLETED:      { label: "Completed",        dot: "bg-yellow-400",              text: "text-yellow-300" },
-  CANCELLED:      { label: "Cancelled",        dot: "bg-red-400",                 text: "text-red-300" },
+  DRAFT:        { label: "Draft",             dot: "bg-white/30",                text: "text-white/50" },
+  REGISTRATION: { label: "Registration",      dot: "bg-blue-400",                text: "text-blue-300" },
+  LOCKED:       { label: "Registration Locked", dot: "bg-amber-400 animate-pulse", text: "text-amber-300" },
+  DRAWN:        { label: "Bracket Drawn",     dot: "bg-[color:var(--tt-pink)] animate-pulse", text: "text-[color:var(--tt-pink)]" },
+  IN_PROGRESS:  { label: "Live",              dot: "bg-green-400 animate-pulse", text: "text-green-300" },
+  COMPLETED:    { label: "Completed",         dot: "bg-yellow-400",              text: "text-yellow-300" },
+  CANCELLED:    { label: "Cancelled",         dot: "bg-red-400",                 text: "text-red-300" },
 };
 
-function MatchCard({ match, tournament }: { match: TournamentMatch; tournament: Tournament }) {
+function MatchCard({ match }: { match: TournamentMatch }) {
   const [p1, p2] = match.participants;
   const winner = match.winnerId
     ? match.participants.find(p => p.participantId === match.winnerId || p.userId === match.winnerId)
     : null;
 
   return (
-    <div className={`rounded-lg px-2 py-1.5 border ${match.status === MatchStatus.ACTIVE ? "bg-green-900/30 border-green-500/30" : "bg-white/5 border-white/10"}`}>
+    <div className={`rounded-lg px-2 py-1.5 border ${match.status === MatchStatus.ACTIVE ? "bg-green-900/30 border-green-500/30" : match.status === MatchStatus.PAUSED ? "bg-amber-900/20 border-amber-500/30" : "bg-white/5 border-white/10"}`}>
       <div className="flex items-center justify-between mb-1">
         <span className="text-[8px] text-white/45 uppercase tracking-wider">Match {match.matchNumber} · R{match.round}</span>
         {match.status === MatchStatus.ACTIVE && (
           <span className="text-[8px] text-green-400 font-semibold animate-pulse">● Live</span>
+        )}
+        {match.status === MatchStatus.PAUSED && (
+          <span className="text-[8px] text-amber-400 font-semibold">⏸ Paused</span>
         )}
         {match.status === MatchStatus.COMPLETED && winner && (
           <span className="text-[8px] text-yellow-400 font-semibold">✓ {winner.displayName}</span>
@@ -42,9 +49,6 @@ function MatchCard({ match, tournament }: { match: TournamentMatch; tournament: 
             </span>
             {p.slotCall && (
               <span className="text-[8px] text-white/45 truncate">🎰 {p.slotCall}</span>
-            )}
-            {!p.slotCall && match.status === MatchStatus.SLOT_SELECTION && (
-              <span className="text-[8px] text-amber-400/60 animate-pulse">choosing…</span>
             )}
           </div>
         );
@@ -133,13 +137,9 @@ export default function TournamentWidget() {
       const res = await fetch(`${API_URL}/api/tournaments`, { cache: "no-store" });
       if (!res.ok) return;
       const data = await res.json();
-      const active = (data.tournaments as Tournament[]).find(t =>
-        [TournamentStatus.REGISTRATION, TournamentStatus.SLOT_SELECTION, TournamentStatus.IN_PROGRESS].includes(t.status as TournamentStatus)
-      ) ?? (data.tournaments as Tournament[]).find(t => t.status === TournamentStatus.COMPLETED) ?? null;
-      setTournament(prev => {
-        if (active?.id !== prev?.id) return active;
-        return active;
-      });
+      const active = (data.tournaments as Tournament[]).find(t => ACTIVE_STATUSES.includes(t.status as TournamentStatus))
+        ?? (data.tournaments as Tournament[]).find(t => t.status === TournamentStatus.COMPLETED) ?? null;
+      setTournament(prev => (active?.id !== prev?.id ? active : active));
     } catch { /* ignore */ }
   }, []);
 
@@ -168,9 +168,11 @@ export default function TournamentWidget() {
     };
   }, [tournament?.id, findActiveTournament]);
 
+  const wrapperCls = `tournament-theme ${bebasNeue.variable} ${manrope.variable} p-1.5 space-y-1.5 select-none`;
+
   if (!tournament) {
     return (
-      <div className="p-1.5 space-y-1.5 font-sans select-none" style={{ width: 220 }}>
+      <div className={wrapperCls} style={{ width: 220, background: "transparent" }}>
         <div className="bg-black/60 border border-white/10 rounded-lg p-4 text-center">
           <p className="text-2xl mb-1">🏆</p>
           <p className="text-white/50 text-[10px] tracking-widest uppercase">No active tournament…</p>
@@ -182,7 +184,7 @@ export default function TournamentWidget() {
 
   const cfg = STATUS_CFG[tournament.status] ?? STATUS_CFG.DRAFT;
   const activeMatches = tournament.matches.filter(m =>
-    m.status === MatchStatus.ACTIVE || m.status === MatchStatus.SLOT_SELECTION
+    m.status === MatchStatus.ACTIVE || m.status === MatchStatus.PAUSED
   );
   const remaining = tournament.participants.filter(p => !p.eliminated).length;
 
@@ -195,7 +197,7 @@ export default function TournamentWidget() {
     const mp = finalMatch.participants.find(p => p.participantId === finalMatch.winnerId || p.userId === finalMatch.winnerId);
     if (!mp) return tournament.participants.find(p => p.finalPosition === 1) ?? null;
     const tp = tournament.participants.find(p => p.userId === mp.userId);
-    return tp ?? { displayName: mp.displayName, avatarUrl: mp.avatarUrl, currentSlot: mp.slotCall, userId: mp.userId, id: mp.participantId, finalPosition: 1, eliminated: false, seed: null, slotConfirmed: true, slotDeadline: null };
+    return tp ?? { displayName: mp.displayName, avatarUrl: mp.avatarUrl, currentSlot: mp.slotCall, userId: mp.userId, id: mp.participantId, finalPosition: 1, eliminated: false, seed: null };
   })();
 
   // Recent completed matches (last 3)
@@ -205,7 +207,7 @@ export default function TournamentWidget() {
     .reverse();
 
   return (
-    <div className="p-1.5 space-y-1.5 font-sans select-none" style={{ width: 220 }}>
+    <div className={wrapperCls} style={{ width: 220, background: "transparent" }}>
 
       {/* Header */}
       <div className="bg-black/70 border border-white/10 rounded-lg px-2 py-1 flex items-center justify-between gap-1">
@@ -246,26 +248,17 @@ export default function TournamentWidget() {
         </div>
       )}
 
-      {/* Slot selection */}
-      {tournament.status === TournamentStatus.SLOT_SELECTION && (
-        <div className="bg-black/70 border border-white/10 rounded-lg px-2 py-1.5">
-          <p className="text-white/45 text-[8px] uppercase tracking-wider mb-1">Picking Slots</p>
-          <div className="space-y-0.5">
-            {tournament.participants.slice(0, 8).map(p => (
-              <div key={p.id} className="flex items-center gap-1.5 min-w-0">
-                <span className={`text-[8px] shrink-0 ${p.slotConfirmed ? "text-green-400" : "text-amber-400"}`}>
-                  {p.slotConfirmed ? "✓" : "⏳"}
-                </span>
-                <span className="text-[9px] text-white/70 truncate">{p.displayName}</span>
-                {p.currentSlot && (
-                  <span className="text-[8px] text-white/45 truncate ml-auto">{p.currentSlot}</span>
-                )}
-              </div>
-            ))}
-            {tournament.participants.length > 8 && (
-              <p className="text-white/45 text-[8px]">+{tournament.participants.length - 8} more</p>
-            )}
-          </div>
+      {/* Locked / drawn — waiting for the bracket to go live */}
+      {tournament.status === TournamentStatus.LOCKED && (
+        <div className="bg-black/70 border border-white/10 rounded-lg px-2 py-1.5 text-center">
+          <p className="text-amber-300 text-[10px] font-semibold">Registration locked</p>
+          <p className="text-white/45 text-[8px] mt-0.5">Draw pending…</p>
+        </div>
+      )}
+      {tournament.status === TournamentStatus.DRAWN && (
+        <div className="bg-black/70 border border-white/10 rounded-lg px-2 py-1.5 text-center">
+          <p className="text-[color:var(--tt-pink)] text-[10px] font-semibold">Bracket drawn</p>
+          <p className="text-white/45 text-[8px] mt-0.5">{tournament.participants.length} players — going live soon</p>
         </div>
       )}
 
@@ -273,7 +266,7 @@ export default function TournamentWidget() {
       {activeMatches.length > 0 && (
         <div className="space-y-1">
           {activeMatches.map(m => (
-            <MatchCard key={m.id} match={m} tournament={tournament} />
+            <MatchCard key={m.id} match={m} />
           ))}
         </div>
       )}

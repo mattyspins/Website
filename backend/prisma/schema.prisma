@@ -8,81 +8,83 @@ datasource db {
 }
 
 model User {
-  id                     String                @id @default(uuid())
-  discordId              String                @unique @map("discord_id")
-  kickUsername           String?               @unique @map("kick_username")
-  kickVerified           Boolean               @default(false) @map("kick_verified")
-  displayName            String                @map("display_name")
-  avatarUrl              String?               @map("avatar_url")
-  points                 Int                   @default(0)
-  totalEarned            Int                   @default(0) @map("total_earned")
-  totalSpent             Int                   @default(0) @map("total_spent")
-  isAdmin                Boolean               @default(false) @map("is_admin")
-  isSuspended            Boolean               @default(false) @map("is_suspended")
-  suspensionReason       String?               @map("suspension_reason")
-  suspensionExpiresAt    DateTime?             @map("suspension_expires_at")
-  createdAt              DateTime              @default(now()) @map("created_at")
-  updatedAt              DateTime              @updatedAt @map("updated_at")
-  lastActiveAt           DateTime              @default(now()) @map("last_active_at")
-  kickId                 String?               @unique @map("kick_id")
-  kickAccessToken        String?               @map("kick_access_token")
-  kickRefreshToken       String?               @map("kick_refresh_token")
-  kickTokenExpiresAt     DateTime?             @map("kick_token_expires_at")
-  isModerator            Boolean               @default(false) @map("is_moderator")
-  rainbetUsername        String?               @unique @map("rainbet_username")
-  rainbetVerified        Boolean               @default(false) @map("rainbet_verified")
-  isVip                  Boolean               @default(false) @map("is_vip")
-  isDepositor            Boolean               @default(false) @map("is_depositor")
-  totalWagered           Decimal               @default(0) @map("total_wagered") @db.Decimal(15, 2)
-  weeklyWagered          Decimal               @default(0) @map("weekly_wagered") @db.Decimal(14, 2)
-  monthlyWagered         Decimal               @default(0) @map("monthly_wagered") @db.Decimal(14, 2)
-  totalDeposited         Decimal               @default(0) @map("total_deposited") @db.Decimal(15, 2)
-  lastDailyCheckIn       DateTime?             @map("last_daily_check_in")
-  auditLogsAsAdmin       AuditLog[]            @relation("AdminAuditLogs")
-  auditLogsAsTarget      AuditLog[]            @relation("TargetAuditLogs")
-  bonusHuntPredictions   BonusHuntPrediction[]
-  bonusHuntSessions      BonusHuntSession[]
-  notifications          Notification[]
-  adminPointTransactions PointTransaction[]    @relation("AdminPointTransactions")
-  pointTransactions      PointTransaction[]    @relation("UserPointTransactions")
-  raffleTickets          RaffleTicket[]
-  raffleWins             RaffleWinner[]
-  createdRaffles         Raffle[]
-  storePurchases         StorePurchase[]
-  updatedSystemConfig    SystemConfig[]
-  sessions               UserSession[]
-  statistics             UserStatistics?
-  viewingSessions        ViewingSession[]
-  createdGames           GuessTheBalance[]     @relation("GuessTheBalanceCreator")
-  wonGames               GuessTheBalance[]     @relation("GuessTheBalanceWinner")
-  guessSubmissions       GuessSubmission[]
-  milestoneClaims        MilestoneClaim[]
-  createdTournaments     Tournament[]          @relation("TournamentCreator")
-  tournamentParticipations TournamentParticipant[] @relation("TournamentParticipants")
-  tournamentEntries      TournamentEntry[]     @relation("TournamentEntries")
-  createdBingos          BonusBingo[]          @relation("BingoCreator")
-  currentBingoGames      BonusBingo[]          @relation("BingoCurrentUser")
-  bingoParticipations    BingoParticipant[]    @relation("BingoParticipants")
-  bingoClaimedCells      BingoCell[]           @relation("BingoCellClaimer")
-  viewerPickerEntries    ViewerPickerEntry[]
-  viewerPickerWinners    ViewerPickerWinner[]
-  slotRequests           SlotRequest[]
-  kothEntries            KingOfTheHillEntry[]
-  kothRounds             KingOfTheHillRound[]
-  razedDailyWagers       RazedDailyWager[]
-  wagerRacePayouts       WagerRacePayout[]
-  highRollerPlayers      HighRollerPlayer[]
-  weeklyRaffleWins       WeeklyRaffle[]        @relation("WeeklyRaffleWinner")
-  weeklyRafflesCreated   WeeklyRaffle[]        @relation("WeeklyRaffleCreator")
-  weeklyRafflesDrawn     WeeklyRaffle[]        @relation("WeeklyRaffleDrawnBy")
-  bossRaidsCreated       BossRaid[]            @relation("BossRaidCreator")
-  bossRaidEntries        BossRaidEntry[]
-  bossRaidRounds         BossRaidRound[]
-  bountyHuntersCreated   BountyHunter[]        @relation("BountyHunterCreator")
-  bountyHunterEntries    BountyHunterEntry[]
-  bountyHunterRounds     BountyHunterRound[]
-  slotWorldCupsCreated   SlotWorldCup[]           @relation("SlotWorldCupCreator")
-  slotWorldCupPredictions SlotWorldCupPrediction[] @relation("SlotWorldCupPredictions")
+  id                       String                   @id @default(uuid())
+  discordId                String                   @unique @map("discord_id")
+  kickUsername             String?                  @unique @map("kick_username")
+  kickVerified             Boolean                  @default(false) @map("kick_verified")
+  displayName              String                   @map("display_name")
+  avatarUrl                String?                  @map("avatar_url")
+  points                   Int                      @default(0)
+  totalEarned              Int                      @default(0) @map("total_earned")
+  totalSpent               Int                      @default(0) @map("total_spent")
+  isAdmin                  Boolean                  @default(false) @map("is_admin")
+  isSuspended              Boolean                  @default(false) @map("is_suspended")
+  suspensionReason         String?                  @map("suspension_reason")
+  suspensionExpiresAt      DateTime?                @map("suspension_expires_at")
+  createdAt                DateTime                 @default(now()) @map("created_at")
+  updatedAt                DateTime                 @updatedAt @map("updated_at")
+  lastActiveAt             DateTime                 @default(now()) @map("last_active_at")
+  kickId                   String?                  @unique @map("kick_id")
+  kickAccessToken          String?                  @map("kick_access_token")
+  kickRefreshToken         String?                  @map("kick_refresh_token")
+  kickTokenExpiresAt       DateTime?                @map("kick_token_expires_at")
+  isModerator              Boolean                  @default(false) @map("is_moderator")
+  rainbetUsername          String?                  @unique @map("rainbet_username")
+  rainbetVerified          Boolean                  @default(false) @map("rainbet_verified")
+  isVip                    Boolean                  @default(false) @map("is_vip")
+  isDepositor              Boolean                  @default(false) @map("is_depositor")
+  totalWagered             Decimal                  @default(0) @map("total_wagered") @db.Decimal(15, 2)
+  weeklyWagered            Decimal                  @default(0) @map("weekly_wagered") @db.Decimal(14, 2)
+  monthlyWagered           Decimal                  @default(0) @map("monthly_wagered") @db.Decimal(14, 2)
+  totalDeposited           Decimal                  @default(0) @map("total_deposited") @db.Decimal(15, 2)
+  lastDailyCheckIn         DateTime?                @map("last_daily_check_in")
+  auditLogsAsAdmin         AuditLog[]               @relation("AdminAuditLogs")
+  auditLogsAsTarget        AuditLog[]               @relation("TargetAuditLogs")
+  bonusHuntPredictions     BonusHuntPrediction[]
+  bonusHuntSessions        BonusHuntSession[]
+  notifications            Notification[]
+  adminPointTransactions   PointTransaction[]       @relation("AdminPointTransactions")
+  pointTransactions        PointTransaction[]       @relation("UserPointTransactions")
+  raffleTickets            RaffleTicket[]
+  raffleWins               RaffleWinner[]
+  createdRaffles           Raffle[]
+  storePurchases           StorePurchase[]
+  updatedSystemConfig      SystemConfig[]
+  sessions                 UserSession[]
+  statistics               UserStatistics?
+  viewingSessions          ViewingSession[]
+  createdGames             GuessTheBalance[]        @relation("GuessTheBalanceCreator")
+  wonGames                 GuessTheBalance[]        @relation("GuessTheBalanceWinner")
+  guessSubmissions         GuessSubmission[]
+  milestoneClaims          MilestoneClaim[]
+  createdTournaments       Tournament[]             @relation("TournamentCreator")
+  tournamentParticipations TournamentParticipant[]  @relation("TournamentParticipants")
+  tournamentEntries        TournamentEntry[]        @relation("TournamentEntries")
+  tournamentBans           TournamentBan[]          @relation("TournamentBanned")
+  tournamentBansIssued     TournamentBan[]          @relation("TournamentBanIssuedBy")
+  createdBingos            BonusBingo[]             @relation("BingoCreator")
+  currentBingoGames        BonusBingo[]             @relation("BingoCurrentUser")
+  bingoParticipations      BingoParticipant[]       @relation("BingoParticipants")
+  bingoClaimedCells        BingoCell[]              @relation("BingoCellClaimer")
+  viewerPickerEntries      ViewerPickerEntry[]
+  viewerPickerWinners      ViewerPickerWinner[]
+  slotRequests             SlotRequest[]
+  kothEntries              KingOfTheHillEntry[]
+  kothRounds               KingOfTheHillRound[]
+  razedDailyWagers         RazedDailyWager[]
+  wagerRacePayouts         WagerRacePayout[]
+  highRollerPlayers        HighRollerPlayer[]
+  weeklyRaffleWins         WeeklyRaffle[]           @relation("WeeklyRaffleWinner")
+  weeklyRafflesCreated     WeeklyRaffle[]           @relation("WeeklyRaffleCreator")
+  weeklyRafflesDrawn       WeeklyRaffle[]           @relation("WeeklyRaffleDrawnBy")
+  bossRaidsCreated         BossRaid[]               @relation("BossRaidCreator")
+  bossRaidEntries          BossRaidEntry[]
+  bossRaidRounds           BossRaidRound[]
+  bountyHuntersCreated     BountyHunter[]           @relation("BountyHunterCreator")
+  bountyHunterEntries      BountyHunterEntry[]
+  bountyHunterRounds       BountyHunterRound[]
+  slotWorldCupsCreated     SlotWorldCup[]           @relation("SlotWorldCupCreator")
+  slotWorldCupPredictions  SlotWorldCupPrediction[] @relation("SlotWorldCupPredictions")
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")
@@ -349,28 +351,27 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-
 model GuessTheBalance {
-  id                   String                    @id @default(uuid())
-  title                String?
-  description          String?
-  startingBalance      Decimal                   @map("starting_balance") @db.Decimal(12, 2)
-  numberOfBonuses      Int                       @map("number_of_bonuses")
-  breakEvenMultiplier  Decimal                   @map("break_even_multiplier") @db.Decimal(6, 2)
-  finalBalance         Decimal?                  @map("final_balance") @db.Decimal(12, 2)
-  status               GuessTheBalanceStatus     @default(DRAFT)
-  winnerId             String?                   @map("winner_id")
-  winnerGuess          Decimal?                  @map("winner_guess") @db.Decimal(12, 2)
-  winnerReward         Int?                      @default(0) @map("winner_reward")
-  createdBy            String                    @map("created_by")
-  createdAt            DateTime                  @default(now()) @map("created_at")
-  openedAt             DateTime?                 @map("opened_at")
-  closedAt             DateTime?                 @map("closed_at")
-  completedAt          DateTime?                 @map("completed_at")
-  metadata             Json?
-  creator              User                      @relation("GuessTheBalanceCreator", fields: [createdBy], references: [id])
-  winner               User?                     @relation("GuessTheBalanceWinner", fields: [winnerId], references: [id])
-  guesses              GuessSubmission[]
+  id                  String                @id @default(uuid())
+  title               String?
+  description         String?
+  startingBalance     Decimal               @map("starting_balance") @db.Decimal(12, 2)
+  numberOfBonuses     Int                   @map("number_of_bonuses")
+  breakEvenMultiplier Decimal               @map("break_even_multiplier") @db.Decimal(6, 2)
+  finalBalance        Decimal?              @map("final_balance") @db.Decimal(12, 2)
+  status              GuessTheBalanceStatus @default(DRAFT)
+  winnerId            String?               @map("winner_id")
+  winnerGuess         Decimal?              @map("winner_guess") @db.Decimal(12, 2)
+  winnerReward        Int?                  @default(0) @map("winner_reward")
+  createdBy           String                @map("created_by")
+  createdAt           DateTime              @default(now()) @map("created_at")
+  openedAt            DateTime?             @map("opened_at")
+  closedAt            DateTime?             @map("closed_at")
+  completedAt         DateTime?             @map("completed_at")
+  metadata            Json?
+  creator             User                  @relation("GuessTheBalanceCreator", fields: [createdBy], references: [id])
+  winner              User?                 @relation("GuessTheBalanceWinner", fields: [winnerId], references: [id])
+  guesses             GuessSubmission[]
 
   @@index([status])
   @@index([createdBy])
@@ -378,14 +379,14 @@ model GuessTheBalance {
 }
 
 model GuessSubmission {
-  id           String          @id @default(uuid())
-  gameId       String          @map("game_id")
-  userId       String          @map("user_id")
-  guessAmount  Decimal         @map("guess_amount") @db.Decimal(12, 2)
-  submittedAt  DateTime        @default(now()) @map("submitted_at")
-  updatedAt    DateTime        @updatedAt @map("updated_at")
-  game         GuessTheBalance @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String          @id @default(uuid())
+  gameId      String          @map("game_id")
+  userId      String          @map("user_id")
+  guessAmount Decimal         @map("guess_amount") @db.Decimal(12, 2)
+  submittedAt DateTime        @default(now()) @map("submitted_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  game        GuessTheBalance @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([gameId, userId])
   @@index([gameId])
@@ -403,34 +404,67 @@ enum GuessTheBalanceStatus {
 enum TournamentStatus {
   DRAFT
   REGISTRATION
-  SLOT_SELECTION
+  LOCKED
+  DRAWN
   IN_PROGRESS
   COMPLETED
   CANCELLED
 }
 
+// SLOT_SELECTION is intentionally left dangling (unused going forward):
+// Postgres has no clean `DROP VALUE` for enums, and a full type-swap
+// migration to remove it costs more than leaving one unused label. Slot is
+// now chosen at registration, so no match ever needs a slot-selection state.
 enum MatchStatus {
   PENDING
   SLOT_SELECTION
   ACTIVE
+  PAUSED
   COMPLETED
 }
 
+enum TournamentScoringMethod {
+  TOTAL_MULTIPLIER
+  HIGHEST_SINGLE_WIN
+  FINAL_BALANCE
+}
+
+enum TournamentEntrySource {
+  WEB
+  CHAT
+}
+
 model Tournament {
-  id               String                  @id @default(uuid())
-  title            String
-  status           TournamentStatus        @default(DRAFT)
-  keyword          String                  @default("!jointourney") @map("keyword")
-  maxPlayers       Int                     @default(8) @map("max_players")
-  slotTimerSeconds Int                     @default(180) @map("slot_timer_seconds")
-  currentRound     Int                     @default(0) @map("current_round")
-  createdById      String                  @map("created_by_id")
-  createdAt        DateTime                @default(now()) @map("created_at")
-  updatedAt        DateTime                @updatedAt @map("updated_at")
-  createdBy        User                    @relation("TournamentCreator", fields: [createdById], references: [id])
-  participants     TournamentParticipant[]
-  matches          TournamentMatch[]
-  entries          TournamentEntry[]
+  id                   String                  @id @default(uuid())
+  title                String
+  status               TournamentStatus        @default(DRAFT)
+  keyword              String                  @default("!jointourney") @map("keyword")
+  maxPlayers           Int                     @default(8) @map("max_players")
+  currentRound         Int                     @default(0) @map("current_round")
+  registrationOpensAt  DateTime?               @map("registration_opens_at")
+  registrationClosesAt DateTime?               @map("registration_closes_at")
+  allowDuplicateSlots  Boolean                 @default(false) @map("allow_duplicate_slots")
+  eligibleSlots        String[]                @default([]) @map("eligible_slots")
+  scoringMethod        TournamentScoringMethod @default(TOTAL_MULTIPLIER) @map("scoring_method")
+  spinsPerMatch        Int?                    @default(5) @map("spins_per_match")
+  betAmountPerSpin     Decimal?                @map("bet_amount_per_spin") @db.Decimal(10, 2)
+  prizePoolDisplay     String?                 @map("prize_pool_display")
+  // Commit-reveal draw fairness: seedCommitmentHash (sha256 of drawSeed) is
+  // published the moment registration locks, before anyone can know who's
+  // eligible for the draw — proving the outcome wasn't picked after the
+  // fact. drawSeed itself stays server-only until drawExecutedAt is set.
+  seedCommitmentHash   String?                 @map("seed_commitment_hash")
+  drawSeed             String?                 @map("draw_seed")
+  drawExecutedAt       DateTime?               @map("draw_executed_at")
+  drawResult           Json?                   @map("draw_result")
+  createdById          String                  @map("created_by_id")
+  createdAt            DateTime                @default(now()) @map("created_at")
+  updatedAt            DateTime                @updatedAt @map("updated_at")
+  createdBy            User                    @relation("TournamentCreator", fields: [createdById], references: [id])
+  participants         TournamentParticipant[]
+  matches              TournamentMatch[]
+  entries              TournamentEntry[]
+  bans                 TournamentBan[]
 
   @@map("tournaments")
 }
@@ -441,8 +475,6 @@ model TournamentParticipant {
   userId              String                       @map("user_id")
   seed                Int?
   currentSlot         String?                      @map("current_slot")
-  slotConfirmed       Boolean                      @default(false) @map("slot_confirmed")
-  slotDeadline        DateTime?                    @map("slot_deadline")
   eliminated          Boolean                      @default(false)
   finalPosition       Int?                         @map("final_position")
   createdAt           DateTime                     @default(now()) @map("created_at")
@@ -455,12 +487,18 @@ model TournamentParticipant {
 }
 
 model TournamentEntry {
-  id           String     @id @default(uuid())
-  tournamentId String     @map("tournament_id")
-  userId       String     @map("user_id")
-  enteredAt    DateTime   @default(now()) @map("entered_at")
-  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  user         User       @relation("TournamentEntries", fields: [userId], references: [id], onDelete: Cascade)
+  id           String                @id @default(uuid())
+  tournamentId String                @map("tournament_id")
+  userId       String                @map("user_id")
+  // Nullable at the DB level so historical pre-revamp rows don't need a
+  // backfill; every entry created going forward always has one (enforced in
+  // app code, not the schema) since slot is now chosen at entry time.
+  slot         String?
+  source       TournamentEntrySource @default(WEB)
+  invalidated  Boolean               @default(false)
+  enteredAt    DateTime              @default(now()) @map("entered_at")
+  tournament   Tournament            @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user         User                  @relation("TournamentEntries", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tournamentId, userId])
   @@map("tournament_entries")
@@ -474,7 +512,6 @@ model TournamentMatch {
   status       MatchStatus                  @default(PENDING)
   winnerId     String?                      @map("winner_id")
   nextMatchId  String?                      @map("next_match_id")
-  slotDeadline DateTime?                    @map("slot_deadline")
   createdAt    DateTime                     @default(now()) @map("created_at")
   updatedAt    DateTime                     @updatedAt @map("updated_at")
   tournament   Tournament                   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
@@ -485,17 +522,34 @@ model TournamentMatch {
 }
 
 model TournamentMatchParticipant {
-  id              String                @id @default(uuid())
-  matchId         String                @map("match_id")
-  participantId   String                @map("participant_id")
-  slotCall        String?               @map("slot_call")
-  slotConfirmed   Boolean               @default(false) @map("slot_confirmed")
-  slotConfirmedAt DateTime?             @map("slot_confirmed_at")
-  match           TournamentMatch       @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  participant     TournamentParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  id            String                @id @default(uuid())
+  matchId       String                @map("match_id")
+  participantId String                @map("participant_id")
+  slotCall      String?               @map("slot_call")
+  resultText    String?               @map("result_text")
+  match         TournamentMatch       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  participant   TournamentParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
 
   @@unique([matchId, participantId])
   @@map("tournament_match_participants")
+}
+
+// Tournament-scoped block: prevents a user from entering THIS tournament
+// again, without touching their site account (unlike AdminService's
+// sitewide suspension).
+model TournamentBan {
+  id           String     @id @default(uuid())
+  tournamentId String     @map("tournament_id")
+  userId       String     @map("user_id")
+  bannedById   String     @map("banned_by_id")
+  reason       String?
+  createdAt    DateTime   @default(now()) @map("created_at")
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user         User       @relation("TournamentBanned", fields: [userId], references: [id], onDelete: Cascade)
+  bannedBy     User       @relation("TournamentBanIssuedBy", fields: [bannedById], references: [id])
+
+  @@unique([tournamentId, userId])
+  @@map("tournament_bans")
 }
 
 model StreamEvent {
@@ -535,15 +589,15 @@ enum ViewerPickerStatus {
 }
 
 model ViewerPicker {
-  id             String              @id @default(uuid())
+  id             String               @id @default(uuid())
   keyword        String
   label          String?
-  status         ViewerPickerStatus  @default(OPEN)
-  winningEntryId String?             @unique @map("winning_entry_id")
-  createdAt      DateTime            @default(now()) @map("created_at")
-  closedAt       DateTime?           @map("closed_at")
-  entries        ViewerPickerEntry[] @relation("PickerEntries")
-  winningEntry   ViewerPickerEntry?  @relation("PickerWinningEntry", fields: [winningEntryId], references: [id], onDelete: SetNull)
+  status         ViewerPickerStatus   @default(OPEN)
+  winningEntryId String?              @unique @map("winning_entry_id")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  closedAt       DateTime?            @map("closed_at")
+  entries        ViewerPickerEntry[]  @relation("PickerEntries")
+  winningEntry   ViewerPickerEntry?   @relation("PickerWinningEntry", fields: [winningEntryId], references: [id], onDelete: SetNull)
   winners        ViewerPickerWinner[]
 
   @@map("viewer_pickers")
@@ -596,11 +650,11 @@ enum KothEntryStatus {
 }
 
 model KingOfTheHill {
-  id        String              @id @default(uuid())
+  id        String               @id @default(uuid())
   label     String?
-  status    KingOfTheHillStatus @default(OPEN)
-  createdAt DateTime            @default(now()) @map("created_at")
-  closedAt  DateTime?           @map("closed_at")
+  status    KingOfTheHillStatus  @default(OPEN)
+  createdAt DateTime             @default(now()) @map("created_at")
+  closedAt  DateTime?            @map("closed_at")
   entries   KingOfTheHillEntry[]
   rounds    KingOfTheHillRound[]
 
@@ -611,14 +665,14 @@ model KingOfTheHill {
 // join, whether or not they've linked Kick or registered on the site — `userId` is an
 // optional bonus link, resolved when the chatter's username happens to match a site account.
 model KingOfTheHillEntry {
-  id           String            @id @default(uuid())
-  sessionId    String            @map("session_id")
-  kickUsername String            @map("kick_username")
-  userId       String?           @map("user_id")
-  slotName     String?           @map("slot_name")
-  status       KothEntryStatus   @default(WAITING)
-  joinedAt     DateTime          @default(now()) @map("joined_at")
-  drawnAt      DateTime?         @map("drawn_at")
+  id           String               @id @default(uuid())
+  sessionId    String               @map("session_id")
+  kickUsername String               @map("kick_username")
+  userId       String?              @map("user_id")
+  slotName     String?              @map("slot_name")
+  status       KothEntryStatus      @default(WAITING)
+  joinedAt     DateTime             @default(now()) @map("joined_at")
+  drawnAt      DateTime?            @map("drawn_at")
   session      KingOfTheHill        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   user         User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
   rounds       KingOfTheHillRound[]
@@ -628,19 +682,19 @@ model KingOfTheHillEntry {
 }
 
 model KingOfTheHillRound {
-  id           String    @id @default(uuid())
-  sessionId    String    @map("session_id")
-  entryId      String    @map("entry_id")
-  userId       String?   @map("user_id")
-  slotName     String?   @map("slot_name")
-  betAmount    Decimal?  @map("bet_amount") @db.Decimal(10, 2)
-  payoutAmount Decimal?  @map("payout_amount") @db.Decimal(10, 2)
-  multiplier   Decimal?  @db.Decimal(6, 2)
-  isKing       Boolean   @default(false) @map("is_king")
-  drawnAt      DateTime  @default(now()) @map("drawn_at")
-  slotCalledAt DateTime? @map("slot_called_at")
-  playedAt     DateTime? @map("played_at")
-  dethronedAt  DateTime? @map("dethroned_at")
+  id           String             @id @default(uuid())
+  sessionId    String             @map("session_id")
+  entryId      String             @map("entry_id")
+  userId       String?            @map("user_id")
+  slotName     String?            @map("slot_name")
+  betAmount    Decimal?           @map("bet_amount") @db.Decimal(10, 2)
+  payoutAmount Decimal?           @map("payout_amount") @db.Decimal(10, 2)
+  multiplier   Decimal?           @db.Decimal(6, 2)
+  isKing       Boolean            @default(false) @map("is_king")
+  drawnAt      DateTime           @default(now()) @map("drawn_at")
+  slotCalledAt DateTime?          @map("slot_called_at")
+  playedAt     DateTime?          @map("played_at")
+  dethronedAt  DateTime?          @map("dethroned_at")
   session      KingOfTheHill      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   entry        KingOfTheHillEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
   user         User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -661,22 +715,22 @@ enum HighRollerPrediction {
 }
 
 model HighRoller {
-  id                 String                @id @default(uuid())
+  id                 String                        @id @default(uuid())
   title              String?
-  threshold          Decimal               @db.Decimal(10, 2)
-  status             HighRollerStatus      @default(OPEN)
-  paused             Boolean               @default(false)
-  roundLocked        Boolean               @default(false) @map("round_locked")
-  roundNumber        Int                   @default(0) @map("round_number")
-  finalRound         Boolean               @default(false) @map("final_round")
-  treatMissedAsWrong Boolean               @default(true) @map("treat_missed_as_wrong")
-  joinKeyword        String                @default("!join") @map("join_keyword")
-  leaveKeyword       String                @default("!leave") @map("leave_keyword")
-  overKeyword        String                @default("!over") @map("over_keyword")
-  underKeyword       String                @default("!under") @map("under_keyword")
-  suggestKeyword     String?               @default("!suggest") @map("suggest_keyword")
-  createdAt          DateTime              @default(now()) @map("created_at")
-  closedAt           DateTime?             @map("closed_at")
+  threshold          Decimal                       @db.Decimal(10, 2)
+  status             HighRollerStatus              @default(OPEN)
+  paused             Boolean                       @default(false)
+  roundLocked        Boolean                       @default(false) @map("round_locked")
+  roundNumber        Int                           @default(0) @map("round_number")
+  finalRound         Boolean                       @default(false) @map("final_round")
+  treatMissedAsWrong Boolean                       @default(true) @map("treat_missed_as_wrong")
+  joinKeyword        String                        @default("!join") @map("join_keyword")
+  leaveKeyword       String                        @default("!leave") @map("leave_keyword")
+  overKeyword        String                        @default("!over") @map("over_keyword")
+  underKeyword       String                        @default("!under") @map("under_keyword")
+  suggestKeyword     String?                       @default("!suggest") @map("suggest_keyword")
+  createdAt          DateTime                      @default(now()) @map("created_at")
+  closedAt           DateTime?                     @map("closed_at")
   players            HighRollerPlayer[]
   rounds             HighRollerRound[]
   suggestionDraws    HighRollerSuggestionDraw[]
@@ -689,17 +743,17 @@ model HighRoller {
 // can play, whether or not they've linked Kick or registered on the site — `userId` is an
 // optional bonus link, resolved when the chatter's username happens to match a site account.
 model HighRollerPlayer {
-  id                String                @id @default(uuid())
-  sessionId         String                @map("session_id")
-  kickUsername      String                @map("kick_username")
-  userId            String?               @map("user_id")
-  currentStreak     Int                   @default(0) @map("current_streak")
-  bestStreak        Int                   @default(0) @map("best_streak")
-  roundsPlayed      Int                   @default(0) @map("rounds_played")
-  correctCount      Int                   @default(0) @map("correct_count")
-  currentPrediction HighRollerPrediction? @map("current_prediction")
-  joinedAt          DateTime              @default(now()) @map("joined_at")
-  leftAt            DateTime?             @map("left_at")
+  id                String                      @id @default(uuid())
+  sessionId         String                      @map("session_id")
+  kickUsername      String                      @map("kick_username")
+  userId            String?                     @map("user_id")
+  currentStreak     Int                         @default(0) @map("current_streak")
+  bestStreak        Int                         @default(0) @map("best_streak")
+  roundsPlayed      Int                         @default(0) @map("rounds_played")
+  correctCount      Int                         @default(0) @map("correct_count")
+  currentPrediction HighRollerPrediction?       @map("current_prediction")
+  joinedAt          DateTime                    @default(now()) @map("joined_at")
+  leftAt            DateTime?                   @map("left_at")
   session           HighRoller                  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   user              User?                       @relation(fields: [userId], references: [id], onDelete: SetNull)
   predictions       HighRollerRoundPrediction[]
@@ -710,17 +764,17 @@ model HighRollerPlayer {
 
 // Append-only: one row per resolved round, for the round-history view.
 model HighRollerRound {
-  id           String                @id @default(uuid())
-  sessionId    String                @map("session_id")
-  roundNumber  Int                   @map("round_number")
-  threshold    Decimal               @db.Decimal(10, 2)
-  slotResult   Decimal               @db.Decimal(10, 2) @map("slot_result")
-  winningSide  HighRollerPrediction  @map("winning_side")
-  numberOver   Int                   @map("number_over")
-  numberUnder  Int                   @map("number_under")
-  resolvedAt   DateTime              @default(now()) @map("resolved_at")
-  session      HighRoller                  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  predictions  HighRollerRoundPrediction[]
+  id          String                      @id @default(uuid())
+  sessionId   String                      @map("session_id")
+  roundNumber Int                         @map("round_number")
+  threshold   Decimal                     @db.Decimal(10, 2)
+  slotResult  Decimal                     @map("slot_result") @db.Decimal(10, 2)
+  winningSide HighRollerPrediction        @map("winning_side")
+  numberOver  Int                         @map("number_over")
+  numberUnder Int                         @map("number_under")
+  resolvedAt  DateTime                    @default(now()) @map("resolved_at")
+  session     HighRoller                  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  predictions HighRollerRoundPrediction[]
 
   @@map("high_roller_rounds")
 }
@@ -734,8 +788,8 @@ model HighRollerRoundPrediction {
   prediction  HighRollerPrediction?
   correct     Boolean
   streakAfter Int                   @map("streak_after")
-  round       HighRollerRound  @relation(fields: [roundId], references: [id], onDelete: Cascade)
-  player      HighRollerPlayer @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  round       HighRollerRound       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  player      HighRollerPlayer      @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([roundId, playerId])
   @@map("high_roller_round_predictions")
@@ -807,18 +861,18 @@ model BonusBingo {
 }
 
 model BingoCell {
-  id                     String     @id @default(uuid())
-  gameId                 String     @map("game_id")
-  row                    Int
-  col                    Int
-  status                 CellStatus @default(EMPTY)
-  slotName               String?    @map("slot_name")
-  claimedById            String?    @map("claimed_by_id")
-  claimedByKickUsername  String?    @map("claimed_by_kick_username")
-  claimedAt              DateTime?  @map("claimed_at")
-  playedAt               DateTime?  @map("played_at")
-  game                   BonusBingo @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  claimedBy              User?      @relation("BingoCellClaimer", fields: [claimedById], references: [id])
+  id                    String     @id @default(uuid())
+  gameId                String     @map("game_id")
+  row                   Int
+  col                   Int
+  status                CellStatus @default(EMPTY)
+  slotName              String?    @map("slot_name")
+  claimedById           String?    @map("claimed_by_id")
+  claimedByKickUsername String?    @map("claimed_by_kick_username")
+  claimedAt             DateTime?  @map("claimed_at")
+  playedAt              DateTime?  @map("played_at")
+  game                  BonusBingo @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  claimedBy             User?      @relation("BingoCellClaimer", fields: [claimedById], references: [id])
 
   @@unique([gameId, row, col])
   @@map("bingo_cells")
@@ -985,26 +1039,26 @@ enum WeeklyRaffleStatus {
 }
 
 model WeeklyRaffle {
-  id               String             @id @default(uuid())
-  weekStart        DateTime           @map("week_start")
-  weekEnd          DateTime           @map("week_end")
-  status           WeeklyRaffleStatus @default(OPEN)
+  id                   String             @id @default(uuid())
+  weekStart            DateTime           @map("week_start")
+  weekEnd              DateTime           @map("week_end")
+  status               WeeklyRaffleStatus @default(OPEN)
   // Array of typed requirement objects, e.g. [{ "type": "MIN_WEEKLY_WAGER", "value": 500 }]
   // — kept as JSON so new requirement types don't need a schema migration.
-  requirements     Json               @default("[]")
-  winnerUserId     String?            @map("winner_user_id")
+  requirements         Json               @default("[]")
+  winnerUserId         String?            @map("winner_user_id")
   // Ordered array of eligible userIds as eliminated (last entry = winner) — the
   // provably-fair record the reveal animation replays.
-  eliminationOrder Json?              @map("elimination_order")
-  eligibleCount    Int?               @map("eligible_count")
-  drawnAt          DateTime?          @map("drawn_at")
-  drawnBy          String?            @map("drawn_by")
-  createdAt        DateTime           @default(now()) @map("created_at")
-  createdBy        String?            @map("created_by")
+  eliminationOrder     Json?              @map("elimination_order")
+  eligibleCount        Int?               @map("eligible_count")
+  drawnAt              DateTime?          @map("drawn_at")
+  drawnBy              String?            @map("drawn_by")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  createdBy            String?            @map("created_by")
   // Admin overrides on top of computed eligibility — arrays of userIds. A user in
   // both is treated as excluded (removal wins), so add doesn't need to special-case it.
-  manualAddUserIds     Json @default("[]") @map("manual_add_user_ids")
-  manualExcludeUserIds Json @default("[]") @map("manual_exclude_user_ids")
+  manualAddUserIds     Json               @default("[]") @map("manual_add_user_ids")
+  manualExcludeUserIds Json               @default("[]") @map("manual_exclude_user_ids")
 
   winner      User? @relation("WeeklyRaffleWinner", fields: [winnerUserId], references: [id])
   creator     User? @relation("WeeklyRaffleCreator", fields: [createdBy], references: [id])
@@ -1075,24 +1129,24 @@ model BossRaidEntry {
 }
 
 model BossRaidRound {
-  id            String    @id @default(uuid())
-  raidId        String    @map("raid_id")
-  entryId       String    @map("entry_id")
-  userId        String?   @map("user_id")
-  slotName      String?   @map("slot_name")
-  betAmount     Decimal?  @map("bet_amount") @db.Decimal(10, 2)
-  payoutAmount  Decimal?  @map("payout_amount") @db.Decimal(10, 2)
-  multiplier    Decimal?  @db.Decimal(8, 2)
-  damageDealt   Int       @default(0) @map("damage_dealt")
-  healApplied   Int       @default(0) @map("heal_applied")
-  isDeadBonus   Boolean   @default(false) @map("is_dead_bonus")
-  isRetrigger   Boolean   @default(false) @map("is_retrigger")
-  isCrit        Boolean   @default(false) @map("is_crit")
-  isLegendary   Boolean   @default(false) @map("is_legendary")
-  skipped       Boolean   @default(false)
-  drawnAt       DateTime  @default(now()) @map("drawn_at")
-  slotCalledAt  DateTime? @map("slot_called_at")
-  playedAt      DateTime? @map("played_at")
+  id           String    @id @default(uuid())
+  raidId       String    @map("raid_id")
+  entryId      String    @map("entry_id")
+  userId       String?   @map("user_id")
+  slotName     String?   @map("slot_name")
+  betAmount    Decimal?  @map("bet_amount") @db.Decimal(10, 2)
+  payoutAmount Decimal?  @map("payout_amount") @db.Decimal(10, 2)
+  multiplier   Decimal?  @db.Decimal(8, 2)
+  damageDealt  Int       @default(0) @map("damage_dealt")
+  healApplied  Int       @default(0) @map("heal_applied")
+  isDeadBonus  Boolean   @default(false) @map("is_dead_bonus")
+  isRetrigger  Boolean   @default(false) @map("is_retrigger")
+  isCrit       Boolean   @default(false) @map("is_crit")
+  isLegendary  Boolean   @default(false) @map("is_legendary")
+  skipped      Boolean   @default(false)
+  drawnAt      DateTime  @default(now()) @map("drawn_at")
+  slotCalledAt DateTime? @map("slot_called_at")
+  playedAt     DateTime? @map("played_at")
 
   raid  BossRaid      @relation(fields: [raidId], references: [id], onDelete: Cascade)
   entry BossRaidEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
@@ -1116,21 +1170,21 @@ enum BountyHunterEntryStatus {
 }
 
 model BountyHunter {
-  id               String                   @id @default(uuid())
+  id               String             @id @default(uuid())
   keyword          String
-  status           BountyHunterStatus       @default(REGISTRATION)
-  registrationOpen Boolean                  @default(true) @map("registration_open")
+  status           BountyHunterStatus @default(REGISTRATION)
+  registrationOpen Boolean            @default(true) @map("registration_open")
   target           Int
-  targetMin        Int                      @default(50) @map("target_min")
-  targetMax        Int                      @default(500) @map("target_max")
-  claimZone        Int                      @default(25) @map("claim_zone")
-  pot              Int                      @default(5000)
-  rolloverCount    Int                      @default(0) @map("rollover_count")
-  epoch            Int                      @default(0)
-  winnerEntryId    String?                  @map("winner_entry_id")
-  createdAt        DateTime                 @default(now()) @map("created_at")
-  closedAt         DateTime?                @map("closed_at")
-  createdById      String                   @map("created_by_id")
+  targetMin        Int                @default(50) @map("target_min")
+  targetMax        Int                @default(500) @map("target_max")
+  claimZone        Int                @default(25) @map("claim_zone")
+  pot              Int                @default(5000)
+  rolloverCount    Int                @default(0) @map("rollover_count")
+  epoch            Int                @default(0)
+  winnerEntryId    String?            @map("winner_entry_id")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  closedAt         DateTime?          @map("closed_at")
+  createdById      String             @map("created_by_id")
 
   creator User                @relation("BountyHunterCreator", fields: [createdById], references: [id])
   entries BountyHunterEntry[]
@@ -1140,14 +1194,14 @@ model BountyHunter {
 }
 
 model BountyHunterEntry {
-  id           String                   @id @default(uuid())
-  huntId       String                   @map("hunt_id")
-  kickUsername String                   @map("kick_username")
-  userId       String?                  @map("user_id")
-  slotName     String?                  @map("slot_name")
-  status       BountyHunterEntryStatus  @default(WAITING)
-  joinedAt     DateTime                 @default(now()) @map("joined_at")
-  drawnAt      DateTime?                @map("drawn_at")
+  id           String                  @id @default(uuid())
+  huntId       String                  @map("hunt_id")
+  kickUsername String                  @map("kick_username")
+  userId       String?                 @map("user_id")
+  slotName     String?                 @map("slot_name")
+  status       BountyHunterEntryStatus @default(WAITING)
+  joinedAt     DateTime                @default(now()) @map("joined_at")
+  drawnAt      DateTime?               @map("drawn_at")
 
   hunt   BountyHunter        @relation(fields: [huntId], references: [id], onDelete: Cascade)
   user   User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -1207,28 +1261,28 @@ enum SlotWorldCupNominationStatus {
 }
 
 model SlotWorldCup {
-  id              String              @id @default(uuid())
-  title           String
-  size            Int                 @default(8)
-  status          SlotWorldCupStatus  @default(NOMINATION)
-  nominationsOpen Boolean             @default(true) @map("nominations_open")
-  nominationCommand String            @default("!wc") @map("nomination_command")
+  id                String              @id @default(uuid())
+  title             String
+  size              Int                 @default(8)
+  status            SlotWorldCupStatus  @default(NOMINATION)
+  nominationsOpen   Boolean             @default(true) @map("nominations_open")
+  nominationCommand String              @default("!wc") @map("nomination_command")
   // How each matchup is played out on stream (Bonus Buy / 100 Spins / …). Free
   // text rather than an enum so the admin can set a one-off "Custom" rule
   // without a migration; it's descriptive only — the winner is always decided
   // by the higher multiplier.
-  matchRule       String              @default("Bonus Buy") @map("match_rule")
-  seeding         SlotWorldCupSeeding @default(RANDOM)
-  currentRound    Int                 @default(0) @map("current_round")
-  totalRounds     Int                 @map("total_rounds")
-  scoringConfig   Json                @map("scoring_config")
-  rewardConfig    Json                @map("reward_config")
-  championSlotId  String?             @map("champion_slot_id")
-  runnerUpSlotId  String?             @map("runner_up_slot_id")
-  createdById     String              @map("created_by_id")
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
-  closedAt        DateTime?           @map("closed_at")
+  matchRule         String              @default("Bonus Buy") @map("match_rule")
+  seeding           SlotWorldCupSeeding @default(RANDOM)
+  currentRound      Int                 @default(0) @map("current_round")
+  totalRounds       Int                 @map("total_rounds")
+  scoringConfig     Json                @map("scoring_config")
+  rewardConfig      Json                @map("reward_config")
+  championSlotId    String?             @map("champion_slot_id")
+  runnerUpSlotId    String?             @map("runner_up_slot_id")
+  createdById       String              @map("created_by_id")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  closedAt          DateTime?           @map("closed_at")
 
   creator     User                     @relation("SlotWorldCupCreator", fields: [createdById], references: [id])
   nominations SlotWorldCupNomination[]
@@ -1240,14 +1294,14 @@ model SlotWorldCup {
 }
 
 model SlotWorldCupNomination {
-  id             String   @id @default(uuid())
-  tournamentId   String   @map("tournament_id")
-  kickUsername   String   @map("kick_username")
-  slotName       String   @map("slot_name")
-  normalizedName String   @map("normalized_name")
+  id             String                       @id @default(uuid())
+  tournamentId   String                       @map("tournament_id")
+  kickUsername   String                       @map("kick_username")
+  slotName       String                       @map("slot_name")
+  normalizedName String                       @map("normalized_name")
   status         SlotWorldCupNominationStatus @default(PENDING)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  createdAt      DateTime                     @default(now()) @map("created_at")
+  updatedAt      DateTime                     @updatedAt @map("updated_at")
 
   tournament SlotWorldCup @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 
@@ -1288,12 +1342,12 @@ model SlotWorldCupMatch {
   nextMatchSlot String?   @map("next_match_slot")
   // Admin enters bet + payout per slot for the round; the multiplier is derived
   // and whichever slot hit the higher multiplier wins the matchup automatically.
-  betAmountA      Decimal?  @map("bet_amount_a") @db.Decimal(12, 2)
-  payoutAmountA   Decimal?  @map("payout_amount_a") @db.Decimal(14, 2)
-  multiplierA     Decimal?  @map("multiplier_a") @db.Decimal(10, 2)
-  betAmountB      Decimal?  @map("bet_amount_b") @db.Decimal(12, 2)
-  payoutAmountB   Decimal?  @map("payout_amount_b") @db.Decimal(14, 2)
-  multiplierB     Decimal?  @map("multiplier_b") @db.Decimal(10, 2)
+  betAmountA    Decimal?  @map("bet_amount_a") @db.Decimal(12, 2)
+  payoutAmountA Decimal?  @map("payout_amount_a") @db.Decimal(14, 2)
+  multiplierA   Decimal?  @map("multiplier_a") @db.Decimal(10, 2)
+  betAmountB    Decimal?  @map("bet_amount_b") @db.Decimal(12, 2)
+  payoutAmountB Decimal?  @map("payout_amount_b") @db.Decimal(14, 2)
+  multiplierB   Decimal?  @map("multiplier_b") @db.Decimal(10, 2)
   completedAt   DateTime? @map("completed_at")
   createdAt     DateTime  @default(now()) @map("created_at")
 
@@ -1324,4 +1378,3 @@ model SlotWorldCupPrediction {
   @@unique([tournamentId, userId])
   @@map("slot_world_cup_predictions")
 }
-

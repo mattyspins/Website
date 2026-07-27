@@ -1,4 +1,4 @@
-import { randomInt } from 'crypto';
+import { randomBytes, createHash } from 'crypto';
 import { prisma } from '@/config/database';
 import createError from 'http-errors';
 import { Server as SocketIOServer } from 'socket.io';
@@ -6,11 +6,23 @@ import { KickChatService } from '@/services/KickChatService';
 import {
   TournamentStatus,
   MatchStatus,
+  TournamentScoringMethod,
+  TournamentEntrySource,
   CreateTournamentDTO,
+  UpdateTournamentDTO,
   TournamentResponse,
   ParticipantResponse,
   MatchResponse,
+  TournamentEntryResponse,
+  DrawStatusResponse,
+  AuditLogEntryResponse,
+  ReserveResponse,
 } from '@/types/tournament';
+
+interface DrawResult {
+  selectedEntryIds: string[];
+  reserveEntryIds: string[];
+}
 
 export class TournamentService {
   // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -23,8 +35,6 @@ export class TournamentService {
       avatarUrl: p.user?.avatarUrl ?? null,
       seed: p.seed,
       currentSlot: p.currentSlot,
-      slotConfirmed: p.slotConfirmed,
-      slotDeadline: p.slotDeadline?.toISOString() ?? null,
       eliminated: p.eliminated,
       finalPosition: p.finalPosition,
     };
@@ -38,7 +48,6 @@ export class TournamentService {
       status: m.status as MatchStatus,
       winnerId: m.winnerId,
       nextMatchId: m.nextMatchId,
-      slotDeadline: m.slotDeadline?.toISOString() ?? null,
       participants: (m.participants ?? []).map((mp: any) => ({
         id: mp.id,
         participantId: mp.participantId,
@@ -46,7 +55,7 @@ export class TournamentService {
         displayName: mp.participant?.user?.kickUsername ?? mp.participant?.user?.displayName ?? '',
         avatarUrl: mp.participant?.user?.avatarUrl ?? null,
         slotCall: mp.slotCall,
-        slotConfirmed: mp.slotConfirmed,
+        resultText: mp.resultText,
       })),
     };
   }
@@ -54,16 +63,32 @@ export class TournamentService {
   static async formatTournament(t: any): Promise<TournamentResponse> {
     // Use pre-fetched _count if available (avoids N+1 when called from getAll)
     const entryCount = t._count?.entries ??
-      await prisma.tournamentEntry.count({ where: { tournamentId: t.id } });
+      await prisma.tournamentEntry.count({ where: { tournamentId: t.id, invalidated: false } });
+    const drawResult = (t.drawResult ?? null) as DrawResult | null;
+    const reserves = drawResult ? await TournamentService.buildReserveList(drawResult.reserveEntryIds) : [];
     return {
       id: t.id,
       title: t.title,
       status: t.status as TournamentStatus,
       keyword: t.keyword,
       maxPlayers: t.maxPlayers,
-      slotTimerSeconds: t.slotTimerSeconds,
       currentRound: t.currentRound,
+      registrationOpensAt: t.registrationOpensAt?.toISOString() ?? null,
+      registrationClosesAt: t.registrationClosesAt?.toISOString() ?? null,
+      allowDuplicateSlots: t.allowDuplicateSlots,
+      eligibleSlots: t.eligibleSlots,
+      scoringMethod: t.scoringMethod as TournamentScoringMethod,
+      spinsPerMatch: t.spinsPerMatch,
+      betAmountPerSpin: t.betAmountPerSpin?.toString() ?? null,
+      prizePoolDisplay: t.prizePoolDisplay,
+      seedCommitmentHash: t.seedCommitmentHash,
+      // Raw seed only ever goes out once the reveal step (drawExecutedAt) has
+      // happened — that's the point of a commit-reveal scheme.
+      drawSeed: t.drawExecutedAt ? t.drawSeed : null,
+      drawExecutedAt: t.drawExecutedAt?.toISOString() ?? null,
       entryCount,
+      reserveCount: drawResult?.reserveEntryIds.length ?? 0,
+      reserves,
       participants: (t.participants ?? []).map(TournamentService.formatParticipant),
       matches: (t.matches ?? []).map(TournamentService.formatMatch),
       createdAt: t.createdAt.toISOString(),
@@ -87,25 +112,125 @@ export class TournamentService {
           },
           orderBy: [{ round: 'asc' }, { matchNumber: 'asc' }],
         },
-        _count: { select: { entries: true } },
+        _count: { select: { entries: { where: { invalidated: false } } } },
       },
     });
   }
 
-  // ─── Bracket builder ──────────────────────────────────────────────────────
+  /**
+   * Audit log helper. AuditLog.targetId is a hard FK to users.id, but the
+   * target of a tournament action is a tournament — so targetId is left null
+   * here and the tournament id travels inside newValues instead, where
+   * getAuditLog can filter on it without violating that constraint.
+   */
+  private static async logAudit(
+    adminId: string,
+    action: string,
+    tournamentId: string,
+    extra?: { oldValues?: Record<string, unknown>; newValues?: Record<string, unknown> }
+  ): Promise<void> {
+    await prisma.auditLog.create({
+      data: {
+        adminId,
+        action,
+        targetType: 'tournament',
+        oldValues: extra?.oldValues as any,
+        newValues: { tournamentId, ...(extra?.newValues ?? {}) } as any,
+      },
+    });
+  }
+
+  static async getAuditLog(tournamentId: string, limit = 50, offset = 0): Promise<AuditLogEntryResponse[]> {
+    const logs = await prisma.auditLog.findMany({
+      where: { targetType: 'tournament', newValues: { path: ['tournamentId'], equals: tournamentId } },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+      include: { admin: { select: { displayName: true, kickUsername: true } } },
+    });
+    return logs.map((l) => ({
+      id: l.id,
+      action: l.action,
+      adminId: l.adminId,
+      adminName: l.admin?.kickUsername ?? l.admin?.displayName ?? null,
+      createdAt: l.createdAt.toISOString(),
+    }));
+  }
+
+  // ─── Draw math ────────────────────────────────────────────────────────────
 
   private static totalRounds(n: number): number {
     return Math.ceil(Math.log2(n));
   }
 
-  /** Fisher-Yates shuffle using crypto.randomInt for uniform distribution */
-  private static shuffle<T>(arr: T[]): T[] {
+  /**
+   * Deterministic Fisher-Yates: the "random" stream is repeated SHA-256
+   * re-hashing of the seed, so the exact same seed always produces the exact
+   * same order — anyone can re-run this algorithm against the revealed seed
+   * to verify a draw wasn't tampered with. (The tiny modulo bias this
+   * introduces vs. true uniform randomness is negligible at tournament pool
+   * sizes and isn't worth rejection-sampling for.)
+   */
+  private static seededShuffle<T>(seed: string, arr: T[]): T[] {
     const a = [...arr];
+    let state = seed;
+    const nextInt = (max: number): number => {
+      state = createHash('sha256').update(state).digest('hex');
+      return parseInt(state.slice(0, 8), 16) % max;
+    };
     for (let i = a.length - 1; i > 0; i--) {
-      const j = randomInt(0, i + 1);
+      const j = nextInt(i + 1);
       [a[i], a[j]] = [a[j], a[i]];
     }
     return a;
+  }
+
+  private static async getEligibleEntries(tournamentId: string) {
+    const bans = await prisma.tournamentBan.findMany({ where: { tournamentId }, select: { userId: true } });
+    const bannedIds = new Set(bans.map((b) => b.userId));
+    const entries = await prisma.tournamentEntry.findMany({
+      where: { tournamentId, invalidated: false },
+      orderBy: { enteredAt: 'asc' },
+    });
+    return entries.filter((e) => !bannedIds.has(e.userId));
+  }
+
+  private static async buildReserveList(reserveEntryIds: string[]): Promise<ReserveResponse[]> {
+    if (reserveEntryIds.length === 0) return [];
+    const entries = await prisma.tournamentEntry.findMany({
+      where: { id: { in: reserveEntryIds } },
+      include: { user: { select: { displayName: true, kickUsername: true, avatarUrl: true } } },
+    });
+    const entryById = new Map(entries.map((e) => [e.id, e]));
+    return reserveEntryIds
+      .map((id, i) => {
+        const e = entryById.get(id);
+        if (!e) return null;
+        return {
+          rank: i + 1,
+          entryId: e.id,
+          userId: e.userId,
+          displayName: e.user.kickUsername ?? e.user.displayName,
+          avatarUrl: e.user.avatarUrl,
+          slot: e.slot,
+        };
+      })
+      .filter((r): r is ReserveResponse => r !== null);
+  }
+
+  private static async computeDraw(tournamentId: string): Promise<DrawResult> {
+    const t = await prisma.tournament.findUniqueOrThrow({ where: { id: tournamentId } });
+    if (!t.drawSeed) throw createError(400, 'No draw seed set — lock registration first');
+
+    const eligible = await TournamentService.getEligibleEntries(tournamentId);
+    const shuffled = TournamentService.seededShuffle(t.drawSeed, eligible);
+    const selected = shuffled.slice(0, t.maxPlayers);
+    const reserves = shuffled.slice(t.maxPlayers);
+
+    return {
+      selectedEntryIds: selected.map((e) => e.id),
+      reserveEntryIds: reserves.map((e) => e.id),
+    };
   }
 
   // ─── ADMIN: Create ─────────────────────────────────────────────────────────
@@ -114,32 +239,59 @@ export class TournamentService {
     if (dto.maxPlayers < 2 || dto.maxPlayers > 64) {
       throw createError(400, 'maxPlayers must be between 2 and 64');
     }
-    if (dto.slotTimerSeconds < 60 || dto.slotTimerSeconds > 600) {
-      throw createError(400, 'slotTimerSeconds must be between 60 and 600');
-    }
 
     const tournament = await prisma.tournament.create({
       data: {
         title: dto.title,
         keyword: dto.keyword?.trim() || '!jointourney',
         maxPlayers: dto.maxPlayers,
-        slotTimerSeconds: dto.slotTimerSeconds,
         createdById: adminId,
       },
-      include: { participants: { include: { user: true } }, matches: { include: { participants: { include: { participant: { include: { user: true } } } } } }, _count: { select: { entries: true } } },
+      include: {
+        participants: { include: { user: true } },
+        matches: { include: { participants: { include: { participant: { include: { user: true } } } } } },
+        _count: { select: { entries: { where: { invalidated: false } } } },
+      },
     });
+    await TournamentService.logAudit(adminId, 'CREATE_TOURNAMENT', tournament.id, { newValues: { title: dto.title } });
     return TournamentService.formatTournament(tournament);
   }
 
-  // ─── ADMIN: Set keyword ─────────────────────────────────────────────────────
+  // ─── ADMIN: Update setup ────────────────────────────────────────────────────
 
-  static async setKeyword(id: string, keyword: string, io?: SocketIOServer): Promise<TournamentResponse> {
-    const trimmed = keyword.trim();
-    if (!trimmed) throw createError(400, 'Keyword cannot be empty');
+  static async updateTournament(
+    id: string,
+    dto: UpdateTournamentDTO,
+    adminId: string,
+    io?: SocketIOServer
+  ): Promise<TournamentResponse> {
     const t = await prisma.tournament.findUnique({ where: { id } });
     if (!t) throw createError(404, 'Tournament not found');
 
-    await prisma.tournament.update({ where: { id }, data: { keyword: trimmed } });
+    const slotConfigLocked = t.status !== TournamentStatus.DRAFT && t.status !== TournamentStatus.REGISTRATION;
+    if (slotConfigLocked && (dto.eligibleSlots !== undefined || dto.allowDuplicateSlots !== undefined)) {
+      throw createError(400, 'Eligible slots and duplicate-slot policy can only be changed before registration locks');
+    }
+    if (dto.maxPlayers !== undefined && (dto.maxPlayers < 2 || dto.maxPlayers > 64)) {
+      throw createError(400, 'maxPlayers must be between 2 and 64');
+    }
+
+    const data: Record<string, unknown> = {};
+    if (dto.title !== undefined) data.title = dto.title.trim();
+    if (dto.keyword !== undefined) data.keyword = dto.keyword.trim() || '!jointourney';
+    if (dto.maxPlayers !== undefined) data.maxPlayers = dto.maxPlayers;
+    if (dto.registrationOpensAt !== undefined) data.registrationOpensAt = dto.registrationOpensAt ? new Date(dto.registrationOpensAt) : null;
+    if (dto.registrationClosesAt !== undefined) data.registrationClosesAt = dto.registrationClosesAt ? new Date(dto.registrationClosesAt) : null;
+    if (dto.allowDuplicateSlots !== undefined) data.allowDuplicateSlots = dto.allowDuplicateSlots;
+    if (dto.eligibleSlots !== undefined) data.eligibleSlots = dto.eligibleSlots.map((s) => s.trim()).filter(Boolean);
+    if (dto.scoringMethod !== undefined) data.scoringMethod = dto.scoringMethod;
+    if (dto.spinsPerMatch !== undefined) data.spinsPerMatch = dto.spinsPerMatch;
+    if (dto.betAmountPerSpin !== undefined) data.betAmountPerSpin = dto.betAmountPerSpin;
+    if (dto.prizePoolDisplay !== undefined) data.prizePoolDisplay = dto.prizePoolDisplay?.trim() || null;
+
+    await prisma.tournament.update({ where: { id }, data });
+    await TournamentService.logAudit(adminId, 'UPDATE_TOURNAMENT', id, { newValues: data });
+
     const updated = await TournamentService.getTournamentWithRelations(id);
     const response = await TournamentService.formatTournament(updated);
     io?.to(`tournament:${id}`).emit('tournament:updated', response);
@@ -148,33 +300,63 @@ export class TournamentService {
 
   // ─── ADMIN: Open registration ──────────────────────────────────────────────
 
-  static async openRegistration(id: string): Promise<TournamentResponse> {
+  static async openRegistration(id: string, adminId: string, io?: SocketIOServer): Promise<TournamentResponse> {
     const t = await prisma.tournament.findUnique({ where: { id } });
     if (!t) throw createError(404, 'Tournament not found');
     if (t.status !== TournamentStatus.DRAFT) throw createError(400, 'Tournament must be in DRAFT to open registration');
+    if (!t.registrationClosesAt) throw createError(400, 'Set a registration close time before opening registration');
 
     await prisma.tournament.update({ where: { id }, data: { status: TournamentStatus.REGISTRATION } });
+    await TournamentService.logAudit(adminId, 'OPEN_REGISTRATION', id);
+
     const updated = await TournamentService.getTournamentWithRelations(id);
-    return TournamentService.formatTournament(updated);
+    const response = await TournamentService.formatTournament(updated);
+    io?.to(`tournament:${id}`).emit('tournament:updated', response);
+    return response;
   }
 
   // ─── VIEWER: Enter raffle ──────────────────────────────────────────────────
 
-  static async enterRaffle(tournamentId: string, userId: string, io?: SocketIOServer): Promise<{ message: string }> {
+  static async enterRaffle(
+    tournamentId: string,
+    userId: string,
+    slot: string,
+    source: TournamentEntrySource,
+    io?: SocketIOServer
+  ): Promise<{ message: string }> {
     const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!t) throw createError(404, 'Tournament not found');
     if (t.status !== TournamentStatus.REGISTRATION) throw createError(400, 'Registration is not open');
+    if (t.registrationClosesAt && new Date() > t.registrationClosesAt) throw createError(400, 'Registration has closed');
+
+    const trimmedSlot = slot.trim();
+    if (!trimmedSlot) throw createError(400, 'A slot is required to enter');
+    if (!t.eligibleSlots.some((s) => s.toLowerCase() === trimmedSlot.toLowerCase())) {
+      throw createError(400, 'That slot is not eligible for this tournament');
+    }
+
+    const banned = await prisma.tournamentBan.findUnique({
+      where: { tournamentId_userId: { tournamentId, userId } },
+    });
+    if (banned) throw createError(403, 'You are banned from this tournament');
 
     const existing = await prisma.tournamentEntry.findUnique({
       where: { tournamentId_userId: { tournamentId, userId } },
     });
     if (existing) throw createError(409, 'Already entered');
 
-    await prisma.tournamentEntry.create({ data: { tournamentId, userId } });
+    if (!t.allowDuplicateSlots) {
+      const slotTaken = await prisma.tournamentEntry.findFirst({
+        where: { tournamentId, invalidated: false, slot: { equals: trimmedSlot, mode: 'insensitive' } },
+      });
+      if (slotTaken) throw createError(409, 'That slot has already been taken by another entrant');
+    }
+
+    await prisma.tournamentEntry.create({ data: { tournamentId, userId, slot: trimmedSlot, source } });
 
     const enteredUser = await prisma.user.findUnique({ where: { id: userId }, select: { displayName: true, kickUsername: true } });
     void KickChatService.sendChatMessage(
-      `🎟️ ${enteredUser?.kickUsername ? `@${enteredUser.kickUsername}` : enteredUser?.displayName ?? 'A viewer'} entered the "${t.title}" tournament raffle!`
+      `🎟️ ${enteredUser?.kickUsername ? `@${enteredUser.kickUsername}` : enteredUser?.displayName ?? 'A viewer'} entered the "${t.title}" tournament with ${trimmedSlot}!`
     );
 
     const updated = await TournamentService.getTournamentWithRelations(tournamentId);
@@ -200,158 +382,227 @@ export class TournamentService {
 
   // ─── ADMIN: Get all entries ────────────────────────────────────────────────
 
-  static async getEntries(tournamentId: string) {
+  static async getEntries(tournamentId: string): Promise<TournamentEntryResponse[]> {
     const entries = await prisma.tournamentEntry.findMany({
       where: { tournamentId },
       orderBy: { enteredAt: 'asc' },
     });
 
+    const userIds = entries.map((e) => e.userId);
     const users = await prisma.user.findMany({
-      where: { id: { in: entries.map((e) => e.userId) } },
+      where: { id: { in: userIds } },
       select: { id: true, displayName: true, kickUsername: true, avatarUrl: true },
     });
-    const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+    const userMap = new Map(users.map((u) => [u.id, u]));
 
-    return entries.map((e) => ({
-      id: e.id,
-      userId: e.userId,
-      displayName: userMap[e.userId]?.kickUsername ?? userMap[e.userId]?.displayName ?? e.userId,
-      avatarUrl: userMap[e.userId]?.avatarUrl ?? null,
-      enteredAt: e.enteredAt.toISOString(),
-    }));
+    const bans = await prisma.tournamentBan.findMany({ where: { tournamentId, userId: { in: userIds } }, select: { userId: true } });
+    const bannedSet = new Set(bans.map((b) => b.userId));
+
+    return entries.map((e) => {
+      const u = userMap.get(e.userId);
+      return {
+        id: e.id,
+        userId: e.userId,
+        displayName: u?.kickUsername ?? u?.displayName ?? e.userId,
+        avatarUrl: u?.avatarUrl ?? null,
+        slot: e.slot,
+        source: e.source as TournamentEntrySource,
+        invalidated: e.invalidated,
+        banned: bannedSet.has(e.userId),
+        enteredAt: e.enteredAt.toISOString(),
+      };
+    });
   }
 
-  // ─── ADMIN: Draw winners ───────────────────────────────────────────────────
+  // ─── ADMIN: Invalidate / restore an entry ──────────────────────────────────
 
-  static async drawWinners(
-    tournamentId: string,
-    count: number,
-    guaranteedUserIds: string[] = [],
-    io?: SocketIOServer
-  ): Promise<TournamentResponse> {
+  static async invalidateEntry(tournamentId: string, entryId: string, adminId: string, io?: SocketIOServer): Promise<TournamentResponse> {
+    const entry = await prisma.tournamentEntry.findFirst({ where: { id: entryId, tournamentId } });
+    if (!entry) throw createError(404, 'Entry not found');
+
+    await prisma.tournamentEntry.update({ where: { id: entryId }, data: { invalidated: true } });
+    await TournamentService.logAudit(adminId, 'INVALIDATE_ENTRY', tournamentId, { newValues: { entryId, userId: entry.userId } });
+
+    const updated = await TournamentService.getTournamentWithRelations(tournamentId);
+    const response = await TournamentService.formatTournament(updated);
+    io?.to(`tournament:${tournamentId}`).emit('tournament:updated', response);
+    return response;
+  }
+
+  static async restoreEntry(tournamentId: string, entryId: string, adminId: string, io?: SocketIOServer): Promise<TournamentResponse> {
+    const entry = await prisma.tournamentEntry.findFirst({ where: { id: entryId, tournamentId } });
+    if (!entry) throw createError(404, 'Entry not found');
+
+    await prisma.tournamentEntry.update({ where: { id: entryId }, data: { invalidated: false } });
+    await TournamentService.logAudit(adminId, 'RESTORE_ENTRY', tournamentId, { newValues: { entryId, userId: entry.userId } });
+
+    const updated = await TournamentService.getTournamentWithRelations(tournamentId);
+    const response = await TournamentService.formatTournament(updated);
+    io?.to(`tournament:${tournamentId}`).emit('tournament:updated', response);
+    return response;
+  }
+
+  // ─── ADMIN: Ban / unban (tournament-scoped) ────────────────────────────────
+
+  static async banUser(tournamentId: string, targetUserId: string, adminId: string, reason: string | undefined, io?: SocketIOServer): Promise<TournamentResponse> {
     const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!t) throw createError(404, 'Tournament not found');
-    if (t.status !== TournamentStatus.REGISTRATION) throw createError(400, 'Must be in REGISTRATION phase');
-    if (count < 1 || count > t.maxPlayers) throw createError(400, `count must be between 1 and ${t.maxPlayers}`);
 
-    const entries = await prisma.tournamentEntry.findMany({ where: { tournamentId } });
-    if (entries.length < count) throw createError(400, `Not enough entries (${entries.length}) to draw ${count} players`);
+    await prisma.tournamentBan.upsert({
+      where: { tournamentId_userId: { tournamentId, userId: targetUserId } },
+      create: { tournamentId, userId: targetUserId, bannedById: adminId, reason },
+      update: { reason, bannedById: adminId },
+    });
+    await prisma.tournamentEntry.updateMany({
+      where: { tournamentId, userId: targetUserId, invalidated: false },
+      data: { invalidated: true },
+    });
+    await TournamentService.logAudit(adminId, 'BAN_USER', tournamentId, { newValues: { userId: targetUserId, reason: reason ?? null } });
 
-    // Validate guaranteed picks are actual entrants
-    const entrantUserIds = new Set(entries.map((e) => e.userId));
-    const validGuaranteed = guaranteedUserIds.filter((id) => entrantUserIds.has(id));
-    if (validGuaranteed.length > count) throw createError(400, 'More guaranteed picks than total spots');
+    const updated = await TournamentService.getTournamentWithRelations(tournamentId);
+    const response = await TournamentService.formatTournament(updated);
+    io?.to(`tournament:${tournamentId}`).emit('tournament:updated', response);
+    return response;
+  }
 
-    // Remaining entries not in guaranteed list
-    const remaining = entries.filter((e) => !validGuaranteed.includes(e.userId));
-    const randomSpotsNeeded = count - validGuaranteed.length;
-    const randomPicks = TournamentService.shuffle([...remaining]).slice(0, randomSpotsNeeded);
+  static async unbanUser(tournamentId: string, targetUserId: string, adminId: string, io?: SocketIOServer): Promise<TournamentResponse> {
+    await prisma.tournamentBan.deleteMany({ where: { tournamentId, userId: targetUserId } });
+    await TournamentService.logAudit(adminId, 'UNBAN_USER', tournamentId, { newValues: { userId: targetUserId } });
 
-    // Combine: guaranteed first, then random fills
-    const guaranteed = entries.filter((e) => validGuaranteed.includes(e.userId));
-    const allPicked = [...guaranteed, ...randomPicks];
+    const updated = await TournamentService.getTournamentWithRelations(tournamentId);
+    const response = await TournamentService.formatTournament(updated);
+    io?.to(`tournament:${tournamentId}`).emit('tournament:updated', response);
+    return response;
+  }
 
-    const deadline = new Date(Date.now() + t.slotTimerSeconds * 1000);
+  // ─── ADMIN: Lock registration (publish the draw-seed commitment) ──────────
+
+  static async lockRegistration(id: string, adminId: string, io?: SocketIOServer): Promise<TournamentResponse> {
+    const t = await prisma.tournament.findUnique({ where: { id } });
+    if (!t) throw createError(404, 'Tournament not found');
+    if (t.status !== TournamentStatus.REGISTRATION) throw createError(400, 'Tournament must be in REGISTRATION to lock');
+    if (t.eligibleSlots.length === 0) throw createError(400, 'Add at least one eligible slot before locking registration');
+
+    const seed = randomBytes(32).toString('hex');
+    const hash = createHash('sha256').update(seed).digest('hex');
+
+    await prisma.tournament.update({
+      where: { id },
+      data: { status: TournamentStatus.LOCKED, drawSeed: seed, seedCommitmentHash: hash },
+    });
+    await TournamentService.logAudit(adminId, 'LOCK_REGISTRATION', id, { newValues: { seedCommitmentHash: hash } });
+
+    const updated = await TournamentService.getTournamentWithRelations(id);
+    const response = await TournamentService.formatTournament(updated);
+    io?.to(`tournament:${id}`).emit('tournament:updated', response);
+    return response;
+  }
+
+  // ─── ADMIN: Draw status (for the live draw-animation page) ────────────────
+
+  static async getDrawStatus(tournamentId: string): Promise<DrawStatusResponse> {
+    const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
+    if (!t) throw createError(404, 'Tournament not found');
+
+    if (t.drawExecutedAt && t.drawResult) {
+      const drawResult = t.drawResult as unknown as DrawResult;
+      const allIds = [...drawResult.selectedEntryIds, ...drawResult.reserveEntryIds];
+      const entries = await prisma.tournamentEntry.findMany({
+        where: { id: { in: allIds } },
+        include: { user: { select: { displayName: true, kickUsername: true, avatarUrl: true } } },
+      });
+      const entryById = new Map(entries.map((e) => [e.id, e]));
+      const display = (entryId: string) => {
+        const e = entryById.get(entryId)!;
+        return {
+          entryId: e.id,
+          userId: e.userId,
+          displayName: e.user.kickUsername ?? e.user.displayName,
+          avatarUrl: e.user.avatarUrl,
+          slot: e.slot,
+        };
+      };
+
+      return {
+        phase: 'complete',
+        seedCommitmentHash: t.seedCommitmentHash,
+        drawSeed: t.drawSeed,
+        targetCount: t.maxPlayers,
+        eligiblePool: [],
+        selected: drawResult.selectedEntryIds.map((id, i) => ({ ...display(id), seed: i + 1 })),
+        reserves: drawResult.reserveEntryIds.map((id, i) => ({ ...display(id), rank: i + 1 })),
+      };
+    }
+
+    if (t.status !== TournamentStatus.LOCKED) {
+      return {
+        phase: 'not_locked',
+        seedCommitmentHash: t.seedCommitmentHash,
+        drawSeed: null,
+        targetCount: t.maxPlayers,
+        eligiblePool: [],
+        selected: [],
+        reserves: [],
+      };
+    }
+
+    const eligible = await TournamentService.getEligibleEntries(tournamentId);
+    const users = await prisma.user.findMany({
+      where: { id: { in: eligible.map((e) => e.userId) } },
+      select: { id: true, displayName: true, kickUsername: true, avatarUrl: true },
+    });
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    return {
+      phase: 'ready',
+      seedCommitmentHash: t.seedCommitmentHash,
+      drawSeed: null,
+      targetCount: t.maxPlayers,
+      eligiblePool: eligible.map((e) => {
+        const u = userMap.get(e.userId);
+        return { entryId: e.id, userId: e.userId, displayName: u?.kickUsername ?? u?.displayName ?? e.userId, avatarUrl: u?.avatarUrl ?? null, slot: e.slot };
+      }),
+      selected: [],
+      reserves: [],
+    };
+  }
+
+  // ─── ADMIN: Run the draw ────────────────────────────────────────────────────
+
+  static async runDraw(tournamentId: string, adminId: string, io?: SocketIOServer): Promise<TournamentResponse> {
+    const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
+    if (!t) throw createError(404, 'Tournament not found');
+    if (t.status !== TournamentStatus.LOCKED) throw createError(400, 'Tournament must be LOCKED to run the draw');
+    if (t.drawExecutedAt) throw createError(400, 'Draw has already run for this tournament');
+
+    const { selectedEntryIds, reserveEntryIds } = await TournamentService.computeDraw(tournamentId);
+    if (selectedEntryIds.length < 2) throw createError(400, 'Not enough eligible entries to run the draw (need at least 2)');
+
+    const selectedEntries = await prisma.tournamentEntry.findMany({ where: { id: { in: selectedEntryIds } } });
+    const entryById = new Map(selectedEntries.map((e) => [e.id, e]));
 
     await prisma.$transaction([
       prisma.tournament.update({
         where: { id: tournamentId },
-        data: { status: TournamentStatus.SLOT_SELECTION, maxPlayers: count },
+        data: {
+          status: TournamentStatus.DRAWN,
+          maxPlayers: selectedEntryIds.length,
+          drawExecutedAt: new Date(),
+          drawResult: { selectedEntryIds, reserveEntryIds } as any,
+        },
       }),
-      ...allPicked.map((e, i) =>
-        prisma.tournamentParticipant.create({
-          data: { tournamentId, userId: e.userId, seed: i + 1, slotDeadline: deadline },
-        })
-      ),
+      ...selectedEntryIds.map((entryId, i) => {
+        const e = entryById.get(entryId)!;
+        return prisma.tournamentParticipant.create({
+          data: { tournamentId, userId: e.userId, seed: i + 1, currentSlot: e.slot },
+        });
+      }),
     ]);
 
-    const updated = await TournamentService.getTournamentWithRelations(tournamentId);
-    const response = await TournamentService.formatTournament(updated);
-    io?.to(`tournament:${tournamentId}`).emit('tournament:updated', response);
-    return response;
-  }
-
-  // ─── PARTICIPANT: Set initial slot ────────────────────────────────────────
-
-  static async setInitialSlot(tournamentId: string, userId: string, slotCall: string, io?: SocketIOServer): Promise<TournamentResponse> {
-    const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
-    if (!t) throw createError(404, 'Tournament not found');
-    if (t.status !== TournamentStatus.SLOT_SELECTION && t.status !== TournamentStatus.IN_PROGRESS) {
-      throw createError(400, 'Not in slot selection phase');
-    }
-
-    const participant = await prisma.tournamentParticipant.findUnique({
-      where: { tournamentId_userId: { tournamentId, userId } },
+    await TournamentService.buildBracket(tournamentId);
+    await TournamentService.logAudit(adminId, 'RUN_DRAW', tournamentId, {
+      newValues: { selectedCount: selectedEntryIds.length, reserveCount: reserveEntryIds.length },
     });
-    if (!participant) throw createError(403, 'You are not a participant');
-    if (participant.slotConfirmed) throw createError(400, 'Slot already confirmed');
-
-    // Check uniqueness within tournament
-    const conflict = await prisma.tournamentParticipant.findFirst({
-      where: { tournamentId, currentSlot: slotCall, id: { not: participant.id } },
-    });
-    if (conflict) throw createError(409, 'That slot is already taken by another participant');
-
-    await prisma.tournamentParticipant.update({
-      where: { id: participant.id },
-      data: { currentSlot: slotCall, slotConfirmed: true },
-    });
-
-    // Check if all participants have confirmed → start tournament
-    const unconfirmed = await prisma.tournamentParticipant.count({
-      where: { tournamentId, slotConfirmed: false },
-    });
-
-    if (unconfirmed === 0) {
-      await TournamentService.buildBracket(tournamentId);
-    }
-
-    const updated = await TournamentService.getTournamentWithRelations(tournamentId);
-    const response = await TournamentService.formatTournament(updated);
-    io?.to(`tournament:${tournamentId}`).emit('tournament:updated', response);
-    return response;
-  }
-
-  // ─── ADMIN: Reroll participant ─────────────────────────────────────────────
-
-  static async rerollParticipant(tournamentId: string, participantId: string, io?: SocketIOServer): Promise<TournamentResponse> {
-    const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
-    if (!t) throw createError(404, 'Tournament not found');
-    if (t.status !== TournamentStatus.SLOT_SELECTION) throw createError(400, 'Not in slot selection phase');
-
-    const participant = await prisma.tournamentParticipant.findFirst({
-      where: { id: participantId, tournamentId },
-    });
-    if (!participant) throw createError(404, 'Participant not found');
-    if (participant.slotConfirmed) throw createError(400, 'Participant already confirmed their slot');
-
-    // Pick a random replacement from remaining entries
-    const existingUserIds = (
-      await prisma.tournamentParticipant.findMany({ where: { tournamentId }, select: { userId: true } })
-    ).map((p) => p.userId);
-
-    const candidates = await prisma.tournamentEntry.findMany({
-      where: { tournamentId, userId: { notIn: existingUserIds } },
-    });
-
-    if (candidates.length === 0) {
-      // No replacement available — just remove participant and leave spot empty
-      await prisma.tournamentParticipant.delete({ where: { id: participantId } });
-    } else {
-      const replacement = candidates[randomInt(0, candidates.length)];
-      const deadline = new Date(Date.now() + t.slotTimerSeconds * 1000);
-      await prisma.$transaction([
-        prisma.tournamentParticipant.delete({ where: { id: participantId } }),
-        prisma.tournamentParticipant.create({
-          data: {
-            tournamentId,
-            userId: replacement.userId,
-            seed: participant.seed,
-            slotDeadline: deadline,
-          },
-        }),
-      ]);
-    }
 
     const updated = await TournamentService.getTournamentWithRelations(tournamentId);
     const response = await TournamentService.formatTournament(updated);
@@ -361,7 +612,16 @@ export class TournamentService {
 
   // ─── Build bracket ────────────────────────────────────────────────────────
 
-  private static async buildBracket(tournamentId: string) {
+  /**
+   * Builds every round's match rows from participants already in `seed`
+   * order (assigned once, during the draw) — no second, independent
+   * shuffle. Round-1 pairing is seed1-vs-seed2, seed3-vs-seed4, etc., and
+   * byes land on the last `byes` match slots deterministically. This is what
+   * makes the whole bracket outcome reproducible from the one committed
+   * draw seed. Round-1 real (2-participant) matches are created PENDING —
+   * activation is a separate explicit step (see startTournament).
+   */
+  private static async buildBracket(tournamentId: string): Promise<void> {
     const participants = await prisma.tournamentParticipant.findMany({
       where: { tournamentId },
       orderBy: { seed: 'asc' },
@@ -369,15 +629,8 @@ export class TournamentService {
 
     const n = participants.length;
     const rounds = TournamentService.totalRounds(n);
-    // `size` is the next power of 2 >= n — the number of virtual bracket slots.
-    // Padding up to size and resolving every bye in round 1 guarantees every later
-    // round is an exact power-of-2 halving with no further byes needed, which is
-    // what lets the simple nextMatchId = ceil(m/2) routing below stay correct.
     const size = 2 ** rounds;
     const byes = size - n;
-
-    // Randomly shuffle all participants — slot calls already set, matchups are pure luck
-    const shuffled = TournamentService.shuffle(participants);
 
     const matchesPerRound: number[] = [];
     for (let r = 1, count = size / 2; r <= rounds; r++, count /= 2) {
@@ -408,20 +661,12 @@ export class TournamentService {
       }
     }
 
-    // Round 1: `byes` of the size/2 matches get a single real participant (an automatic
-    // bye-win advancing them immediately); the rest get two and start playable right away.
-    // Which match numbers are byes is randomized too, purely so byes aren't visually
-    // clustered together — it has no effect on fairness since matchups are already random.
     const round1Matches = createdMatches.filter((m) => m.round === 1);
-    const isByeSlot = TournamentService.shuffle([
-      ...Array(byes).fill(true),
-      ...Array(round1Matches.length - byes).fill(false),
-    ]);
-
     let cursor = 0;
     for (let i = 0; i < round1Matches.length; i++) {
-      const pA = shuffled[cursor++];
-      const pB = isByeSlot[i] ? undefined : shuffled[cursor++];
+      const isByeSlot = i >= round1Matches.length - byes;
+      const pA = participants[cursor++];
+      const pB = isByeSlot ? undefined : participants[cursor++];
 
       await prisma.tournamentMatchParticipant.createMany({
         data: [
@@ -434,32 +679,39 @@ export class TournamentService {
         // Bye — auto-complete the match and advance the sole participant
         await prisma.tournamentMatch.update({
           where: { id: round1Matches[i].id },
-          data: { status: 'COMPLETED', winnerId: pA.id },
+          data: { status: MatchStatus.COMPLETED, winnerId: pA.id },
         });
         await TournamentService.advanceWinner(round1Matches[i].id, pA.id);
-      } else {
-        // Slots are locked from initial selection — go straight to ACTIVE
-        await prisma.tournamentMatch.update({
-          where: { id: round1Matches[i].id },
-          data: { status: 'ACTIVE' },
-        });
       }
+      // else: stays PENDING — activated explicitly via startTournament
     }
-
-    await prisma.tournament.update({
-      where: { id: tournamentId },
-      data: { status: TournamentStatus.IN_PROGRESS, currentRound: 1 },
-    });
   }
 
-  // ─── ADMIN: Force-start tournament (skip slot selection) ──────────────────
+  // ─── ADMIN: Start tournament (go live) ─────────────────────────────────────
 
-  static async startTournament(tournamentId: string, io?: SocketIOServer): Promise<TournamentResponse> {
+  static async startTournament(tournamentId: string, adminId: string, io?: SocketIOServer): Promise<TournamentResponse> {
     const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!t) throw createError(404, 'Tournament not found');
-    if (t.status !== TournamentStatus.SLOT_SELECTION) throw createError(400, 'Must be in SLOT_SELECTION phase');
 
-    await TournamentService.buildBracket(tournamentId);
+    // If the admin skipped the draw-animation page entirely, run the draw
+    // now so this one button reliably goes live regardless of which
+    // sub-phase it's called from.
+    if (t.status === TournamentStatus.LOCKED) {
+      await TournamentService.runDraw(tournamentId, adminId, io);
+    } else if (t.status !== TournamentStatus.DRAWN) {
+      throw createError(400, 'Tournament must be LOCKED or DRAWN to start');
+    }
+
+    const round1Pending = await prisma.tournamentMatch.findMany({
+      where: { tournamentId, round: 1, status: MatchStatus.PENDING },
+      include: { participants: true },
+    });
+    const toActivate = round1Pending.filter((m) => m.participants.length === 2).map((m) => m.id);
+    if (toActivate.length > 0) {
+      await prisma.tournamentMatch.updateMany({ where: { id: { in: toActivate } }, data: { status: MatchStatus.ACTIVE } });
+    }
+    await prisma.tournament.update({ where: { id: tournamentId }, data: { status: TournamentStatus.IN_PROGRESS } });
+    await TournamentService.logAudit(adminId, 'START_TOURNAMENT', tournamentId);
 
     const updated = await TournamentService.getTournamentWithRelations(tournamentId);
     const response = await TournamentService.formatTournament(updated);
@@ -467,99 +719,91 @@ export class TournamentService {
     return response;
   }
 
-  // ─── PARTICIPANT: Set match slot ───────────────────────────────────────────
+  // ─── ADMIN: Replace a participant with the next reserve ────────────────────
 
-  static async setMatchSlot(matchId: string, userId: string, slotCall: string, io?: SocketIOServer): Promise<MatchResponse> {
-    const match = await prisma.tournamentMatch.findUnique({
-      where: { id: matchId },
-      include: { participants: { include: { participant: true } }, tournament: true },
+  static async replaceParticipantWithReserve(tournamentId: string, participantId: string, adminId: string, io?: SocketIOServer): Promise<TournamentResponse> {
+    const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
+    if (!t) throw createError(404, 'Tournament not found');
+    if (!t.drawResult) throw createError(400, 'No draw result to pull a reserve from');
+
+    const participant = await prisma.tournamentParticipant.findFirst({ where: { id: participantId, tournamentId } });
+    if (!participant) throw createError(404, 'Participant not found');
+
+    const hasPlayed = await prisma.tournamentMatchParticipant.findFirst({
+      where: { participantId, match: { status: MatchStatus.COMPLETED } },
     });
-    if (!match) throw createError(404, 'Match not found');
-    if (match.status !== MatchStatus.SLOT_SELECTION) throw createError(400, 'Match is not in slot selection phase');
+    if (hasPlayed) throw createError(400, 'Cannot replace a participant who has already completed a match');
 
-    const participant = await prisma.tournamentParticipant.findUnique({
-      where: { tournamentId_userId: { tournamentId: match.tournamentId, userId } },
-    });
-    if (!participant) throw createError(403, 'You are not a participant in this tournament');
-
-    const mp = match.participants.find((p) => p.participantId === participant.id);
-    if (!mp) throw createError(403, 'You are not in this match');
-    if (mp.slotConfirmed) throw createError(400, 'You have already confirmed your slot for this match');
-
-    if (match.slotDeadline && new Date() > match.slotDeadline) {
-      throw createError(400, 'Slot timer has expired');
-    }
-
-    // Check uniqueness within this match
-    const conflict = match.participants.find(
-      (p) => p.slotCall === slotCall && p.participantId !== participant.id
+    const drawResult = t.drawResult as unknown as DrawResult;
+    const currentParticipantUserIds = new Set(
+      (await prisma.tournamentParticipant.findMany({ where: { tournamentId }, select: { userId: true } })).map((p) => p.userId)
     );
-    if (conflict) throw createError(409, 'That slot is already taken in this match');
+    const reserveEntries = await prisma.tournamentEntry.findMany({
+      where: { id: { in: drawResult.reserveEntryIds }, invalidated: false },
+    });
+    const reserveById = new Map(reserveEntries.map((e) => [e.id, e]));
+    // Walk the reserve list in its fixed draw order — not random — and pick
+    // the first one not already sitting in the bracket.
+    const nextReserveEntry = drawResult.reserveEntryIds
+      .map((id) => reserveById.get(id))
+      .find((e) => e && !currentParticipantUserIds.has(e.userId));
+    if (!nextReserveEntry) throw createError(400, 'No eligible reserves left');
 
-    await prisma.tournamentMatchParticipant.update({
-      where: { id: mp.id },
-      data: { slotCall },
+    // A participant who hasn't played yet is in at most one still-open match.
+    const matchParticipant = await prisma.tournamentMatchParticipant.findFirst({
+      where: { participantId },
+      include: { match: true },
     });
 
-    const updated = await prisma.tournamentMatch.findUnique({
-      where: { id: matchId },
-      include: { participants: { include: { participant: { include: { user: true } } } } },
-    });
-
-    const formatted = TournamentService.formatMatch(updated);
-    io?.to(`tournament:${match.tournamentId}`).emit('match:updated', formatted);
-    return formatted;
-  }
-
-  // ─── PARTICIPANT: Confirm match slot ──────────────────────────────────────
-
-  static async confirmMatchSlot(matchId: string, userId: string, io?: SocketIOServer): Promise<MatchResponse> {
-    const match = await prisma.tournamentMatch.findUnique({
-      where: { id: matchId },
-      include: { participants: { include: { participant: true } }, tournament: true },
-    });
-    if (!match) throw createError(404, 'Match not found');
-    if (match.status !== MatchStatus.SLOT_SELECTION) throw createError(400, 'Match is not in slot selection phase');
-
-    const participant = await prisma.tournamentParticipant.findUnique({
-      where: { tournamentId_userId: { tournamentId: match.tournamentId, userId } },
-    });
-    if (!participant) throw createError(403, 'Not a participant');
-
-    const mp = match.participants.find((p) => p.participantId === participant.id);
-    if (!mp) throw createError(403, 'Not in this match');
-    if (!mp.slotCall) throw createError(400, 'Set a slot call before confirming');
-    if (mp.slotConfirmed) throw createError(400, 'Already confirmed');
-
-    await prisma.tournamentMatchParticipant.update({
-      where: { id: mp.id },
-      data: { slotConfirmed: true, slotConfirmedAt: new Date() },
-    });
-
-    // If both confirmed → activate match
-    const allConfirmed = await prisma.tournamentMatchParticipant.count({
-      where: { matchId, slotConfirmed: false },
-    });
-    if (allConfirmed === 0) {
-      await prisma.tournamentMatch.update({
-        where: { id: matchId },
-        data: { status: MatchStatus.ACTIVE },
+    await prisma.$transaction(async (tx) => {
+      const replacement = await tx.tournamentParticipant.create({
+        data: {
+          tournamentId,
+          userId: nextReserveEntry.userId,
+          seed: participant.seed,
+          currentSlot: nextReserveEntry.slot,
+        },
       });
-    }
+      if (matchParticipant && matchParticipant.match.status !== MatchStatus.COMPLETED) {
+        await tx.tournamentMatchParticipant.update({
+          where: { id: matchParticipant.id },
+          data: { participantId: replacement.id, slotCall: nextReserveEntry.slot },
+        });
+      }
+      await tx.tournamentParticipant.delete({ where: { id: participantId } });
+    });
+
+    await TournamentService.logAudit(adminId, 'REPLACE_PARTICIPANT', tournamentId, {
+      newValues: { oldUserId: participant.userId, newUserId: nextReserveEntry.userId },
+    });
+
+    const updated = await TournamentService.getTournamentWithRelations(tournamentId);
+    const response = await TournamentService.formatTournament(updated);
+    io?.to(`tournament:${tournamentId}`).emit('tournament:updated', response);
+    return response;
+  }
+
+  // ─── ADMIN: Match result / winner / pause ──────────────────────────────────
+
+  static async setMatchResult(matchId: string, participantId: string, resultText: string, adminId: string, io?: SocketIOServer): Promise<MatchResponse> {
+    const match = await prisma.tournamentMatch.findUnique({ where: { id: matchId }, include: { participants: true } });
+    if (!match) throw createError(404, 'Match not found');
+    const mp = match.participants.find((p) => p.participantId === participantId);
+    if (!mp) throw createError(400, 'Participant is not in this match');
+
+    await prisma.tournamentMatchParticipant.update({ where: { id: mp.id }, data: { resultText: resultText.trim() || null } });
+    await TournamentService.logAudit(adminId, 'SET_MATCH_RESULT', match.tournamentId, { newValues: { matchId, participantId, resultText } });
 
     const updated = await prisma.tournamentMatch.findUnique({
       where: { id: matchId },
       include: { participants: { include: { participant: { include: { user: true } } } } },
     });
-
     const formatted = TournamentService.formatMatch(updated);
     io?.to(`tournament:${match.tournamentId}`).emit('match:updated', formatted);
     return formatted;
   }
 
-  // ─── ADMIN: Declare match winner ──────────────────────────────────────────
-
-  static async declareMatchWinner(matchId: string, winnerId: string, io?: SocketIOServer): Promise<TournamentResponse> {
+  static async declareMatchWinner(matchId: string, winnerId: string, adminId: string, io?: SocketIOServer): Promise<TournamentResponse> {
     const match = await prisma.tournamentMatch.findUnique({
       where: { id: matchId },
       include: { participants: true, tournament: true },
@@ -570,7 +814,6 @@ export class TournamentService {
     const winnerParticipant = match.participants.find((p) => p.participantId === winnerId);
     if (!winnerParticipant) throw createError(400, 'Winner must be a participant in this match');
 
-    // Mark loser eliminated
     const loserIds = match.participants
       .filter((p) => p.participantId !== winnerId)
       .map((p) => p.participantId);
@@ -586,12 +829,10 @@ export class TournamentService {
       }),
     ]);
 
-    // Advance winner to next match
     if (match.nextMatchId) {
       await TournamentService.advanceWinner(matchId, winnerId);
     }
 
-    // Check if tournament is over
     const incompleteMatches = await prisma.tournamentMatch.count({
       where: { tournamentId: match.tournamentId, status: { not: MatchStatus.COMPLETED } },
     });
@@ -617,15 +858,15 @@ export class TournamentService {
       );
     }
 
+    await TournamentService.logAudit(adminId, 'DECLARE_WINNER', match.tournamentId, { newValues: { matchId, winnerId } });
+
     const updated = await TournamentService.getTournamentWithRelations(match.tournamentId);
     const response = await TournamentService.formatTournament(updated);
     io?.to(`tournament:${match.tournamentId}`).emit('tournament:updated', response);
     return response;
   }
 
-  // ─── ADMIN: Revert match winner ───────────────────────────────────────────
-
-  static async revertMatchWinner(matchId: string, io?: SocketIOServer): Promise<TournamentResponse> {
+  static async revertMatchWinner(matchId: string, adminId: string, io?: SocketIOServer): Promise<TournamentResponse> {
     const match = await prisma.tournamentMatch.findUnique({
       where: { id: matchId },
       include: { participants: true, tournament: true },
@@ -635,14 +876,12 @@ export class TournamentService {
 
     const previousWinnerId = match.winnerId;
 
-    // If winner was advanced to next match, remove them from it (only if that match isn't completed)
     if (match.nextMatchId && previousWinnerId) {
       const nextMatch = await prisma.tournamentMatch.findUnique({ where: { id: match.nextMatchId } });
       if (nextMatch && nextMatch.status !== MatchStatus.COMPLETED) {
         await prisma.tournamentMatchParticipant.deleteMany({
           where: { matchId: match.nextMatchId, participantId: previousWinnerId },
         });
-        // Reset next match back to PENDING if it now has fewer than 2 participants
         const remainingInNext = await prisma.tournamentMatchParticipant.count({ where: { matchId: match.nextMatchId } });
         if (remainingInNext < 2) {
           await prisma.tournamentMatch.update({
@@ -655,7 +894,6 @@ export class TournamentService {
       }
     }
 
-    // Restore the match and un-eliminate the loser
     const loserIds = match.participants
       .filter((p) => p.participantId !== previousWinnerId)
       .map((p) => p.participantId);
@@ -669,14 +907,12 @@ export class TournamentService {
         where: { id: { in: loserIds } },
         data: { eliminated: false },
       }),
-      // Clear finalPosition if tournament was marked complete
       ...(previousWinnerId ? [prisma.tournamentParticipant.updateMany({
         where: { id: previousWinnerId },
         data: { finalPosition: null },
       })] : []),
     ]);
 
-    // If tournament was marked COMPLETED, revert it to IN_PROGRESS
     if (match.tournament.status === TournamentStatus.COMPLETED) {
       await prisma.tournament.update({
         where: { id: match.tournamentId },
@@ -684,17 +920,52 @@ export class TournamentService {
       });
     }
 
+    await TournamentService.logAudit(adminId, 'REVERT_WINNER', match.tournamentId, { newValues: { matchId } });
+
     const updated = await TournamentService.getTournamentWithRelations(match.tournamentId);
     const response = await TournamentService.formatTournament(updated);
     io?.to(`tournament:${match.tournamentId}`).emit('tournament:updated', response);
     return response;
   }
 
-  private static async advanceWinner(matchId: string, winnerId: string) {
+  static async pauseMatch(matchId: string, adminId: string, io?: SocketIOServer): Promise<MatchResponse> {
+    const match = await prisma.tournamentMatch.findUnique({ where: { id: matchId } });
+    if (!match) throw createError(404, 'Match not found');
+    if (match.status !== MatchStatus.ACTIVE) throw createError(400, 'Only an active match can be paused');
+
+    await prisma.tournamentMatch.update({ where: { id: matchId }, data: { status: MatchStatus.PAUSED } });
+    await TournamentService.logAudit(adminId, 'PAUSE_MATCH', match.tournamentId, { newValues: { matchId } });
+
+    const updated = await prisma.tournamentMatch.findUnique({
+      where: { id: matchId },
+      include: { participants: { include: { participant: { include: { user: true } } } } },
+    });
+    const formatted = TournamentService.formatMatch(updated);
+    io?.to(`tournament:${match.tournamentId}`).emit('match:updated', formatted);
+    return formatted;
+  }
+
+  static async resumeMatch(matchId: string, adminId: string, io?: SocketIOServer): Promise<MatchResponse> {
+    const match = await prisma.tournamentMatch.findUnique({ where: { id: matchId } });
+    if (!match) throw createError(404, 'Match not found');
+    if (match.status !== MatchStatus.PAUSED) throw createError(400, 'Match is not paused');
+
+    await prisma.tournamentMatch.update({ where: { id: matchId }, data: { status: MatchStatus.ACTIVE } });
+    await TournamentService.logAudit(adminId, 'RESUME_MATCH', match.tournamentId, { newValues: { matchId } });
+
+    const updated = await prisma.tournamentMatch.findUnique({
+      where: { id: matchId },
+      include: { participants: { include: { participant: { include: { user: true } } } } },
+    });
+    const formatted = TournamentService.formatMatch(updated);
+    io?.to(`tournament:${match.tournamentId}`).emit('match:updated', formatted);
+    return formatted;
+  }
+
+  private static async advanceWinner(matchId: string, winnerId: string): Promise<void> {
     const match = await prisma.tournamentMatch.findUnique({ where: { id: matchId } });
     if (!match?.nextMatchId) return;
 
-    // Check how many participants are already in the next match
     const nextMatchParticipants = await prisma.tournamentMatchParticipant.count({
       where: { matchId: match.nextMatchId },
     });
@@ -709,7 +980,8 @@ export class TournamentService {
       },
     });
 
-    // If next match now has 2 participants → go straight to ACTIVE (slots locked from initial pick)
+    // Rounds 2+ still auto-activate as soon as both participants are in —
+    // only round 1's initial go-live is a deliberate, separate admin action.
     if (nextMatchParticipants + 1 === 2) {
       await prisma.tournamentMatch.update({
         where: { id: match.nextMatchId },
@@ -718,9 +990,9 @@ export class TournamentService {
     }
   }
 
-  // ─── ADMIN: Cancel ────────────────────────────────────────────────────────
+  // ─── ADMIN: Cancel / delete ─────────────────────────────────────────────────
 
-  static async cancel(tournamentId: string, io?: SocketIOServer): Promise<TournamentResponse> {
+  static async cancel(tournamentId: string, adminId: string, io?: SocketIOServer): Promise<TournamentResponse> {
     const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!t) throw createError(404, 'Tournament not found');
     if (t.status === TournamentStatus.COMPLETED) throw createError(400, 'Tournament already completed');
@@ -729,6 +1001,7 @@ export class TournamentService {
       where: { id: tournamentId },
       data: { status: TournamentStatus.CANCELLED },
     });
+    await TournamentService.logAudit(adminId, 'CANCEL_TOURNAMENT', tournamentId);
 
     const updated = await TournamentService.getTournamentWithRelations(tournamentId);
     const response = await TournamentService.formatTournament(updated);
@@ -736,12 +1009,11 @@ export class TournamentService {
     return response;
   }
 
-  // ─── ADMIN: Delete ───────────────────────────────────────────────────────
-
-  static async deleteTournament(tournamentId: string): Promise<void> {
+  static async deleteTournament(tournamentId: string, adminId: string): Promise<void> {
     const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!t) throw createError(404, 'Tournament not found');
-    // Cascade deletes participants, matches, entries via FK constraints
+    await TournamentService.logAudit(adminId, 'DELETE_TOURNAMENT', tournamentId, { oldValues: { title: t.title } });
+    // Cascade deletes participants, matches, entries, bans via FK constraints
     await prisma.tournament.delete({ where: { id: tournamentId } });
   }
 
@@ -755,7 +1027,7 @@ export class TournamentService {
           include: { participants: { include: { participant: { include: { user: true } } } } },
           orderBy: [{ round: 'asc' }, { matchNumber: 'asc' }],
         },
-        _count: { select: { entries: true } },
+        _count: { select: { entries: { where: { invalidated: false } } } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -777,6 +1049,15 @@ export class TournamentService {
     const participant = await prisma.tournamentParticipant.findUnique({
       where: { tournamentId_userId: { tournamentId, userId } },
     });
-    return { entered: !!entry, isParticipant: !!participant, participant: participant ? TournamentService.formatParticipant({ ...participant, user: null }) : null };
+    const banned = await prisma.tournamentBan.findUnique({
+      where: { tournamentId_userId: { tournamentId, userId } },
+    });
+    return {
+      entered: !!entry && !entry.invalidated,
+      slot: entry?.slot ?? null,
+      isParticipant: !!participant,
+      participant: participant ? TournamentService.formatParticipant({ ...participant, user: null }) : null,
+      banned: !!banned,
+    };
   }
 }

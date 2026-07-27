@@ -1,32 +1,65 @@
 export enum TournamentStatus {
   DRAFT = 'DRAFT',
   REGISTRATION = 'REGISTRATION',
-  SLOT_SELECTION = 'SLOT_SELECTION',
+  LOCKED = 'LOCKED',
+  DRAWN = 'DRAWN',
   IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
 }
 
+// SLOT_SELECTION deliberately omitted — it still exists in the DB enum (see
+// schema.prisma comment) but nothing in the app emits or accepts it anymore.
 export enum MatchStatus {
   PENDING = 'PENDING',
-  SLOT_SELECTION = 'SLOT_SELECTION',
   ACTIVE = 'ACTIVE',
+  PAUSED = 'PAUSED',
   COMPLETED = 'COMPLETED',
+}
+
+export enum TournamentScoringMethod {
+  TOTAL_MULTIPLIER = 'TOTAL_MULTIPLIER',
+  HIGHEST_SINGLE_WIN = 'HIGHEST_SINGLE_WIN',
+  FINAL_BALANCE = 'FINAL_BALANCE',
+}
+
+export enum TournamentEntrySource {
+  WEB = 'WEB',
+  CHAT = 'CHAT',
 }
 
 export interface CreateTournamentDTO {
   title: string;
   maxPlayers: number;
-  slotTimerSeconds: number;
   keyword?: string;
 }
 
-export interface DrawWinnersDTO {
-  count: number;
+export interface UpdateTournamentDTO {
+  title?: string;
+  keyword?: string;
+  maxPlayers?: number;
+  registrationOpensAt?: string | null;
+  registrationClosesAt?: string | null;
+  allowDuplicateSlots?: boolean;
+  eligibleSlots?: string[];
+  scoringMethod?: TournamentScoringMethod;
+  spinsPerMatch?: number | null;
+  betAmountPerSpin?: number | null;
+  prizePoolDisplay?: string | null;
 }
 
-export interface SetSlotDTO {
-  slotCall: string;
+export interface EnterRaffleDTO {
+  slot: string;
+}
+
+export interface BanUserDTO {
+  userId: string;
+  reason?: string;
+}
+
+export interface SetMatchResultDTO {
+  participantId: string;
+  resultText: string;
 }
 
 export interface DeclareWinnerDTO {
@@ -40,8 +73,6 @@ export interface ParticipantResponse {
   avatarUrl: string | null;
   seed: number | null;
   currentSlot: string | null;
-  slotConfirmed: boolean;
-  slotDeadline: string | null;
   eliminated: boolean;
   finalPosition: number | null;
 }
@@ -53,7 +84,7 @@ export interface MatchParticipantResponse {
   displayName: string;
   avatarUrl: string | null;
   slotCall: string | null;
-  slotConfirmed: boolean;
+  resultText: string | null;
 }
 
 export interface MatchResponse {
@@ -63,8 +94,28 @@ export interface MatchResponse {
   status: MatchStatus;
   winnerId: string | null;
   nextMatchId: string | null;
-  slotDeadline: string | null;
   participants: MatchParticipantResponse[];
+}
+
+export interface TournamentEntryResponse {
+  id: string;
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  slot: string | null;
+  source: TournamentEntrySource;
+  invalidated: boolean;
+  banned: boolean;
+  enteredAt: string;
+}
+
+export interface ReserveResponse {
+  rank: number;
+  entryId: string;
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  slot: string | null;
 }
 
 export interface TournamentResponse {
@@ -73,11 +124,48 @@ export interface TournamentResponse {
   status: TournamentStatus;
   keyword: string;
   maxPlayers: number;
-  slotTimerSeconds: number;
   currentRound: number;
+  registrationOpensAt: string | null;
+  registrationClosesAt: string | null;
+  allowDuplicateSlots: boolean;
+  eligibleSlots: string[];
+  scoringMethod: TournamentScoringMethod;
+  spinsPerMatch: number | null;
+  betAmountPerSpin: string | null;
+  prizePoolDisplay: string | null;
+  // Published the moment registration locks, before the draw runs — proves
+  // the outcome wasn't picked after seeing who registered. drawSeed itself
+  // (needed to actually re-derive the draw order) is only ever included
+  // once drawExecutedAt is set (the reveal step of the commit-reveal scheme).
+  seedCommitmentHash: string | null;
+  drawSeed: string | null;
+  drawExecutedAt: string | null;
   entryCount: number;
+  reserveCount: number;
+  // Full reserve details are public (not admin-gated) — same reasoning as
+  // the seed reveal below: the "verify the draw yourself" claim only means
+  // something if everyone can actually see the outcome, not just admins.
+  reserves: ReserveResponse[];
   participants: ParticipantResponse[];
   matches: MatchResponse[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface DrawStatusResponse {
+  phase: 'not_locked' | 'ready' | 'complete';
+  seedCommitmentHash: string | null;
+  drawSeed: string | null;
+  targetCount: number;
+  eligiblePool: { entryId: string; userId: string; displayName: string; avatarUrl: string | null; slot: string | null }[];
+  selected: { entryId: string; seed: number; userId: string; displayName: string; avatarUrl: string | null; slot: string | null }[];
+  reserves: ReserveResponse[];
+}
+
+export interface AuditLogEntryResponse {
+  id: string;
+  action: string;
+  adminId: string | null;
+  adminName: string | null;
+  createdAt: string;
 }

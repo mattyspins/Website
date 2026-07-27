@@ -3,22 +3,30 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { tournamentApi } from "@/lib/api/tournament";
-import TournamentBracket from "@/components/TournamentBracket";
-import {
-  Tournament,
-  TournamentStatus,
-  TournamentMatch,
-  MatchStatus,
-} from "@/types/tournament";
+import { Tournament, TournamentStatus, TournamentMatch } from "@/types/tournament";
 import { API_ENDPOINTS } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { useConfirm } from "@/components/admin/useConfirm";
 import { useToast } from "@/components/ui/ToastProvider";
+import SetupPanel from "@/components/admin/tournament/SetupPanel";
+import RegistrationsPanel from "@/components/admin/tournament/RegistrationsPanel";
+import ParticipantsPanel from "@/components/admin/tournament/ParticipantsPanel";
+import BracketPanel from "@/components/admin/tournament/BracketPanel";
+import AuditLogPanel from "@/components/admin/tournament/AuditLogPanel";
+
+const STATUS_COLOR: Record<TournamentStatus, string> = {
+  [TournamentStatus.DRAFT]: "bg-white/5 text-white/45 border-white/10",
+  [TournamentStatus.REGISTRATION]: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  [TournamentStatus.LOCKED]: "bg-[color:var(--tt-gold-soft)] text-[color:var(--tt-gold)] border-[color:var(--tt-gold-border)]",
+  [TournamentStatus.DRAWN]: "bg-[color:var(--tt-pink-soft)] text-[color:var(--tt-pink)] border-[color:var(--tt-pink-border)]",
+  [TournamentStatus.IN_PROGRESS]: "bg-green-500/20 text-green-400 border-green-500/30",
+  [TournamentStatus.COMPLETED]: "bg-white/5 text-white/45 border-white/10",
+  [TournamentStatus.CANCELLED]: "bg-white/5 text-white/45 border-white/10",
+};
 
 // ─── Create Modal ─────────────────────────────────────────────────────────────
 function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t: Tournament) => void }) {
-  const [form, setForm] = useState({ title: "", maxPlayers: 8, slotTimerSeconds: 180, keyword: "!jointourney" });
-  const [customMins, setCustomMins] = useState("");
+  const [form, setForm] = useState({ title: "", maxPlayers: 8, keyword: "!jointourney" });
   const [customPlayers, setCustomPlayers] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,8 +48,8 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-navy-900 border border-white/10 rounded-xl p-6 w-full max-w-md shadow-2xl">
-        <h3 className="text-lg font-semibold text-white mb-4">Create Tournament</h3>
+      <div className="bg-[color:var(--tt-bg-elevated)] border border-[color:var(--tt-border)] rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <h3 className="tt-display text-xl text-white mb-4">Create Tournament</h3>
 
         {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
 
@@ -49,19 +57,19 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
         <input
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white mb-4 focus:outline-none focus:border-yellow-400/50"
-          placeholder="e.g. Sunday Showdown"
+          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white mb-4 focus:outline-none focus:border-[color:var(--tt-gold-border)]"
+          placeholder="e.g. Sunday Slot Showdown"
         />
 
         <label className="block text-sm text-white/60 mb-1">Entry keyword</label>
         <input
           value={form.keyword}
           onChange={(e) => setForm({ ...form, keyword: e.target.value })}
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white mb-1 focus:outline-none focus:border-yellow-400/50"
+          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white mb-1 focus:outline-none focus:border-[color:var(--tt-gold-border)]"
           placeholder="!jointourney"
         />
         <p className="text-xs text-white/40 mb-4">
-          Viewers type this in Kick chat to enter the draw — the website &quot;Enter Draw&quot; button always works too.
+          Viewers type this (plus a slot name) in Kick chat to enter — the website registration form always works too.
         </p>
 
         <label className="block text-sm text-white/60 mb-1">Max Players</label>
@@ -73,7 +81,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
               onClick={() => { setForm({ ...form, maxPlayers: n }); setCustomPlayers(""); }}
               className={`py-2.5 rounded-lg text-sm font-semibold border transition-colors ${
                 form.maxPlayers === n && !customPlayers
-                  ? "bg-yellow-400 text-black border-yellow-400"
+                  ? "bg-[color:var(--tt-gold)] text-[color:var(--tt-gold-text)] border-[color:var(--tt-gold)]"
                   : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
               }`}
             >
@@ -81,102 +89,25 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-xs text-white/50 shrink-0">Custom (e.g. 9, 10, 11, 12):</span>
-          <div className="flex items-center gap-1">
-            <button type="button"
-              onClick={() => {
-                const next = Math.max(2, (parseInt(customPlayers) || form.maxPlayers) - 1);
-                setCustomPlayers(String(next));
-                setForm({ ...form, maxPlayers: next });
-              }}
-              className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
-            >−</button>
-            <input
-              type="text" inputMode="numeric" placeholder="players"
-              value={customPlayers}
-              onChange={(e) => {
-                setCustomPlayers(e.target.value);
-                const n = parseInt(e.target.value, 10);
-                if (!isNaN(n) && n >= 2) setForm({ ...form, maxPlayers: n });
-              }}
-              className="w-20 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm text-center focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
-            />
-            <button type="button"
-              onClick={() => {
-                const next = Math.min(64, (parseInt(customPlayers) || form.maxPlayers) + 1);
-                setCustomPlayers(String(next));
-                setForm({ ...form, maxPlayers: next });
-              }}
-              className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
-            >+</button>
-          </div>
-        </div>
-
-        <label className="block text-sm text-white/60 mb-1">Slot Timer</label>
-        <div className="grid grid-cols-4 gap-2 mb-2">
-          {[{ label: "2 min", value: 120 }, { label: "3 min", value: 180 }, { label: "4 min", value: 240 }, { label: "5 min", value: 300 }].map(({ label, value }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setForm({ ...form, slotTimerSeconds: value })}
-              className={`py-2.5 rounded-lg text-sm font-semibold border transition-colors ${
-                form.slotTimerSeconds === value
-                  ? "bg-yellow-400 text-black border-yellow-400"
-                  : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
         <div className="flex items-center gap-2 mb-6">
           <span className="text-xs text-white/50 shrink-0">Custom:</span>
-          <div className="flex items-center gap-1">
-            <button type="button"
-              onClick={() => {
-                const cur = parseFloat(customMins) || 0;
-                const next = Math.max(0.5, parseFloat((cur - 0.5).toFixed(1)));
-                setCustomMins(String(next));
-                setForm({ ...form, slotTimerSeconds: Math.round(next * 60) });
-              }}
-              className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
-            >−</button>
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="min"
-              value={customMins}
-              onChange={(e) => {
-                setCustomMins(e.target.value);
-                const mins = parseFloat(e.target.value);
-                if (!isNaN(mins) && mins > 0) setForm({ ...form, slotTimerSeconds: Math.round(mins * 60) });
-              }}
-              className="w-20 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm text-center focus:outline-none focus:border-yellow-400/50"
-            />
-            <button type="button"
-              onClick={() => {
-                const cur = parseFloat(customMins) || 0;
-                const next = parseFloat((cur + 0.5).toFixed(1));
-                setCustomMins(String(next));
-                setForm({ ...form, slotTimerSeconds: Math.round(next * 60) });
-              }}
-              className="w-7 h-7 rounded bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 transition-colors flex items-center justify-center text-base leading-none"
-            >+</button>
-            <span className="text-xs text-white/50 ml-1">min</span>
-            {![120, 180, 240, 300].includes(form.slotTimerSeconds) && customMins && (
-              <span className="text-xs text-yellow-400 font-medium ml-1">
-                = {Math.floor(form.slotTimerSeconds / 60)}m {form.slotTimerSeconds % 60 > 0 ? `${form.slotTimerSeconds % 60}s` : ""}
-              </span>
-            )}
-          </div>
+          <input
+            type="text" inputMode="numeric" placeholder="players"
+            value={customPlayers}
+            onChange={(e) => {
+              setCustomPlayers(e.target.value);
+              const n = parseInt(e.target.value, 10);
+              if (!isNaN(n) && n >= 2) setForm({ ...form, maxPlayers: n });
+            }}
+            className="w-20 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm text-center focus:outline-none focus:border-[color:var(--tt-gold-border)] [appearance:textfield]"
+          />
         </div>
 
         <div className="flex gap-2">
           <button
             onClick={submit}
             disabled={loading}
-            className="flex-1 bg-yellow-400 text-black font-semibold py-2.5 rounded-lg hover:bg-yellow-300 disabled:opacity-40 transition-colors"
+            className="flex-1 bg-[color:var(--tt-gold)] text-[color:var(--tt-gold-text)] font-semibold py-2.5 rounded-lg hover:bg-[color:var(--tt-gold-hover)] disabled:opacity-40 transition-colors"
           >
             {loading ? "Creating…" : "Create"}
           </button>
@@ -192,175 +123,29 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (t:
   );
 }
 
-// ─── Draw Modal ───────────────────────────────────────────────────────────────
-function DrawModal({
-  tournament,
-  onClose,
-  onDraw,
-}: {
-  tournament: Tournament;
-  onClose: () => void;
-  onDraw: (count: number, guaranteedUserIds: string[]) => void;
-}) {
-  const [entries, setEntries] = useState<{ id: string; userId: string; displayName: string; avatarUrl: string | null }[]>([]);
-  const [guaranteed, setGuaranteed] = useState<Set<string>>(new Set());
-  const [count, setCount] = useState(Math.min(tournament.maxPlayers, Math.max(tournament.entryCount, 1)));
-  const [loadingEntries, setLoadingEntries] = useState(true);
-  const [entriesError, setEntriesError] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchEntries = useCallback(() => {
-    tournamentApi.getEntries(tournament.id)
-      .then((data) => { setEntries(Array.isArray(data) ? data : []); setEntriesError(false); })
-      .catch(() => setEntriesError(true))
-      .finally(() => setLoadingEntries(false));
-  }, [tournament.id]);
-
-  useEffect(() => {
-    fetchEntries();
-    const interval = setInterval(fetchEntries, 5000);
-    return () => clearInterval(interval);
-  }, [fetchEntries]);
-
-  const toggleGuaranteed = (userId: string) => {
-    setGuaranteed((prev) => {
-      const next = new Set(prev);
-      if (next.has(userId)) next.delete(userId);
-      else next.add(userId);
-      return next;
-    });
-  };
-
-  const guaranteedCount = guaranteed.size;
-  const randomSpotsLeft = Math.max(0, count - guaranteedCount);
-
-  const submit = () => {
-    if (count < 1) { setError("Must draw at least 1 participant."); return; }
-    if (count > tournament.entryCount) { setError(`Only ${tournament.entryCount} entries in the draw.`); return; }
-    if (guaranteedCount > count) { setError("More guaranteed picks than total spots."); return; }
-    onDraw(count, Array.from(guaranteed));
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-navy-900 border border-white/10 rounded-xl w-full max-w-lg shadow-2xl flex flex-col max-h-[85vh]">
-        {/* Header */}
-        <div className="px-6 pt-5 pb-4 border-b border-white/8">
-          <h3 className="text-lg font-semibold text-white mb-0.5">Draw Tournament Spots</h3>
-          <p className="text-sm text-white/50">{entries.length || tournament.entryCount} people entered</p>
-        </div>
-
-        {/* Total spots */}
-        <div className="px-6 py-4 border-b border-white/8">
-          <div className="flex items-center justify-between gap-4">
-            <label className="text-sm text-white/60">Total spots to fill</label>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setCount(Math.max(1, count - 1))} className="w-7 h-7 rounded bg-white/5 text-white/60 hover:bg-white/10 text-sm transition-colors">−</button>
-              <span className="text-white font-bold w-6 text-center">{count}</span>
-              <button onClick={() => setCount(Math.min(tournament.entryCount, count + 1))} className="w-7 h-7 rounded bg-white/5 text-white/60 hover:bg-white/10 text-sm transition-colors">+</button>
-            </div>
-          </div>
-          {guaranteedCount > 0 && (
-            <div className="mt-2 flex gap-4 text-xs text-white/50">
-              <span>✓ <span className="text-yellow-400 font-semibold">{guaranteedCount}</span> guaranteed</span>
-              <span>🎲 <span className="text-white/70 font-semibold">{randomSpotsLeft}</span> random</span>
-            </div>
-          )}
-        </div>
-
-        {/* Entry list */}
-        <div className="overflow-y-auto flex-1 px-6 py-3">
-          <p className="text-xs text-white/45 uppercase tracking-widest font-bold mb-3">
-            Tick to guarantee entry — rest are random
-          </p>
-
-          {loadingEntries ? (
-            <div className="flex justify-center py-6">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400" />
-            </div>
-          ) : entriesError ? (
-            <div className="text-center py-4">
-              <p className="text-red-400 text-sm mb-2">Failed to load entries</p>
-              <button onClick={fetchEntries} className="text-xs text-yellow-400 hover:text-yellow-300 underline">Retry</button>
-            </div>
-          ) : entries.length === 0 ? (
-            <p className="text-white/45 text-sm text-center py-4">No entries yet</p>
-          ) : (
-            <div className="space-y-1.5">
-              {entries.map((e) => {
-                const isGuaranteed = guaranteed.has(e.userId);
-                return (
-                  <div
-                    key={e.userId}
-                    onClick={() => toggleGuaranteed(e.userId)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all ${
-                      isGuaranteed
-                        ? "bg-yellow-400/15 border border-yellow-400/30"
-                        : "bg-white/3 border border-white/5 hover:bg-white/6"
-                    }`}
-                  >
-                    {/* Checkbox */}
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                      isGuaranteed ? "bg-yellow-400 border-yellow-400" : "border-white/20 bg-white/5"
-                    }`}>
-                      {isGuaranteed && <span className="text-black text-[10px] font-black">✓</span>}
-                    </div>
-
-                    {/* Avatar */}
-                    {e.avatarUrl ? (
-                      <img src={e.avatarUrl} alt="" className="w-7 h-7 rounded-full shrink-0" />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-white/10 shrink-0 flex items-center justify-center text-xs font-bold text-white/50">
-                        {e.displayName[0]?.toUpperCase()}
-                      </div>
-                    )}
-
-                    <span className={`text-sm font-medium ${isGuaranteed ? "text-yellow-300" : "text-white/80"}`}>
-                      {e.displayName}
-                    </span>
-
-                    {isGuaranteed && (
-                      <span className="ml-auto text-[10px] text-yellow-400 font-bold uppercase tracking-wide">Guaranteed</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-white/8">
-          {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
-          <div className="flex gap-2">
-            <button onClick={submit} className="flex-1 bg-yellow-400 text-black font-semibold py-2.5 rounded-lg hover:bg-yellow-300 transition-colors">
-              🎲 Draw {count} Participant{count !== 1 ? "s" : ""}
-            </button>
-            <button onClick={onClose} className="px-4 border border-white/10 text-white/60 rounded-lg hover:bg-white/5 transition-colors">
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+type Tab = "setup" | "registrations" | "participants" | "bracket" | "audit";
+const TABS: { id: Tab; label: string }[] = [
+  { id: "setup", label: "Tournament Setup" },
+  { id: "registrations", label: "Registrations" },
+  { id: "participants", label: "Participants" },
+  { id: "bracket", label: "Bracket & Matches" },
+  { id: "audit", label: "Audit Log" },
+];
 
 // ─── Main Admin Page ──────────────────────────────────────────────────────────
 export default function AdminTournamentPage() {
   const router = useRouter();
   const { success } = useToast();
   const [authLoading, setAuthLoading] = useState(true);
+  const [adminName, setAdminName] = useState("");
 
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [selected, setSelected] = useState<Tournament | null>(null);
+  const [tab, setTab] = useState<Tab>("setup");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [showDraw, setShowDraw] = useState(false);
-  const [winnerMatchId, setWinnerMatchId] = useState<string | null>(null);
-  const [keywordInput, setKeywordInput] = useState("");
   const { confirm, dialog: confirmDialog } = useConfirm();
 
   useEffect(() => {
@@ -369,8 +154,9 @@ export default function AdminTournamentPage() {
     fetch(API_ENDPOINTS.AUTH_ME, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((d) => {
-        if (!d.user?.isAdmin) router.push("/");
-        else setAuthLoading(false);
+        if (!d.user?.isAdmin) { router.push("/"); return; }
+        setAdminName(d.user?.kickUsername ?? d.user?.displayName ?? "admin");
+        setAuthLoading(false);
       })
       .catch(() => router.push("/"));
   }, []);
@@ -379,7 +165,7 @@ export default function AdminTournamentPage() {
     try {
       const data = await tournamentApi.getAll();
       setTournaments(data);
-      if (!selected && data.length > 0) setSelected(data[0]);
+      setSelected((prev) => prev ? data.find((t) => t.id === prev.id) ?? data[0] ?? null : data[0] ?? null);
     } catch {
       setError("Failed to load tournaments");
     } finally {
@@ -389,49 +175,47 @@ export default function AdminTournamentPage() {
 
   useEffect(() => { loadTournaments(); }, [loadTournaments]);
 
-  useEffect(() => { setKeywordInput(selected?.keyword ?? ""); }, [selected?.id, selected?.keyword]);
-
   // WebSocket
   useEffect(() => {
     if (!selected) return;
     const socket = getSocket();
     socket.emit("joinTournament", selected.id);
     socket.on("tournament:updated", (updated: Tournament) => {
-      if (updated.id === selected.id) {
-        setSelected(updated);
-        setTournaments((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-      }
+      setSelected((prev) => (prev && prev.id === updated.id ? updated : prev));
+      setTournaments((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+    });
+    // Match-level actions (pause/resume/result) only emit match:updated, not a
+    // full tournament payload — merge those into the selected tournament's
+    // match list directly.
+    socket.on("match:updated", (match: TournamentMatch) => {
+      setSelected((prev) => (prev ? { ...prev, matches: prev.matches.map((m) => (m.id === match.id ? match : m)) } : prev));
     });
     return () => {
       socket.emit("leaveTournament", selected.id);
       socket.off("tournament:updated");
+      socket.off("match:updated");
     };
   }, [selected?.id]);
 
-  const withAction = async (fn: () => Promise<Tournament>) => {
+  const handleMatchUpdate = useCallback((match: TournamentMatch) => {
+    setSelected((prev) => (prev ? { ...prev, matches: prev.matches.map((m) => (m.id === match.id ? match : m)) } : prev));
+  }, []);
+
+  const withAction = useCallback(async (fn: () => Promise<Tournament>) => {
     setActionLoading(true);
     setError(null);
     try {
       const updated = await fn();
       setSelected(updated);
       setTournaments((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+      return updated;
     } catch (e: any) {
       setError(e.message);
+      throw e;
     } finally {
       setActionLoading(false);
     }
-  };
-
-  const handleOpenRegistration = () => withAction(() => tournamentApi.openRegistration(selected!.id));
-  const handleDraw = (count: number, guaranteedUserIds: string[]) => {
-    setShowDraw(false);
-    withAction(() => tournamentApi.drawWinners(selected!.id, count, guaranteedUserIds));
-  };
-  const handleStart = () => withAction(() => tournamentApi.startTournament(selected!.id));
-  const handleCancel = async () => {
-    if (!(await confirm({ title: "Cancel this tournament?", message: "This cannot be undone.", confirmText: "Cancel Tournament" }))) return;
-    withAction(() => tournamentApi.cancel(selected!.id));
-  };
+  }, []);
 
   const handleDelete = async (id: string, title: string) => {
     if (!(await confirm({ title: "Delete this tournament?", message: `Permanently delete "${title}"? This cannot be undone.`, confirmText: "Delete" }))) return;
@@ -448,45 +232,27 @@ export default function AdminTournamentPage() {
       setActionLoading(false);
     }
   };
-  const handleReroll = (participantId: string) =>
-    withAction(() => tournamentApi.rerollParticipant(selected!.id, participantId));
-  const handleDeclareWinner = (matchId: string, winnerId: string) => {
-    setWinnerMatchId(null);
-    withAction(() => tournamentApi.declareMatchWinner(matchId, winnerId));
-  };
-
-  const handleRevertWinner = async (matchId: string) => {
-    if (!(await confirm({ title: "Revert this result?", message: "The match will go back to Active and the loser will be restored.", confirmText: "Revert", confirmColor: "yellow" }))) return;
-    withAction(() => tournamentApi.revertMatchWinner(matchId));
-  };
-
-  const handleSaveKeyword = () => {
-    if (!selected || !keywordInput.trim()) return;
-    withAction(() => tournamentApi.setKeyword(selected.id, keywordInput.trim())).then(() => success("Keyword saved", ""));
-  };
 
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[color:var(--tt-gold)]" />
       </div>
     );
   }
 
-  const activeMatch = winnerMatchId ? selected?.matches.find((m) => m.id === winnerMatchId) : null;
-
   return (
-    <div className="min-h-screen bg-navy-950 text-white">
-      <div className="max-w-7xl mx-auto px-4 pb-10">
+    <div className="min-h-screen text-white">
+      <div className="max-w-7xl mx-auto px-4 pb-10 pt-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-white">Tournament Admin</h1>
+            <h1 className="tt-display text-3xl text-white">Tournament Admin</h1>
             <p className="text-white/50 text-sm mt-0.5">Create and manage viewer tournaments</p>
           </div>
           <button
             onClick={() => setShowCreate(true)}
-            className="px-4 py-2.5 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-300 transition-colors text-sm"
+            className="px-4 py-2.5 bg-[color:var(--tt-gold)] text-[color:var(--tt-gold-text)] font-semibold rounded-lg hover:bg-[color:var(--tt-gold-hover)] transition-colors text-sm"
           >
             + New Tournament
           </button>
@@ -502,35 +268,29 @@ export default function AdminTournamentPage() {
         <div className="space-y-2 mb-6">
           {tournaments.map((t) => {
             const isActive = selected?.id === t.id;
-            const statusColor =
-              t.status === TournamentStatus.IN_PROGRESS ? "bg-green-500/20 text-green-400 border-green-500/30" :
-              t.status === TournamentStatus.REGISTRATION ? "bg-blue-500/20 text-blue-400 border-blue-500/30" :
-              t.status === TournamentStatus.SLOT_SELECTION ? "bg-yellow-400/20 text-yellow-300 border-yellow-400/30" :
-              t.status === TournamentStatus.COMPLETED ? "bg-white/5 text-white/45 border-white/10" :
-              "bg-white/5 text-white/45 border-white/10";
             return (
               <div
                 key={t.id}
                 onClick={() => setSelected(t)}
                 className={`cursor-pointer rounded-xl border transition-all duration-200 ${
-                  isActive ? "border-yellow-400/40 bg-yellow-400/5" : "border-white/8 bg-white/3 hover:border-white/15 hover:bg-white/5"
+                  isActive ? "border-[color:var(--tt-gold-border)] bg-[color:var(--tt-gold-soft)]" : "border-white/8 bg-white/3 hover:border-white/15 hover:bg-white/5"
                 }`}
               >
                 <div className="flex items-center justify-between px-5 py-3.5 gap-4">
                   <div className="flex items-center gap-3">
                     <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                      t.status === TournamentStatus.IN_PROGRESS || t.status === TournamentStatus.REGISTRATION ? "bg-green-400 animate-pulse" :
-                      t.status === TournamentStatus.SLOT_SELECTION ? "bg-yellow-400 animate-pulse" : "bg-white/20"
+                      [TournamentStatus.IN_PROGRESS, TournamentStatus.REGISTRATION].includes(t.status) ? "bg-green-400 animate-pulse" :
+                      [TournamentStatus.LOCKED, TournamentStatus.DRAWN].includes(t.status) ? "tt-pulse bg-[color:var(--tt-gold)]" : "bg-white/20"
                     }`} />
                     <span className="font-semibold text-white text-sm">{t.title}</span>
-                    <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${statusColor}`}>
+                    <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${STATUS_COLOR[t.status]}`}>
                       {t.status.replace(/_/g, " ")}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-white/45">
                     <span>{t.maxPlayers} spots</span>
                     <span>{t.entryCount} entered</span>
-                    {isActive && <span className="text-yellow-400 text-sm">▾</span>}
+                    {isActive && <span className="text-[color:var(--tt-gold)] text-sm">▾</span>}
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.title); }}
                       disabled={actionLoading}
@@ -547,172 +307,81 @@ export default function AdminTournamentPage() {
         </div>
 
         {selected && (
-          <div className="space-y-6">
-            {/* Control panel */}
-            <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-              <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
-                <div>
-                  <h2 className="text-lg font-bold text-white">{selected.title}</h2>
-                  <p className="text-sm text-white/50 mt-0.5">
-                    {selected.maxPlayers} spots · {selected.entryCount} entries · Timer: {Math.floor(selected.slotTimerSeconds / 60)}m
-                  </p>
-                </div>
-
-                {/* Status-based action buttons */}
-                <div className="flex gap-2 flex-wrap items-center">
-                  <a
-                    href="/tournament-widget"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Open OBS widget"
-                    className="px-3 py-2 border border-purple-500/40 text-purple-300 rounded-lg hover:bg-purple-500/10 transition-colors text-sm flex items-center gap-1.5"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
-                    </svg>
-                    OBS Widget
-                  </a>
-                  {selected.status === TournamentStatus.DRAFT && (
-                    <button
-                      onClick={handleOpenRegistration}
-                      disabled={actionLoading}
-                      className="px-4 py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-400 disabled:opacity-40 transition-colors text-sm"
-                    >
-                      Open Registration
-                    </button>
-                  )}
-                  {selected.status === TournamentStatus.REGISTRATION && (
-                    <button
-                      onClick={() => setShowDraw(true)}
-                      disabled={actionLoading || selected.entryCount < 1}
-                      className="px-4 py-2 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-300 disabled:opacity-40 transition-colors text-sm"
-                    >
-                      🎲 Draw Participants
-                    </button>
-                  )}
-                  {selected.status === TournamentStatus.SLOT_SELECTION && (
-                    <button
-                      onClick={handleStart}
-                      disabled={actionLoading}
-                      className="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-400 disabled:opacity-40 transition-colors text-sm"
-                    >
-                      Force Start Bracket
-                    </button>
-                  )}
-                  {![TournamentStatus.COMPLETED, TournamentStatus.CANCELLED].includes(selected.status) && (
-                    <button
-                      onClick={handleCancel}
-                      disabled={actionLoading}
-                      className="px-4 py-2 border border-red-500/40 text-red-400 rounded-lg hover:bg-red-500/10 disabled:opacity-40 transition-colors text-sm"
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Entry keyword */}
-              <div className="mb-4 pb-4 border-b border-white/8">
-                <label className="block text-sm text-white/60 mb-1">Entry keyword</label>
-                <div className="flex items-center gap-2 max-w-sm">
-                  <input
-                    value={keywordInput}
-                    onChange={(e) => setKeywordInput(e.target.value)}
-                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-yellow-400/50"
-                  />
-                  <button
-                    onClick={handleSaveKeyword}
-                    disabled={actionLoading || keywordInput.trim() === selected.keyword}
-                    className="px-3 py-2 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-300 disabled:opacity-40 transition-colors text-sm whitespace-nowrap"
-                  >
-                    💾 Save
-                  </button>
-                </div>
-                <p className="text-xs text-white/40 mt-1">
-                  Viewers type this in Kick chat to enter — the website &quot;Enter Draw&quot; button is always available too.
+          <div className="flex gap-6 items-start">
+            {/* Local sidebar for this tournament's admin sections */}
+            <div className="w-52 shrink-0 sticky top-4">
+              <div className="mb-3">
+                <p className="tt-display text-lg text-white truncate">{selected.title}</p>
+                <p className="text-xs text-white/45 mt-0.5">
+                  Signed in as <span className="text-white/70">{adminName}</span>
                 </p>
               </div>
-
-              {/* Slot selection participant list with reroll */}
-              {selected.status === TournamentStatus.SLOT_SELECTION && selected.participants.length > 0 && (
-                <div>
-                  <p className="text-sm text-white/50 mb-3 font-medium">Participants — slot selection</p>
-                  <div className="space-y-2">
-                    {selected.participants.map((p) => (
-                      <div
-                        key={p.id}
-                        className="flex items-center justify-between gap-3 p-3 bg-white/5 rounded-lg border border-white/5"
-                      >
-                        <div className="flex items-center gap-3">
-                          {p.avatarUrl && <img src={p.avatarUrl} alt="" className="w-7 h-7 rounded-full" />}
-                          <div>
-                            <p className="text-sm text-white font-medium">{p.displayName}</p>
-                            <p className="text-xs text-white/50">
-                              {p.currentSlot ? `Slot: ${p.currentSlot}` : "No slot yet"}
-                              {p.slotDeadline && !p.slotConfirmed && ` · expires ${new Date(p.slotDeadline).toLocaleTimeString()}`}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {p.slotConfirmed ? (
-                            <span className="text-xs text-green-400 font-medium">✓ Confirmed</span>
-                          ) : (
-                            <>
-                              <span className="text-xs text-yellow-400 animate-pulse">⏳ Waiting</span>
-                              <button
-                                onClick={() => handleReroll(p.id)}
-                                disabled={actionLoading}
-                                className="text-xs px-3 py-1.5 border border-orange-500/30 text-orange-400 rounded-lg hover:bg-orange-500/10 disabled:opacity-40 transition-colors"
-                              >
-                                Reroll
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="flex flex-col gap-1">
+                {TABS.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTab(t.id)}
+                    className={`text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      tab === t.id
+                        ? "bg-[color:var(--tt-gold-soft)] text-[color:var(--tt-gold)]"
+                        : "text-white/60 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <a
+                href="/tournament-widget"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 flex items-center justify-center gap-1.5 px-3 py-2 border border-white/10 text-white/60 rounded-lg hover:bg-white/5 transition-colors text-xs"
+              >
+                Open OBS Widget →
+              </a>
             </div>
 
-            {/* Bracket (admin — with inline winner + revert controls) */}
-            {(selected.status === TournamentStatus.IN_PROGRESS ||
-              selected.status === TournamentStatus.COMPLETED) && (
-              <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-                <h3 className="text-base font-semibold text-white mb-6">Bracket</h3>
-                <TournamentBracket
+            {/* Active panel */}
+            <div className="flex-1 min-w-0">
+              {tab === "setup" && (
+                <SetupPanel
                   tournament={selected}
-                  isAdmin
-                  onDeclareWinner={handleDeclareWinner}
-                  onRevertWinner={handleRevertWinner}
-                  onRerollParticipant={handleReroll}
                   actionLoading={actionLoading}
+                  withAction={withAction}
+                  onToast={success}
+                  onError={setError}
                 />
-              </div>
-            )}
-
-            {/* Completed summary */}
-            {selected.status === TournamentStatus.COMPLETED && (() => {
-              const champ = selected.participants.find((p) => p.finalPosition === 1);
-              return (
-                <div className="relative overflow-hidden bg-gradient-to-br from-yellow-500/10 via-amber-500/5 to-transparent border border-yellow-400/25 rounded-2xl p-8 text-center">
-                  {/* Glow */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/5 to-transparent pointer-events-none" />
-                  <div className="text-6xl mb-3 drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]">🏆</div>
-                  <p className="text-xs font-black uppercase tracking-[0.25em] text-yellow-400/70 mb-1">Tournament Complete</p>
-                  {champ && (
-                    <div className="mt-3 flex flex-col items-center gap-2">
-                      {champ.avatarUrl && (
-                        <img src={champ.avatarUrl} alt="" className="w-14 h-14 rounded-full ring-2 ring-yellow-400/60 shadow-[0_0_16px_rgba(250,204,21,0.3)]" />
-                      )}
-                      <p className="text-white font-bold text-xl">{champ.displayName}</p>
-                      {champ.currentSlot && <p className="text-white/50 text-sm italic">{champ.currentSlot}</p>}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
+              )}
+              {tab === "registrations" && (
+                <RegistrationsPanel
+                  tournament={selected}
+                  actionLoading={actionLoading}
+                  withAction={withAction}
+                  confirm={confirm}
+                  onError={setError}
+                />
+              )}
+              {tab === "participants" && (
+                <ParticipantsPanel
+                  tournament={selected}
+                  actionLoading={actionLoading}
+                  withAction={withAction}
+                  confirm={confirm}
+                  onError={setError}
+                />
+              )}
+              {tab === "bracket" && (
+                <BracketPanel
+                  tournament={selected}
+                  actionLoading={actionLoading}
+                  withAction={withAction}
+                  onMatchUpdate={handleMatchUpdate}
+                  confirm={confirm}
+                  onError={setError}
+                />
+              )}
+              {tab === "audit" && <AuditLogPanel tournament={selected} />}
+            </div>
           </div>
         )}
 
@@ -722,7 +391,7 @@ export default function AdminTournamentPage() {
             <p className="text-lg">No tournaments yet</p>
             <button
               onClick={() => setShowCreate(true)}
-              className="mt-4 px-5 py-2.5 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-300 transition-colors text-sm"
+              className="mt-4 px-5 py-2.5 bg-[color:var(--tt-gold)] text-[color:var(--tt-gold-text)] font-semibold rounded-lg hover:bg-[color:var(--tt-gold-hover)] transition-colors text-sm"
             >
               Create First Tournament
             </button>
@@ -738,14 +407,6 @@ export default function AdminTournamentPage() {
             setSelected(t);
             setShowCreate(false);
           }}
-        />
-      )}
-
-      {showDraw && selected && (
-        <DrawModal
-          tournament={selected}
-          onClose={() => setShowDraw(false)}
-          onDraw={handleDraw}
         />
       )}
       {confirmDialog}

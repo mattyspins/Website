@@ -1,0 +1,68 @@
+/*
+ * Bespoke dark/cinematic theme for the tournament feature only — deliberately
+ * distinct from the site's navy/gold Tailwind theme used everywhere else.
+ * Scoped entirely under .tournament-theme so it can never leak onto other
+ * pages. Ported close to the source design rather than translated into
+ * Tailwind utilities, since the two systems aren't meant to match.
+ */
+
+.tournament-theme {
+  --tt-bg: oklch(0.14 0.015 260);
+  --tt-bg-sunken: oklch(0.1 0.015 260);
+  --tt-bg-elevated: oklch(0.19 0.015 260);
+  --tt-bg-elevated-2: oklch(0.17 0.015 260);
+  --tt-border: oklch(0.26 0.02 260);
+  --tt-border-soft: oklch(0.3 0.02 260);
+  --tt-text: oklch(0.96 0.005 260);
+  --tt-text-secondary: oklch(0.85 0.01 260);
+  --tt-text-muted: oklch(0.7 0.01 260);
+  --tt-text-dim: oklch(0.6 0.01 260);
+  --tt-text-faint: oklch(0.5 0.01 260);
+  --tt-gold: oklch(0.82 0.19 130);
+  --tt-gold-hover: oklch(0.88 0.19 130);
+  --tt-gold-text: oklch(0.15 0.02 130);
+  --tt-gold-soft: oklch(0.82 0.19 130 / 0.15);
+  --tt-gold-border: oklch(0.82 0.19 130 / 0.4);
+  --tt-pink: oklch(0.72 0.2 350);
+  --tt-pink-soft: oklch(0.72 0.2 350 / 0.15);
+  --tt-pink-border: oklch(0.72 0.2 350 / 0.4);
+
+  font-family: var(--font-tournament-body, "Manrope"), sans-serif;
+  background: var(--tt-bg);
+  color: var(--tt-text);
+  min-height: 100vh;
+}
+
+.tournament-theme .tt-display {
+  font-family: var(--font-tournament-display, "Bebas Neue"), sans-serif;
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+
+.tournament-theme a {
+  color: var(--tt-gold);
+}
+.tournament-theme a:hover {
+  color: var(--tt-gold-hover);
+}
+
+.tournament-theme ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.tournament-theme ::-webkit-scrollbar-thumb {
+  background: var(--tt-border-soft);
+  border-radius: 6px;
+}
+
+@keyframes tt-pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.tournament-theme .tt-pulse {
+  animation: tt-pulse-dot 1.4s infinite;
+}
+
+.tournament-theme button {
+  font-family: inherit;
+}
