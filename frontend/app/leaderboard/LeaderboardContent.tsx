@@ -29,6 +29,28 @@ function useCountdown(target: number | null) {
   return target === null ? 0 : Math.max(0, target - now);
 }
 
+const SYNC_INTERVAL_MS = 30 * 60 * 1000;
+
+// The wager sync job runs on a fixed `*/30 * * * *` cron (fires exactly on
+// the UTC :00 and :30 marks), so "time until next sync" is derivable from
+// the clock alone — Date.now() is already UTC-epoch-aligned to those marks,
+// no backend "last synced at" field needed.
+function useNextSyncCountdown(): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+  return SYNC_INTERVAL_MS - (now % SYNC_INTERVAL_MS);
+}
+
+function formatMMSS(ms: number): string {
+  const totalSeconds = Math.ceil(ms / 1000);
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 function CountdownUnits({ ms }: { ms: number }) {
   const totalSeconds = Math.floor(ms / 1000);
   const days = Math.floor(totalSeconds / 86400);
@@ -151,6 +173,7 @@ export default function LeaderboardPage({ type, initialData = null }: Props) {
   const endMs = race ? new Date(race.endDate).getTime() : null;
   const countdownTarget = race?.phase === "upcoming" ? startMs : race?.phase === "active" ? endMs : null;
   const remainingMs = useCountdown(countdownTarget);
+  const nextSyncMs = useNextSyncCountdown();
 
   if (loading) {
     return (
@@ -180,7 +203,7 @@ export default function LeaderboardPage({ type, initialData = null }: Props) {
             <Trophy className="w-3.5 h-3.5" />
             {typeLabel} Race
           </span>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-gaming text-white mb-4 tracking-wide">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-gaming text-white mb-3 tracking-wide">
             {race ? (
               <>
                 <span className="text-gold-400">${race.totalPrizePool}</span> {typeLabel.toUpperCase()} LEADERBOARD ON RAZED
@@ -189,6 +212,11 @@ export default function LeaderboardPage({ type, initialData = null }: Props) {
               <>{typeLabel.toUpperCase()} <span className="text-gold-400">LEADERBOARD</span></>
             )}
           </h1>
+
+          <p className="text-gray-500 text-xs mb-4">
+            Wagers sync from Razed every 30 min · next update in{" "}
+            <span className="text-gray-300 font-semibold tabular-nums">{formatMMSS(nextSyncMs)}</span>
+          </p>
 
           {race && (
             <>
