@@ -339,10 +339,12 @@ export class KickChatService {
 
   private static async processKothJoin(kickUsername: string, slotName: string | null): Promise<void> {
     try {
-      const joined = await KingOfTheHillService.joinByKeyword(kickUsername, slotName, this.io ?? undefined);
-      if (joined) {
+      const result = await KingOfTheHillService.joinByKeyword(kickUsername, slotName, this.io ?? undefined);
+      if (result === 'joined') {
         logger.info(`KickChatService: ${kickUsername} joined King of the Hill via !king${slotName ? ` (slot: ${slotName})` : ''}`);
         await this.sendChatMessage(`@${kickUsername} you have entered the king of the hill`);
+      } else if (result === 'already_entered') {
+        await this.sendChatMessage(`@${kickUsername} you're already in the king of the hill`);
       }
     } catch (err) {
       logger.warn(`KickChatService: !king failed for ${kickUsername}`, { error: (err as Error).message });

@@ -154,16 +154,20 @@ export class KingOfTheHillService {
   // depends on having linked Kick or registered on the site. The optional trailing slot
   // name is locked in at signup — same as Bounty Hunter's "!bounty <slot>" — and can
   // still be overridden later via the shared "!slot <name>" command or by the admin.
-  static async joinByKeyword(kickUsername: string, slotName: string | null, io?: SocketIOServer): Promise<boolean> {
+  static async joinByKeyword(
+    kickUsername: string,
+    slotName: string | null,
+    io?: SocketIOServer
+  ): Promise<'joined' | 'already_entered' | 'no_session'> {
     const session = await prisma.kingOfTheHill.findFirst({ where: { status: KingOfTheHillStatus.OPEN } });
-    if (!session) return false;
+    if (!session) return 'no_session';
 
     const normalized = kickUsername.trim().toLowerCase();
 
     const existing = await prisma.kingOfTheHillEntry.findUnique({
       where: { sessionId_kickUsername: { sessionId: session.id, kickUsername: normalized } },
     });
-    if (existing) return false;
+    if (existing) return 'already_entered';
 
     // Optional bonus link — entry is valid either way, since it's keyed on kickUsername.
     const user = await prisma.user.findFirst({
@@ -177,7 +181,7 @@ export class KingOfTheHillService {
     await this.emitSession(session.id, io);
 
     logger.info(`KingOfTheHill ${session.id}: ${kickUsername} joined via !king${slotName ? ` (slot: ${slotName})` : ''}${user ? '' : ' (unlinked)'}`);
-    return true;
+    return 'joined';
   }
 
   static async addEntryByUsername(id: string, kickUsername: string, io?: SocketIOServer) {
