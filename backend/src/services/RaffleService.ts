@@ -623,7 +623,7 @@ export class RaffleService {
             notifiedAt: winner.notifiedAt || undefined,
             prizeDeliveredAt: winner.prizeDeliveredAt || undefined,
             deliveryMethod: winner.deliveryMethod || undefined,
-            displayName: winningTicket.user.displayName,
+            displayName: winningTicket.user.kickUsername ?? winningTicket.user.displayName,
             avatarUrl: winningTicket.user.avatarUrl,
           });
         }
@@ -739,7 +739,7 @@ export class RaffleService {
         where: { raffleId },
         include: {
           user: {
-            select: { displayName: true, avatarUrl: true },
+            select: { displayName: true, kickUsername: true, avatarUrl: true },
           },
           ticket: {
             select: { ticketNumber: true },
@@ -760,7 +760,7 @@ export class RaffleService {
         notifiedAt: winner.notifiedAt || undefined,
         prizeDeliveredAt: winner.prizeDeliveredAt || undefined,
         deliveryMethod: winner.deliveryMethod || undefined,
-        displayName: winner.user.displayName,
+        displayName: winner.user.kickUsername ?? winner.user.displayName,
         avatarUrl: winner.user.avatarUrl,
       }));
     } catch (error) {

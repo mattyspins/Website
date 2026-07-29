@@ -20,6 +20,13 @@ interface EligibleUser {
 
 const USER_SUMMARY_SELECT = { id: true, displayName: true, avatarUrl: true, kickUsername: true } as const;
 
+// Kick name always wins for display, same convention every other stream-game
+// service uses — overridden here rather than left to the frontend so every
+// caller of getCurrent/getById/getHistory/draw gets it for free.
+function withKickDisplayName<T extends { displayName: string; kickUsername: string | null }>(user: T): T {
+  return { ...user, displayName: user.kickUsername ?? user.displayName };
+}
+
 export class WeeklyRaffleService {
   // Monday 00:00 UTC of the week containing `referenceDate`, through the following Monday.
   static getCurrentWeekBounds(referenceDate: Date = new Date()): { weekStart: Date; weekEnd: Date } {
@@ -64,10 +71,12 @@ export class WeeklyRaffleService {
 
   static async getCurrent() {
     const { weekStart } = this.getCurrentWeekBounds();
-    return prisma.weeklyRaffle.findUnique({
+    const raffle = await prisma.weeklyRaffle.findUnique({
       where: { weekStart },
       include: { winner: { select: USER_SUMMARY_SELECT } },
     });
+    if (!raffle) return raffle;
+    return { ...raffle, winner: raffle.winner ? withKickDisplayName(raffle.winner) : null };
   }
 
   static async getById(id: string) {
@@ -76,16 +85,17 @@ export class WeeklyRaffleService {
       include: { winner: { select: USER_SUMMARY_SELECT } },
     });
     if (!raffle) throw createError.notFound('Weekly raffle not found');
-    return raffle;
+    return { ...raffle, winner: raffle.winner ? withKickDisplayName(raffle.winner) : null };
   }
 
   static async getHistory(limit = 20) {
-    return prisma.weeklyRaffle.findMany({
+    const raffles = await prisma.weeklyRaffle.findMany({
       where: { status: 'DRAWN' },
       orderBy: { weekStart: 'desc' },
       take: limit,
       include: { winner: { select: USER_SUMMARY_SELECT } },
     });
+    return raffles.map((r) => ({ ...r, winner: r.winner ? withKickDisplayName(r.winner) : null }));
   }
 
   // Past weeks that rolled over without being drawn — invisible to getCurrent()
@@ -233,8 +243,6 @@ export class WeeklyRaffleService {
     });
 
     logger.info(`Weekly raffle ${raffleId} drawn by admin ${adminId}, winner ${payload.raffle.winnerUserId}`);
-    io?.to(`weeklyRaffle:${raffleId}`).emit('weeklyRaffle:drawn', payload);
-    io?.emit('weeklyRaffle:drawn', payload);
 
     const w = payload.raffle.winner;
     if (w) {
@@ -243,7 +251,14 @@ export class WeeklyRaffleService {
       );
     }
 
-    return payload;
+    const responsePayload = {
+      ...payload,
+      raffle: { ...payload.raffle, winner: w ? withKickDisplayName(w) : null },
+    };
+    io?.to(`weeklyRaffle:${raffleId}`).emit('weeklyRaffle:drawn', responsePayload);
+    io?.emit('weeklyRaffle:drawn', responsePayload);
+
+    return responsePayload;
   }
 
   private static async computeEligibleUsers(
