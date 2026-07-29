@@ -361,6 +361,11 @@ model GuessTheBalance {
   finalBalance        Decimal?              @map("final_balance") @db.Decimal(12, 2)
   status              GuessTheBalanceStatus @default(DRAFT)
   winnerId            String?               @map("winner_id")
+  // Set instead of winnerId when the closest guess came from a chat-only
+  // entrant with no linked account — there's no User row to point winnerId
+  // at, so the reward is skipped (same convention as Boss Raid's top-3) but
+  // the win itself still shows up.
+  winnerKickUsername  String?               @map("winner_kick_username")
   winnerGuess         Decimal?              @map("winner_guess") @db.Decimal(12, 2)
   winnerReward        Int?                  @default(0) @map("winner_reward")
   createdBy           String                @map("created_by")
@@ -381,14 +386,19 @@ model GuessTheBalance {
 model GuessSubmission {
   id          String          @id @default(uuid())
   gameId      String          @map("game_id")
-  userId      String          @map("user_id")
+  // Nullable — a "!guess <amount>" chat submission is accepted even without a
+  // linked/verified site account; kickUsername is then the sole identity,
+  // same nullable userId?/kickUsername? split as BingoParticipant.
+  userId      String?         @map("user_id")
+  kickUsername String?        @map("kick_username")
   guessAmount Decimal         @map("guess_amount") @db.Decimal(12, 2)
   submittedAt DateTime        @default(now()) @map("submitted_at")
   updatedAt   DateTime        @updatedAt @map("updated_at")
   game        GuessTheBalance @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([gameId, userId])
+  @@unique([gameId, kickUsername])
   @@index([gameId])
   @@index([userId])
   @@map("guess_submissions")

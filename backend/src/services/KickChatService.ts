@@ -203,8 +203,6 @@ export class KickChatService {
       const result = await GuessTheBalanceService.submitGuessByKickUsername(kickUsername, amount);
       if (result === 'ok') {
         await this.sendChatMessage(`✅ @${kickUsername} your guess of $${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} has been recorded!`);
-      } else if (result === 'not_verified') {
-        await this.sendChatMessage(`@${kickUsername} you need to verify your Kick account on the website first to participate!`);
       } else if (result === 'no_game') {
         await this.sendChatMessage(`@${kickUsername} there is no active Guess the Balance game right now.`);
       } else if (result === 'invalid') {

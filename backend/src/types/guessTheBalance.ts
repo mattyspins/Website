@@ -72,7 +72,8 @@ export interface GuessWithUserResponse extends GuessResponse {
 }
 
 export interface WinnerInfo {
-  userId: string;
+  userId: string | null;
+  kickUsername: string | null;
   guessAmount: number;
   difference: number;
   isPerfect: boolean;

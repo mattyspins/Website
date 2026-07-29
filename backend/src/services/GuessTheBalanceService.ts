@@ -172,7 +172,8 @@ export class GuessTheBalanceService {
           finalBalance: new Prisma.Decimal(data.finalBalance),
           status: GuessTheBalanceStatus.COMPLETED,
           completedAt: new Date(),
-          winnerId: winner?.userId,
+          winnerId: winner?.userId ?? null,
+          winnerKickUsername: winner && !winner.userId ? winner.kickUsername : null,
           winnerGuess: winner ? new Prisma.Decimal(winner.guessAmount) : null,
           winnerReward: data.winnerReward || 0,
         },
@@ -189,32 +190,34 @@ export class GuessTheBalanceService {
         },
       });
 
-      // Award points to winner if specified
+      // Award points to winner if specified — skipped for an unlinked winner
+      // (no User row to credit), same convention as Boss Raid's top-3 reward.
       if (winner && data.winnerReward && data.winnerReward > 0) {
-        await this.awardPoints(
-          winner.userId,
-          data.winnerReward,
-          `Won Guess the Balance game: ${game.title || gameId}`
-        );
-
-        // Send win notification to user
-        await NotificationService.notifyGameWin(
-          winner.userId,
-          game.title || 'Guess the Balance',
-          data.winnerReward,
-          gameId
-        );
+        if (winner.userId) {
+          await this.awardPoints(
+            winner.userId,
+            data.winnerReward,
+            `Won Guess the Balance game: ${game.title || gameId}`
+          );
+          await NotificationService.notifyGameWin(
+            winner.userId,
+            game.title || 'Guess the Balance',
+            data.winnerReward,
+            gameId
+          );
+        } else {
+          logger.warn(`GuessTheBalance ${gameId}: winner ${winner.kickUsername} has no linked account — skipping coin reward`);
+        }
       }
 
       logger.info(
-        `Game ${gameId} completed. Winner: ${winner?.userId || 'none'}, Reward: ${data.winnerReward || 0}`
+        `Game ${gameId} completed. Winner: ${winner?.userId ?? winner?.kickUsername ?? 'none'}, Reward: ${data.winnerReward || 0}`
       );
 
-      if (updatedGame.winner) {
-        const w = updatedGame.winner;
-        void KickChatService.sendChatMessage(
-          `🎯 ${w.kickUsername ? `@${w.kickUsername}` : w.displayName} guessed closest and wins Guess the Balance!`
-        );
+      const winnerKick = updatedGame.winner?.kickUsername ?? updatedGame.winnerKickUsername;
+      const winnerLabel = winnerKick ? `@${winnerKick}` : updatedGame.winner?.displayName;
+      if (winnerLabel) {
+        void KickChatService.sendChatMessage(`🎯 ${winnerLabel} guessed closest and wins Guess the Balance!`);
       }
 
       return this.formatGameWithWinnerResponse(
@@ -254,27 +257,28 @@ export class GuessTheBalanceService {
         );
       }
 
-      if (!game.winnerId || !game.finalBalance) {
+      if ((!game.winnerId && !game.winnerKickUsername) || !game.finalBalance) {
         throw createError.badRequest('Game has no winner to disqualify');
       }
 
       const previousWinnerId = game.winnerId;
+      const previousWinnerKick = game.winnerKickUsername;
       const previousReward = game.winnerReward || 0;
 
       // Add previous winner to disqualified list
       const disqualifiedUsers = (game.metadata as any)?.disqualifiedUsers || [];
       disqualifiedUsers.push({
         userId: previousWinnerId,
+        kickUsername: previousWinnerKick,
         reason,
         disqualifiedAt: new Date().toISOString(),
       });
 
       // Calculate new winner (excluding disqualified users)
-      const newWinner = await this.calculateWinner(
-        gameId,
-        game.finalBalance.toNumber(),
-        disqualifiedUsers.map((d: any) => d.userId)
-      );
+      const newWinner = await this.calculateWinner(gameId, game.finalBalance.toNumber(), {
+        userIds: disqualifiedUsers.map((d: any) => d.userId).filter((x: string | null): x is string => !!x),
+        kickUsernames: disqualifiedUsers.map((d: any) => d.kickUsername).filter((x: string | null): x is string => !!x),
+      });
 
       if (!newWinner) {
         throw createError.badRequest(
@@ -286,9 +290,10 @@ export class GuessTheBalanceService {
       // means only one of two concurrent disqualify calls (reading the same stale winner)
       // can succeed — the loser gets count 0 and bails out before refunding/awarding points.
       const claimed = await prisma.guessTheBalance.updateMany({
-        where: { id: gameId, winnerId: previousWinnerId },
+        where: { id: gameId, winnerId: previousWinnerId, winnerKickUsername: previousWinnerKick },
         data: {
-          winnerId: newWinner.userId,
+          winnerId: newWinner.userId ?? null,
+          winnerKickUsername: newWinner.userId ? null : newWinner.kickUsername,
           winnerGuess: new Prisma.Decimal(newWinner.guessAmount),
           metadata: {
             ...(game.metadata as any),
@@ -301,8 +306,9 @@ export class GuessTheBalanceService {
         throw createError.badRequest('Winner was already disqualified by another request');
       }
 
-      // Refund points from previous winner if they were awarded
-      if (previousReward > 0) {
+      // Refund points from previous winner if they were awarded — an
+      // unlinked previous winner was never actually paid, so nothing to undo.
+      if (previousReward > 0 && previousWinnerId) {
         await this.refundPoints(
           previousWinnerId,
           previousReward,
@@ -317,25 +323,27 @@ export class GuessTheBalanceService {
         },
       });
 
-      // Award points to new winner
+      // Award points to new winner — skipped if unlinked, same as completeGame.
       if (previousReward > 0) {
-        await this.awardPoints(
-          newWinner.userId,
-          previousReward,
-          `Won Guess the Balance game: ${game.title || gameId}`
-        );
-
-        // Send win notification to new winner
-        await NotificationService.notifyGameWin(
-          newWinner.userId,
-          game.title || 'Guess the Balance',
-          previousReward,
-          gameId
-        );
+        if (newWinner.userId) {
+          await this.awardPoints(
+            newWinner.userId,
+            previousReward,
+            `Won Guess the Balance game: ${game.title || gameId}`
+          );
+          await NotificationService.notifyGameWin(
+            newWinner.userId,
+            game.title || 'Guess the Balance',
+            previousReward,
+            gameId
+          );
+        } else {
+          logger.warn(`GuessTheBalance ${gameId}: new winner ${newWinner.kickUsername} has no linked account — skipping coin reward`);
+        }
       }
 
       logger.info(
-        `Game ${gameId} winner disqualified. Previous: ${previousWinnerId}, New: ${newWinner.userId}, Reason: ${reason}`
+        `Game ${gameId} winner disqualified. Previous: ${previousWinnerId ?? previousWinnerKick}, New: ${newWinner.userId ?? newWinner.kickUsername}, Reason: ${reason}`
       );
 
       return this.formatGameWithWinnerResponse(
@@ -364,6 +372,7 @@ export class GuessTheBalanceService {
             select: {
               id: true,
               displayName: true,
+              kickUsername: true,
               avatarUrl: true,
             },
           },
@@ -373,6 +382,8 @@ export class GuessTheBalanceService {
         },
       });
 
+      // Kick name always wins for display, same convention every other
+      // stream-game service uses — an unlinked guess has no user row at all.
       return guesses.map(guess => ({
         id: guess.id,
         gameId: guess.gameId,
@@ -381,9 +392,9 @@ export class GuessTheBalanceService {
         submittedAt: guess.submittedAt,
         updatedAt: guess.updatedAt,
         user: {
-          id: guess.user.id,
-          displayName: guess.user.displayName,
-          avatar: guess.user.avatarUrl || undefined,
+          id: guess.user?.id ?? guess.kickUsername ?? 'unknown',
+          displayName: guess.user?.kickUsername ?? guess.kickUsername ?? guess.user?.displayName ?? 'Unknown',
+          avatar: guess.user?.avatarUrl || undefined,
         },
       }));
     } catch (error) {
@@ -532,20 +543,22 @@ export class GuessTheBalanceService {
   }
 
   /**
-   * Submit a guess from Kick chat — verified users only
+   * Submit a guess from Kick chat — anyone can participate, even without a
+   * linked/verified site account. A matching verified account is attached as
+   * an optional bonus (same identity model as Bonus Bingo's "!join").
    */
   static async submitGuessByKickUsername(
     kickUsername: string,
     amount: number,
     io?: import('socket.io').Server
-  ): Promise<'ok' | 'not_verified' | 'no_game' | 'invalid'> {
+  ): Promise<'ok' | 'no_game' | 'invalid'> {
     if (amount <= 0 || isNaN(amount)) return 'invalid';
 
+    const normalized = kickUsername.trim().toLowerCase();
     const user = await prisma.user.findFirst({
-      where: { kickUsername: { equals: kickUsername, mode: 'insensitive' }, kickVerified: true },
+      where: { kickUsername: { equals: normalized, mode: 'insensitive' }, kickVerified: true },
       select: { id: true },
     });
-    if (!user) return 'not_verified';
 
     const game = await prisma.guessTheBalance.findFirst({
       where: { status: GuessTheBalanceStatus.OPEN },
@@ -553,13 +566,22 @@ export class GuessTheBalanceService {
     });
     if (!game) return 'no_game';
 
-    await prisma.guessSubmission.upsert({
-      where: { gameId_userId: { gameId: game.id, userId: user.id } },
-      create: { gameId: game.id, userId: user.id, guessAmount: new Prisma.Decimal(amount) },
-      update: { guessAmount: new Prisma.Decimal(amount), updatedAt: new Date() },
+    const existing = await prisma.guessSubmission.findFirst({
+      where: { gameId: game.id, OR: [...(user ? [{ userId: user.id }] : []), { kickUsername: normalized }] },
     });
 
-    logger.info(`Kick !guess: ${kickUsername} guessed ${amount} on game ${game.id}`);
+    if (existing) {
+      await prisma.guessSubmission.update({
+        where: { id: existing.id },
+        data: { guessAmount: new Prisma.Decimal(amount), updatedAt: new Date() },
+      });
+    } else {
+      await prisma.guessSubmission.create({
+        data: { gameId: game.id, userId: user?.id ?? null, kickUsername: normalized, guessAmount: new Prisma.Decimal(amount) },
+      });
+    }
+
+    logger.info(`Kick !guess: ${kickUsername} guessed ${amount} on game ${game.id}${user ? '' : ' (unlinked)'}`);
     return 'ok';
   }
 
@@ -616,7 +638,7 @@ export class GuessTheBalanceService {
         where: { id: gameId },
         include: {
           winner: {
-            select: { id: true, displayName: true, avatarUrl: true },
+            select: { id: true, displayName: true, kickUsername: true, avatarUrl: true },
           },
           guesses: userId
             ? {
@@ -644,11 +666,11 @@ export class GuessTheBalanceService {
       if (userId) {
         response.userHasGuessed = game.guesses.length > 0;
       }
-      if (game.winner && game.winnerGuess && game.finalBalance) {
+      if ((game.winner || game.winnerKickUsername) && game.winnerGuess && game.finalBalance) {
         response.winner = {
-          id: game.winner.id,
-          displayName: game.winner.displayName,
-          avatar: game.winner.avatarUrl || undefined,
+          id: game.winner?.id ?? game.winnerKickUsername!,
+          displayName: game.winner?.kickUsername ?? game.winnerKickUsername ?? game.winner?.displayName ?? 'Unknown',
+          avatar: game.winner?.avatarUrl || undefined,
           guessAmount: game.winnerGuess.toNumber(),
           difference: Math.abs(game.finalBalance.toNumber() - game.winnerGuess.toNumber()),
           reward: game.winnerReward || 0,
@@ -791,6 +813,7 @@ export class GuessTheBalanceService {
             select: {
               id: true,
               displayName: true,
+              kickUsername: true,
               avatarUrl: true,
             },
           },
@@ -806,15 +829,15 @@ export class GuessTheBalanceService {
           game
         ) as GameWithWinnerResponse;
 
-        if (game.winner && game.winnerGuess && game.finalBalance) {
+        if ((game.winner || game.winnerKickUsername) && game.winnerGuess && game.finalBalance) {
           const difference = Math.abs(
             game.finalBalance.toNumber() - game.winnerGuess.toNumber()
           );
 
           response.winner = {
-            id: game.winner.id,
-            displayName: game.winner.displayName,
-            avatar: game.winner.avatarUrl || undefined,
+            id: game.winner?.id ?? game.winnerKickUsername!,
+            displayName: game.winner?.kickUsername ?? game.winnerKickUsername ?? game.winner?.displayName ?? 'Unknown',
+            avatar: game.winner?.avatarUrl || undefined,
             guessAmount: game.winnerGuess.toNumber(),
             difference,
             reward: game.winnerReward || 0,
@@ -837,15 +860,19 @@ export class GuessTheBalanceService {
   private static async calculateWinner(
     gameId: string,
     finalBalance: number,
-    excludedUserIds: string[] = []
+    excluded: { userIds?: string[]; kickUsernames?: string[] } = {}
   ): Promise<WinnerInfo | null> {
     try {
+      const excludedUserIds = excluded.userIds ?? [];
+      const excludedKickUsernames = excluded.kickUsernames ?? [];
+      const exclusionClauses = [
+        ...(excludedUserIds.length > 0 ? [{ userId: { in: excludedUserIds } }] : []),
+        ...(excludedKickUsernames.length > 0 ? [{ kickUsername: { in: excludedKickUsernames } }] : []),
+      ];
       const guesses = await prisma.guessSubmission.findMany({
         where: {
           gameId,
-          userId: {
-            notIn: excludedUserIds,
-          },
+          ...(exclusionClauses.length > 0 ? { NOT: { OR: exclusionClauses } } : {}),
         },
         orderBy: {
           submittedAt: 'asc', // First submission wins in case of tie
@@ -854,7 +881,7 @@ export class GuessTheBalanceService {
 
       if (guesses.length === 0) {
         logger.info(
-          `No eligible guesses for game ${gameId}, no winner (excluded: ${excludedUserIds.length})`
+          `No eligible guesses for game ${gameId}, no winner (excluded: ${excludedUserIds.length + excludedKickUsernames.length})`
         );
         return null;
       }
@@ -877,6 +904,7 @@ export class GuessTheBalanceService {
 
       return {
         userId: closestGuess.userId,
+        kickUsername: closestGuess.kickUsername,
         guessAmount: closestGuess.guessAmount.toNumber(),
         difference: smallestDifference,
         isPerfect: smallestDifference === 0,
@@ -999,11 +1027,11 @@ export class GuessTheBalanceService {
   ): GameWithWinnerResponse {
     const response = this.formatGameResponse(game) as GameWithWinnerResponse;
 
-    if (winner && game.winner) {
+    if (winner && (game.winner || game.winnerKickUsername)) {
       response.winner = {
-        id: game.winner.id,
-        displayName: game.winner.displayName,
-        avatar: game.winner.avatarUrl || undefined,
+        id: game.winner?.id ?? game.winnerKickUsername,
+        displayName: game.winner?.kickUsername ?? game.winnerKickUsername ?? game.winner?.displayName ?? 'Unknown',
+        avatar: game.winner?.avatarUrl || undefined,
         guessAmount: winner.guessAmount,
         difference: winner.difference,
         reward: game.winnerReward || 0,
