@@ -21,9 +21,13 @@ import { TournamentEntrySource } from '@/types/tournament';
 const KICK_CHANNEL_NAME = process.env['KICK_CHANNEL_NAME'] || 'mattyspins';
 // Set KICK_CHATROOM_ID in .env — find it by opening kick.com/mattyspins and checking the chatroom ID in network tab
 const KICK_CHATROOM_ID = parseInt(process.env['KICK_CHATROOM_ID'] || '0', 10);
-// Bot token for sending chat messages — set KICK_BOT_TOKEN in Railway env vars
-// Get it by going to kick.com → your account settings → App Access Tokens (or use OAuth with chat:write scope)
+// Bot token for sending chat messages — a Kick OAuth user access token (chat:write scope)
+// for the bot account, set as KICK_BOT_TOKEN in Railway env vars.
 const KICK_BOT_TOKEN = process.env['KICK_BOT_TOKEN'] || '';
+// The mattyspins channel's numeric Kick user ID (public data, from GET /public/v1/channels?slug=mattyspins).
+// Required because the bot token belongs to a separate bot account, not mattyspins itself —
+// sending "type: user" with this ID posts into mattyspins' chat as the bot account.
+const KICK_BROADCASTER_USER_ID = process.env['KICK_BROADCASTER_USER_ID'] || '';
 const PUSHER_APP_KEY = '32cbd69e4b950bf97679';
 const PUSHER_WS_URL = `wss://ws-us2.pusher.com/app/${PUSHER_APP_KEY}?protocol=7&client=js&version=7.4.0&flash=false`;
 const CHAT_POINTS_AMOUNT = 1;
@@ -237,19 +241,22 @@ export class KickChatService {
   }
 
   static async sendChatMessage(message: string): Promise<void> {
-    if (!KICK_BOT_TOKEN || !KICK_CHATROOM_ID) return;
+    if (!KICK_BOT_TOKEN || !KICK_BROADCASTER_USER_ID) return;
     try {
-      const res = await fetch(`https://kick.com/api/v2/messages/send/${KICK_CHATROOM_ID}`, {
+      const res = await fetch('https://api.kick.com/public/v1/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${KICK_BOT_TOKEN}`,
-          'User-Agent': 'MattySpinsBot/1.0',
         },
-        body: JSON.stringify({ content: message, type: 'message' }),
+        body: JSON.stringify({
+          broadcaster_user_id: Number(KICK_BROADCASTER_USER_ID),
+          content: message,
+          type: 'user',
+        }),
       });
       if (!res.ok) {
-        logger.warn(`KickChatService: sendChatMessage failed (${res.status})`);
+        logger.warn(`KickChatService: sendChatMessage failed (${res.status})`, { body: await res.text() });
       }
     } catch (err) {
       logger.warn('KickChatService: sendChatMessage error', { error: (err as Error).message });
@@ -335,7 +342,7 @@ export class KickChatService {
       const joined = await KingOfTheHillService.joinByKeyword(kickUsername, slotName, this.io ?? undefined);
       if (joined) {
         logger.info(`KickChatService: ${kickUsername} joined King of the Hill via !king${slotName ? ` (slot: ${slotName})` : ''}`);
-        await this.sendChatMessage(`👑 ${kickUsername} has joined King of the Hill!`);
+        await this.sendChatMessage(`@${kickUsername} you have entered the king of the hill`);
       }
     } catch (err) {
       logger.warn(`KickChatService: !king failed for ${kickUsername}`, { error: (err as Error).message });
@@ -400,7 +407,7 @@ export class KickChatService {
     } catch (err) {
       const message = (err as Error).message;
       if (message === 'Already entered') {
-        await this.sendChatMessage(`@${kickUsername} you're already entered in the tournament!`);
+        await this.sendChatMessage(`@${kickUsername} you are already entered the tourney`);
       } else {
         logger.warn(`KickChatService: !jointourney failed for ${kickUsername}`, { error: message });
       }
