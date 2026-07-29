@@ -27,8 +27,11 @@ type WinnerWithUser = PickerWithRelations['winners'][number];
 
 // A viewer who hasn't linked Kick or registered on the site has no `user` row — fall back
 // to the raw kick_username captured from chat so they can still enter and be displayed.
+// Kick name always wins for display, same convention every other stream-game
+// service uses (Boss Raid, Bounty Hunter, KOTH, Bingo, High Roller) — a linked
+// site account's Discord displayName is never shown here, even when one exists.
 function entryUserShape(entry: EntryWithUser | WinnerWithUser) {
-  if (entry.user) return entry.user;
+  if (entry.user) return { ...entry.user, displayName: entry.kickUsername };
   return { id: entry.kickUsername, displayName: entry.kickUsername, kickUsername: entry.kickUsername, avatarUrl: null };
 }
 
