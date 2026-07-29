@@ -5,6 +5,7 @@ import { weeklyRaffleApi, WeeklyRaffle, WeeklyRaffleDrawResult } from "@/lib/api
 import { useToast } from "@/components/ui/ToastProvider";
 import { useConfirm } from "@/components/admin/useConfirm";
 import { isoWeekNumber } from "@/lib/weekNumber";
+import { formatAcrossTimezones, getCurrentWeekBoundsUtc } from "@/lib/displayTimezones";
 import EliminationReveal from "@/components/weeklyRaffle/EliminationReveal";
 import WeeklyRaffleParticipants from "@/components/weeklyRaffle/WeeklyRaffleParticipants";
 import { Users, Play, Plus, Trophy, Pencil, ChevronDown, ChevronUp } from "lucide-react";
@@ -197,10 +198,17 @@ export default function AdminWeeklyRafflePage() {
         </div>
       )}
 
-      {!raffle && (
+      {!raffle && (() => {
+        const { weekStart, weekEnd } = getCurrentWeekBoundsUtc();
+        return (
         <div className="bg-navy-800/60 border border-white/6 rounded-xl p-6">
           <h2 className="text-white font-semibold mb-1">Create this week's raffle</h2>
-          <p className="text-gray-400 text-sm mb-4">No raffle exists yet for the current week (Monday–Monday, UTC).</p>
+          <p className="text-gray-400 text-sm mb-1">No raffle exists yet for the current week (Monday–Monday, UTC).</p>
+          <p className="text-gray-500 text-xs mb-4">
+            Starts {formatAcrossTimezones(weekStart)}
+            <br />
+            Ends {formatAcrossTimezones(weekEnd)}
+          </p>
           <label className="block text-xs text-gray-400 mb-1">Minimum weekly wager under code ($)</label>
           <div className="flex gap-2 max-w-xs">
             <input
@@ -219,13 +227,14 @@ export default function AdminWeeklyRafflePage() {
             </button>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {raffle && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 space-y-4">
             <div className="bg-navy-800/60 border border-white/6 rounded-xl p-5">
-              <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+              <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
                 <h2 className="text-white font-semibold">
                   Week {isoWeekNumber(raffle.weekStart)} ·{" "}
                   {new Date(raffle.weekStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })} –{" "}
@@ -239,6 +248,11 @@ export default function AdminWeeklyRafflePage() {
                   {raffle.status}
                 </span>
               </div>
+              <p className="text-gray-500 text-xs mb-3">
+                Starts {formatAcrossTimezones(raffle.weekStart)}
+                <br />
+                Ends {formatAcrossTimezones(raffle.weekEnd)}
+              </p>
 
               {!editing ? (
                 <div className="flex items-center justify-between gap-2 mb-4">
