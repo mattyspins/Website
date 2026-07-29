@@ -46,7 +46,7 @@ router.post('/:id/entries/:entryId/invalidate', authMiddleware, adminMiddleware,
 router.post('/:id/entries/:entryId/restore', authMiddleware, adminMiddleware, adminLimiter, TournamentController.restoreEntry);
 
 router.post('/:id/ban', authMiddleware, adminMiddleware, adminLimiter, TournamentController.banUser);
-router.delete('/:id/ban/:userId', authMiddleware, adminMiddleware, adminLimiter, TournamentController.unbanUser);
+router.delete('/:id/ban/:identifier', authMiddleware, adminMiddleware, adminLimiter, TournamentController.unbanUser);
 
 router.post('/:id/participants/:participantId/replace', authMiddleware, adminMiddleware, adminLimiter, TournamentController.replaceParticipant);
 

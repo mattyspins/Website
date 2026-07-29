@@ -18,15 +18,15 @@ import Link from "next/link";
 
 function StatusBadge({ status }: { status: SlotWorldCupStatus }) {
   const map: Record<SlotWorldCupStatus, { label: string; cls: string }> = {
-    [SlotWorldCupStatus.NOMINATION]: { label: "Nominations Open", cls: "bg-blue-500/20 text-blue-300 border border-blue-500/30 animate-pulse" },
+    [SlotWorldCupStatus.NOMINATION]: { label: "Nominations Open", cls: "bg-[color:var(--tt-gold)]/15 text-[color:var(--tt-gold)] border border-[color:var(--tt-gold-border)] animate-pulse" },
     [SlotWorldCupStatus.BRACKET_SET]: { label: "Bracket Set", cls: "bg-white/8 text-white/50" },
-    [SlotWorldCupStatus.PREDICTIONS_OPEN]: { label: "Predictions Open", cls: "bg-yellow-400/20 text-yellow-300 border border-yellow-400/30 animate-pulse" },
-    [SlotWorldCupStatus.IN_PROGRESS]: { label: "Live", cls: "bg-green-500/20 text-green-300 border border-green-500/30" },
+    [SlotWorldCupStatus.PREDICTIONS_OPEN]: { label: "Predictions Open", cls: "bg-[color:var(--tt-gold)]/15 text-[color:var(--tt-gold)] border border-[color:var(--tt-gold-border)] animate-pulse" },
+    [SlotWorldCupStatus.IN_PROGRESS]: { label: "Live", cls: "bg-[color:var(--tt-pink-soft)] text-[color:var(--tt-pink)] border border-[color:var(--tt-pink-border)]" },
     [SlotWorldCupStatus.COMPLETED]: { label: "Completed", cls: "bg-white/8 text-white/50" },
     [SlotWorldCupStatus.CANCELLED]: { label: "Cancelled", cls: "bg-red-500/10 text-red-400" },
   };
   const { label, cls } = map[status];
-  return <span className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${cls}`}>{label}</span>;
+  return <span className={`tt-display text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${cls}`}>{label}</span>;
 }
 
 function NominationPanel({
@@ -40,10 +40,10 @@ function NominationPanel({
 }) {
   const [slotName, setSlotName] = useState("");
   return (
-    <div className="bg-white/3 border border-white/8 rounded-2xl p-6 mb-6">
+    <div className="bg-[color:var(--tt-bg-elevated)] border border-[color:var(--tt-border)] rounded-2xl p-6 mb-6">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-        <h3 className="text-lg font-bold text-white">Most Requested Slots</h3>
-        <p className="text-xs text-white/50">Nominate in chat with <span className="text-yellow-400 font-mono">{tournament.nominationCommand} &lt;slot name&gt;</span></p>
+        <h3 className="tt-display text-lg text-white">Most Requested Slots</h3>
+        <p className="text-xs text-white/50">Nominate in chat with <span className="text-[color:var(--tt-gold)] font-mono">{tournament.nominationCommand} &lt;slot name&gt;</span></p>
       </div>
 
       {tournament.nominationsOpen && user && (
@@ -52,19 +52,19 @@ function NominationPanel({
             value={slotName}
             onChange={(e) => setSlotName(e.target.value)}
             placeholder="Nominate a slot (e.g. Gates of Olympus)"
-            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/45 focus:outline-none focus:border-yellow-400/40"
+            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/45 focus:outline-none focus:border-[color:var(--tt-gold-border)]"
           />
           <button
             onClick={async () => { if (slotName.trim()) { await onNominate(slotName.trim()); setSlotName(""); } }}
             disabled={actionLoading || !slotName.trim()}
-            className="px-4 py-2 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-300 disabled:opacity-40 text-sm transition-colors"
+            className="tt-display px-4 py-2 bg-[color:var(--tt-gold)] text-[color:var(--tt-gold-text)] rounded-lg hover:bg-[color:var(--tt-gold-hover)] disabled:opacity-40 text-sm transition-colors"
           >
             Nominate
           </button>
         </div>
       )}
       {tournament.nominationsOpen && user && !user.kickVerified && (
-        <p className="text-xs text-yellow-300/70 mb-4">Verify your Kick account on the site to nominate from the web (or use !wc in chat).</p>
+        <p className="text-xs text-[color:var(--tt-gold)]/70 mb-4">Verify your Kick account on the site to nominate from the web (or use !wc in chat).</p>
       )}
 
       {rankings.length === 0 ? (
@@ -72,8 +72,8 @@ function NominationPanel({
       ) : (
         <div className="space-y-1.5">
           {rankings.slice(0, 20).map((r) => (
-            <div key={r.rank} className={`flex items-center gap-3 px-3 py-2 rounded-lg ${r.rank <= tournament.size ? "bg-yellow-400/8 border border-yellow-400/15" : "bg-white/3"}`}>
-              <span className={`text-sm font-bold w-6 text-center ${r.rank <= tournament.size ? "text-yellow-400" : "text-white/45"}`}>{r.rank}</span>
+            <div key={r.rank} className={`flex items-center gap-3 px-3 py-2 rounded-lg ${r.rank <= tournament.size ? "bg-[color:var(--tt-gold)]/8 border border-[color:var(--tt-gold-border)]" : "bg-white/3"}`}>
+              <span className={`text-sm font-bold w-6 text-center ${r.rank <= tournament.size ? "text-[color:var(--tt-gold)]" : "text-white/45"}`}>{r.rank}</span>
               <span className="flex-1 text-sm text-white truncate">{r.slotName}</span>
               <span className="text-xs text-white/50">{r.votes} vote{r.votes === 1 ? "" : "s"}</span>
             </div>
@@ -91,7 +91,7 @@ function LeaderboardTable({ leaderboard }: { leaderboard: SlotWorldCupLeaderboar
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-white/50 text-xs uppercase tracking-wider border-b border-white/8">
+          <tr className="text-white/50 text-xs uppercase tracking-wider border-b border-[color:var(--tt-border)]">
             <th className="text-left py-2 px-2">Rank</th>
             <th className="text-left py-2 px-2">Player</th>
             <th className="text-right py-2 px-2">Score</th>
@@ -102,7 +102,7 @@ function LeaderboardTable({ leaderboard }: { leaderboard: SlotWorldCupLeaderboar
         <tbody>
           {leaderboard.map((e) => (
             <tr key={e.userId} className="border-b border-white/5">
-              <td className="py-2 px-2 font-bold text-yellow-400">{e.rank}</td>
+              <td className="py-2 px-2 font-bold text-[color:var(--tt-gold)]">{e.rank}</td>
               <td className="py-2 px-2 text-white">{e.displayName}</td>
               <td className="py-2 px-2 text-right text-white font-semibold">{e.score}</td>
               <td className="py-2 px-2 text-right text-white/60">{e.correctPicks}</td>
@@ -217,29 +217,25 @@ export default function SlotWorldCupPage() {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[color:var(--tt-gold)]" />
     </div>
   );
 
   const canPredict = tournament?.status === SlotWorldCupStatus.PREDICTIONS_OPEN && !myPrediction;
 
   return (
-    <div className="min-h-screen text-white">
+    <div>
       <div className="max-w-6xl mx-auto px-4 pt-24 pb-20">
         <div className="mb-8">
-          <Link href="/stream-games" className="inline-flex items-center gap-2 bg-white/8 hover:bg-white/12 border border-white/10 hover:border-white/20 text-gray-300 hover:text-white font-semibold px-4 py-2 rounded-xl transition-all text-sm">
+          <Link href="/stream-games" className="inline-flex items-center gap-2 bg-white/8 hover:bg-white/12 border border-white/10 hover:border-white/20 text-white/70 hover:text-white font-semibold px-4 py-2 rounded-xl transition-all text-sm no-underline">
             <ArrowLeft className="w-4 h-4" /> Stream Games
           </Link>
         </div>
 
         <div className="text-center mb-10">
-          <h1 className="text-5xl sm:text-7xl font-black tracking-tight mb-4 leading-none">
+          <h1 className="tt-display text-5xl sm:text-7xl mb-4 leading-none">
             <span className="text-white">SLOT WORLD </span>
-            <span style={{
-              background: "linear-gradient(90deg, #fbbf24 0%, #f59e0b 40%, #d97706 70%, #fbbf24 100%)",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-              textShadow: "0 0 40px rgba(245,158,11,0.3)",
-            }}>CUP</span>
+            <span className="text-[color:var(--tt-gold)]" style={{ textShadow: "0 0 40px var(--tt-gold-soft)" }}>CUP</span>
           </h1>
           <p className="text-white/45 text-base sm:text-lg max-w-lg mx-auto">
             Community-nominated slots battle it out in a single-elimination bracket. Predict every round to climb the leaderboard.
@@ -249,15 +245,15 @@ export default function SlotWorldCupPage() {
         {error && <div className="mb-6 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-300 text-sm">{error}</div>}
 
         {!tournament ? (
-          <div className="bg-white/3 border border-white/8 rounded-2xl px-8 py-14 text-center">
-            <p className="text-white/45 text-xs font-bold uppercase tracking-[0.2em] mb-3">No Active Slot World Cup</p>
+          <div className="bg-[color:var(--tt-bg-elevated)] border border-[color:var(--tt-border)] rounded-2xl px-8 py-14 text-center">
+            <p className="tt-display text-white/45 text-xs tracking-[0.2em] mb-3">No Active Slot World Cup</p>
             <p className="text-white/50 text-base">Check back soon — the next bracket will appear here.</p>
           </div>
         ) : (
           <>
             <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
               <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold text-white">{tournament.title}</h2>
+                <h2 className="tt-display text-2xl text-white">{tournament.title}</h2>
                 <StatusBadge status={tournament.status} />
               </div>
               <span className="text-sm text-white/50">{tournament.size} slots</span>
@@ -277,20 +273,20 @@ export default function SlotWorldCupPage() {
             )}
 
             {[SlotWorldCupStatus.BRACKET_SET, SlotWorldCupStatus.PREDICTIONS_OPEN, SlotWorldCupStatus.IN_PROGRESS, SlotWorldCupStatus.COMPLETED].includes(tournament.status) && (
-              <div className="bg-white/3 border border-yellow-400/20 rounded-2xl p-6 mb-6">
+              <div className="bg-[color:var(--tt-bg-elevated)] border border-[color:var(--tt-gold-border)] rounded-2xl p-6 mb-6">
                 <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-                  <h3 className="text-lg font-bold text-white">Bracket</h3>
+                  <h3 className="tt-display text-lg text-white">Bracket</h3>
                   {canPredict && (
                     <button
                       onClick={handleSubmitPrediction}
                       disabled={!allPicked || actionLoading}
-                      className="px-5 py-2 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-300 disabled:opacity-40 text-sm transition-colors"
+                      className="tt-display px-5 py-2 bg-[color:var(--tt-gold)] text-[color:var(--tt-gold-text)] rounded-lg hover:bg-[color:var(--tt-gold-hover)] disabled:opacity-40 text-sm transition-colors"
                     >
                       {actionLoading ? "Submitting…" : allPicked ? "Submit Prediction" : "Complete Every Pick"}
                     </button>
                   )}
                   {myPrediction && tournament.status === SlotWorldCupStatus.PREDICTIONS_OPEN && (
-                    <span className="text-xs text-green-400 font-semibold">✓ Prediction locked in</span>
+                    <span className="text-xs text-[color:var(--tt-gold)] font-semibold">✓ Prediction locked in</span>
                   )}
                 </div>
                 <SlotWorldCupBracket
@@ -304,8 +300,8 @@ export default function SlotWorldCupPage() {
             )}
 
             {[SlotWorldCupStatus.BRACKET_SET, SlotWorldCupStatus.PREDICTIONS_OPEN, SlotWorldCupStatus.IN_PROGRESS, SlotWorldCupStatus.COMPLETED].includes(tournament.status) && (
-              <div className="bg-white/3 border border-white/8 rounded-2xl p-6">
-                <h3 className="text-lg font-bold text-white mb-4">Leaderboard</h3>
+              <div className="bg-[color:var(--tt-bg-elevated)] border border-[color:var(--tt-border)] rounded-2xl p-6">
+                <h3 className="tt-display text-lg text-white mb-4">Leaderboard</h3>
                 <LeaderboardTable leaderboard={leaderboard} />
               </div>
             )}

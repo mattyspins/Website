@@ -42,13 +42,13 @@ function SlotChip({
       disabled={disabled}
       className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${
         selected
-          ? "bg-yellow-400/15 border-yellow-400/50"
+          ? "bg-[color:var(--tt-gold)]/15 border-[color:var(--tt-gold-border)]"
           : isWinner
-          ? "bg-green-500/10 border-green-500/30"
+          ? "bg-[color:var(--tt-gold-soft)] border-[color:var(--tt-gold-border)]"
           : isLoser
           ? "bg-white/3 border-white/5 opacity-40"
           : onClick
-          ? "bg-white/5 border-white/10 hover:border-yellow-400/40 hover:bg-white/8"
+          ? "bg-white/5 border-white/10 hover:border-[color:var(--tt-gold-border)] hover:bg-white/8"
           : "bg-white/5 border-white/10"
       } ${onClick ? "cursor-pointer" : ""}`}
     >
@@ -62,11 +62,11 @@ function SlotChip({
         <p className="text-[11px] text-white/50 truncate">{game?.provider ?? slot.provider ?? "—"} · Seed {slot.seed}</p>
       </div>
       {multiplier && (
-        <span className={`text-xs font-bold shrink-0 ${isWinner ? "text-green-400" : "text-white/50"}`}>
+        <span className={`text-xs font-bold shrink-0 ${isWinner ? "text-[color:var(--tt-gold)]" : "text-white/50"}`}>
           {Number(multiplier).toFixed(2)}x
         </span>
       )}
-      {isWinner && <span className="text-green-400 text-xs shrink-0">✓</span>}
+      {isWinner && <span className="text-[color:var(--tt-gold)] text-xs shrink-0">✓</span>}
     </Wrapper>
   );
 }
@@ -160,18 +160,18 @@ export default function SlotWorldCupBracket({
                           type="number" min="0" placeholder="Bet" value={d[betField]}
                           onChange={(e) => onResultChange?.(match.id, betField, e.target.value)}
                           aria-label={`${slot?.slotName ?? "Slot"} bet`}
-                          className="w-full min-w-0 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-[11px] text-white placeholder:text-white/45 focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
+                          className="w-full min-w-0 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-[11px] text-white placeholder:text-white/45 focus:outline-none focus:border-[color:var(--tt-gold-border)] [appearance:textfield]"
                         />
                         <input
                           type="number" min="0" placeholder="Payout" value={d[payoutField]}
                           onChange={(e) => onResultChange?.(match.id, payoutField, e.target.value)}
                           aria-label={`${slot?.slotName ?? "Slot"} payout`}
-                          className="w-full min-w-0 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-[11px] text-white placeholder:text-white/45 focus:outline-none focus:border-yellow-400/50 [appearance:textfield]"
+                          className="w-full min-w-0 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-[11px] text-white placeholder:text-white/45 focus:outline-none focus:border-[color:var(--tt-gold-border)] [appearance:textfield]"
                         />
                       </div>
                     )}
                     {m != null && !isNaN(m) && (
-                      <p className={`text-[11px] font-bold text-center ${isWinner ? "text-green-400" : "text-yellow-400/80"}`}>
+                      <p className={`text-[11px] font-bold text-center ${isWinner ? "text-[color:var(--tt-gold)]" : "text-[color:var(--tt-gold)]/70"}`}>
                         {m.toFixed(2)}x
                       </p>
                     )}
@@ -179,7 +179,7 @@ export default function SlotWorldCupBracket({
                 );
 
                 return (
-                  <div className={`bg-white/3 border rounded-xl p-2 space-y-1.5 ${ready ? "border-yellow-400/25" : "border-white/8"}`}>
+                  <div className={`bg-white/3 border rounded-xl p-2 space-y-1.5 ${ready ? "border-[color:var(--tt-gold-border)]" : "border-white/8"}`}>
                     {side(slotA, done && match.winnerId === match.slotAId, mA, "betA", "payoutA")}
                     {bye ? (
                       <p className="text-[10px] text-white/45 text-center">BYE — advances automatically</p>
@@ -190,7 +190,7 @@ export default function SlotWorldCupBracket({
                       <button
                         onClick={() => onSubmitResult?.(match.id)}
                         disabled={actionLoading}
-                        className="w-full py-1 bg-yellow-400 text-black font-semibold rounded text-[11px] hover:bg-yellow-300 disabled:opacity-40"
+                        className="tt-display w-full py-1 bg-[color:var(--tt-gold)] text-[color:var(--tt-gold-text)] rounded text-[11px] hover:bg-[color:var(--tt-gold-hover)] disabled:opacity-40"
                       >
                         Submit Result
                       </button>
@@ -291,7 +291,7 @@ export default function SlotWorldCupBracket({
           return (
             <div key={round} className="relative" style={{ width: ROUND_WIDTH }}>
               <div className="absolute top-0 left-0 right-0 flex justify-center">
-                <span className="text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-white/5 text-yellow-400/80 border border-yellow-400/20">
+                <span className="tt-display text-[11px] tracking-widest px-3 py-1 rounded-full bg-white/5 text-[color:var(--tt-gold)]/80 border border-[color:var(--tt-gold-border)]">
                   {roundLabel(round, tournament.totalRounds)}
                 </span>
               </div>
@@ -329,7 +329,7 @@ export default function SlotWorldCupBracket({
                     <path
                       d={`M ${ROUND_WIDTH - 26} ${fromY} H ${ROUND_WIDTH - 13} V ${toY} H ${ROUND_WIDTH + 14}`}
                       fill="none"
-                      stroke={decided ? "rgba(250,204,21,0.4)" : "rgba(255,255,255,0.10)"}
+                      stroke={decided ? "var(--tt-gold-border)" : "rgba(255,255,255,0.10)"}
                       strokeWidth={decided ? 2 : 1.5}
                       strokeDasharray={decided ? "none" : "4 3"}
                     />
@@ -344,18 +344,18 @@ export default function SlotWorldCupBracket({
         <div className="flex items-center justify-center" style={{ width: CHAMPION_WIDTH }}>
           {champion ? (
             <div className="text-center px-3">
-              <div className="text-4xl mb-2 drop-shadow-[0_0_12px_rgba(250,204,21,0.6)]">🏆</div>
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-400 mb-1.5">
+              <div className="text-4xl mb-2 drop-shadow-[0_0_12px_var(--tt-gold-border)]">🏆</div>
+              <div className="tt-display text-[10px] tracking-[0.2em] text-[color:var(--tt-gold)] mb-1.5">
                 Champion
               </div>
               <div className="mx-auto mb-1.5 w-12 h-12">
                 {findSlot(champion.slotName)?.image ? (
                   <SlotImage src={findSlot(champion.slotName)!.image} name={champion.slotName} size={48} />
                 ) : (
-                  <div className="w-12 h-12 rounded bg-yellow-400/20 ring-2 ring-yellow-400/50" />
+                  <div className="w-12 h-12 rounded bg-[color:var(--tt-gold)]/20 ring-2 ring-[color:var(--tt-gold-border)]" />
                 )}
               </div>
-              <p className="text-sm font-bold text-yellow-300 leading-tight">{champion.slotName}</p>
+              <p className="text-sm font-bold text-[color:var(--tt-gold)] leading-tight">{champion.slotName}</p>
               <p className="text-[11px] text-white/50 mt-0.5">
                 {findSlot(champion.slotName)?.provider ?? champion.provider ?? "—"}
               </p>

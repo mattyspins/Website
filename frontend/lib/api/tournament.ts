@@ -92,13 +92,14 @@ export const tournamentApi = {
     return data.tournament;
   },
 
-  banUser: async (tournamentId: string, userId: string, reason?: string): Promise<Tournament> => {
-    const data = await api.post(`/api/tournaments/${tournamentId}/ban`, { userId, reason });
+  banUser: async (tournamentId: string, target: { userId?: string | null; kickUsername?: string | null }, reason?: string): Promise<Tournament> => {
+    const data = await api.post(`/api/tournaments/${tournamentId}/ban`, { userId: target.userId ?? undefined, kickUsername: target.kickUsername ?? undefined, reason });
     return data.tournament;
   },
 
-  unbanUser: async (tournamentId: string, userId: string): Promise<Tournament> => {
-    const data = await api.delete(`/api/tournaments/${tournamentId}/ban/${userId}`);
+  // identifier is either a userId or a kickUsername — whichever the entrant was banned under.
+  unbanUser: async (tournamentId: string, identifier: string): Promise<Tournament> => {
+    const data = await api.delete(`/api/tournaments/${tournamentId}/ban/${identifier}`);
     return data.tournament;
   },
 

@@ -28,8 +28,9 @@ export class TournamentService {
   private static formatParticipant(p: any): ParticipantResponse {
     return {
       id: p.id,
-      userId: p.userId,
-      displayName: p.user?.kickUsername ?? p.user?.displayName ?? '',
+      userId: p.userId ?? null,
+      kickUsername: p.user?.kickUsername ?? p.kickUsername ?? null,
+      displayName: p.user?.kickUsername ?? p.user?.displayName ?? p.kickUsername ?? 'Unknown',
       avatarUrl: p.user?.avatarUrl ?? null,
       seed: p.seed,
       currentSlot: p.currentSlot,
@@ -49,8 +50,9 @@ export class TournamentService {
       participants: (m.participants ?? []).map((mp: any) => ({
         id: mp.id,
         participantId: mp.participantId,
-        userId: mp.participant?.userId ?? '',
-        displayName: mp.participant?.user?.kickUsername ?? mp.participant?.user?.displayName ?? '',
+        userId: mp.participant?.userId ?? null,
+        kickUsername: mp.participant?.user?.kickUsername ?? mp.participant?.kickUsername ?? null,
+        displayName: mp.participant?.user?.kickUsername ?? mp.participant?.user?.displayName ?? mp.participant?.kickUsername ?? 'Unknown',
         avatarUrl: mp.participant?.user?.avatarUrl ?? null,
         slotCall: mp.slotCall,
         resultText: mp.resultText,
@@ -139,13 +141,16 @@ export class TournamentService {
   }
 
   private static async getEligibleEntries(tournamentId: string) {
-    const bans = await prisma.tournamentBan.findMany({ where: { tournamentId }, select: { userId: true } });
-    const bannedIds = new Set(bans.map((b) => b.userId));
+    const bans = await prisma.tournamentBan.findMany({ where: { tournamentId }, select: { userId: true, kickUsername: true } });
+    const bannedUserIds = new Set(bans.map((b) => b.userId).filter((x): x is string => !!x));
+    const bannedKickUsernames = new Set(bans.map((b) => b.kickUsername).filter((x): x is string => !!x));
     const entries = await prisma.tournamentEntry.findMany({
       where: { tournamentId, invalidated: false },
       orderBy: { enteredAt: 'asc' },
     });
-    return entries.filter((e) => !bannedIds.has(e.userId));
+    return entries.filter(
+      (e) => !(e.userId && bannedUserIds.has(e.userId)) && !(e.kickUsername && bannedKickUsernames.has(e.kickUsername))
+    );
   }
 
   private static async buildReserveList(reserveEntryIds: string[]): Promise<ReserveResponse[]> {
@@ -163,8 +168,9 @@ export class TournamentService {
           rank: i + 1,
           entryId: e.id,
           userId: e.userId,
-          displayName: e.user.kickUsername ?? e.user.displayName,
-          avatarUrl: e.user.avatarUrl,
+          kickUsername: e.user?.kickUsername ?? e.kickUsername ?? null,
+          displayName: e.user?.kickUsername ?? e.user?.displayName ?? e.kickUsername ?? 'Unknown',
+          avatarUrl: e.user?.avatarUrl ?? null,
           slot: e.slot,
         };
       })
@@ -261,13 +267,24 @@ export class TournamentService {
 
   // ─── VIEWER: Enter raffle ──────────────────────────────────────────────────
 
+  /**
+   * identity.userId is set for the authenticated website "Enter" form;
+   * identity.kickUsername is set (and userId optionally resolved) for the
+   * "!jointourney <slot>" Kick chat command — anyone typing the keyword joins
+   * the draw even without ever verifying a site account, mirroring
+   * BingoBoardService.join's userId?/kickUsername? identity split.
+   */
   static async enterRaffle(
     tournamentId: string,
-    userId: string,
+    identity: { userId?: string | null; kickUsername?: string | null },
     slot: string,
     source: TournamentEntrySource,
     io?: SocketIOServer
   ): Promise<{ message: string }> {
+    const userId = identity.userId ?? null;
+    const kickUsername = identity.kickUsername ? identity.kickUsername.trim().toLowerCase() : null;
+    if (!userId && !kickUsername) throw createError(400, 'No identity to enter with');
+
     const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!t) throw createError(404, 'Tournament not found');
     if (t.status !== TournamentStatus.REGISTRATION) throw createError(400, 'Registration is not open');
@@ -275,13 +292,13 @@ export class TournamentService {
     const trimmedSlot = slot.trim();
     if (!trimmedSlot) throw createError(400, 'A slot is required to enter');
 
-    const banned = await prisma.tournamentBan.findUnique({
-      where: { tournamentId_userId: { tournamentId, userId } },
+    const banned = await prisma.tournamentBan.findFirst({
+      where: { tournamentId, OR: [...(userId ? [{ userId }] : []), ...(kickUsername ? [{ kickUsername }] : [])] },
     });
     if (banned) throw createError(403, 'You are banned from this tournament');
 
-    const existing = await prisma.tournamentEntry.findUnique({
-      where: { tournamentId_userId: { tournamentId, userId } },
+    const existing = await prisma.tournamentEntry.findFirst({
+      where: { tournamentId, OR: [...(userId ? [{ userId }] : []), ...(kickUsername ? [{ kickUsername }] : [])] },
     });
     if (existing) throw createError(409, 'Already entered');
 
@@ -292,12 +309,19 @@ export class TournamentService {
       if (slotTaken) throw createError(409, 'That slot has already been taken by another entrant');
     }
 
-    await prisma.tournamentEntry.create({ data: { tournamentId, userId, slot: trimmedSlot, source } });
+    await prisma.tournamentEntry.create({ data: { tournamentId, userId, kickUsername, slot: trimmedSlot, source } });
 
-    const enteredUser = await prisma.user.findUnique({ where: { id: userId }, select: { displayName: true, kickUsername: true } });
-    void KickChatService.sendChatMessage(
-      `🎟️ ${enteredUser?.kickUsername ? `@${enteredUser.kickUsername}` : enteredUser?.displayName ?? 'A viewer'} entered the "${t.title}" tournament with ${trimmedSlot}!`
-    );
+    // The "!jointourney" chat path announces its own, differently-worded
+    // confirmation from KickChatService.processTournamentJoin — announcing
+    // here too would double-post for every chat entry.
+    if (source === TournamentEntrySource.WEB) {
+      const enteredUser = userId
+        ? await prisma.user.findUnique({ where: { id: userId }, select: { displayName: true, kickUsername: true } })
+        : null;
+      void KickChatService.sendChatMessage(
+        `🎟️ ${enteredUser?.kickUsername ? `@${enteredUser.kickUsername}` : enteredUser?.displayName ?? 'A viewer'} entered the "${t.title}" tournament with ${trimmedSlot}!`
+      );
+    }
 
     const updated = await TournamentService.getTournamentWithRelations(tournamentId);
     const response = await TournamentService.formatTournament(updated);
@@ -328,27 +352,29 @@ export class TournamentService {
       orderBy: { enteredAt: 'asc' },
     });
 
-    const userIds = entries.map((e) => e.userId);
+    const userIds = entries.map((e) => e.userId).filter((id): id is string => !!id);
     const users = await prisma.user.findMany({
       where: { id: { in: userIds } },
       select: { id: true, displayName: true, kickUsername: true, avatarUrl: true },
     });
     const userMap = new Map(users.map((u) => [u.id, u]));
 
-    const bans = await prisma.tournamentBan.findMany({ where: { tournamentId, userId: { in: userIds } }, select: { userId: true } });
-    const bannedSet = new Set(bans.map((b) => b.userId));
+    const bans = await prisma.tournamentBan.findMany({ where: { tournamentId }, select: { userId: true, kickUsername: true } });
+    const bannedUserIds = new Set(bans.map((b) => b.userId).filter((x): x is string => !!x));
+    const bannedKickUsernames = new Set(bans.map((b) => b.kickUsername).filter((x): x is string => !!x));
 
     return entries.map((e) => {
-      const u = userMap.get(e.userId);
+      const u = e.userId ? userMap.get(e.userId) : undefined;
       return {
         id: e.id,
         userId: e.userId,
-        displayName: u?.kickUsername ?? u?.displayName ?? e.userId,
+        kickUsername: u?.kickUsername ?? e.kickUsername ?? null,
+        displayName: u?.kickUsername ?? u?.displayName ?? e.kickUsername ?? 'Unknown',
         avatarUrl: u?.avatarUrl ?? null,
         slot: e.slot,
         source: e.source as TournamentEntrySource,
         invalidated: e.invalidated,
-        banned: bannedSet.has(e.userId),
+        banned: !!(e.userId && bannedUserIds.has(e.userId)) || !!(e.kickUsername && bannedKickUsernames.has(e.kickUsername)),
         enteredAt: e.enteredAt.toISOString(),
       };
     });
@@ -382,17 +408,31 @@ export class TournamentService {
 
   // ─── ADMIN: Ban / unban (tournament-scoped) ────────────────────────────────
 
-  static async banUser(tournamentId: string, targetUserId: string, adminId: string, reason: string | undefined, io?: SocketIOServer): Promise<TournamentResponse> {
+  /** target identifies either a linked entrant (userId) or an unlinked chat-only one (kickUsername). */
+  static async banUser(
+    tournamentId: string,
+    target: { userId?: string | null; kickUsername?: string | null },
+    adminId: string,
+    reason: string | undefined,
+    io?: SocketIOServer
+  ): Promise<TournamentResponse> {
+    const userId = target.userId ?? null;
+    const kickUsername = target.kickUsername ? target.kickUsername.trim().toLowerCase() : null;
+    if (!userId && !kickUsername) throw createError(400, 'No identity to ban');
+
     const t = await prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!t) throw createError(404, 'Tournament not found');
 
-    await prisma.tournamentBan.upsert({
-      where: { tournamentId_userId: { tournamentId, userId: targetUserId } },
-      create: { tournamentId, userId: targetUserId, bannedById: adminId, reason },
-      update: { reason, bannedById: adminId },
+    const existingBan = await prisma.tournamentBan.findFirst({
+      where: { tournamentId, OR: [...(userId ? [{ userId }] : []), ...(kickUsername ? [{ kickUsername }] : [])] },
     });
+    if (existingBan) {
+      await prisma.tournamentBan.update({ where: { id: existingBan.id }, data: { reason, bannedById: adminId } });
+    } else {
+      await prisma.tournamentBan.create({ data: { tournamentId, userId, kickUsername, bannedById: adminId, reason } });
+    }
     await prisma.tournamentEntry.updateMany({
-      where: { tournamentId, userId: targetUserId, invalidated: false },
+      where: { tournamentId, invalidated: false, OR: [...(userId ? [{ userId }] : []), ...(kickUsername ? [{ kickUsername }] : [])] },
       data: { invalidated: true },
     });
 
@@ -402,8 +442,11 @@ export class TournamentService {
     return response;
   }
 
-  static async unbanUser(tournamentId: string, targetUserId: string, adminId: string, io?: SocketIOServer): Promise<TournamentResponse> {
-    await prisma.tournamentBan.deleteMany({ where: { tournamentId, userId: targetUserId } });
+  /** identifier is either a userId or a kickUsername — whichever the entrant was banned under. */
+  static async unbanUser(tournamentId: string, identifier: string, adminId: string, io?: SocketIOServer): Promise<TournamentResponse> {
+    await prisma.tournamentBan.deleteMany({
+      where: { tournamentId, OR: [{ userId: identifier }, { kickUsername: identifier.toLowerCase() }] },
+    });
 
     const updated = await TournamentService.getTournamentWithRelations(tournamentId);
     const response = await TournamentService.formatTournament(updated);
@@ -451,8 +494,9 @@ export class TournamentService {
         return {
           entryId: e.id,
           userId: e.userId,
-          displayName: e.user.kickUsername ?? e.user.displayName,
-          avatarUrl: e.user.avatarUrl,
+          kickUsername: e.user?.kickUsername ?? e.kickUsername ?? null,
+          displayName: e.user?.kickUsername ?? e.user?.displayName ?? e.kickUsername ?? 'Unknown',
+          avatarUrl: e.user?.avatarUrl ?? null,
           slot: e.slot,
         };
       };
@@ -481,8 +525,9 @@ export class TournamentService {
     }
 
     const eligible = await TournamentService.getEligibleEntries(tournamentId);
+    const userIds = eligible.map((e) => e.userId).filter((id): id is string => !!id);
     const users = await prisma.user.findMany({
-      where: { id: { in: eligible.map((e) => e.userId) } },
+      where: { id: { in: userIds } },
       select: { id: true, displayName: true, kickUsername: true, avatarUrl: true },
     });
     const userMap = new Map(users.map((u) => [u.id, u]));
@@ -493,8 +538,15 @@ export class TournamentService {
       drawSeed: null,
       targetCount: t.maxPlayers,
       eligiblePool: eligible.map((e) => {
-        const u = userMap.get(e.userId);
-        return { entryId: e.id, userId: e.userId, displayName: u?.kickUsername ?? u?.displayName ?? e.userId, avatarUrl: u?.avatarUrl ?? null, slot: e.slot };
+        const u = e.userId ? userMap.get(e.userId) : undefined;
+        return {
+          entryId: e.id,
+          userId: e.userId,
+          kickUsername: u?.kickUsername ?? e.kickUsername ?? null,
+          displayName: u?.kickUsername ?? u?.displayName ?? e.kickUsername ?? 'Unknown',
+          avatarUrl: u?.avatarUrl ?? null,
+          slot: e.slot,
+        };
       }),
       selected: [],
       reserves: [],
@@ -528,7 +580,7 @@ export class TournamentService {
       ...selectedEntryIds.map((entryId, i) => {
         const e = entryById.get(entryId)!;
         return prisma.tournamentParticipant.create({
-          data: { tournamentId, userId: e.userId, seed: i + 1, currentSlot: e.slot },
+          data: { tournamentId, userId: e.userId, kickUsername: e.kickUsername, seed: i + 1, currentSlot: e.slot },
         });
       }),
     ]);
@@ -665,9 +717,12 @@ export class TournamentService {
     if (hasPlayed) throw createError(400, 'Cannot replace a participant who has already completed a match');
 
     const drawResult = t.drawResult as unknown as DrawResult;
-    const currentParticipantUserIds = new Set(
-      (await prisma.tournamentParticipant.findMany({ where: { tournamentId }, select: { userId: true } })).map((p) => p.userId)
-    );
+    const currentParticipants = await prisma.tournamentParticipant.findMany({
+      where: { tournamentId },
+      select: { userId: true, kickUsername: true },
+    });
+    const currentUserIds = new Set(currentParticipants.map((p) => p.userId).filter((x): x is string => !!x));
+    const currentKickUsernames = new Set(currentParticipants.map((p) => p.kickUsername).filter((x): x is string => !!x));
     const reserveEntries = await prisma.tournamentEntry.findMany({
       where: { id: { in: drawResult.reserveEntryIds }, invalidated: false },
     });
@@ -676,7 +731,12 @@ export class TournamentService {
     // the first one not already sitting in the bracket.
     const nextReserveEntry = drawResult.reserveEntryIds
       .map((id) => reserveById.get(id))
-      .find((e) => e && !currentParticipantUserIds.has(e.userId));
+      .find(
+        (e) =>
+          e &&
+          !(e.userId && currentUserIds.has(e.userId)) &&
+          !(e.kickUsername && currentKickUsernames.has(e.kickUsername))
+      );
     if (!nextReserveEntry) throw createError(400, 'No eligible reserves left');
 
     // A participant who hasn't played yet is in at most one still-open match.
@@ -690,6 +750,7 @@ export class TournamentService {
         data: {
           tournamentId,
           userId: nextReserveEntry.userId,
+          kickUsername: nextReserveEntry.kickUsername,
           seed: participant.seed,
           currentSlot: nextReserveEntry.slot,
         },
@@ -910,6 +971,51 @@ export class TournamentService {
         data: { status: MatchStatus.ACTIVE },
       });
     }
+  }
+
+  // ─── Kick chat: !slot <name> override for the current match ───────────────
+
+  /**
+   * A participant's slotCall is pre-filled each round from currentSlot (their
+   * entry-time pick), but they can override it for their upcoming/active match
+   * via "!slot <name>" in chat — same shared command Boss Raid/Bounty
+   * Hunter/KOTH use. Also updates currentSlot so the new pick carries forward
+   * into later rounds until called again.
+   */
+  static async submitSlotCall(kickUsername: string, slotName: string, io?: SocketIOServer): Promise<boolean> {
+    const normalized = kickUsername.trim().toLowerCase();
+    const user = await prisma.user.findFirst({ where: { kickUsername: { equals: normalized, mode: 'insensitive' } } });
+
+    // A participant can be linked (userId) or a chat-only entrant identified
+    // solely by kickUsername — either can call their own slot.
+    const participant = await prisma.tournamentParticipant.findFirst({
+      where: {
+        eliminated: false,
+        tournament: { status: TournamentStatus.IN_PROGRESS },
+        OR: [...(user ? [{ userId: user.id }] : []), { kickUsername: normalized }],
+      },
+    });
+    if (!participant) return false;
+
+    const matchParticipant = await prisma.tournamentMatchParticipant.findFirst({
+      where: { participantId: participant.id, match: { status: { in: [MatchStatus.ACTIVE, MatchStatus.PENDING] } } },
+    });
+    if (!matchParticipant) return false;
+
+    const trimmed = slotName.trim().slice(0, 100);
+    if (!trimmed) return false;
+
+    await prisma.$transaction([
+      prisma.tournamentMatchParticipant.update({ where: { id: matchParticipant.id }, data: { slotCall: trimmed } }),
+      prisma.tournamentParticipant.update({ where: { id: participant.id }, data: { currentSlot: trimmed } }),
+    ]);
+
+    const match = await prisma.tournamentMatch.findUnique({
+      where: { id: matchParticipant.matchId },
+      include: { participants: { include: { participant: { include: { user: true } } } } },
+    });
+    io?.to(`tournament:${participant.tournamentId}`).emit('match:updated', TournamentService.formatMatch(match));
+    return true;
   }
 
   // ─── ADMIN: Cancel / delete ─────────────────────────────────────────────────

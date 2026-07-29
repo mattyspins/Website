@@ -42,7 +42,8 @@ export interface EnterRaffleDTO {
 }
 
 export interface BanUserDTO {
-  userId: string;
+  userId?: string;
+  kickUsername?: string;
   reason?: string;
 }
 
@@ -57,7 +58,8 @@ export interface DeclareWinnerDTO {
 
 export interface ParticipantResponse {
   id: string;
-  userId: string;
+  userId: string | null;
+  kickUsername: string | null;
   displayName: string;
   avatarUrl: string | null;
   seed: number | null;
@@ -69,7 +71,8 @@ export interface ParticipantResponse {
 export interface MatchParticipantResponse {
   id: string;
   participantId: string;
-  userId: string;
+  userId: string | null;
+  kickUsername: string | null;
   displayName: string;
   avatarUrl: string | null;
   slotCall: string | null;
@@ -88,7 +91,8 @@ export interface MatchResponse {
 
 export interface TournamentEntryResponse {
   id: string;
-  userId: string;
+  userId: string | null;
+  kickUsername: string | null;
   displayName: string;
   avatarUrl: string | null;
   slot: string | null;
@@ -101,7 +105,8 @@ export interface TournamentEntryResponse {
 export interface ReserveResponse {
   rank: number;
   entryId: string;
-  userId: string;
+  userId: string | null;
+  kickUsername: string | null;
   displayName: string;
   avatarUrl: string | null;
   slot: string | null;
@@ -141,7 +146,7 @@ export interface DrawStatusResponse {
   seedCommitmentHash: string | null;
   drawSeed: string | null;
   targetCount: number;
-  eligiblePool: { entryId: string; userId: string; displayName: string; avatarUrl: string | null; slot: string | null }[];
-  selected: { entryId: string; seed: number; userId: string; displayName: string; avatarUrl: string | null; slot: string | null }[];
+  eligiblePool: { entryId: string; userId: string | null; kickUsername: string | null; displayName: string; avatarUrl: string | null; slot: string | null }[];
+  selected: { entryId: string; seed: number; userId: string | null; kickUsername: string | null; displayName: string; avatarUrl: string | null; slot: string | null }[];
   reserves: ReserveResponse[];
 }

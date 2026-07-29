@@ -64,7 +64,7 @@ export default function SlotWorldCupFinishModal({ championName, defaults, onConf
         <input
           type="number" min="0" step="1" value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="w-full bg-white/5 border border-white/10 rounded-lg pl-8 pr-3 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-400/50"
+          className="w-full bg-white/5 border border-white/10 rounded-lg pl-8 pr-3 py-2.5 text-sm text-white focus:outline-none focus:border-[color:var(--tt-gold-border)]"
         />
       </div>
     </label>
@@ -80,16 +80,16 @@ export default function SlotWorldCupFinishModal({ championName, defaults, onConf
           ref={panelRef}
           role="dialog" aria-modal="true" aria-labelledby={titleId}
           initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.94 }}
-          className="bg-gradient-to-br from-[#151922] to-[#0d0f15] border border-yellow-400/25 rounded-2xl p-6 w-full max-w-sm"
+          className="bg-gradient-to-br from-[color:var(--tt-bg-elevated)] to-[color:var(--tt-bg-sunken)] border border-[color:var(--tt-gold-border)] rounded-2xl p-6 w-full max-w-sm"
         >
           <div className="flex justify-center mb-3">
-            <div className="bg-yellow-400/15 rounded-full p-3">
-              <Trophy className="w-7 h-7 text-yellow-400" />
+            <div className="bg-[color:var(--tt-gold)]/15 rounded-full p-3">
+              <Trophy className="w-7 h-7 text-[color:var(--tt-gold)]" />
             </div>
           </div>
-          <h2 id={titleId} className="text-xl font-bold text-white text-center mb-1">End World Cup?</h2>
+          <h2 id={titleId} className="tt-display text-xl text-white text-center mb-1">End World Cup?</h2>
           <p className="text-white/50 text-sm text-center mb-5">
-            <span className="text-yellow-300 font-semibold">{championName}</span> will be crowned champion.
+            <span className="text-[color:var(--tt-gold)] font-semibold">{championName}</span> will be crowned champion.
             Set the Matty Coin reward for each place — this pays out immediately once confirmed.
           </p>
 
@@ -107,7 +107,7 @@ export default function SlotWorldCupFinishModal({ championName, defaults, onConf
             <button
               onClick={() => valid && onConfirm({ "1": parsed(first)!, "2": parsed(second)!, "3": parsed(third)! })}
               disabled={loading || !valid}
-              className="flex-1 bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-2.5 rounded-lg text-sm disabled:opacity-40 flex items-center justify-center gap-2"
+              className="tt-display flex-1 bg-[color:var(--tt-gold)] hover:bg-[color:var(--tt-gold-hover)] text-[color:var(--tt-gold-text)] py-2.5 rounded-lg text-sm disabled:opacity-40 flex items-center justify-center gap-2"
             >
               {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Ending…</> : "Crown Champion"}
             </button>

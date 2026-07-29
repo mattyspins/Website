@@ -27,7 +27,9 @@ const updateTournamentSchema = z.object({
 });
 
 const enterSchema = z.object({ slot: z.string().min(1).max(100) });
-const banSchema = z.object({ userId: z.string().min(1), reason: z.string().max(200).optional() });
+const banSchema = z
+  .object({ userId: z.string().min(1).optional(), kickUsername: z.string().min(1).optional(), reason: z.string().max(200).optional() })
+  .refine((d) => d.userId || d.kickUsername, { message: 'userId or kickUsername required' });
 const matchResultSchema = z.object({ participantId: z.string().min(1), resultText: z.string().max(50) });
 const winnerSchema = z.object({ winnerId: z.string().min(1) });
 
@@ -82,13 +84,13 @@ export class TournamentController {
   });
 
   static banUser = asyncHandler(async (req, res) => {
-    const { userId, reason } = banSchema.parse(req.body);
-    const result = await TournamentService.banUser(req.params.id, userId, req.user!.id, reason, _io);
+    const { userId, kickUsername, reason } = banSchema.parse(req.body);
+    const result = await TournamentService.banUser(req.params.id, { userId, kickUsername }, req.user!.id, reason, _io);
     res.json({ success: true, tournament: result });
   });
 
   static unbanUser = asyncHandler(async (req, res) => {
-    const result = await TournamentService.unbanUser(req.params.id, req.params.userId, req.user!.id, _io);
+    const result = await TournamentService.unbanUser(req.params.id, req.params.identifier, req.user!.id, _io);
     res.json({ success: true, tournament: result });
   });
 
@@ -153,7 +155,7 @@ export class TournamentController {
 
   static enterRaffle = asyncHandler(async (req, res) => {
     const { slot } = enterSchema.parse(req.body);
-    const result = await TournamentService.enterRaffle(req.params.id, req.user!.id, slot, TournamentEntrySource.WEB, _io);
+    const result = await TournamentService.enterRaffle(req.params.id, { userId: req.user!.id }, slot, TournamentEntrySource.WEB, _io);
     res.json({ success: true, ...result });
   });
 

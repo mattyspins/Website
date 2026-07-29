@@ -461,24 +461,34 @@ model Tournament {
 model TournamentParticipant {
   id                  String                       @id @default(uuid())
   tournamentId        String                       @map("tournament_id")
-  userId              String                       @map("user_id")
+  // Nullable — a participant drawn from a chat-only ("!jointourney <slot>")
+  // entry may never have linked a site account. kickUsername is then the
+  // sole identity, mirroring BingoParticipant's userId?/kickUsername? split.
+  userId              String?                      @map("user_id")
+  kickUsername        String?                      @map("kick_username")
   seed                Int?
   currentSlot         String?                      @map("current_slot")
   eliminated          Boolean                      @default(false)
   finalPosition       Int?                         @map("final_position")
   createdAt           DateTime                     @default(now()) @map("created_at")
   tournament          Tournament                   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  user                User                         @relation("TournamentParticipants", fields: [userId], references: [id], onDelete: Cascade)
+  user                User?                        @relation("TournamentParticipants", fields: [userId], references: [id], onDelete: Cascade)
   matchParticipations TournamentMatchParticipant[]
 
   @@unique([tournamentId, userId])
+  @@unique([tournamentId, kickUsername])
   @@map("tournament_participants")
 }
 
 model TournamentEntry {
   id           String                @id @default(uuid())
   tournamentId String                @map("tournament_id")
-  userId       String                @map("user_id")
+  // Nullable — anyone typing the join keyword in Kick chat is entered even
+  // without ever having verified a site account; kickUsername is then the
+  // sole identity (same nullable-userId/kickUsername split as
+  // BingoParticipant). A linked, verified chatter still gets both set.
+  userId       String?               @map("user_id")
+  kickUsername String?               @map("kick_username")
   // Nullable at the DB level so historical pre-revamp rows don't need a
   // backfill; every entry created going forward always has one (enforced in
   // app code, not the schema) since slot is now chosen at entry time.
@@ -487,9 +497,10 @@ model TournamentEntry {
   invalidated  Boolean               @default(false)
   enteredAt    DateTime              @default(now()) @map("entered_at")
   tournament   Tournament            @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  user         User                  @relation("TournamentEntries", fields: [userId], references: [id], onDelete: Cascade)
+  user         User?                 @relation("TournamentEntries", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tournamentId, userId])
+  @@unique([tournamentId, kickUsername])
   @@map("tournament_entries")
 }
 
@@ -529,15 +540,20 @@ model TournamentMatchParticipant {
 model TournamentBan {
   id           String     @id @default(uuid())
   tournamentId String     @map("tournament_id")
-  userId       String     @map("user_id")
+  // Nullable — an admin can ban an unlinked chat-only entrant, who has no
+  // userId to hang the ban off of; kickUsername covers that case the same
+  // way TournamentEntry/TournamentParticipant do.
+  userId       String?    @map("user_id")
+  kickUsername String?    @map("kick_username")
   bannedById   String     @map("banned_by_id")
   reason       String?
   createdAt    DateTime   @default(now()) @map("created_at")
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  user         User       @relation("TournamentBanned", fields: [userId], references: [id], onDelete: Cascade)
+  user         User?      @relation("TournamentBanned", fields: [userId], references: [id], onDelete: Cascade)
   bannedBy     User       @relation("TournamentBanIssuedBy", fields: [bannedById], references: [id])
 
   @@unique([tournamentId, userId])
+  @@unique([tournamentId, kickUsername])
   @@map("tournament_bans")
 }
 

@@ -164,6 +164,8 @@ export class KickChatService {
       if (bossSlotSet) await this.sendChatMessage(`🎰 ${kickUsername} locked in "${slotName}" for the Boss Raid!`);
       const bountySlotSet = await BountyHunterService.submitSlotCall(kickUsername, slotName, this.io ?? undefined);
       if (bountySlotSet) await this.sendChatMessage(`🎯 ${kickUsername} locked in "${slotName}" for the Bounty Hunter!`);
+      const tourneySlotSet = await TournamentService.submitSlotCall(kickUsername, slotName, this.io ?? undefined);
+      if (tourneySlotSet) await this.sendChatMessage(`🏆 ${kickUsername} locked in "${slotName}" for their tournament match!`);
     }
 
     // Check for King of the Hill join command: !king (optionally "!king <slot name>",
@@ -346,7 +348,9 @@ export class KickChatService {
   // and now takes an optional trailing slot argument since slot is chosen at entry time —
   // e.g. "!jointourney Gates of Olympus". Stays silent (no chat spam) if the message doesn't
   // match any active tournament's keyword — the website's registration form remains a
-  // second, always-available way in.
+  // second, always-available way in. Joining never depends on having verified Kick or
+  // registered on the site — same identity model as "!join" for Bonus Bingo: a matching
+  // site account is linked as an optional bonus, kickUsername alone is enough to enter.
   private static async processTournamentJoin(kickUsername: string, content: string): Promise<void> {
     const tournament = await prisma.tournament.findFirst({
       where: { status: TournamentStatus.REGISTRATION },
@@ -360,20 +364,19 @@ export class KickChatService {
     const m = content.trim().match(re);
     if (!m) return;
 
-    // Find the verified user by Kick username
+    const normalized = kickUsername.trim().toLowerCase();
     const user = await prisma.user.findFirst({
-      where: { kickUsername: { equals: kickUsername, mode: 'insensitive' }, kickVerified: true },
+      where: { kickUsername: { equals: normalized, mode: 'insensitive' }, kickVerified: true },
       select: { id: true },
     });
-    if (!user) {
-      await this.sendChatMessage(`@${kickUsername} you need to verify your Kick account on the website first to join the tournament!`);
-      return;
-    }
 
     // Banned viewers are turned away without a public callout — no reason to
     // broadcast a moderation action in chat.
-    const banned = await prisma.tournamentBan.findUnique({
-      where: { tournamentId_userId: { tournamentId: tournament.id, userId: user.id } },
+    const banned = await prisma.tournamentBan.findFirst({
+      where: {
+        tournamentId: tournament.id,
+        OR: [...(user ? [{ userId: user.id }] : []), { kickUsername: normalized }],
+      },
     });
     if (banned) {
       logger.warn(`KickChatService: banned user ${kickUsername} attempted to join tournament ${tournament.id}`);
@@ -387,9 +390,15 @@ export class KickChatService {
     }
 
     try {
-      await TournamentService.enterRaffle(tournament.id, user.id, slotArg, TournamentEntrySource.CHAT, this.io ?? undefined);
-      logger.info(`KickChatService: ${kickUsername} joined tournament ${tournament.id} via keyword (slot: ${slotArg})`);
-      await this.sendChatMessage(`🏆 @${kickUsername} has entered the tournament with ${slotArg}!`);
+      await TournamentService.enterRaffle(
+        tournament.id,
+        { userId: user?.id ?? null, kickUsername: normalized },
+        slotArg,
+        TournamentEntrySource.CHAT,
+        this.io ?? undefined
+      );
+      logger.info(`KickChatService: ${kickUsername} joined tournament ${tournament.id} via keyword (slot: ${slotArg})${user ? '' : ' (unlinked)'}`);
+      await this.sendChatMessage(`@${kickUsername} you have been entered to the draw! 🏆 (${slotArg})`);
     } catch (err) {
       const message = (err as Error).message;
       if (message === 'Already entered') {

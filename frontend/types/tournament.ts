@@ -23,7 +23,8 @@ export enum TournamentEntrySource {
 export interface MatchParticipant {
   id: string;
   participantId: string;
-  userId: string;
+  userId: string | null;
+  kickUsername: string | null;
   displayName: string;
   avatarUrl: string | null;
   slotCall: string | null;
@@ -42,7 +43,8 @@ export interface TournamentMatch {
 
 export interface TournamentParticipant {
   id: string;
-  userId: string;
+  userId: string | null;
+  kickUsername: string | null;
   displayName: string;
   avatarUrl: string | null;
   seed: number | null;
@@ -83,7 +85,8 @@ export interface MyEntryResponse {
 
 export interface TournamentEntry {
   id: string;
-  userId: string;
+  userId: string | null;
+  kickUsername: string | null;
   displayName: string;
   avatarUrl: string | null;
   slot: string | null;
@@ -95,7 +98,8 @@ export interface TournamentEntry {
 
 export interface DrawPoolPlayer {
   entryId: string;
-  userId: string;
+  userId: string | null;
+  kickUsername: string | null;
   displayName: string;
   avatarUrl: string | null;
   slot: string | null;

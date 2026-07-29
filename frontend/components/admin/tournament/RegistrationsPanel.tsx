@@ -49,10 +49,11 @@ export default function RegistrationsPanel({ tournament, actionLoading, withActi
       confirmText: "Ban",
       confirmColor: "red",
     }))) return;
-    run(entry.id, () => tournamentApi.banUser(tournament.id, entry.userId));
+    run(entry.id, () => tournamentApi.banUser(tournament.id, { userId: entry.userId, kickUsername: entry.kickUsername }));
   };
 
-  const handleUnban = (entry: TournamentEntry) => run(entry.id, () => tournamentApi.unbanUser(tournament.id, entry.userId));
+  const handleUnban = (entry: TournamentEntry) =>
+    run(entry.id, () => tournamentApi.unbanUser(tournament.id, (entry.userId ?? entry.kickUsername)!));
   const handleInvalidate = (entry: TournamentEntry) => run(entry.id, () => tournamentApi.invalidateEntry(tournament.id, entry.id));
   const handleRestore = (entry: TournamentEntry) => run(entry.id, () => tournamentApi.restoreEntry(tournament.id, entry.id));
 
