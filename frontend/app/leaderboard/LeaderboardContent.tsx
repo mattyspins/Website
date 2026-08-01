@@ -29,12 +29,12 @@ function useCountdown(target: number | null) {
   return target === null ? 0 : Math.max(0, target - now);
 }
 
-const SYNC_INTERVAL_MS = 30 * 60 * 1000;
+const SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
-// The wager sync job runs on a fixed `*/30 * * * *` cron (fires exactly on
-// the UTC :00 and :30 marks), so "time until next sync" is derivable from
-// the clock alone — Date.now() is already UTC-epoch-aligned to those marks,
-// no backend "last synced at" field needed.
+// The wager sync job runs on a fixed `*/15 * * * *` cron (fires exactly on
+// the UTC :00, :15, :30, :45 marks), so "time until next sync" is derivable
+// from the clock alone — Date.now() is already UTC-epoch-aligned to those
+// marks, no backend "last synced at" field needed.
 function useNextSyncCountdown(): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -145,6 +145,7 @@ export default function LeaderboardPage({ type, initialData = null }: Props) {
   const [history, setHistory] = useState<RaceHistoryEntry[]>(initialData?.history ?? []);
   const [loading, setLoading] = useState(initialData === null);
   const [myUserId, setMyUserId] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -214,7 +215,7 @@ export default function LeaderboardPage({ type, initialData = null }: Props) {
           </h1>
 
           <p className="text-gray-500 text-xs mb-4">
-            Wagers sync from Razed every 30 min · next update in{" "}
+            Wagers sync from Razed every 15 min · next update in{" "}
             <span className="text-gray-300 font-semibold tabular-nums">{formatMMSS(nextSyncMs)}</span>
           </p>
 
@@ -308,30 +309,44 @@ export default function LeaderboardPage({ type, initialData = null }: Props) {
         {/* Past winners */}
         {history.length > 0 && (
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/45 mb-4 flex items-center gap-2">
+            <button
+              onClick={() => setShowHistory((v) => !v)}
+              className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-white/45 hover:text-white/70 transition-colors mb-4"
+            >
               <Crown className="w-3.5 h-3.5" />
               Past Winners
-            </p>
-            <div className="space-y-4">
-              {history.map((entry) => (
-                <div key={entry.id} className="bg-navy-800/50 border border-white/6 rounded-xl p-4">
-                  <p className="text-gray-400 text-xs font-semibold mb-3">
-                    {formatLondon(entry.startDate, "d MMM")} – {formatLondon(entry.endDate, "d MMM yyyy")} · ${entry.totalPrizePool} pool
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {entry.winners.map((w) => (
-                      <div key={w.userId} className="flex items-center gap-2 bg-navy-900/60 border border-white/5 rounded-lg pl-1.5 pr-3 py-1.5">
-                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold bg-gold-400 text-navy-950">
-                          {w.position}
-                        </span>
-                        <span className="text-gray-200 text-xs">{maskUsername(w.kickUsername ?? w.displayName)}</span>
-                        <span className="text-gold-400 text-xs font-bold">${w.prizeAmount}</span>
-                      </div>
-                    ))}
+              <span className="text-white/30 normal-case tracking-normal font-semibold">{showHistory ? "Hide" : "Show"}</span>
+            </button>
+
+            {showHistory && (
+              <div className="space-y-6">
+                {history.map((entry) => (
+                  <div key={entry.id}>
+                    <p className="text-gray-400 text-xs font-semibold mb-3">
+                      {formatLondon(entry.startDate, "d MMM")} – {formatLondon(entry.endDate, "d MMM yyyy")} · ${entry.totalPrizePool} pool
+                    </p>
+                    <div className="bg-navy-800/60 border border-white/6 rounded-2xl overflow-hidden shadow-card">
+                      {entry.winners.map((w) => (
+                        <div
+                          key={w.userId ?? `${entry.id}-${w.position}`}
+                          className="flex items-center gap-3 px-5 py-3 border-b border-white/4 last:border-0"
+                        >
+                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-navy-900/80 border border-white/8 text-gray-400 text-xs font-bold shrink-0">
+                            {w.position}
+                          </span>
+                          <AvatarCircle row={w} />
+                          <span className="text-white font-medium text-sm truncate flex-1 min-w-0">{maskUsername(w.kickUsername ?? w.displayName)}</span>
+                          <span className="text-gray-300 text-sm font-semibold tabular-nums shrink-0">{fmtMoney(w.wagered)}</span>
+                          <span className="w-14 text-right shrink-0">
+                            <span className="text-gold-400 font-bold text-sm">${w.prizeAmount}</span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

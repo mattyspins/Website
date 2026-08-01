@@ -92,7 +92,11 @@ export class WagerLeaderboardController {
   });
 
   static resync = asyncHandler(async (_req, res) => {
-    const result = await RazedWagerSyncService.syncSinceLaunch();
-    res.json({ success: result.failedDays.length === 0, syncedDays: result.syncedDays, failedDays: result.failedDays });
+    const { alreadyRunning } = RazedWagerSyncService.startSyncSinceLaunch();
+    res.json({ success: true, alreadyRunning });
+  });
+
+  static resyncStatus = asyncHandler(async (_req, res) => {
+    res.json({ success: true, ...RazedWagerSyncService.getSyncSinceLaunchState() });
   });
 }

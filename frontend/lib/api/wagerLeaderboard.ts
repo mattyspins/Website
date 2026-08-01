@@ -113,5 +113,9 @@ export const wagerLeaderboardApi = {
   resync: () =>
     api
       .post("/api/wager-leaderboard/admin/resync", {})
-      .then((d) => d as { success: boolean; syncedDays: number; failedDays: string[] }),
+      .then((d) => d as { success: boolean; alreadyRunning: boolean }),
+  resyncStatus: () =>
+    api
+      .get("/api/wager-leaderboard/admin/resync/status")
+      .then((d) => d as { running: boolean; result: { syncedDays: number; failedDays: string[] } | null; error: string | null }),
 };

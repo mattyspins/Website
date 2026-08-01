@@ -16,5 +16,6 @@ router.post('/admin/races', authMiddleware, adminMiddleware, lim, WagerLeaderboa
 router.put('/admin/races/:raceId', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.updateRace);
 router.delete('/admin/races/:raceId', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.deleteRace);
 router.post('/admin/resync', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.resync);
+router.get('/admin/resync/status', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.resyncStatus);
 
 export default router;

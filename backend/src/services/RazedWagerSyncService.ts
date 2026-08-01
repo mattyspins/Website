@@ -208,6 +208,39 @@ export class RazedWagerSyncService {
     return { syncedDays: daysBack + 1 - failedDays.length, failedDays };
   }
 
+  /**
+   * Full walk-since-launch takes minutes (one Razed call per day, sequentially, with
+   * rate-limit-friendly delays), which is too slow for a single HTTP request — any proxy
+   * or edge timeout in front of the API kills it before it finishes. The admin "Resync"
+   * button instead kicks this off in the background via `startSyncSinceLaunch()` and polls
+   * `getSyncSinceLaunchState()` for progress.
+   */
+  private static syncSinceLaunchState: { running: boolean; result: SyncResult | null; error: string | null } = {
+    running: false,
+    result: null,
+    error: null,
+  };
+
+  static getSyncSinceLaunchState() {
+    return RazedWagerSyncService.syncSinceLaunchState;
+  }
+
+  /** Starts `syncSinceLaunch` in the background if it isn't already running. Returns immediately. */
+  static startSyncSinceLaunch(): { alreadyRunning: boolean } {
+    if (RazedWagerSyncService.syncSinceLaunchState.running) {
+      return { alreadyRunning: true };
+    }
+    RazedWagerSyncService.syncSinceLaunchState = { running: true, result: null, error: null };
+    RazedWagerSyncService.syncSinceLaunch()
+      .then((result) => {
+        RazedWagerSyncService.syncSinceLaunchState = { running: false, result, error: null };
+      })
+      .catch((err) => {
+        RazedWagerSyncService.syncSinceLaunchState = { running: false, result: null, error: (err as Error).message };
+      });
+    return { alreadyRunning: false };
+  }
+
   /** First day the Razed referral code went live — the manual resync walks back to here. */
   static readonly TRACKING_START = new Date(Date.UTC(2026, 5, 26));
 

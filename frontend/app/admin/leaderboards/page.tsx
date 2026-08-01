@@ -19,19 +19,39 @@ export default function AdminLeaderboardsPage() {
   const handleResync = async () => {
     setResyncing(true); setMsg(null);
     try {
-      const result = await wagerLeaderboardApi.resync();
-      setRefreshKey((k) => k + 1);
-      if (result.failedDays.length > 0) {
-        setMsg({
-          type: "error",
-          text: `Resynced ${result.syncedDays} day(s), but ${result.failedDays.length} failed (Razed API rate-limited or unreachable): ${result.failedDays.join(", ")}. Try again in a minute.`,
-        });
+      const { alreadyRunning } = await wagerLeaderboardApi.resync();
+      if (alreadyRunning) {
+        setMsg({ type: "success", text: "A resync is already running — waiting for it to finish…" });
       } else {
-        setMsg({ type: "success", text: `Resynced from Razed (${result.syncedDays} day(s)).` });
+        setMsg({ type: "success", text: "Resync started — this walks every day since launch and can take a couple of minutes…" });
       }
+
+      // The sync runs in the background on the server (it's too slow for one request),
+      // so poll for completion instead of waiting on the initial POST.
+      const poll = async () => {
+        const status = await wagerLeaderboardApi.resyncStatus();
+        if (status.running) {
+          setTimeout(poll, 3000);
+          return;
+        }
+        setResyncing(false);
+        setRefreshKey((k) => k + 1);
+        if (status.error) {
+          setMsg({ type: "error", text: `Resync failed: ${status.error}` });
+        } else if (status.result && status.result.failedDays.length > 0) {
+          setMsg({
+            type: "error",
+            text: `Resynced ${status.result.syncedDays} day(s), but ${status.result.failedDays.length} failed (Razed API rate-limited or unreachable): ${status.result.failedDays.join(", ")}. Try again in a minute.`,
+          });
+        } else if (status.result) {
+          setMsg({ type: "success", text: `Resynced from Razed (${status.result.syncedDays} day(s)).` });
+        }
+      };
+      setTimeout(poll, 3000);
     } catch {
-      setMsg({ type: "error", text: "Resync failed." });
-    } finally { setResyncing(false); }
+      setMsg({ type: "error", text: "Resync failed to start." });
+      setResyncing(false);
+    }
   };
 
   return (
