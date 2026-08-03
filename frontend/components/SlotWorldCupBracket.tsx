@@ -264,7 +264,7 @@ export default function SlotWorldCupBracket({
 
   // Card height drives the whole layout, so it has to reflect what's actually
   // rendered: the admin editor adds a bet/payout row and a submit button.
-  const matchHeight = mode === "admin" ? 208 : 104;
+  const matchHeight = mode === "admin" ? 260 : 104;
   const firstRoundCount = rounds[0]?.length ?? 1;
   const bracketHeight =
     TOP_OFFSET + BOTTOM_PAD + firstRoundCount * (matchHeight + (mode === "admin" ? 20 : 28));
@@ -296,15 +296,29 @@ export default function SlotWorldCupBracket({
                 </span>
               </div>
 
-              {matches.map((match, mi) => (
-                <div
-                  key={match.id}
-                  className="absolute"
-                  style={{ top: TOP_OFFSET + mi * spacing + cardOffset, left: 14, right: 26 }}
-                >
-                  {renderMatch(match)}
-                </div>
-              ))}
+              {matches.map((match, mi) => {
+                // A "ready" admin match grows taller once bet/payout are filled in
+                // (the live multiplier line only renders then), which can overflow
+                // the reserved card height and get covered by the next card in the
+                // column. Raising it above its neighbours keeps the Submit button
+                // clickable even if that overflow still happens.
+                const isReadyAdmin =
+                  mode === "admin" && !!match.slotAId && !!match.slotBId && !match.winnerId;
+                return (
+                  <div
+                    key={match.id}
+                    className="absolute"
+                    style={{
+                      top: TOP_OFFSET + mi * spacing + cardOffset,
+                      left: 14,
+                      right: 26,
+                      zIndex: isReadyAdmin ? 5 : 1,
+                    }}
+                  >
+                    {renderMatch(match)}
+                  </div>
+                );
+              })}
 
               {/* Elbow connectors into the next round (or into the champion column
                   from the final). Solid gold once the match has a winner. */}
