@@ -74,7 +74,12 @@ export class RazedService {
     throw lastError;
   }
 
-  /** Fetches every referred player's wagered amount for an inclusive date range (max 45 days per Razed's API). */
+  /**
+   * Fetches every referred player's wagered amount for the half-open range `[from, to)`.
+   *
+   * `to` is EXCLUSIVE on Razed's side — to include a given day, pass the day after it. Max
+   * span is 45 days; 46 or more returns HTTP 422.
+   */
   static async fetchAllReferrals(from: string, to: string): Promise<Map<string, number>> {
     const result = new Map<string, number>();
     const first = await RazedService.fetchPage(from, to, 1);
@@ -106,9 +111,13 @@ export class RazedService {
 
     for (let i = 0; i < 4; i++) {
       const windowStart = new Date(windowEnd);
-      windowStart.setUTCDate(windowStart.getUTCDate() - 44);
+      windowStart.setUTCDate(windowStart.getUTCDate() - 43);
 
-      const map = await RazedService.fetchAllReferrals(toDateStr(windowStart), toDateStr(windowEnd));
+      // `to` is exclusive, so pass the day after windowEnd to actually cover it.
+      const windowEndExclusive = new Date(windowEnd);
+      windowEndExclusive.setUTCDate(windowEndExclusive.getUTCDate() + 1);
+
+      const map = await RazedService.fetchAllReferrals(toDateStr(windowStart), toDateStr(windowEndExclusive));
       if (map.has(target)) return true;
 
       windowEnd = new Date(windowStart);

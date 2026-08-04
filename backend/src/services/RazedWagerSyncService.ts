@@ -17,6 +17,12 @@ function startOfMonthUTC(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
 }
 
+function addDaysUTC(d: Date, days: number): Date {
+  const out = new Date(d);
+  out.setUTCDate(out.getUTCDate() + days);
+  return out;
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -30,8 +36,12 @@ export interface SyncResult {
 }
 
 export class RazedWagerSyncService {
-  /** Razed's API rejects ranges longer than 45 days, so the fixed anchor below has to roll forward before then. */
-  private static readonly RAZED_MAX_RANGE_DAYS = 44;
+  /**
+   * Razed's API rejects ranges spanning more than 45 days (46+ returns HTTP 422), so the
+   * fixed anchor below has to roll forward before then. Since `to` is exclusive, a lookback
+   * of N produces a span of N+1 days — 43 keeps us at 44, a day inside the limit.
+   */
+  private static readonly RAZED_MAX_RANGE_DAYS = 43;
 
   private static syncAnchorFor(dayStart: Date): Date {
     const maxLookback = new Date(dayStart);
@@ -52,6 +62,12 @@ export class RazedWagerSyncService {
    * wagers (confirmed by direct reproduction: bazdy123's July wagers landed at $10,302 instead of the real
    * $16,159 this way). Anchoring `from` at a constant and diffing against our own stored running total
    * means one noisy day can't cascade into every day after it.
+   *
+   * Razed's `to` bound is EXCLUSIVE — `[from, to)`. Confirmed directly: `from=D&to=D` returns zero rows
+   * for every user (an empty interval), and extending `to` by one day past today reveals a whole extra
+   * day of wagers. Passing `to = dayStart` therefore returned everything up to the *previous* day, which
+   * shifted every recorded day one day later and meant today's wagers never synced at all. `to` is now
+   * `dayStart + 1` so the window genuinely includes `date`.
    */
   static async syncDay(date: Date): Promise<void> {
     if (!RazedService.isConfigured()) return;
@@ -59,7 +75,7 @@ export class RazedWagerSyncService {
     const dayStart = startOfDayUTC(date);
     const anchor = RazedWagerSyncService.syncAnchorFor(dayStart);
 
-    const cumMap = await RazedService.fetchAllReferrals(toDateStr(anchor), toDateStr(dayStart));
+    const cumMap = await RazedService.fetchAllReferrals(toDateStr(anchor), toDateStr(addDaysUTC(dayStart, 1)));
     if (cumMap.size === 0) return;
 
     const users = await prisma.user.findMany({
@@ -71,8 +87,13 @@ export class RazedWagerSyncService {
 
     // Read every row this sync could touch up front (instead of one round trip per user)
     // so the writes below can go out as a couple of bulk statements.
+    //
+    // The prior total is bounded at `anchor`, not open-ended: `cumToDate` only covers
+    // [anchor, date], so subtracting a running total that reached further back would
+    // understate the day and floor-clamp it to zero. That costs nothing while the anchor
+    // still sits on TRACKING_START, but silently zeroes days once it starts rolling forward.
     const [priorLinkedSums, existingDayRows] = await Promise.all([
-      prisma.razedDailyWager.groupBy({ by: ['userId'], where: { date: { lt: dayStart }, userId: { in: userIds } }, _sum: { amount: true } }),
+      prisma.razedDailyWager.groupBy({ by: ['userId'], where: { date: { gte: anchor, lt: dayStart }, userId: { in: userIds } }, _sum: { amount: true } }),
       prisma.razedDailyWager.findMany({ where: { date: dayStart, userId: { in: userIds } } }),
     ]);
     const priorLinkedMap = new Map(priorLinkedSums.map((r) => [r.userId, Number(r._sum.amount ?? 0)]));
@@ -119,7 +140,7 @@ export class RazedWagerSyncService {
     // linked a site account yet, so admins can see who's wagering under our affiliate code.
     const priorUnlinkedSums = await prisma.razedUnlinkedWager.groupBy({
       by: ['razedUsername'],
-      where: { date: { lt: dayStart } },
+      where: { date: { gte: anchor, lt: dayStart } },
       _sum: { amount: true },
     });
     const priorUnlinkedMap = new Map(priorUnlinkedSums.map((r) => [r.razedUsername, Number(r._sum.amount ?? 0)]));
