@@ -183,4 +183,147 @@ export class WagerLeaderboardService {
       })),
     }));
   }
+
+  // ── Admin: race management ──────────────────────────────────────────────
+
+  static async listRaces(type: RaceType) {
+    const races = await prisma.wagerRace.findMany({
+      where: { type },
+      include: { prizes: { orderBy: { position: 'asc' } } },
+      orderBy: { startDate: 'desc' },
+    });
+    return races.map((r) => ({
+      id: r.id,
+      type: r.type as RaceType,
+      startDate: r.startDate.toISOString(),
+      endDate: r.endDate.toISOString(),
+      totalPrizePool: r.totalPrizePool,
+      status: r.status,
+      phase: getPhase(r.startDate, r.endDate, r.status),
+      prizes: r.prizes.map((p) => ({ position: p.position, amount: p.amount })),
+    }));
+  }
+
+  private static validatePrizes(prizes: RacePrize[], totalPrizePool: number) {
+    if (!Array.isArray(prizes) || prizes.length === 0) {
+      throw new Error('At least one prize position is required');
+    }
+    const positions = prizes.map((p) => p.position);
+    if (new Set(positions).size !== positions.length) {
+      throw new Error('Prize positions must be unique');
+    }
+    for (const p of prizes) {
+      if (!Number.isInteger(p.position) || p.position < 1) {
+        throw new Error('Prize positions must be positive whole numbers');
+      }
+      if (!Number.isFinite(p.amount) || p.amount < 0) {
+        throw new Error('Prize amounts must be zero or greater');
+      }
+    }
+    if (!Number.isFinite(totalPrizePool) || totalPrizePool < 0) {
+      throw new Error('Total prize pool must be zero or greater');
+    }
+    const sum = prizes.reduce((s, p) => s + p.amount, 0);
+    if (sum !== totalPrizePool) {
+      throw new Error(`Prize positions sum to ${sum}, which doesn't match the total prize pool of ${totalPrizePool}`);
+    }
+  }
+
+  static async createRace(input: { type: RaceType; startDate: string; endDate: string; totalPrizePool: number; prizes: RacePrize[] }) {
+    const startDate = new Date(input.startDate);
+    const endDate = new Date(input.endDate);
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      throw new Error('Invalid start or end date');
+    }
+    if (endDate.getTime() <= startDate.getTime()) {
+      throw new Error('End date must be after the start date');
+    }
+    WagerLeaderboardService.validatePrizes(input.prizes, input.totalPrizePool);
+
+    const existingActive = await prisma.wagerRace.findFirst({ where: { status: 'active', type: input.type } });
+    if (existingActive) {
+      throw new Error(`A ${input.type.toLowerCase()} race is already active. End or delete it before creating a new one.`);
+    }
+
+    const race = await prisma.wagerRace.create({
+      data: {
+        type: input.type,
+        startDate,
+        endDate,
+        totalPrizePool: input.totalPrizePool,
+        prizes: { create: input.prizes.map((p) => ({ position: p.position, amount: p.amount })) },
+      },
+      include: { prizes: { orderBy: { position: 'asc' } } },
+    });
+
+    return {
+      id: race.id,
+      type: race.type as RaceType,
+      startDate: race.startDate.toISOString(),
+      endDate: race.endDate.toISOString(),
+      totalPrizePool: race.totalPrizePool,
+      status: race.status,
+      phase: getPhase(race.startDate, race.endDate, race.status),
+      prizes: race.prizes.map((p) => ({ position: p.position, amount: p.amount })),
+    };
+  }
+
+  static async updateRace(raceId: string, input: { startDate?: string; endDate?: string; totalPrizePool?: number; prizes?: RacePrize[] }) {
+    const race = await prisma.wagerRace.findUnique({ where: { id: raceId } });
+    if (!race) throw new Error('Race not found');
+    if (race.status !== 'active') throw new Error('Cannot edit a race that has already ended and been paid out');
+
+    const startDate = input.startDate ? new Date(input.startDate) : race.startDate;
+    const endDate = input.endDate ? new Date(input.endDate) : race.endDate;
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      throw new Error('Invalid start or end date');
+    }
+    if (endDate.getTime() <= startDate.getTime()) {
+      throw new Error('End date must be after the start date');
+    }
+    const totalPrizePool = input.totalPrizePool ?? race.totalPrizePool;
+    if (input.prizes) {
+      WagerLeaderboardService.validatePrizes(input.prizes, totalPrizePool);
+    } else if (input.totalPrizePool !== undefined) {
+      // totalPrizePool changed without new prizes — re-validate against the existing ones.
+      const existingPrizes = await prisma.wagerRacePrize.findMany({ where: { raceId } });
+      WagerLeaderboardService.validatePrizes(existingPrizes, totalPrizePool);
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.wagerRace.update({ where: { id: raceId }, data: { startDate, endDate, totalPrizePool } });
+      if (input.prizes) {
+        await tx.wagerRacePrize.deleteMany({ where: { raceId } });
+        await tx.wagerRacePrize.createMany({
+          data: input.prizes.map((p) => ({ raceId, position: p.position, amount: p.amount })),
+        });
+      }
+    });
+
+    return WagerLeaderboardService.getRace(raceId);
+  }
+
+  static async getRace(raceId: string) {
+    const race = await prisma.wagerRace.findUnique({
+      where: { id: raceId },
+      include: { prizes: { orderBy: { position: 'asc' } } },
+    });
+    if (!race) throw new Error('Race not found');
+    return {
+      id: race.id,
+      type: race.type as RaceType,
+      startDate: race.startDate.toISOString(),
+      endDate: race.endDate.toISOString(),
+      totalPrizePool: race.totalPrizePool,
+      status: race.status,
+      phase: getPhase(race.startDate, race.endDate, race.status),
+      prizes: race.prizes.map((p) => ({ position: p.position, amount: p.amount })),
+    };
+  }
+
+  static async deleteRace(raceId: string) {
+    const payoutCount = await prisma.wagerRacePayout.count({ where: { raceId } });
+    if (payoutCount > 0) throw new Error('Cannot delete a race that has already been paid out');
+    await prisma.wagerRace.delete({ where: { id: raceId } });
+  }
 }

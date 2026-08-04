@@ -25,12 +25,12 @@ const OPERATIONS_NAV: NavItem[] = [
   { href: "/admin/audit-log", label: "Audit Log", icon: FileText },
 ];
 
-// Raffles are point-driven, not Kick-chat stream games — kept in their own
-// group rather than mixed into Stream Games. The wager leaderboards used to
-// live here too; they're hardcoded in the backend now and have no admin screen.
+// Raffles and Leaderboards are point/wager-driven, not Kick-chat stream
+// games — kept in their own group rather than mixed into Stream Games.
 const RAFFLES_NAV: NavItem[] = [
   { href: "/admin/raffle", label: "Raffles", icon: Ticket },
   { href: "/admin/weekly-raffle", label: "Weekly Raffle", icon: Gift },
+  { href: "/admin/leaderboards", label: "Leaderboards", icon: Trophy },
 ];
 
 const GAMES_NAV: NavItem[] = [
@@ -107,7 +107,7 @@ export default function AdminSidebar({
       <nav className="flex-1 overflow-y-auto py-4 px-2">
         <NavGroup label="Overview" items={MAIN_NAV} collapsed={collapsed} pathname={pathname} onNavigate={onCloseMobile} />
         <NavGroup label="Operations" items={OPERATIONS_NAV} collapsed={collapsed} pathname={pathname} onNavigate={onCloseMobile} />
-        <NavGroup label="Raffles" items={RAFFLES_NAV} collapsed={collapsed} pathname={pathname} onNavigate={onCloseMobile} />
+        <NavGroup label="Raffles & Leaderboards" items={RAFFLES_NAV} collapsed={collapsed} pathname={pathname} onNavigate={onCloseMobile} />
         <NavGroup label="Stream Games" items={GAMES_NAV} collapsed={collapsed} pathname={pathname} onNavigate={onCloseMobile} />
       </nav>
     </>

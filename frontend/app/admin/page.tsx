@@ -1,7 +1,6 @@
 "use client";
 
 import AdminStats from "@/components/admin/AdminStats";
-import RazedResyncCard from "@/components/admin/RazedResyncCard";
 import UserGrowthChart from "@/components/admin/charts/UserGrowthChart";
 import ActiveUsersChart from "@/components/admin/charts/ActiveUsersChart";
 import ActivityFeed from "@/components/admin/ActivityFeed";
@@ -38,6 +37,7 @@ const STREAM_GAMES = [
 ];
 
 const QUICK_ACCESS = [
+  { href: "/admin/leaderboards", icon: <Trophy className="w-5 h-5 text-gold-400" />, bg: "bg-gold-500/10", title: "Leaderboards", desc: "Set the weekly & monthly race dates, prize splits, and resync wagers" },
   { href: "/admin/raffle", icon: <Ticket className="w-5 h-5 text-purple-400" />, bg: "bg-purple-500/10", title: "Raffles", desc: "Create raffles, manage tickets, draw winners" },
   { href: "/admin/weekly-raffle", icon: <Gift className="w-5 h-5 text-violet-400" />, bg: "bg-violet-500/10", title: "Weekly Raffle", desc: "Configure eligibility, preview entrants, draw the weekly winner" },
   { href: "/admin/audit-log", icon: <FileText className="w-5 h-5 text-blue-400" />, bg: "bg-blue-500/10", title: "Audit Log", desc: "Full history of all admin actions with before/after values" },
@@ -69,8 +69,6 @@ export default function AdminDashboard() {
       </div>
 
       <ActivityFeed />
-
-      <RazedResyncCard />
 
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
