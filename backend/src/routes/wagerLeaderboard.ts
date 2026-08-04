@@ -8,13 +8,9 @@ const lim = rateLimit({ windowMs: 5 * 60 * 1000, max: 200, standardHeaders: true
 
 router.get('/active', lim, WagerLeaderboardController.getActive);
 router.get('/history', lim, WagerLeaderboardController.getHistory);
-router.get('/admin/wagers', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.getAdminWagers);
-router.get('/admin/all-wagerers', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.getAllWagerers);
-router.get('/admin/wager-totals', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.getWagerTotals);
-router.get('/admin/races', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.listRaces);
-router.post('/admin/races', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.createRace);
-router.put('/admin/races/:raceId', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.updateRace);
-router.delete('/admin/races/:raceId', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.deleteRace);
+
+// Race schedules/prizes are hardcoded in @/config/wagerRaces — no admin CRUD.
+// Resync only re-pulls wager figures from Razed, so it stays available.
 router.post('/admin/resync', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.resync);
 router.get('/admin/resync/status', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.resyncStatus);
 

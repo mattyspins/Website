@@ -10,6 +10,12 @@ function parseType(value: unknown): RaceType | null {
   return value === 'WEEKLY' || value === 'MONTHLY' ? value : null;
 }
 
+/**
+ * Race schedules and prize splits are hardcoded in `@/config/wagerRaces` and
+ * reconciled by `WagerRaceScheduler`, so there are deliberately no create/update/
+ * delete endpoints here — changing a race means editing that config and deploying.
+ * Resync stays because it only re-pulls wager data from Razed; it can't alter a race.
+ */
 export class WagerLeaderboardController {
   static getActive = asyncHandler(async (req, res) => {
     const type = parseType(req.query.type);
@@ -29,66 +35,6 @@ export class WagerLeaderboardController {
     }
     const races = await WagerLeaderboardService.getRaceHistory(type);
     res.json({ success: true, races });
-  });
-
-  static getAdminWagers = asyncHandler(async (_req, res) => {
-    const users = await WagerLeaderboardService.getAdminWagerList();
-    res.json({ success: true, users });
-  });
-
-  static getAllWagerers = asyncHandler(async (_req, res) => {
-    const wagerers = await WagerLeaderboardService.getAllWagerers();
-    res.json({ success: true, wagerers });
-  });
-
-  static getWagerTotals = asyncHandler(async (_req, res) => {
-    const totals = await WagerLeaderboardService.getWagerTotals();
-    res.json({ success: true, totals });
-  });
-
-  static listRaces = asyncHandler(async (req, res) => {
-    const type = parseType(req.query.type);
-    if (!type) {
-      res.status(400).json({ error: "type must be 'WEEKLY' or 'MONTHLY'" });
-      return;
-    }
-    const races = await WagerLeaderboardService.listRaces(type);
-    res.json({ success: true, races });
-  });
-
-  static createRace = asyncHandler(async (req, res) => {
-    const { startDate, endDate, totalPrizePool, prizes } = req.body;
-    const type = parseType(req.body.type);
-    if (!type || !startDate || !endDate || totalPrizePool === undefined || !Array.isArray(prizes)) {
-      res.status(400).json({ error: "type ('WEEKLY'|'MONTHLY'), startDate, endDate, totalPrizePool, and prizes are required" });
-      return;
-    }
-    try {
-      const race = await WagerLeaderboardService.createRace({ type, startDate, endDate, totalPrizePool: Number(totalPrizePool), prizes });
-      res.json({ success: true, race });
-    } catch (err) {
-      res.status(400).json({ error: (err as Error).message });
-    }
-  });
-
-  static updateRace = asyncHandler(async (req, res) => {
-    const { raceId } = req.params;
-    try {
-      const race = await WagerLeaderboardService.updateRace(raceId, req.body);
-      res.json({ success: true, race });
-    } catch (err) {
-      res.status(400).json({ error: (err as Error).message });
-    }
-  });
-
-  static deleteRace = asyncHandler(async (req, res) => {
-    const { raceId } = req.params;
-    try {
-      await WagerLeaderboardService.deleteRace(raceId);
-      res.json({ success: true });
-    } catch (err) {
-      res.status(400).json({ error: (err as Error).message });
-    }
   });
 
   static resync = asyncHandler(async (_req, res) => {

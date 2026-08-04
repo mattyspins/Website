@@ -11,6 +11,28 @@ function toDateOnly(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 }
 
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const HALF_DAY_MS = ONE_DAY_MS / 2;
+
+/**
+ * Wager data is stored per whole UTC day, but race start/end times rarely land on a UTC
+ * day boundary (e.g. midnight BST). Including a boundary day outright whenever the race
+ * window merely touches it would pull in a day's full wagered total for as little as an
+ * hour of real overlap. Instead, a boundary day only counts if the race actually covers
+ * at least half of it — the closest approximation possible without sub-day wager data.
+ */
+function firstIncludedDay(startDate: Date): Date {
+  const dayStart = toDateOnly(startDate);
+  const msIntoDay = startDate.getTime() - dayStart.getTime();
+  return msIntoDay < HALF_DAY_MS ? dayStart : new Date(dayStart.getTime() + ONE_DAY_MS);
+}
+
+function lastIncludedDay(endDate: Date): Date {
+  const dayStart = toDateOnly(endDate);
+  const msIntoDay = endDate.getTime() - dayStart.getTime();
+  return msIntoDay >= HALF_DAY_MS ? dayStart : new Date(dayStart.getTime() - ONE_DAY_MS);
+}
+
 interface RacePrize {
   position: number;
   amount: number;
@@ -37,9 +59,9 @@ export class WagerLeaderboardService {
   /** Ranks every wagerer under our Razed code within [startDate, endDate] — linked site accounts and unlinked Razed usernames alike. */
   static async computeStandings(startDate: Date, endDate: Date, prizes: RacePrize[], limit = 50) {
     // Wager rows are date-only, so the query window snaps to whole UTC days that the
-    // race's exact [startDate, endDate) window overlaps.
-    const queryStart = toDateOnly(startDate);
-    const queryEnd = toDateOnly(endDate);
+    // race's exact [startDate, endDate) window covers at least half of.
+    const queryStart = firstIncludedDay(startDate);
+    const queryEnd = lastIncludedDay(endDate);
 
     const [linkedSums, allLinkedUsers, unlinkedSums] = await Promise.all([
       prisma.razedDailyWager.groupBy({
@@ -160,283 +182,5 @@ export class WagerLeaderboardService {
         prizeAmount: p.prizeAmount,
       })),
     }));
-  }
-
-  static async getAdminWagerList() {
-    const users = await prisma.user.findMany({
-      where: { rainbetUsername: { not: null } },
-      select: {
-        id: true,
-        displayName: true,
-        kickUsername: true,
-        rainbetUsername: true,
-        rainbetVerified: true,
-        weeklyWagered: true,
-        monthlyWagered: true,
-        totalWagered: true,
-      },
-      orderBy: { totalWagered: 'desc' },
-    });
-
-    return users.map((u) => ({
-      ...u,
-      weeklyWagered: u.weeklyWagered.toString(),
-      monthlyWagered: u.monthlyWagered.toString(),
-      totalWagered: u.totalWagered.toString(),
-    }));
-  }
-
-  /** Every player who has wagered under our Razed affiliate code, whether or not they've linked a site account. */
-  static async getAllWagerers() {
-    const now = new Date();
-    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    const weekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    weekStart.setUTCDate(weekStart.getUTCDate() - 6);
-    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-
-    // Unlike weekly/monthly, there's no precomputed "today" column on User (those are
-    // refreshed every 5 min by the sync job) — today's figure is cheap enough to sum live
-    // for both linked and unlinked wagerers from the same daily ledger tables.
-    const [linkedUsers, linkedToday, unlinkedTotals, unlinkedToday, unlinkedWeekly, unlinkedMonthly] = await Promise.all([
-      prisma.user.findMany({
-        where: { rainbetUsername: { not: null } },
-        select: {
-          id: true,
-          displayName: true,
-          kickUsername: true,
-          rainbetUsername: true,
-          rainbetVerified: true,
-          weeklyWagered: true,
-          monthlyWagered: true,
-          totalWagered: true,
-        },
-      }),
-      prisma.razedDailyWager.groupBy({ by: ['userId'], where: { date: { gte: todayStart } }, _sum: { amount: true } }),
-      prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'], _sum: { amount: true } }),
-      prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'], where: { date: { gte: todayStart } }, _sum: { amount: true } }),
-      prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'], where: { date: { gte: weekStart } }, _sum: { amount: true } }),
-      prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'], where: { date: { gte: monthStart } }, _sum: { amount: true } }),
-    ]);
-
-    const linkedUsernames = new Set(linkedUsers.map((u) => u.rainbetUsername!.toLowerCase()));
-    const linkedTodayMap = new Map(linkedToday.map((r) => [r.userId, Number(r._sum.amount ?? 0)]));
-    const todayMap = new Map(unlinkedToday.map((r) => [r.razedUsername, Number(r._sum.amount ?? 0)]));
-    const weeklyMap = new Map(unlinkedWeekly.map((r) => [r.razedUsername, Number(r._sum.amount ?? 0)]));
-    const monthlyMap = new Map(unlinkedMonthly.map((r) => [r.razedUsername, Number(r._sum.amount ?? 0)]));
-
-    const linked = linkedUsers.map((u) => ({
-      razedUsername: u.rainbetUsername!,
-      linked: true as const,
-      userId: u.id,
-      displayName: u.displayName,
-      kickUsername: u.kickUsername,
-      verified: u.rainbetVerified,
-      todayWagered: (linkedTodayMap.get(u.id) ?? 0).toString(),
-      weeklyWagered: u.weeklyWagered.toString(),
-      monthlyWagered: u.monthlyWagered.toString(),
-      totalWagered: u.totalWagered.toString(),
-    }));
-
-    const unlinked = unlinkedTotals
-      .filter((r) => !linkedUsernames.has(r.razedUsername))
-      .map((r) => ({
-        razedUsername: r.razedUsername,
-        linked: false as const,
-        userId: null,
-        displayName: null,
-        kickUsername: null,
-        verified: false,
-        todayWagered: (todayMap.get(r.razedUsername) ?? 0).toString(),
-        weeklyWagered: (weeklyMap.get(r.razedUsername) ?? 0).toString(),
-        monthlyWagered: (monthlyMap.get(r.razedUsername) ?? 0).toString(),
-        totalWagered: (r._sum.amount ?? 0).toString(),
-      }));
-
-    return [...linked, ...unlinked].sort((a, b) => Number(b.totalWagered) - Number(a.totalWagered));
-  }
-
-  /** Combined wagered total across every wagerer under our Razed code — today / this week / this month / all-time. */
-  static async getWagerTotals() {
-    const now = new Date();
-    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    const weekStart = new Date(todayStart);
-    weekStart.setUTCDate(weekStart.getUTCDate() - 6);
-    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-
-    const [linkedUsers, linkedAgg, linkedTodayAgg, unlinkedToday, unlinkedWeekly, unlinkedMonthly, unlinkedAllTime] = await Promise.all([
-      prisma.user.findMany({ where: { rainbetUsername: { not: null } }, select: { rainbetUsername: true } }),
-      prisma.user.aggregate({
-        where: { rainbetUsername: { not: null } },
-        _sum: { weeklyWagered: true, monthlyWagered: true, totalWagered: true },
-      }),
-      prisma.razedDailyWager.aggregate({ where: { date: { gte: todayStart } }, _sum: { amount: true } }),
-      prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'], where: { date: { gte: todayStart } }, _sum: { amount: true } }),
-      prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'], where: { date: { gte: weekStart } }, _sum: { amount: true } }),
-      prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'], where: { date: { gte: monthStart } }, _sum: { amount: true } }),
-      prisma.razedUnlinkedWager.groupBy({ by: ['razedUsername'], _sum: { amount: true } }),
-    ]);
-
-    // Same dedup rule as getAllWagerers() — once a razedUsername is linked to a site account
-    // it's excluded from the unlinked side, whether or not its history has been migrated yet.
-    const linkedUsernames = new Set(linkedUsers.map((u) => u.rainbetUsername!.toLowerCase()));
-    const sumUnlinked = (rows: { razedUsername: string; _sum: { amount: unknown } }[]) =>
-      rows
-        .filter((r) => !linkedUsernames.has(r.razedUsername))
-        .reduce((sum, r) => sum + Number(r._sum.amount ?? 0), 0);
-
-    const today = Number(linkedTodayAgg._sum.amount ?? 0) + sumUnlinked(unlinkedToday);
-    const weekly = Number(linkedAgg._sum.weeklyWagered ?? 0) + sumUnlinked(unlinkedWeekly);
-    const monthly = Number(linkedAgg._sum.monthlyWagered ?? 0) + sumUnlinked(unlinkedMonthly);
-    const allTime = Number(linkedAgg._sum.totalWagered ?? 0) + sumUnlinked(unlinkedAllTime);
-
-    return {
-      today: today.toString(),
-      weekly: weekly.toString(),
-      monthly: monthly.toString(),
-      allTime: allTime.toString(),
-    };
-  }
-
-  // ── Admin: race management ──────────────────────────────────────────────
-
-  static async listRaces(type: RaceType) {
-    const races = await prisma.wagerRace.findMany({
-      where: { type },
-      include: { prizes: { orderBy: { position: 'asc' } } },
-      orderBy: { startDate: 'desc' },
-    });
-    return races.map((r) => ({
-      id: r.id,
-      type: r.type as RaceType,
-      startDate: r.startDate.toISOString(),
-      endDate: r.endDate.toISOString(),
-      totalPrizePool: r.totalPrizePool,
-      status: r.status,
-      phase: getPhase(r.startDate, r.endDate, r.status),
-      prizes: r.prizes.map((p) => ({ position: p.position, amount: p.amount })),
-    }));
-  }
-
-  private static validatePrizes(prizes: RacePrize[], totalPrizePool: number) {
-    if (!Array.isArray(prizes) || prizes.length === 0) {
-      throw new Error('At least one prize position is required');
-    }
-    const positions = prizes.map((p) => p.position);
-    if (new Set(positions).size !== positions.length) {
-      throw new Error('Prize positions must be unique');
-    }
-    for (const p of prizes) {
-      if (!Number.isInteger(p.position) || p.position < 1) {
-        throw new Error('Prize positions must be positive whole numbers');
-      }
-      if (!Number.isFinite(p.amount) || p.amount < 0) {
-        throw new Error('Prize amounts must be zero or greater');
-      }
-    }
-    if (!Number.isFinite(totalPrizePool) || totalPrizePool < 0) {
-      throw new Error('Total prize pool must be zero or greater');
-    }
-    const sum = prizes.reduce((s, p) => s + p.amount, 0);
-    if (sum !== totalPrizePool) {
-      throw new Error(`Prize positions sum to ${sum}, which doesn't match the total prize pool of ${totalPrizePool}`);
-    }
-  }
-
-  static async createRace(input: { type: RaceType; startDate: string; endDate: string; totalPrizePool: number; prizes: RacePrize[] }) {
-    const startDate = new Date(input.startDate);
-    const endDate = new Date(input.endDate);
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      throw new Error('Invalid start or end date');
-    }
-    if (endDate.getTime() <= startDate.getTime()) {
-      throw new Error('End date must be after the start date');
-    }
-    WagerLeaderboardService.validatePrizes(input.prizes, input.totalPrizePool);
-
-    const existingActive = await prisma.wagerRace.findFirst({ where: { status: 'active', type: input.type } });
-    if (existingActive) {
-      throw new Error(`A ${input.type.toLowerCase()} race is already active. End or delete it before creating a new one.`);
-    }
-
-    const race = await prisma.wagerRace.create({
-      data: {
-        type: input.type,
-        startDate,
-        endDate,
-        totalPrizePool: input.totalPrizePool,
-        prizes: { create: input.prizes.map((p) => ({ position: p.position, amount: p.amount })) },
-      },
-      include: { prizes: { orderBy: { position: 'asc' } } },
-    });
-
-    return {
-      id: race.id,
-      type: race.type as RaceType,
-      startDate: race.startDate.toISOString(),
-      endDate: race.endDate.toISOString(),
-      totalPrizePool: race.totalPrizePool,
-      status: race.status,
-      phase: getPhase(race.startDate, race.endDate, race.status),
-      prizes: race.prizes.map((p) => ({ position: p.position, amount: p.amount })),
-    };
-  }
-
-  static async updateRace(raceId: string, input: { startDate?: string; endDate?: string; totalPrizePool?: number; prizes?: RacePrize[] }) {
-    const race = await prisma.wagerRace.findUnique({ where: { id: raceId } });
-    if (!race) throw new Error('Race not found');
-    if (race.status !== 'active') throw new Error('Cannot edit a race that has already ended and been paid out');
-
-    const startDate = input.startDate ? new Date(input.startDate) : race.startDate;
-    const endDate = input.endDate ? new Date(input.endDate) : race.endDate;
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      throw new Error('Invalid start or end date');
-    }
-    if (endDate.getTime() <= startDate.getTime()) {
-      throw new Error('End date must be after the start date');
-    }
-    const totalPrizePool = input.totalPrizePool ?? race.totalPrizePool;
-    if (input.prizes) {
-      WagerLeaderboardService.validatePrizes(input.prizes, totalPrizePool);
-    } else if (input.totalPrizePool !== undefined) {
-      // totalPrizePool changed without new prizes — re-validate against the existing ones.
-      const existingPrizes = await prisma.wagerRacePrize.findMany({ where: { raceId } });
-      WagerLeaderboardService.validatePrizes(existingPrizes, totalPrizePool);
-    }
-
-    await prisma.$transaction(async (tx) => {
-      await tx.wagerRace.update({ where: { id: raceId }, data: { startDate, endDate, totalPrizePool } });
-      if (input.prizes) {
-        await tx.wagerRacePrize.deleteMany({ where: { raceId } });
-        await tx.wagerRacePrize.createMany({
-          data: input.prizes.map((p) => ({ raceId, position: p.position, amount: p.amount })),
-        });
-      }
-    });
-
-    return WagerLeaderboardService.getRace(raceId);
-  }
-
-  static async getRace(raceId: string) {
-    const race = await prisma.wagerRace.findUnique({
-      where: { id: raceId },
-      include: { prizes: { orderBy: { position: 'asc' } } },
-    });
-    if (!race) throw new Error('Race not found');
-    return {
-      id: race.id,
-      type: race.type as RaceType,
-      startDate: race.startDate.toISOString(),
-      endDate: race.endDate.toISOString(),
-      totalPrizePool: race.totalPrizePool,
-      status: race.status,
-      phase: getPhase(race.startDate, race.endDate, race.status),
-      prizes: race.prizes.map((p) => ({ position: p.position, amount: p.amount })),
-    };
-  }
-
-  static async deleteRace(raceId: string) {
-    const payoutCount = await prisma.wagerRacePayout.count({ where: { raceId } });
-    if (payoutCount > 0) throw new Error('Cannot delete a race that has already been paid out');
-    await prisma.wagerRace.delete({ where: { id: raceId } });
   }
 }

@@ -22,6 +22,7 @@ import type { JWTPayload } from '@/middleware/auth';
 import { validateEnv } from '@/config/env';
 import jwt from 'jsonwebtoken';
 import { RazedWagerSyncJob } from '@/jobs/razedWagerSync';
+import { WagerRaceScheduler } from '@/services/WagerRaceScheduler';
 import { KickChatService } from '@/services/KickChatService';
 
 // Validate environment variables
@@ -312,6 +313,7 @@ app.use(errorHandler);
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
   RazedWagerSyncJob.stop();
+  WagerRaceScheduler.stop();
   KickChatService.stop();
   server.close(() => {
     logger.info('Process terminated');
@@ -322,6 +324,7 @@ process.on('SIGTERM', () => {
 process.on('SIGINT', () => {
   logger.info('SIGINT received, shutting down gracefully');
   RazedWagerSyncJob.stop();
+  WagerRaceScheduler.stop();
   KickChatService.stop();
   server.close(() => {
     logger.info('Process terminated');
@@ -337,7 +340,9 @@ server.listen(PORT, HOST, () => {
   logger.info(`📊 Health check available at http://${HOST}:${PORT}/health`);
   logger.info(`🌍 Environment PORT: ${process.env.PORT}`);
 
-  // Start background jobs
+  // Start background jobs. The race scheduler goes first so the hardcoded
+  // races exist before the first sync tick tries to pay any of them out.
+  WagerRaceScheduler.start();
   RazedWagerSyncJob.start();
   logger.info('✅ Background jobs started');
 
