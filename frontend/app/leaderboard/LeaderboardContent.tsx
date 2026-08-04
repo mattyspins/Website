@@ -29,12 +29,13 @@ function useCountdown(target: number | null) {
   return target === null ? 0 : Math.max(0, target - now);
 }
 
-const SYNC_INTERVAL_MS = 15 * 60 * 1000;
+const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 
-// The wager sync job runs on a fixed `*/15 * * * *` cron (fires exactly on
-// the UTC :00, :15, :30, :45 marks), so "time until next sync" is derivable
-// from the clock alone — Date.now() is already UTC-epoch-aligned to those
-// marks, no backend "last synced at" field needed.
+// The wager sync job runs on a fixed `*/5 * * * *` cron (fires exactly on the
+// UTC :00, :05, :10 … marks), so "time until next sync" is derivable from the
+// clock alone — Date.now() is already UTC-epoch-aligned to those marks, no
+// backend "last synced at" field needed. Keep this in step with the cron in
+// backend/src/jobs/razedWagerSync.ts or the countdown drifts out of phase.
 function useNextSyncCountdown(): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -215,7 +216,7 @@ export default function LeaderboardPage({ type, initialData = null }: Props) {
           </h1>
 
           <p className="text-gray-500 text-xs mb-4">
-            Wagers sync from Razed every 15 min · next update in{" "}
+            Wagers sync from Razed every 5 min · next update in{" "}
             <span className="text-gray-300 font-semibold tabular-nums">{formatMMSS(nextSyncMs)}</span>
           </p>
 

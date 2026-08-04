@@ -61,7 +61,7 @@ export default function RazedResyncCard() {
         <div className="min-w-0">
           <p className="text-white font-semibold text-sm">Razed Wager Sync</p>
           <p className="text-gray-400 text-xs mt-0.5 leading-relaxed">
-            Wagers sync automatically every 15 minutes. Use this to force an immediate
+            Wagers sync automatically every 5 minutes. Use this to force an immediate
             re-pull of every day since launch.
           </p>
         </div>

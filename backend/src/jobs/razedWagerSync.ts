@@ -7,16 +7,16 @@ import { logger } from '@/utils/logger';
  * Razed Wager Sync Background Job.
  *
  * Two separate schedules so the frequent tick stays cheap:
- * - Every 15 minutes: syncs *today only* (1 Razed API range fetch), refreshes weekly/monthly
- *   rolling stats, and pays out the monthly leaderboard if a new calendar month has started.
+ * - Every 5 minutes: syncs *today only* (1 Razed API range fetch), refreshes weekly/monthly
+ *   rolling stats, and records payouts for any race whose end time has passed.
  *   This is the leaderboard's staleness budget — wager figures can trail Razed by up to
- *   one interval.
+ *   one interval, on top of whatever lag Razed's own API has before it reflects a bet.
  * - Every 2 hours: also re-syncs the previous 2 days, to catch late corrections Razed
  *   sometimes applies to a day's totals after the fact.
  *
  * Syncing N days back means N separate full referral-list fetches (one per day, since each
  * day needs its own Razed cumulative total), so folding the correction days into the
- * 15-minute tick would triple Razed API traffic every 15 minutes and risk tripping their
+ * frequent tick would triple Razed API traffic every 5 minutes and risk tripping their
  * Cloudflare rate limiting — hence splitting it into its own much slower schedule instead.
  */
 export class RazedWagerSyncJob {
@@ -34,7 +34,7 @@ export class RazedWagerSyncJob {
       return;
     }
 
-    this.frequentJob = cron.schedule('*/15 * * * *', async () => {
+    this.frequentJob = cron.schedule('*/5 * * * *', async () => {
       try {
         logger.debug('Running Razed wager sync (today)');
         await RazedWagerSyncService.syncRecentDays(0);
@@ -52,12 +52,12 @@ export class RazedWagerSyncJob {
       }
     });
 
-    // Run once at startup so data isn't stale for up to 15 minutes after a deploy.
+    // Run once at startup so data isn't stale for up to a full interval after a deploy.
     RazedWagerSyncService.syncRecentDays(2).catch((error) =>
       logger.error('Error in initial Razed wager sync:', error)
     );
 
-    logger.info('Razed wager sync job started (today every 15 min, corrections every 2 hours)');
+    logger.info('Razed wager sync job started (today every 5 min, corrections every 2 hours)');
   }
 
   static stop(): void {
