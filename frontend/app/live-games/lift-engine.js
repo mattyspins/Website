@@ -29,10 +29,12 @@ function makeAvatar(seed) {
   const armGeo = new THREE.CapsuleGeometry(0.06, 0.42, 4, 8);
   const armL = new THREE.Mesh(armGeo, mat); armL.position.y = -0.21; shL.add(armL);
   const armR = new THREE.Mesh(armGeo, mat); armR.position.y = -0.21; shR.add(armR);
-  const variant = ((seed * 9301 + 49297) % 233280) / 233280; // deterministic per-player variant
-  if (variant < 0.6) { shL.rotation.z = 0.12; shR.rotation.z = -0.12; }
-  else if (variant < 0.85) { shL.rotation.z = 2.6; shR.rotation.z = -2.6; }
-  else { shL.rotation.z = 0.6; shR.rotation.z = -0.9; }
+  // Small deterministic per-player variance so the crowd isn't perfectly
+  // uniform, but arms stay hanging naturally at the sides — no raised-arm
+  // poses here, "raiseArms" below is reserved for the finale winner gesture.
+  const variant = (((seed * 9301 + 49297) % 233280) / 233280) - 0.5; // -0.5..0.5
+  shL.rotation.z = 0.12 + variant * 0.16;
+  shR.rotation.z = -0.12 - variant * 0.16;
   g.add(head, torso, hipL, hipR, shL, shR);
   g.userData.bobSeed = seed;
   g.userData.hipL = hipL; g.userData.hipR = hipR;
@@ -171,14 +173,33 @@ export class LiftGame {
       }
     });
 
+    // Surviving, occupied elevators get one "going up" moment at resolve —
+    // the cab rises with its riders before the next round's lobby reset.
+    if (snapshot.status === 'ROUND_RESOLVE') {
+      (snapshot.elevators || []).forEach((e) => {
+        const entry = this.elevators.get(e.letter);
+        if (!entry || e.status === 'dead' || e.current === 0 || entry.mesh.userData.ascended) return;
+        entry.mesh.userData.ascended = true;
+        entry.mesh.userData.ascendAt = performance.now();
+        (snapshot.players || []).forEach((p) => {
+          if (p.alive && p.currentElevator === e.letter) {
+            const av = this.avatars.get(p.kickUsername);
+            if (av) { av.ascending = true; av.ascendT = 0; }
+          }
+        });
+      });
+    }
+
     this.alarmActive = snapshot.status === 'ROUND_PAUSE';
   }
 
   _syncElevators(snapshot) {
     const wanted = snapshot.elevators || [];
     const wantedLetters = new Set(wanted.map((e) => e.letter));
+    const roundChanged = snapshot.round !== this.currentRound;
+    this.currentRound = snapshot.round;
 
-    // Round changed shape (new round started) — rebuild the row.
+    // Round changed shape (different elevator count/letters) — rebuild the row.
     const currentLetters = [...this.elevators.keys()];
     const sameSet = currentLetters.length === wanted.length && currentLetters.every((l) => wantedLetters.has(l));
     if (!sameSet) {
@@ -191,6 +212,17 @@ export class LiftGame {
         const mesh = makeElevator(e.letter, startX + i * 2.3);
         this.elevatorGroup.add(mesh);
         this.elevators.set(e.letter, { mesh, status: 'idle' });
+      });
+    } else if (roundChanged) {
+      // Same letters reused for the new round — meshes stay, but clear last
+      // round's dead/ascended residue so this round starts clean.
+      this.elevators.forEach((entry) => {
+        const ud = entry.mesh.userData;
+        ud.status = 'idle';
+        ud.ascended = false;
+        ud.ascendAt = 0;
+        ud.explodeAt = 0;
+        ud.open = false;
       });
     }
   }
@@ -231,6 +263,14 @@ export class LiftGame {
       alive.forEach((p, i) => {
         const entry = this.avatars.get(p.kickUsername);
         if (!entry) return;
+        // A new round's lobby clears any "went up" residue from the last one —
+        // survivors reappear on the floor for the next decision.
+        if (status === 'ROUND_LOBBY' && !entry.mesh.visible) {
+          entry.mesh.visible = true;
+          entry.mesh.scale.setScalar(1.05);
+          entry.mesh.position.y = 0;
+        }
+        entry.ascending = false;
         const row = Math.floor(i / cols), col = i % cols;
         entry.targetX = (col - cols / 2) * 0.6 + rand(-0.08, 0.08);
         entry.targetZ = 3 + row * 0.55;
@@ -295,6 +335,15 @@ export class LiftGame {
     this._lastT = now;
 
     this.avatars.forEach((a) => {
+      if (a.ascending) {
+        a.ascendT += dt;
+        const dur = 1.7;
+        const t = Math.min(a.ascendT / dur, 1);
+        a.mesh.position.y = t * 3.4;
+        a.mesh.scale.setScalar(1.05 * (1 - 0.25 * t));
+        if (t >= 1) a.mesh.visible = false;
+        return;
+      }
       if (a.dying) {
         a.dyingT += dt;
         const s = Math.max(0, 1 - a.dyingT / 1.1);
@@ -328,6 +377,8 @@ export class LiftGame {
     this.elevators.forEach((e) => {
       const ud = e.mesh.userData;
       const exploding = ud.status === 'dead' && (now - ud.explodeAt < 650);
+      const ascendDur = 1700;
+      const ascending = ud.ascendAt && (now - ud.ascendAt < ascendDur);
       if (exploding) {
         const k = 1 - (now - ud.explodeAt) / 650;
         e.mesh.position.x = ud.baseX + (Math.random() - 0.5) * 0.08 * k;
@@ -338,6 +389,17 @@ export class LiftGame {
         ud.stripMat.emissive.setHex(0xffffff);
         ud.stripMat.emissiveIntensity = 3.2 * flashK + 0.2;
         ud.burstLight.intensity = 5 * flashK;
+      } else if (ascending) {
+        // Safe: doors seal shut and the whole cab rises, carrying its riders
+        // up to "the next level" before the round resets.
+        const t = (now - ud.ascendAt) / ascendDur;
+        e.mesh.position.x = ud.baseX;
+        e.mesh.position.y = t * 3.4;
+        ud.doorL.position.x = lerp(ud.doorL.position.x, -0.44, 0.2);
+        ud.doorR.position.x = lerp(ud.doorR.position.x, 0.44, 0.2);
+        ud.stripMat.emissive.setHex(0x4fd18b);
+        ud.stripMat.emissiveIntensity = 1.6 + Math.sin(now * 0.02) * 0.2;
+        ud.burstLight.intensity = lerp(ud.burstLight.intensity, 0, 0.08);
       } else {
         e.mesh.position.x = ud.baseX;
         e.mesh.position.y = 0;
