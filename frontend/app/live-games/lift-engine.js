@@ -305,6 +305,11 @@ export class LiftGame {
       }
     });
 
+    // While doors are open (decision), picking a lift walks you up to its
+    // doorway. Once doors seal (lock/pause/resolve), everyone who boarded
+    // steps fully inside — behind the now-closed doors, out of sight, the
+    // same way a real elevator swallows its riders.
+    const boarding = status === 'ROUND_DECISION';
     this.elevators.forEach((e, letter) => {
       const members = byElevator.get(letter) || [];
       const cols = Math.max(1, Math.ceil(Math.sqrt(members.length)));
@@ -312,8 +317,8 @@ export class LiftGame {
         const entry = this.avatars.get(p.kickUsername);
         if (!entry) return;
         const row = Math.floor(i / cols), col = i % cols;
-        entry.targetX = e.mesh.position.x + (col - cols / 2) * 0.42 + rand(-0.05, 0.05);
-        entry.targetZ = 0.6 + row * 0.5;
+        entry.targetX = e.mesh.position.x + (col - cols / 2) * 0.4 + rand(-0.05, 0.05);
+        entry.targetZ = boarding ? -5.4 + row * 0.35 : -6.55 - row * 0.15;
       });
     });
 
