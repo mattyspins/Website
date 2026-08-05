@@ -20,6 +20,12 @@ export default function SiteChrome({ children }: { children: React.ReactNode }) 
     return <>{children}</>;
   }
 
+  // Full-bleed stage meant to be screen-shared by the streamer, not browsed
+  // inside the site shell — same reasoning as the /admin bypass above.
+  if (pathname === "/live-games") {
+    return <>{children}</>;
+  }
+
   return (
     <>
       <AuroraBackground />

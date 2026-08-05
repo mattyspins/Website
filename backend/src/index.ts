@@ -175,6 +175,8 @@ import bountyHunterRoutes from '@/routes/bountyHunter';
 import { setBountyHunterIO } from '@/controllers/BountyHunterController';
 import slotWorldCupRoutes from '@/routes/slotWorldCup';
 import { setSlotWorldCupIO } from '@/controllers/SlotWorldCupController';
+import liftRoutes from '@/routes/lift';
+import { setLiftIO } from '@/controllers/LiftController';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
@@ -204,6 +206,7 @@ app.use('/api/weekly-raffle', weeklyRaffleRoutes);
 app.use('/api/boss-raid', bossRaidRoutes);
 app.use('/api/bounty-hunter', bountyHunterRoutes);
 app.use('/api/slot-world-cup', slotWorldCupRoutes);
+app.use('/api/lift', liftRoutes);
 
 // Wire up tournament real-time events
 setTournamentIO(io);
@@ -216,6 +219,7 @@ setWeeklyRaffleIO(io);
 setBossRaidIO(io);
 setBountyHunterIO(io);
 setSlotWorldCupIO(io);
+setLiftIO(io);
 
 // Socket.IO connection handling
 io.on('connection', socket => {
@@ -251,6 +255,14 @@ io.on('connection', socket => {
   });
   socket.on('leaveKoth', (sessionId: string) => {
     socket.leave(`koth:${sessionId}`);
+  });
+
+  // Lift rooms
+  socket.on('joinLift', (sessionId: string) => {
+    socket.join(`lift:${sessionId}`);
+  });
+  socket.on('leaveLift', (sessionId: string) => {
+    socket.leave(`lift:${sessionId}`);
   });
 
   // High Roller rooms

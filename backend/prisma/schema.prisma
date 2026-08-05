@@ -85,6 +85,7 @@ model User {
   bountyHunterRounds       BountyHunterRound[]
   slotWorldCupsCreated     SlotWorldCup[]           @relation("SlotWorldCupCreator")
   slotWorldCupPredictions  SlotWorldCupPrediction[] @relation("SlotWorldCupPredictions")
+  liftPlayers              LiftPlayer[]
 
   @@index([kickId], map: "idx_users_kick_id")
   @@index([kickUsername], map: "idx_users_kick_username")
@@ -1392,4 +1393,96 @@ model SlotWorldCupPrediction {
 
   @@unique([tournamentId, userId])
   @@map("slot_world_cup_predictions")
+}
+
+// ─── Lift ──────────────────────────────────────────────────────────────────
+// Chat-driven survival game: viewers !join, then !ready, then pick an
+// elevator each round (!a.."!f") until one survivor remains. Phase
+// progression after "start" is driven server-side by LiftService's timers,
+// not admin clicks — see LiftService for the CHOICE/SYNC round logic.
+
+enum LiftStatus {
+  JOIN
+  READY
+  ROUND_LOBBY
+  ROUND_DECISION
+  ROUND_LOCK
+  ROUND_PAUSE
+  ROUND_RESOLVE
+  FINALE
+  ENDED
+  CANCELLED
+}
+
+enum LiftRoundType {
+  CHOICE
+  SYNC
+}
+
+model LiftSession {
+  id           String        @id @default(uuid())
+  label        String?
+  status       LiftStatus    @default(JOIN)
+  round        Int           @default(0)
+  joinKeyword  String        @default("!join") @map("join_keyword")
+  readyKeyword String        @default("!ready") @map("ready_keyword")
+  phaseEndsAt  DateTime?     @map("phase_ends_at")
+  caption      String?
+  captionSub   String?       @map("caption_sub")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  endedAt      DateTime?     @map("ended_at")
+  players      LiftPlayer[]
+  rounds       LiftRound[]
+
+  @@map("lift_sessions")
+}
+
+// Players are keyed by the raw Kick chat username so anyone who types the join
+// keyword can play, whether or not they've linked Kick or registered on the
+// site — `userId` is an optional bonus link, resolved when the chatter's
+// username happens to match a site account (mirrors KingOfTheHillEntry).
+model LiftPlayer {
+  id              String      @id @default(uuid())
+  sessionId       String      @map("session_id")
+  kickUsername    String      @map("kick_username")
+  userId          String?     @map("user_id")
+  avatarUrl       String?     @map("avatar_url")
+  avatarSeed      Int         @default(0) @map("avatar_seed")
+  joinedAt        DateTime    @default(now()) @map("joined_at")
+  readyAt         DateTime?   @map("ready_at")
+  alive           Boolean     @default(true)
+  eliminatedRound Int?        @map("eliminated_round")
+  currentElevator String?     @map("current_elevator")
+  session         LiftSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([sessionId, kickUsername])
+  @@map("lift_players")
+}
+
+model LiftRound {
+  id          String         @id @default(uuid())
+  sessionId   String         @map("session_id")
+  roundNumber Int            @map("round_number")
+  type        LiftRoundType
+  createdAt   DateTime       @default(now()) @map("created_at")
+  session     LiftSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  elevators   LiftElevator[]
+
+  @@unique([sessionId, roundNumber])
+  @@map("lift_rounds")
+}
+
+model LiftElevator {
+  id            String    @id @default(uuid())
+  roundId       String    @map("round_id")
+  letter        String
+  requiredCount Int?      @map("required_count")
+  doomed        Boolean   @default(false)
+  status        String    @default("idle")
+  finalCount    Int?      @map("final_count")
+  round         LiftRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  @@unique([roundId, letter])
+  @@map("lift_elevators")
 }

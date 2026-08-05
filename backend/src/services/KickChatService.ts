@@ -15,6 +15,7 @@ import { HighRollerService } from '@/services/HighRollerService';
 import { BossRaidService } from '@/services/BossRaidService';
 import { BountyHunterService } from '@/services/BountyHunterService';
 import { SlotWorldCupService } from '@/services/SlotWorldCupService';
+import { LiftService } from '@/services/LiftService';
 import { BingoStatus, TournamentStatus, HighRollerPrediction, HighRollerStatus, SlotWorldCupStatus } from '@prisma/client';
 import { TournamentEntrySource } from '@/types/tournament';
 
@@ -235,6 +236,18 @@ export class KickChatService {
     // Check for Bounty Hunter entry keyword (e.g. "!bounty" or "!bounty sweetbonanza")
     const joinedBounty = await BountyHunterService.handleKeyword(kickUsername, content, this.io ?? undefined);
     if (joinedBounty) await this.sendChatMessage(`🎯 ${kickUsername} has joined the Bounty Hunter!`);
+
+    // Lift: "!join"/"!ready" keywords are admin-configurable per session (default
+    // "!join"/"!ready"), so LiftService compares against the active session's own
+    // keyword fields the same way High Roller's commands work.
+    await LiftService.handleJoin(kickUsername, content, this.io ?? undefined);
+    await LiftService.handleReady(kickUsername, content, this.io ?? undefined);
+
+    // Lift elevator pick: "!a".."!f", only acted on while a round's decision phase is open.
+    const liftPickMatch = content.trim().match(/^!([a-fA-F])$/);
+    if (liftPickMatch) {
+      await LiftService.handlePick(kickUsername, liftPickMatch[1].toUpperCase(), this.io ?? undefined);
+    }
 
     // Award points for chatting (verified users only)
     await this.awardChatPoints(kickUsername);
