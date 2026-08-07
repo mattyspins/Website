@@ -354,7 +354,7 @@ export class RazedWagerSyncService {
     });
 
     for (const race of dueRaces) {
-      const standings = await WagerLeaderboardService.computeStandings(
+      const { standings } = await WagerLeaderboardService.computeStandings(
         race.startDate,
         race.endDate,
         race.prizes,

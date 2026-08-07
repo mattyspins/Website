@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Trophy, Crown, Calendar, Users } from "lucide-react";
+import { Trophy, Crown, Calendar, Users, Coins } from "lucide-react";
 import { wagerLeaderboardApi, ActiveRace, RaceHistoryEntry, RaceStandingRow, RaceType } from "@/lib/api/wagerLeaderboard";
 import { formatLondon } from "@/lib/londonTime";
 import { API_ENDPOINTS } from "@/lib/api";
@@ -188,9 +188,9 @@ export default function LeaderboardPage({ type, initialData = null }: Props) {
     );
   }
 
-  const top10 = race?.standings.filter((r) => r.position <= 10) ?? [];
-  const podium = top10.filter((r) => r.position <= 3);
-  const rest = top10.filter((r) => r.position > 3);
+  const top20 = race?.standings.filter((r) => r.position <= 20) ?? [];
+  const podium = top20.filter((r) => r.position <= 3);
+  const rest = top20.filter((r) => r.position > 3);
   const myRow = myUserId ? race?.standings.find((r) => r.userId === myUserId) : undefined;
   const showMyRankBanner = myRow && myRow.position > 3;
   const typeLabel = type === "WEEKLY" ? "Weekly" : "Monthly";
@@ -236,6 +236,7 @@ export default function LeaderboardPage({ type, initialData = null }: Props) {
 
               <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-6 text-xs text-gray-400">
                 <span className="flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5 text-gold-400" /> ${race.totalPrizePool} prize pool</span>
+                <span className="flex items-center gap-1.5"><Coins className="w-3.5 h-3.5 text-gold-400" /> {fmtMoney(race.totalWagered)} total wagered</span>
                 <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-gold-400" /> {race.prizes.length} paid position{race.prizes.length !== 1 ? "s" : ""}</span>
                 <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-gold-400" /> {formatLondon(race.startDate)} – {formatLondon(race.endDate)}</span>
               </div>

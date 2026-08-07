@@ -108,11 +108,13 @@ export class WagerLeaderboardService {
         wagered: Number(r._sum.amount ?? 0),
       }));
 
-    const combined = [...linkedRows, ...unlinkedRows]
-      .sort((a, b) => b.wagered - a.wagered)
-      .slice(0, limit);
+    const combinedAll = [...linkedRows, ...unlinkedRows].sort((a, b) => b.wagered - a.wagered);
+    // Summed over every wagerer in the window, not just the slice below — otherwise the
+    // total would silently shrink to whatever the display limit happens to be.
+    const totalWagered = combinedAll.reduce((sum, row) => sum + row.wagered, 0);
+    const combined = combinedAll.slice(0, limit);
 
-    return combined.map((row, i) => {
+    const standings = combined.map((row, i) => {
       const position = i + 1;
       const prize = prizes.find((p) => p.position === position);
       return {
@@ -126,6 +128,8 @@ export class WagerLeaderboardService {
         linked: row.userId !== null,
       };
     });
+
+    return { standings, totalWagered };
   }
 
   /** The single currently-running race of this type (admin ensures only one is active per type at a time), with live standings. */
@@ -137,13 +141,14 @@ export class WagerLeaderboardService {
     });
     if (!race) return null;
 
-    const standings = await WagerLeaderboardService.computeStandings(race.startDate, race.endDate, race.prizes, 50);
+    const { standings, totalWagered } = await WagerLeaderboardService.computeStandings(race.startDate, race.endDate, race.prizes, 50);
     return {
       id: race.id,
       type: race.type as RaceType,
       startDate: race.startDate.toISOString(),
       endDate: race.endDate.toISOString(),
       totalPrizePool: race.totalPrizePool,
+      totalWagered: totalWagered.toString(),
       phase: getPhase(race.startDate, race.endDate, race.status),
       prizes: race.prizes.map((p) => ({ position: p.position, amount: p.amount })),
       standings,

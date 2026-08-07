@@ -25,6 +25,8 @@ export interface ActiveRace {
   startDate: string;
   endDate: string;
   totalPrizePool: number;
+  /** Summed across every wagerer in the race window, not just the ones in `standings`. */
+  totalWagered: string;
   phase: RacePhase;
   prizes: RacePrize[];
   standings: RaceStandingRow[];
