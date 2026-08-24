@@ -12,6 +12,7 @@ router.get('/history', lim, WagerLeaderboardController.getHistory);
 // Races live in the database and are managed from /admin/leaderboards. Nothing in code
 // overwrites them, so an admin's saved schedule and prizes are authoritative.
 router.get('/admin/races', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.listRaces);
+router.get('/admin/races/:raceId/standings', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.getRaceStandings);
 router.post('/admin/races', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.createRace);
 router.put('/admin/races/:raceId', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.updateRace);
 router.delete('/admin/races/:raceId', authMiddleware, adminMiddleware, lim, WagerLeaderboardController.deleteRace);

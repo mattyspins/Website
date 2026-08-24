@@ -10,6 +10,14 @@ function parseType(value: unknown): RaceType | null {
   return value === 'WEEKLY' || value === 'MONTHLY' ? value : null;
 }
 
+/** Admin standings default to a deep slice; `null` means the caller sent something unusable. */
+function parseLimit(value: unknown): number | null {
+  if (value === undefined) return 100;
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 1 || n > 1000) return null;
+  return n;
+}
+
 /**
  * Races are stored in the database and managed from /admin/leaderboards. There is no
  * code-side schedule that overwrites them: whatever an admin saves here is authoritative,
@@ -44,6 +52,20 @@ export class WagerLeaderboardController {
     }
     const races = await WagerLeaderboardService.listRaces(type);
     res.json({ success: true, races });
+  });
+
+  static getRaceStandings = asyncHandler(async (req, res) => {
+    const limit = parseLimit(req.query.limit);
+    if (limit === null) {
+      res.status(400).json({ error: 'limit must be an integer between 1 and 1000' });
+      return;
+    }
+    const race = await WagerLeaderboardService.getRaceStandings(req.params.raceId, limit);
+    if (!race) {
+      res.status(404).json({ error: 'Race not found' });
+      return;
+    }
+    res.json({ success: true, race });
   });
 
   static createRace = asyncHandler(async (req, res) => {

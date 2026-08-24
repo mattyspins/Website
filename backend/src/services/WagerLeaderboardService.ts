@@ -191,6 +191,59 @@ export class WagerLeaderboardService {
 
   // ── Admin: race management ──────────────────────────────────────────────
 
+  /**
+   * Full standings for a single race, ended races included. `getRaceHistory` only surfaces
+   * the persisted payout rows, so once a race ends everyone below the prize cutoff becomes
+   * invisible — there is otherwise no way to answer "what did this user wager that week?"
+   * for a non-winner.
+   *
+   * Both views are returned because they can legitimately disagree. `payouts` is the frozen
+   * record written when the race was finalized and stays authoritative for what was actually
+   * paid out; `standings` is recomputed now from current `RazedDailyWager`/`RazedUnlinkedWager`
+   * rows, which a later resync may have changed. For a still-running race `payouts` is empty.
+   */
+  static async getRaceStandings(raceId: string, limit = 100) {
+    const race = await prisma.wagerRace.findUnique({
+      where: { id: raceId },
+      include: {
+        prizes: { orderBy: { position: 'asc' } },
+        payouts: { include: { user: { select: USER_SELECT } }, orderBy: { position: 'asc' } },
+      },
+    });
+    if (!race) return null;
+
+    const { standings, totalWagered } = await WagerLeaderboardService.computeStandings(
+      race.startDate,
+      race.endDate,
+      race.prizes,
+      limit,
+    );
+
+    return {
+      id: race.id,
+      type: race.type as RaceType,
+      startDate: race.startDate.toISOString(),
+      endDate: race.endDate.toISOString(),
+      totalPrizePool: race.totalPrizePool,
+      totalWagered: totalWagered.toString(),
+      status: race.status,
+      phase: getPhase(race.startDate, race.endDate, race.status),
+      prizes: race.prizes.map((p) => ({ position: p.position, amount: p.amount })),
+      standings,
+      payouts: race.payouts.map((p) => ({
+        id: p.id,
+        position: p.position,
+        userId: p.userId,
+        displayName: p.user?.displayName ?? p.razedUsername ?? 'Unknown',
+        kickUsername: p.user?.kickUsername ?? null,
+        avatarUrl: p.user?.avatarUrl ?? null,
+        linked: p.userId !== null,
+        wagered: p.wagered.toString(),
+        prizeAmount: p.prizeAmount,
+      })),
+    };
+  }
+
   static async listRaces(type: RaceType) {
     const races = await prisma.wagerRace.findMany({
       where: { type },
